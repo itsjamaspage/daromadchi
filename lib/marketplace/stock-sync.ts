@@ -18,7 +18,7 @@ import { db, shops, products, orders, orderItems, stockSyncState, stockNotifyOrd
 import { logger } from '@/lib/logger'
 import { pushStock, type StockWriteStatus } from '@/lib/marketplace/stock-writer'
 import { userHasFeature } from '@/lib/billing/entitlement'
-import { planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, rawGroupAvailable, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
+import { planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, rawGroupAvailable, decidePush, type PushHistory, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
 import { reservingOrderCondition } from '@/lib/marketplace/reserving-orders'
 import { handleOversell } from '@/lib/marketplace/oversell'
 import { notifyStockUpdates, type StockUpdateEvent } from '@/lib/marketplace/stock-notify'
@@ -270,19 +270,34 @@ function resolveOversellPolicy(
 
 // Bump and return the monotonic version for (shop, match-key), recording the
 // last decision. Called once per real write, before pushing.
-async function bumpVersion(shopId: string, matchKey: string, productId: string, available: number, target: number): Promise<number> {
+async function bumpVersion(
+  shopId: string, matchKey: string, productId: string,
+  available: number, target: number, repeatCount: number,
+): Promise<number> {
   const [existing] = await db.select({ version: stockSyncState.version })
     .from(stockSyncState).where(and(eq(stockSyncState.shop_id, shopId), eq(stockSyncState.sku, matchKey)))
   const newVersion = (existing?.version ?? 0) + 1
   const now = new Date()
   await db.insert(stockSyncState).values({
     shop_id: shopId, product_id: productId, sku: matchKey, version: newVersion,
-    last_available: available, last_target: target, last_pushed_at: now, updated_at: now,
+    last_available: available, last_target: target, last_pushed_at: now,
+    repeat_count: repeatCount, updated_at: now,
   }).onConflictDoUpdate({
     target: [stockSyncState.shop_id, stockSyncState.sku],
-    set: { version: newVersion, product_id: productId, last_available: available, last_target: target, last_pushed_at: now, updated_at: now },
+    set: {
+      version: newVersion, product_id: productId, last_available: available,
+      last_target: target, last_pushed_at: now, repeat_count: repeatCount, updated_at: now,
+    },
   })
   return newVersion
+}
+
+/** Record a skip that made no marketplace call: keep last_target, move the run
+ *  counter, and leave `version` alone (nothing was written to leapfrog). */
+async function noteSkip(shopId: string, matchKey: string, target: number, repeatCount: number): Promise<void> {
+  await db.update(stockSyncState)
+    .set({ last_target: target, repeat_count: repeatCount, updated_at: new Date() })
+    .where(and(eq(stockSyncState.shop_id, shopId), eq(stockSyncState.sku, matchKey)))
 }
 
 /**
@@ -480,10 +495,52 @@ async function syncStockSyncGroupsLocked(opts: RunOptions): Promise<StockSyncRun
       logger.info('stock_sync_policy_applied', { matchKey, oversellMode, sourceShopId, available, writes: toWrite.length, realDiffs })
     }
 
+    // What we last sent to each of these listings. The reassert above
+    // deliberately ignores per-member equality, so this is the only thing that
+    // can tell a re-push that is DOING something from one that is repeating
+    // itself. Loaded once per group rather than per member.
+    const historyByShop = new Map<string, PushHistory>()
+    if (toWrite.length > 0) {
+      const rows = await db.select({
+        shop_id: stockSyncState.shop_id,
+        last_target: stockSyncState.last_target,
+        repeat_count: stockSyncState.repeat_count,
+      }).from(stockSyncState).where(and(
+        eq(stockSyncState.sku, matchKey),
+        inArray(stockSyncState.shop_id, toWrite.map(p => p.member.shopId)),
+      ))
+      for (const r of rows) {
+        historyByShop.set(r.shop_id, { lastTarget: r.last_target, repeatCount: r.repeat_count })
+      }
+    }
+
     for (const plan of toWrite) {
-      writesPlanned++
       const shop = shopsById.get(plan.member.shopId)!
       const product = group.products.get(plan.member.productId)!
+
+      // Have we already sent this exact value to this listing? A member that
+      // agrees with a target we already pushed is being reasserted on another
+      // member's behalf and has nothing to say; a value we have pushed
+      // NON_CONVERGENCE_LIMIT times without the listing agreeing is not going to
+      // start working on attempt N+1. Either way: no marketplace call.
+      const decision = decidePush(plan, historyByShop.get(plan.member.shopId))
+      if (!decision.push) {
+        if (decision.reason === 'not_converging') {
+          logger.warn('stock_write_not_converging', {
+            matchKey, marketplace: shop.marketplace, shopId: shop.id, productId: product.id,
+            target: plan.target, listed: plan.member.listedStock, attempts: decision.repeatCount,
+          })
+        }
+        entries.push({
+          matchKey, marketplace: shop.marketplace, shopId: shop.id, productId: product.id,
+          available, listed: plan.member.listedStock, target: plan.target, version: 0,
+          status: 'skipped', reason: decision.reason,
+        })
+        await noteSkip(shop.id, matchKey, plan.target, decision.repeatCount)
+        continue
+      }
+
+      writesPlanned++
 
       // Resolve the write identifier just before pushing.
       const barcode = shop.marketplace === 'uzum' ? product.market_barcode : null
@@ -516,7 +573,7 @@ async function syncStockSyncGroupsLocked(opts: RunOptions): Promise<StockSyncRun
         if (flags) { uzumFbsLinked = flags.fbsLinked; uzumDbsLinked = flags.dbsLinked }
       }
 
-      const version = await bumpVersion(shop.id, matchKey, product.id, available, plan.target)
+      const version = await bumpVersion(shop.id, matchKey, product.id, available, plan.target, decision.repeatCount)
       const result = await pushStock({
         shop: {
           id: shop.id,
@@ -699,7 +756,11 @@ export async function verifiedLivePush(userId: string, productId: string, quanti
   const identifier = shop.marketplace === 'uzum' ? barcode : marketSku
   if (!identifier) return fail('missing_identifier', target)
 
-  const version = await bumpVersion(shop.id, found.matchKey, found.product.id, found.available, target)
+  // repeatCount 0: this is a deliberate, human-triggered push, and it reads the
+  // result back to prove the value landed. A person retrying a value the cron
+  // gave up on is asserting it is right NOW, so the run of failed attempts
+  // starts over rather than inheriting the cron's.
+  const version = await bumpVersion(shop.id, found.matchKey, found.product.id, found.available, target, 0)
   const result = await pushStock({
     shop: {
       id: shop.id, marketplace: shop.marketplace, api_key_encrypted: shop.api_key_encrypted,

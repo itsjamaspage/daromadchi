@@ -147,6 +147,7 @@ const MIGRATIONS = [
   'migrations/migrations/087_orders_reserved_stock_snapshot.sql',
   // At-most-once marker for the read-only cancel-restore alert. Additive + idempotent.
   'migrations/migrations/088_orders_restore_alert_sent_at.sql',
+  'migrations/migrations/089_stock_sync_state_repeat_count.sql',
 ]
 
 function loadDatabaseUrl() {
