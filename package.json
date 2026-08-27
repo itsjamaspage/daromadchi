@@ -72,7 +72,8 @@
     "test:money": "node --import tsx --test lib/money/order-economics.test.ts lib/money/order-economics.guardrail.test.ts",
     "test:crypto": "node --import tsx --test lib/crypto.test.ts",
     "test:shop-lock": "node --import tsx --test lib/db/shop-lock.integration.test.ts",
-    "test:dash-fallback": "node --import tsx --test lib/dashboard-fallbacks.guardrail.test.ts"
+    "test:dash-fallback": "node --import tsx --test lib/dashboard-fallbacks.guardrail.test.ts",
+    "test:monitoring": "node --test scripts/sync-freshness-lib.test.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
