@@ -13,9 +13,25 @@
  * recommendation grant access would hand a high-turnover free account the paid
  * product without a payment.
  */
+/**
+ * Plan entitlement rules against the database.
+ *
+ * DELIBERATELY FREE OF THE AUTH STACK. Every function here takes an explicit
+ * userId. The one that did not — currentUserAccess, which resolves the signed-in
+ * user — now lives in ./current-user-access, because importing
+ * lib/db/shop-context dragged in lib/auth/session → lib/auth/config → next-auth
+ * → next/navigation, and that chain cannot be loaded outside Next's own runtime:
+ * plain node dies on next/headers ("cannot be imported from a Client Component")
+ * and --conditions=react-server dies on React's server build having no
+ * createContext.
+ *
+ * The cost was that entitlement.integration.test.ts could not run at all, so the
+ * plan-gating rules were the one part of the suite CI had to skip. Billing rules
+ * have no business depending on how a request is authenticated; keeping this
+ * module importable is what makes them testable.
+ */
 import { eq, and, ne, or, isNull } from 'drizzle-orm'
 import { db, users, shops } from '@/lib/db'
-import { getCurrentUserId } from '@/lib/db/shop-context'
 import { hasFeature, isOnTrial, type EntitlementInput, type Feature } from './features'
 
 /** Load the four fields entitlement depends on. Nothing else is selected. */
@@ -41,33 +57,6 @@ export async function userHasFeature(userId: string, feature: Feature, now: Date
 }
 
 /** What a gated page needs to render: the verdict, plus why it was refused. */
-export interface FeatureAccess {
-  allowed: boolean
-  /** True when access is running on the trial clock rather than a payment. */
-  onTrial: boolean
-  /** True when a trial existed and has run out — "you lost this", not "you never had this". */
-  trialEnded: boolean
-}
-
-/**
- * The signed-in user's access to `feature`.
- *
- * A signed-out caller is refused rather than thrown at: these run inside
- * dashboard pages that the proxy has already authenticated, so a missing id
- * means the session went away mid-request, and a locked panel is a better
- * answer than a 500.
- */
-export async function currentUserAccess(feature: Feature, now: Date = new Date()): Promise<FeatureAccess> {
-  const userId = await getCurrentUserId()
-  if (!userId) return { allowed: false, onTrial: false, trialEnded: false }
-  const entitlement = await loadEntitlement(userId)
-  const ends = entitlement.trialEndsAt == null ? null : new Date(entitlement.trialEndsAt)
-  return {
-    allowed: hasFeature(entitlement, feature, now),
-    onTrial: isOnTrial(entitlement, now),
-    trialEnded: ends !== null && !Number.isNaN(ends.getTime()) && ends <= now,
-  }
-}
 
 /**
  * True when the account has no shop that stock-sync could ever write to.
