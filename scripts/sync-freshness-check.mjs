@@ -1,0 +1,186 @@
+#!/usr/bin/env node
+/**
+ * Sync-freshness watchdog — WORK liveness, not process liveness.
+ *
+ * On 2025-08-27 the app served a broken build for 30+ minutes: the crontab kept
+ * firing `cron-runner.sh sync`, curl kept hitting the endpoint, and every call
+ * failed because the server couldn't boot its instrumentation — yet PM2 reported
+ * "online" the whole time and nothing paged. The failures were even logged, but
+ * no one watches a log. This closes that gap by measuring the one thing that
+ * actually matters: did a sync COMPLETE recently, as recorded in the database.
+ *
+ * DELIBERATELY MINIMAL DEPENDENCIES. It talks straight to Postgres (`pg`, a prod
+ * dependency) and straight to Telegram (global `fetch`). No tsx, no drizzle, no
+ * `@/` alias, no Next graph — because the failure this is built to catch is "the
+ * app / its build is broken," and a watchdog that shares that graph goes down
+ * with it. It also runs from its OWN crontab line, not through cron-runner.sh
+ * (which is HTTP-only, i.e. dead exactly when we need the alarm).
+ *
+ * WHAT IT WATCHES
+ *   Primary signal — MAX(shops.stock_synced_at) across active, keyed shops. That
+ *   column advances every ~15 min on EVERY such shop's successful stock read,
+ *   independent of plan and independent of whether any number changed, so a
+ *   freshest-read older than the threshold means sync is not completing. This is
+ *   the alarm condition.
+ *   Context only — newest stock_write_log.created_at. Writes are legitimately
+ *   sparse (the engine only writes when a listing diverges), so an absence of
+ *   writes is NOT an alarm; it is reported in the log line for context.
+ *
+ * OUTPUTS (BOTH, by design)
+ *   • Telegram → operators (TELEGRAM_ADMIN_CHAT_ID), on the stale edge, hourly
+ *     while stale, and once on recovery.
+ *   • A local logfile line EVERY run. Alerting only through the same Telegram
+ *     path the app uses would go silent exactly when creds or network are the
+ *     fault; a file trace survives that and is the fallback record.
+ *
+ * ENV
+ *   DATABASE_URL              (required) — sourced by scripts/sync-freshness-check.sh
+ *   TELEGRAM_BOT_TOKEN        (required to page; without it, logs only)
+ *   TELEGRAM_ADMIN_CHAT_ID    comma-separated operator chat ids; falls back to the
+ *                             same operator id lib/telegram-admin.ts uses.
+ *   FRESHNESS_STALE_MINUTES   default 40   — alarm threshold
+ *   FRESHNESS_REALERT_MINUTES default 60   — gap between repeat pages while stale
+ *   FRESHNESS_LOG_FILE        default $DAROMADCHI_LOG_DIR/sync-freshness.log
+ *   FRESHNESS_STATE_FILE      default alongside the log, .state
+ *   DRY_RUN=1                 evaluate + log, never POST to Telegram (safe to test)
+ *
+ * EXIT CODE: 0 when it ran (whether OK or STALE — a fired alarm is a success for
+ * the watchdog). Non-zero only when the watchdog itself could not run (no
+ * DATABASE_URL, DB unreachable), which is itself worth a crontab-level MAILTO.
+ */
+
+import { readFileSync, writeFileSync, mkdirSync, appendFileSync } from 'node:fs'
+import { dirname } from 'node:path'
+import pg from 'pg'
+import { classifyFreshness, decideNotification, fmtAge, STATUS } from './sync-freshness-lib.mjs'
+
+const FALLBACK_ADMIN_CHAT_ID = '6884517020' // mirrors lib/telegram-admin.ts
+
+const STALE_MS = Number(process.env.FRESHNESS_STALE_MINUTES ?? 40) * 60_000
+const REALERT_MS = Number(process.env.FRESHNESS_REALERT_MINUTES ?? 60) * 60_000
+const LOG_DIR = process.env.DAROMADCHI_LOG_DIR ?? `${process.env.DAROMADCHI_DIR ?? '/var/www/daromadchi'}/logs`
+const LOG_FILE = process.env.FRESHNESS_LOG_FILE ?? `${LOG_DIR}/sync-freshness.log`
+const STATE_FILE = process.env.FRESHNESS_STATE_FILE ?? `${LOG_DIR}/sync-freshness.state`
+const DRY_RUN = process.env.DRY_RUN === '1' || process.env.DRY_RUN === 'true'
+
+const stamp = () => new Date().toISOString()
+
+function logLine(text) {
+  const line = `${stamp()} ${text}\n`
+  try {
+    mkdirSync(dirname(LOG_FILE), { recursive: true })
+    appendFileSync(LOG_FILE, line)
+  } catch (e) {
+    // The logfile is the fallback record; if even that fails, stderr is all we have.
+    process.stderr.write(`freshness: logfile write failed: ${String(e)}\n`)
+  }
+  process.stdout.write(line)
+}
+
+function readState() {
+  try {
+    return JSON.parse(readFileSync(STATE_FILE, 'utf8'))
+  } catch {
+    return {} // first run, or unreadable → treat as no prior state
+  }
+}
+
+function writeState(state) {
+  try {
+    mkdirSync(dirname(STATE_FILE), { recursive: true })
+    writeFileSync(STATE_FILE, JSON.stringify(state))
+  } catch (e) {
+    process.stderr.write(`freshness: state write failed: ${String(e)}\n`)
+  }
+}
+
+function adminChatIds() {
+  const raw = process.env.TELEGRAM_ADMIN_CHAT_ID?.trim()
+  if (!raw) return [FALLBACK_ADMIN_CHAT_ID]
+  const ids = raw.split(',').map(s => s.trim()).filter(Boolean)
+  return ids.length ? ids : [FALLBACK_ADMIN_CHAT_ID]
+}
+
+async function sendTelegram(text) {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token) {
+    logLine('WARN no TELEGRAM_BOT_TOKEN — cannot page; logfile is the only record')
+    return
+  }
+  if (DRY_RUN) {
+    logLine(`DRY_RUN would page: ${text.replace(/\n/g, ' ')}`)
+    return
+  }
+  for (const chatId of adminChatIds()) {
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
+      })
+      if (!res.ok) logLine(`WARN telegram sendMessage http=${res.status} chat=${chatId}`)
+    } catch (e) {
+      logLine(`WARN telegram sendMessage failed chat=${chatId}: ${String(e)}`)
+    }
+  }
+}
+
+async function main() {
+  const connectionString = process.env.DATABASE_URL
+  if (!connectionString) {
+    logLine('FATAL no DATABASE_URL — watchdog cannot run')
+    process.exit(1)
+  }
+
+  const client = new pg.Client({ connectionString })
+  let row
+  try {
+    await client.connect()
+    // One round-trip: active-shop count, freshest successful stock read, and the
+    // newest recorded stock write (context only).
+    const q = await client.query(`
+      SELECT
+        (SELECT count(*) FROM shops
+           WHERE is_active = true AND api_key_encrypted IS NOT NULL)                 AS active_shops,
+        (SELECT max(stock_synced_at) FROM shops
+           WHERE is_active = true AND api_key_encrypted IS NOT NULL)                 AS freshest_sync,
+        (SELECT max(created_at) FROM stock_write_log WHERE status = 'sent')          AS newest_write
+    `)
+    row = q.rows[0]
+  } catch (e) {
+    logLine(`FATAL database unreachable: ${String(e).slice(0, 300)}`)
+    try { await client.end() } catch { /* ignore */ }
+    process.exit(1)
+  }
+  await client.end()
+
+  const nowMs = Date.now()
+  const activeShops = Number(row.active_shops ?? 0)
+  const freshestMs = row.freshest_sync ? new Date(row.freshest_sync).getTime() : null
+  const newestWriteMs = row.newest_write ? new Date(row.newest_write).getTime() : null
+
+  const { status, ageMs } = classifyFreshness({ activeShops, freshestMs, nowMs, thresholdMs: STALE_MS })
+  const prev = readState()
+  const { notify, nextState } = decideNotification({ prev, currStatus: status, nowMs, reAlertMs: REALERT_MS })
+  writeState(nextState)
+
+  const writeAge = newestWriteMs == null ? 'none' : fmtAge(nowMs - newestWriteMs)
+  logLine(`status=${status} activeShops=${activeShops} freshestSync=${fmtAge(ageMs)} newestWrite=${writeAge}${notify ? ` notify=${notify}` : ''}`)
+
+  if (notify === 'alert') {
+    const detail = status === STATUS.STALE && ageMs == null
+      ? 'no successful sync is on record for any active shop'
+      : `the freshest successful stock read is ${fmtAge(ageMs)} old`
+    await sendTelegram(
+      `⚠️ Daromadchi sync is STALLED.\n${detail} (threshold ${STALE_MS / 60000}m).\n` +
+      `${activeShops} active shop(s). Check PM2 and the cron log — the process can be "online" while no sync completes.`
+    )
+  } else if (notify === 'recovery') {
+    await sendTelegram(`✅ Daromadchi sync recovered. Freshest stock read is now ${fmtAge(ageMs)} old.`)
+  }
+}
+
+main().catch(e => {
+  logLine(`FATAL watchdog crashed: ${String(e).slice(0, 300)}`)
+  process.exit(1)
+})
