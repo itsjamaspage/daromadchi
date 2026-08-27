@@ -31,6 +31,10 @@ const CALLS: Record<string, unknown[]> = {
   oversellRateLimited: [1, 3, 'Uzum'], oversellCancelling: ['Uzum'],
   oversellHead: ['JMWHT', 'Uzum #124452180'],
   manualStockTitle: [2], manualStockLine: ['M9 (чёрный, JMWHT)', 0, 'Yandex Market', '124459482'],
+  restoreOrderCancelled: ['124708369', 'M9', 'JMWHT', 'Yandex Market'],
+  restoreActionDetail: ['Yandex Market', 2, 1], restoreActionCta: ['Yandex Market', 2],
+  restoreActionCtaMulti: ['Yandex Market'], restoreInfoDetail: ['Yandex Market', 2],
+  restoreInfoNoteMulti: ['Yandex Market'], restoreLine: ['JMWHT', 2, 1], restoreMpGroup: ['Yandex Market'],
 }
 
 function render(key: string, lang: NotifLang): string {
@@ -57,6 +61,8 @@ test('every language defines every key — no silent undefined in a message', ()
 const LANGUAGE_NEUTRAL = new Set([
   'som',            // "so'm"/"сум" differ, but the uz/en forms coincide
   'stockSyncOk',    // "   ✅ Uzum: 5→3" — a marketplace name and two numbers
+  'restoreLine',    // "• JMWHT — 2 → 1" — a SKU and two numbers, no words
+  'restoreMpGroup', // "<b>Yandex Market:</b>" — a marketplace name only
 ])
 
 test('no seller-facing string is hardcoded — ru and uz must differ', () => {

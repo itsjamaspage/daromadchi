@@ -85,6 +85,20 @@ export interface NotifStrings {
   manualStockLine: (product: string, target: number, marketplace: string, orderId?: string | null) => string
   // Closing line: why a human is being asked to do this at all.
   manualStockFooter: string
+  // Read-only "restore your listing after cancel" alert (lib/marketplace/
+  // cancel-restore-alert.ts). ACTION = the listing didn't come back; INFO = the
+  // marketplace restored it on its own.
+  restoreActionTitle: string
+  restoreInfoTitle: string
+  restoreOrderCancelled: (orderId: string, name: string, sku: string, marketplace: string) => string
+  restoreActionDetail: (marketplace: string, before: number, after: number) => string
+  restoreActionNote: string
+  restoreActionCta: (marketplace: string, before: number) => string
+  restoreActionCtaMulti: (marketplace: string) => string
+  restoreInfoDetail: (marketplace: string, current: number) => string
+  restoreInfoNoteMulti: (marketplace: string) => string
+  restoreLine: (sku: string, before: number, after: number) => string
+  restoreMpGroup: (marketplace: string) => string
   /** Link back to the in-app notification list. Appended to EVERY seller alert
    *  by renderSellerText — takes the href so the URL stays out of the strings. */
   notificationsCta: (url: string) => string
@@ -157,6 +171,17 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
       `• ${product} — ${mp}da <b>${target}</b> qo'ying${orderId ? ` · buyurtma #${orderId}` : ''}`,
     notificationsCta: (url) => `🔔 <a href="${url}">Barcha bildirishnomalar — daromadchi.uz</a>`,
     manualStockFooter: `ℹ️ <i>API kalitlaringiz faqat o'qish uchun. Tahrirlash huquqiga ega kalitlarga almashtirsangiz, qoldiqlar avtomatik yangilanadi.</i>`,
+    restoreActionTitle: "⚠️ <b>Bekor qilingandan so'ng qoldiq qaytmadi</b>",
+    restoreInfoTitle:   '✅ <b>Bekor qilish qayta ishlandi</b>',
+    restoreOrderCancelled: (orderId, name, sku, mp) => `${orderId}-buyurtma (${name}, ${sku}) ${mp}da bekor qilindi.`,
+    restoreActionDetail: (mp, before, after) => `Rasmiylashtirishda ${mp} tovarni vitrinadan yechdi: ${before} edi, ${after} bo'ldi.`,
+    restoreActionNote:  "Tovar yana sizda, lekin vitrinadagi qoldiq tiklanmadi — bu dona hozir sotilmaydi.",
+    restoreActionCta:   (mp, before) => `Agar boshqa yo'l bilan sotmagan bo'lsangiz, ${mp} shaxsiy kabinetida qoldiqni ${before} ga qaytaring.`,
+    restoreActionCtaMulti: (mp) => `Agar boshqa yo'l bilan sotmagan bo'lsangiz, ${mp} shaxsiy kabinetida qoldiqlarni qo'lda qaytaring.`,
+    restoreInfoDetail:  (mp, current) => `${mp} qoldiqni vitrinaga o'zi qaytardi: ${current}. Hech narsa qilish shart emas.`,
+    restoreInfoNoteMulti: (mp) => `${mp} qoldiqlarni vitrinaga o'zi qaytardi. Hech narsa qilish shart emas.`,
+    restoreLine:        (sku, before, after) => `• ${sku} — ${before} → ${after}`,
+    restoreMpGroup:     (mp) => `<b>${mp}:</b>`,
     stockSyncReason: (r) => REASONS.uz[r] ?? httpReason(r, 'API xatosi'),
     extDailyTitle:  (d) => `📊 <b>Kunlik hisobot — ${d}</b>`,
     extRevenue:     '💰 Daromad',
@@ -222,6 +247,17 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
       `• ${product} — поставьте <b>${target}</b> на ${mp}${orderId ? ` · заказ #${orderId}` : ''}`,
     notificationsCta: (url) => `🔔 <a href="${url}">Все уведомления на daromadchi.uz</a>`,
     manualStockFooter: `ℹ️ <i>Ваши API-ключи работают только на чтение. Если замените их на ключи с доступом на редактирование, остатки будут обновляться автоматически.</i>`,
+    restoreActionTitle: '⚠️ <b>Остаток не вернулся после отмены</b>',
+    restoreInfoTitle:   '✅ <b>Отмена обработана</b>',
+    restoreOrderCancelled: (orderId, name, sku, mp) => `Заказ ${orderId} (${name}, ${sku}) отменён на ${mp}.`,
+    restoreActionDetail: (mp, before, after) => `При оформлении ${mp} списал товар с витрины: было ${before}, стало ${after}.`,
+    restoreActionNote:  'Товар снова у вас на руках, но остаток на витрине не восстановился — эта единица сейчас не продаётся.',
+    restoreActionCta:   (mp, before) => `Верните остаток на ${before} в личном кабинете ${mp}, если не продали её другим способом.`,
+    restoreActionCtaMulti: (mp) => `Верните остатки вручную в личном кабинете ${mp}, если не продали их другим способом.`,
+    restoreInfoDetail:  (mp, current) => `${mp} сам вернул остаток на витрину: ${current}. Ничего делать не нужно.`,
+    restoreInfoNoteMulti: (mp) => `${mp} сам вернул остатки на витрину. Ничего делать не нужно.`,
+    restoreLine:        (sku, before, after) => `• ${sku} — ${before} → ${after}`,
+    restoreMpGroup:     (mp) => `<b>${mp}:</b>`,
     stockSyncReason: (r) => REASONS.ru[r] ?? httpReason(r, 'ошибка API'),
     extDailyTitle:  (d) => `📊 <b>Отчёт за день — ${d}</b>`,
     extRevenue:     '💰 Выручка',
@@ -287,6 +323,17 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
       `• ${product} — set <b>${target}</b> on ${mp}${orderId ? ` · order #${orderId}` : ''}`,
     notificationsCta: (url) => `🔔 <a href="${url}">All notifications on daromadchi.uz</a>`,
     manualStockFooter: `ℹ️ <i>Your API keys are read-only. Switch to keys with edit access and stock will update automatically.</i>`,
+    restoreActionTitle: '⚠️ <b>Stock did not come back after cancel</b>',
+    restoreInfoTitle:   '✅ <b>Cancellation handled</b>',
+    restoreOrderCancelled: (orderId, name, sku, mp) => `Order ${orderId} (${name}, ${sku}) was cancelled on ${mp}.`,
+    restoreActionDetail: (mp, before, after) => `On placement ${mp} took the item off the listing: was ${before}, now ${after}.`,
+    restoreActionNote:  'The item is back on your shelf, but the listing stock was not restored — this unit is currently unsellable.',
+    restoreActionCta:   (mp, before) => `Set the stock back to ${before} in your ${mp} dashboard, unless you sold it another way.`,
+    restoreActionCtaMulti: (mp) => `Set the stock back manually in your ${mp} dashboard, unless you sold them another way.`,
+    restoreInfoDetail:  (mp, current) => `${mp} restored the listing stock itself: ${current}. Nothing to do.`,
+    restoreInfoNoteMulti: (mp) => `${mp} restored the listing stock itself. Nothing to do.`,
+    restoreLine:        (sku, before, after) => `• ${sku} — ${before} → ${after}`,
+    restoreMpGroup:     (mp) => `<b>${mp}:</b>`,
     stockSyncReason: (r) => REASONS.en[r] ?? httpReason(r, 'API error'),
     extDailyTitle:  (d) => `📊 <b>Daily report — ${d}</b>`,
     extRevenue:     '💰 Revenue',
