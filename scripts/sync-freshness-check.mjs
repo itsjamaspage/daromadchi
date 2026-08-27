@@ -118,7 +118,15 @@ async function sendTelegram(text) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
       })
-      if (!res.ok) logLine(`WARN telegram sendMessage http=${res.status} chat=${chatId}`)
+      if (!res.ok) {
+        // Surface Telegram's own reason — a bare http=400 is unactionable, but the
+        // body says WHY (e.g. "chat not found" = that chat never opened the bot;
+        // "chat_id is empty" = misconfigured TELEGRAM_ADMIN_CHAT_ID). Without this
+        // the operator can't tell a config problem from an outage.
+        let why = ''
+        try { why = (await res.json())?.description ?? '' } catch { /* non-JSON body */ }
+        logLine(`WARN telegram sendMessage http=${res.status} chat=${chatId}${why ? ` — ${why}` : ''}`)
+      }
     } catch (e) {
       logLine(`WARN telegram sendMessage failed chat=${chatId}: ${String(e)}`)
     }
