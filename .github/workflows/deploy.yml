@@ -152,6 +152,15 @@ jobs:
             # Daily: downgrade lapsed paid plans to free.
             echo '15 3 * * * /var/www/daromadchi/cron-runner.sh expire-plans >> $HOME/daromadchi-cron.log 2>&1'
             # Hourly: auto-renew subscriptions (no-op until BILLING_AUTORENEW_ENABLED=1).
-            echo '20 * * * * /var/www/daromadchi/cron-runner.sh billing-renew >> $HOME/daromadchi-cron.log 2>&1' ) | crontab -
+            echo '20 * * * * /var/www/daromadchi/cron-runner.sh billing-renew >> $HOME/daromadchi-cron.log 2>&1'
+            # The work-liveness watchdog (#395). Its OWN line, deliberately NOT via
+            # cron-runner.sh: cron-runner speaks HTTP to the app, so it is dead in
+            # exactly the situation the alarm exists for. This reads the database
+            # directly and needs only pg + node, so it still fires when the build
+            # is broken — which is what happened on 27 Aug.
+            #
+            # It was added to scripts/crontab.example and never to this list, and
+            # this list is what actually gets installed. So it has never run.
+            echo '*/5 * * * * /var/www/daromadchi/scripts/sync-freshness-check.sh >> $HOME/daromadchi-cron.log 2>&1' ) | crontab -
           echo "Deploy complete."
           DEPLOY

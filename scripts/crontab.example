@@ -30,7 +30,7 @@ MAILTO=""
 # Telegram digests. Live crontab uses the `digest` job name (aliased to
 # telegram-digest in cron-runner.sh). The route filters on each seller's own
 # notification window, so hourly at :05 is enough to never miss a window.
-5 * * * *     /var/www/daromadchi/cron-runner.sh digest      >> $HOME/daromadchi-cron.log 2>&1
+5 * * * *     /var/www/daromadchi/cron-runner.sh telegram-digest      >> $HOME/daromadchi-cron.log 2>&1
 
 # Daily housekeeping and the busiest job in the product: expires lapsed plans,
 # recomputes derived tiers, sends due price notices, runs free-tier nudges, steps
