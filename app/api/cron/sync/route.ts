@@ -13,6 +13,7 @@ import type { NotifStrings } from '@/lib/notif-i18n'
 import { reconcilePhysicalStock } from '@/lib/marketplace/physical-stock'
 import { refreshUzumStock, refreshYandexStock } from '@/lib/marketplace/stock-refresh'
 import { notifyManualStockUpdates } from '@/lib/marketplace/manual-stock-notify'
+import { notifyCancelRestore } from '@/lib/marketplace/cancel-restore-alert'
 import { logger } from '@/lib/logger'
 import { computeEffectivePlan } from '@/lib/billing/features'
 
@@ -217,6 +218,16 @@ export const GET = withErrorHandler(async (req: Request) => {
       if ((mpByUser.get(uid)?.size ?? 0) < 2) continue
       await notifyManualStockUpdates(uid)   // internally best-effort; never throws
     }
+  }
+
+  // ── Read-only "restore your listing after cancel" alerts ──
+  // For read-only sellers: a cancelled order whose listing the marketplace did
+  // NOT restore. Per user, best-effort, never writes to a marketplace. GATED OFF
+  // by default (CANCEL_RESTORE_ALERT_ENABLED) — the call returns immediately when
+  // disabled, so this is free until the pool feedback-loop is fixed and it's
+  // switched on. See lib/marketplace/cancel-restore-alert.ts.
+  for (const uid of userIds) {
+    await notifyCancelRestore(uid)
   }
 
   // ── Real-time "new order to fulfill" Telegram alerts ──

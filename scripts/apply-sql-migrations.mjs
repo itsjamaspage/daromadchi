@@ -145,6 +145,8 @@ const MIGRATIONS = [
   // Snapshot of physical_stock at first reserving observation — the listing
   // restore target for the read-only cancellation alert. Additive + idempotent.
   'migrations/migrations/087_orders_reserved_stock_snapshot.sql',
+  // At-most-once marker for the read-only cancel-restore alert. Additive + idempotent.
+  'migrations/migrations/088_orders_restore_alert_sent_at.sql',
 ]
 
 function loadDatabaseUrl() {

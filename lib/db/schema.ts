@@ -313,6 +313,10 @@ export const orders = pgTable('orders', {
   //   still the right column to snapshot, but the alert (Part 2) MUST stay disabled
   //   until that pool feedback-loop is fixed, or it will name a corrupted target.
   reserved_stock_snapshot: integer('reserved_stock_snapshot'),
+  // At-most-once marker for the read-only "restore your listing" cancellation
+  // alert (Part 2). Set when we tell the seller a cancelled order's listing did
+  // not come back. NULL = not told; survives restarts and re-syncs. Migration 088.
+  restore_alert_sent_at: timestamp('restore_alert_sent_at', { withTimezone: true }),
 }, (t) => [
   index('orders_shop_id_idx').on(t.shop_id),
   index('orders_ordered_at_idx').on(t.ordered_at),
