@@ -300,6 +300,14 @@ export const orders = pgTable('orders', {
   // Dedup marker for the cancellation notice, migration 084 — same role
   // alert_sent_at plays for the new-order alert. NULL = not told yet.
   cancel_alert_sent_at: timestamp('cancel_alert_sent_at', { withTimezone: true }),
+  // The on-hand pool (products.physical_stock) captured the FIRST time this order
+  // was seen in a RESERVING_RAW_STATUS. On accept, the marketplace decrements the
+  // listing but physical_stock (the true pool) does not move, so this is the value
+  // the listing should be RESTORED to if the seller later cancels. Feeds the
+  // read-only "the listing didn't come back" cancellation alert. Write-once; NULL
+  // for orders never seen reserving, multi-marketplace edge cases with no known
+  // product, or orders synced before this column existed (no backfill). Migration 087.
+  reserved_stock_snapshot: integer('reserved_stock_snapshot'),
 }, (t) => [
   index('orders_shop_id_idx').on(t.shop_id),
   index('orders_ordered_at_idx').on(t.ordered_at),

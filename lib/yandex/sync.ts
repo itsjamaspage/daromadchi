@@ -12,6 +12,7 @@ import {
   YandexApiError,
 } from './client'
 import { resolveColor } from '@/lib/products/resolveColor'
+import { RESERVING_RAW_STATUSES } from '@/lib/marketplace/stock-allocation'
 import { ORDER_STATUS_LOOKBACK_DAYS } from '@/lib/marketplace/reserved-display'
 import { isYandexFulfillmentRequired, isYandexSellerFulfilled } from '@/lib/marketplace/fulfillment-statuses'
 import { selectCancellationAlerts } from '@/lib/marketplace/cancellation-alert'
@@ -631,6 +632,8 @@ async function syncFromYandexLocked(
         alert_sent_at: orders.alert_sent_at,
         // Same, for the cancellation notice.
         cancel_alert_sent_at: orders.cancel_alert_sent_at,
+        // Write-once guard for the reserving-time physical_stock snapshot below.
+        reserved_stock_snapshot: orders.reserved_stock_snapshot,
       })
         .from(orders).where(and(eq(orders.shop_id, shopId), inArray(orders.order_id_external, extIds)))
       const existingOrderMap = new Map(existingOrders.map(o => [o.order_id_external, o.id]))
@@ -658,12 +661,36 @@ async function syncFromYandexLocked(
       // with a human-readable product name (colour lives in the title on
       // per-colour listings, in the SKU stem on variant listings).
       const itemsByExtId = new Map<string, Array<{ name: string; sku: string; qty: number }>>()
+      const offerIds = new Set<string>()
       for (const o of withDates) {
-        itemsByExtId.set(String(o.o.id), (o.o.items ?? []).map(it => ({
+        const items = (o.o.items ?? []).map(it => ({
           name: it.offerName ?? '',
           sku:  it.offerId ?? '',
           qty:  it.count ?? 1,
-        })))
+        }))
+        itemsByExtId.set(String(o.o.id), items)
+        for (const it of items) if (it.sku) offerIds.add(it.sku)
+      }
+
+      // offerId (== products.sku on Yandex) → physical_stock, for the reserving-
+      // time snapshot (the listing restore target). A product whose sku isn't the
+      // offerId (the shopSku-empty edge, see issue #310) simply won't match and
+      // the snapshot stays NULL — no alert rather than a wrong number.
+      const physBySku = new Map<string, number | null>()
+      if (offerIds.size > 0) {
+        const physRows = await db.select({ sku: products.sku, physical_stock: products.physical_stock })
+          .from(products).where(and(eq(products.shop_id, shopId), inArray(products.sku, [...offerIds])))
+        for (const p of physRows) if (p.sku) physBySku.set(p.sku, p.physical_stock)
+      }
+
+      // physical_stock to snapshot the FIRST time an order is reserving — the
+      // primary (first) item's pool. NULL when not reserving / product unknown /
+      // no physical_stock. Multi-item orders snapshot the primary item only.
+      const reservingSnapshot = (extId: string, mpStatus: string | null): number | null => {
+        if (!mpStatus || !(RESERVING_RAW_STATUSES as readonly string[]).includes(mpStatus)) return null
+        const primary = (itemsByExtId.get(extId) ?? [])[0]
+        if (!primary?.sku) return null
+        return physBySku.get(primary.sku) ?? null
       }
 
       // ── New-order alert gate ────────────────────────────────────────────
@@ -772,6 +799,9 @@ async function syncFromYandexLocked(
             fulfillment_type: r.fulfillment_type,
             alert_sent_at: alertedExtIds.has(r.order_id_external) ? alertStampedAt : null,
             cancel_alert_sent_at: cancelledExtIds.has(r.order_id_external) ? alertStampedAt : null,
+            // Snapshot the restore target the first time the order is reserving
+            // (NULL otherwise, incl. an order first seen already cancelled).
+            reserved_stock_snapshot: reservingSnapshot(r.order_id_external, r.marketplace_status),
           // See the matching note in lib/uzum/sync.ts: (shop_id,
           // order_id_external) is unique as of migration 071, and this
           // select-then-insert is not atomic. A concurrent inserter wins; this
@@ -779,7 +809,16 @@ async function syncFromYandexLocked(
           }))).onConflictDoNothing()
         }
       }
+      const existingSnapMap = new Map(
+        existingOrders.filter(o => o.order_id_external != null)
+          .map(o => [o.order_id_external as string, o.reserved_stock_snapshot]),
+      )
       for (const r of toUpdate) {
+        // WRITE-ONCE: snapshot only if none stored yet AND the order is reserving
+        // now (its first reserving transition on a later tick).
+        const snap = existingSnapMap.get(r.order_id_external) == null
+          ? reservingSnapshot(r.order_id_external, r.marketplace_status)
+          : null
         // money-guard-ok: this refresh cannot write a fee that needs classifying.
         // Yandex's marketplace_fee is settlement-sourced and set to null above
         // (line 591), so r.marketplace_fee is always null here — and lib/money
@@ -800,6 +839,7 @@ async function syncFromYandexLocked(
           // announced even if its status moves on.
           ...(alertedExtIds.has(r.order_id_external) ? { alert_sent_at: alertStampedAt } : {}),
           ...(cancelledExtIds.has(r.order_id_external) ? { cancel_alert_sent_at: alertStampedAt } : {}),
+          ...(snap != null ? { reserved_stock_snapshot: snap } : {}),
         }).where(eq(orders.id, existingOrderMap.get(r.order_id_external)!))
       }
       ordersOk = true

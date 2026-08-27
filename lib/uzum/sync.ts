@@ -3,6 +3,7 @@ import { db, shops, products, orders, orderItems, syncDays } from '@/lib/db'
 import { clearShopData } from '@/lib/db/clear-shop-data'
 import { uzumStockQuantity } from './stock-reading'
 import { selectCancellationAlerts } from '@/lib/marketplace/cancellation-alert'
+import { RESERVING_RAW_STATUSES } from '@/lib/marketplace/stock-allocation'
 import {
   fetchAllPages,
   fetchUzumOrders,
@@ -651,6 +652,8 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
         // order we announced from one we never mentioned, and fire only once.
         alert_sent_at: orders.alert_sent_at,
         cancel_alert_sent_at: orders.cancel_alert_sent_at,
+        // Write-once guard for the reserving-time physical_stock snapshot below.
+        reserved_stock_snapshot: orders.reserved_stock_snapshot,
       })
         .from(orders).where(and(eq(orders.shop_id, shopId), inArray(orders.order_id_external, extIds)))
       const existingOrdMap = new Map(existingOrds.map(o => [o.order_id_external, o.id]))
@@ -674,16 +677,34 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
         for (const it of items) skuIds.add(it.skuId)
       }
       let prodInfo = new Map<string, { title: string; sku: string | null }>()
+      // skuId (marketplace_product_id) → physical_stock, for the reserving-time
+      // snapshot. The order's items carry skuId; physical_stock is the true pool
+      // (the listing restore target), separate from the throttled stock_quantity.
+      const physByMpid = new Map<string, number | null>()
       if (skuIds.size > 0) {
         const prodRows = await db.select({
           mpid: products.marketplace_product_id,
           title: products.title,
           sku: products.sku,
+          physical_stock: products.physical_stock,
         }).from(products).where(and(
           eq(products.shop_id, shopId),
           inArray(products.marketplace_product_id, [...skuIds]),
         ))
         prodInfo = new Map(prodRows.map(p => [String(p.mpid), { title: p.title ?? '', sku: p.sku }]))
+        for (const p of prodRows) physByMpid.set(String(p.mpid), p.physical_stock)
+      }
+
+      // physical_stock to snapshot for an order the FIRST time it is reserving —
+      // the primary (first) item's pool. NULL when the order isn't reserving, has
+      // no known product yet, or has no physical_stock (can't determine the
+      // restore target). Multi-item orders snapshot the primary item only (single
+      // column) — see the PR note. Never overwrites an existing snapshot.
+      const reservingSnapshot = (extId: string, mpStatus: string | null): number | null => {
+        if (!mpStatus || !(RESERVING_RAW_STATUSES as readonly string[]).includes(mpStatus)) return null
+        const primary = (rawByExtId.get(extId) ?? [])[0]
+        if (!primary) return null
+        return physByMpid.get(primary.skuId) ?? null
       }
 
       // Which inserts were announced. Uzum alerts on insert only, and until now
@@ -733,6 +754,10 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
             ordered_at: r.ordered_at,
             alert_sent_at: alertedExtIds.has(r.order_id_external) ? alertStampedAt : null,
             cancel_alert_sent_at: cancelledExtIds.has(r.order_id_external) ? alertStampedAt : null,
+            // Snapshot the restore target the first time we see the order reserving
+            // (NULL otherwise). An order first seen already cancelled is not
+            // reserving, so it stays NULL and never alerts on cancel.
+            reserved_stock_snapshot: reservingSnapshot(r.order_id_external, r.marketplace_status),
           // Migration 071 makes (shop_id, order_id_external) unique. The
           // select-then-insert above is not atomic, so two concurrent syncs for
           // one shop can both decide to insert. Before 071 that silently
@@ -742,7 +767,17 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
           }))).onConflictDoNothing()
         }
       }
+      const existingSnapMap = new Map(
+        existingOrds.filter(o => o.order_id_external != null)
+          .map(o => [o.order_id_external as string, o.reserved_stock_snapshot]),
+      )
       for (const r of toUpdOrd) {
+        // WRITE-ONCE: snapshot only if none stored yet AND the order is reserving
+        // now (its first reserving transition on a later tick). A later status
+        // change never overwrites the original restore target.
+        const snap = existingSnapMap.get(r.order_id_external) == null
+          ? reservingSnapshot(r.order_id_external, r.marketplace_status)
+          : null
         await db.update(orders).set({
           fulfillment_type: r.fulfillment_type,
           status: r.status,
@@ -751,6 +786,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
           items_count: r.items_count,
           ordered_at: r.ordered_at,
           ...(cancelledExtIds.has(r.order_id_external) ? { cancel_alert_sent_at: alertStampedAt } : {}),
+          ...(snap != null ? { reserved_stock_snapshot: snap } : {}),
         }).where(eq(orders.id, existingOrdMap.get(r.order_id_external)!))
       }
     }

@@ -142,6 +142,9 @@ const MIGRATIONS = [
   'migrations/migrations/084_orders_cancel_alert_sent_at.sql',
   'migrations/migrations/085_notif_stock_manual.sql',
   'migrations/migrations/086_orders_fee_source.sql',
+  // Snapshot of physical_stock at first reserving observation — the listing
+  // restore target for the read-only cancellation alert. Additive + idempotent.
+  'migrations/migrations/087_orders_reserved_stock_snapshot.sql',
 ]
 
 function loadDatabaseUrl() {
