@@ -130,3 +130,71 @@ describe('marketplace egress guard — order-cancel intent (cancel-ONLY)', () =>
     assert.throws(() => checkMarketplaceRequest(YM_STOCKS, 'PUT', 'order-cancel'), /ORDER-CANCEL GUARD/)
   })
 })
+
+/**
+ * No raw fetch() may reach a marketplace host.
+ *
+ * AGENTS.md makes read-only the top constraint of this repository, and
+ * marketplaceFetch is what enforces it — but a plain `fetch()` is invisible to
+ * it. Three calls sat outside the guard: the Uzum and Yandex token checks in the
+ * sync routes, and Uzum's public catalogue lookup in the extension endpoint.
+ *
+ * All three were GETs, so nothing was ever violated. The gap was structural:
+ * nothing stopped a later edit adding `method: 'PUT'` to a call the guard could
+ * not see. "Every marketplace call is accounted for" is only worth saying if it
+ * is true of all of them.
+ */
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { join, relative } from 'node:path'
+
+const REPO = join(import.meta.dirname, '..')
+
+/** Hostnames that belong to a marketplace, in whatever form they appear. */
+const MARKETPLACE_HOSTS = [
+  'api-seller.uzum.uz',
+  'api.uzum.uz',
+  'api.partner.market.yandex.ru',
+  'UZUM_PUBLIC',        // the constant the extension route builds its URL from
+]
+
+function sourceFiles(dir: string, out: string[] = []): string[] {
+  for (const entry of readdirSync(dir)) {
+    if (['node_modules', '.next', '.git', 'dist', 'build', 'coverage', 'extension'].includes(entry)) continue
+    const full = join(dir, entry)
+    if (statSync(full).isDirectory()) sourceFiles(full, out)
+    else if (/\.(ts|tsx)$/.test(entry) && !/\.test\.tsx?$/.test(entry)) out.push(full)
+  }
+  return out
+}
+
+describe('the guard sees every marketplace call', () => {
+  it('no raw fetch() reaches a marketplace host', () => {
+    const offenders: string[] = []
+
+    for (const file of sourceFiles(REPO)) {
+      const rel = relative(REPO, file).replaceAll('\\', '/')
+      // The guard itself performs the only sanctioned fetch.
+      if (rel === 'lib/marketplace-readonly-guard.ts') continue
+      const src = readFileSync(file, 'utf8')
+      const code = src
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/(^|[^:])\/\/[^\n]*/g, '$1')
+
+      // `fetch(` not preceded by `marketplace` (marketplaceFetch) — then check
+      // whether the call's first argument names a marketplace host.
+      for (const m of code.matchAll(/(?<![A-Za-z])fetch\s*\(([^)]{0,200})/g)) {
+        const before = code.slice(Math.max(0, m.index - 20), m.index)
+        if (/marketplace$/i.test(before.trim())) continue     // marketplaceFetch(
+        const arg = m[1]
+        if (MARKETPLACE_HOSTS.some(h => arg.includes(h))) {
+          offenders.push(`${rel}:${code.slice(0, m.index).split('\n').length}`)
+        }
+      }
+    }
+
+    assert.deepEqual(offenders, [],
+      'route it through marketplaceFetch() — a raw fetch is invisible to the\n' +
+      'read-only guard, so nothing stops the next edit turning it into a write:\n\n' +
+      offenders.map(o => '  ' + o).join('\n') + '\n')
+  })
+})
