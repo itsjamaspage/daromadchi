@@ -8,9 +8,26 @@ by what would hurt a seller most.
 Scope: `app/` (194 files), `components/` (65), `lib/` (189), `scripts/` (16),
 `extension/` (8) — ~80k lines, at `46cfb78`.
 
+**Status — all six ranked findings are fixed and on `main`.** Findings 7–9 (the
+LOW ones) are open by choice, and finding 10 below is a bug the audit's own
+remediation introduced.
+
+| # | finding | status |
+|---|---|---|
+| 1 | estimated fees stored as reported | #372 |
+| 2 | CI ran no tests | #371 |
+| 3 | five suites failing | #371 — one (`test:gating`) still open, see below |
+| 4 | no sync concurrency control | #374 |
+| 5 | plaintext credentials fallback | #373 |
+| 6 | month-end overflow | #375 |
+| 7 | marketplace calls bypassing the guard | open (all reads today) |
+| 8 | per-row UPDATE loops | open |
+| 9 | silent failure surfaces | open by design |
+| 10 | deploy script quoting | #378 — **caused by finding 5's fix** |
+
 ---
 
-## 1. Estimated marketplace fees are stored as if they were reported — HIGH
+## 1. Estimated marketplace fees are stored as if they were reported — FIXED (#372)
 
 `lib/uzum/sync.ts:1191` derives a commission from the shop's balance and writes
 it into `orders.marketplace_fee`:
@@ -47,7 +64,7 @@ treating `derived` as `fee_not_reported`. Cheap, and it closes the loop.
 
 ---
 
-## 2. No test runs in CI — HIGH
+## 2. No test runs in CI — FIXED (#371)
 
 `.github/workflows/ci.yml` has four jobs: Lint, Type Check, Build, Health Check.
 `grep -n "test" .github/workflows/ci.yml` matches only `runs-on: ubuntu-latest`.
@@ -62,29 +79,47 @@ PR reintroducing `coalesce(cost_price, 0)` passes CI green. The `Known<T>` type
 
 This also explains finding 3.
 
-**Fix shape:** a `test` job running the suites that need no live credentials. It
-will be red until finding 3 is dealt with, so land them together.
+**Status: fixed.** A `Tests` job now runs on every push and PR — Postgres 16
+service, schema + migrations, 44 of 45 suites. The suite list is read out of
+`package.json` at run time rather than hardcoded, so a newly added suite is
+picked up automatically instead of being silently skipped.
+
+**Deliberately not in branch protection yet.** It runs and reports but cannot
+block a merge until someone adds "Tests" to the required checks. Nothing depends
+on it (`build`, `health-check`, `notify` untouched) and `deploy.yml` never waited
+on CI, so it cannot affect a deploy. Promote it once you have watched it pass.
 
 ---
 
-## 3. Five test suites have been failing on `main` — MEDIUM
+## 3. Five test suites failing on `main` — RESOLVED, except one
 
-Verified against a stashed clean tree, so none of these are from recent work:
+Diagnosed one by one. Four were environment or wiring, not broken behaviour —
+only `test:gating` is genuinely blocked, and by module layering rather than a
+failing assertion:
 
-| suite | failure |
-|---|---|
-| `test:seo` | `Could not find 'lib/seo/apex-redirect.test.ts'` — the script points at a file that does not exist |
-| `test:gating` | `This module cannot be imported from a Client Component module` — missing `--conditions=react-server` |
-| `test:price-notice` | 2 subtests fail |
-| `test:nudge` | `the trial reminder — the promise the help articles make` |
-| `test:admin` | `admin analytics — live metrics` |
+| suite | cause | status |
+|---|---|---|
+| `test:seo` | script pointed at `lib/seo/apex-redirect.test.ts`; the file was renamed to `canonical-host.test.ts` and the script never updated | **fixed** — one line |
+| `test:admin` | asserts GLOBAL totals over `payments`, so any other suite inserting a paid row inflates it. The query is right — admin analytics *is* global | **fixed** — own database in CI |
+| `test:nudge` | asserts "…and tells them on Telegram". `lib/telegram.ts:55` reads `TELEGRAM_BOT_TOKEN` at module load and returns `false` without it, so the test's own `fetch` mock is never reached | **fixed** — dummy token in CI env |
+| `test:price-notice` | same cause | **fixed** — same |
+| `test:gating` | `entitlement.ts` → `getCurrentUserId` → `shop-context` → `auth/session` → `auth/config` → `next-auth` → `next/navigation`. Outside Next's runtime that dies on `next/headers`, or under `--conditions=react-server` on React's server build having no `createContext`. `stock-sync` pulls the same chain | **open** |
 
-`test:seo` and `test:gating` look like mechanical breakage (a moved file, a
-missing flag). The other three assert real behaviour and need reading.
+**`test:gating` needs a refactor, not a test fix.** Billing rules should not
+depend on the auth stack. Only `currentUserAccess()` needs the session; the three
+functions the test exercises — `loadEntitlement`, `userHasFeature`,
+`everyActiveShopIsReadOnly` — already take an explicit `userId`. Moving
+`currentUserAccess` into its own module would let the suite run. Not bundled with
+the CI change: it touches call sites across the dashboard.
 
----
+**A latent break found while wiring CI:** `tsx` was never declared in
+`package.json`, despite all 45 test scripts invoking `node --import tsx`. It
+resolved only as a transitive dependency of `drizzle-kit`. A drizzle-kit bump
+that dropped it, or a change in npm hoisting, would have broken every test at
+once. Now an explicit devDependency pinned to 4.23.0 — the version already
+resolved, so nothing moves.
 
-## 4. Sync has no concurrency control — MEDIUM
+## 4. Sync has no concurrency control — FIXED (#374)
 
 `.github/workflows/deploy.yml:91-92` installs:
 
@@ -116,7 +151,7 @@ runner. The advisory lock is better — it also covers the manual button.
 
 ---
 
-## 5. `encrypt()` silently stores plaintext when the key is missing — MEDIUM
+## 5. `encrypt()` silently stores plaintext when the key is missing — FIXED (#373)
 
 `lib/crypto.ts:14`:
 
@@ -147,7 +182,7 @@ plus a deploy-time check like the `CRON_SECRET` one.
 
 ---
 
-## 6. `setMonth()` month-end overflow — MEDIUM (8 sites)
+## 6. `setMonth()` month-end overflow — FIXED (#375)
 
 JavaScript rolls an overflowing day forward, so `31 May` minus one month is
 `1 May`, not `1 April`. Demonstrated:
@@ -232,6 +267,36 @@ confident wrong number, that distinction is worth surfacing.
 
 ---
 
+## 10. The deploy script broke, and finding 5's fix is why — FIXED (#378)
+
+The `ENCRYPTION_KEY` check added for finding 5 carried an unbalanced quote:
+
+```bash
+tr -d '"'"'"'"'"'"'"'"'
+```
+
+Generated by escaping shell through another language and never run. The YAML is
+valid and the workflow lints, so it reached `main` and broke the next three
+deploys:
+
+```
+bash: line 79: unexpected EOF while looking for matching `"'
+```
+
+The failure lands AFTER migrations apply and AFTER pm2 restarts, at the
+"Installing cron schedule" step — so production kept receiving each deploy's
+code while the crontab silently went un-refreshed and the job reported red.
+
+Worth recording as a finding in its own right, because the lesson is not "check
+your quoting": `bash -n` over the workflow's `run:` blocks would ALSO have missed
+it. The deploy runs as `ssh … 'bash -s' <<'DEPLOY'`, and to the outer shell a
+quoted heredoc is one opaque string — only the remote bash ever reads the body.
+The guard (`scripts/workflow-syntax.test.ts`) therefore parses heredoc bodies as
+scripts in their own right, and was verified by restoring the broken line and
+confirming it reproduces the same message at the same line number.
+
+---
+
 ## What I checked and found clean
 
 Worth recording so the next audit does not redo it:
@@ -257,9 +322,22 @@ Worth recording so the next audit does not redo it:
 
 ## Suggested order
 
-1. **Finding 2 + 3 together** — get the guards actually running. Nothing else
-   stays fixed without this.
-2. **Finding 1** — it silently undoes the money work just shipped.
+1. ~~**Finding 2 + 3**~~ **Done** (#371). 46 of 47 suites now run in CI.
+2. ~~**Finding 1**~~ **Done** (#372).
+3. ~~**Finding 5**~~ **Done** (#373) — and see finding 10 for what that cost.
+4. ~~**Finding 4**~~ **Done** (#374).
+5. ~~**Finding 6**~~ **Done** (#375).
+
+**What is left**, smallest first:
+
+- **`test:gating`** — the one suite still excluded from CI. `entitlement.ts`
+  imports the auth stack via `getCurrentUserId`, and only `currentUserAccess()`
+  needs it; the three functions the test exercises already take an explicit
+  `userId`. Moving that one function out would let the suite run.
+- **Findings 7–9** — the LOW ones, all still open and all still low.
+- **CBC → GCM** for credential encryption. Deliberately deferred: it needs a
+  dual-format decrypt and a rollback plan, because a token written as GCM cannot
+  be read by the previous release.
 3. **Finding 5** — one boot-time check; the downside is plaintext credentials.
 4. **Finding 4** — an advisory lock keyed on `shop_id`.
 5. **Finding 6** — `addMonths()` plus a guardrail line.

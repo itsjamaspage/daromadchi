@@ -98,7 +98,7 @@ jobs:
       - name: Test suites
         run: |
           FAILED=""
-          for T in $(node -e "const s=require('./package.json').scripts;console.log(Object.keys(s).filter(k=>k.startsWith('test:')&&k!=='test:gating'&&k!=='test:admin').join(' '))"); do
+          for T in $(node -e "const s=require('./package.json').scripts;console.log(Object.keys(s).filter(k=>k.startsWith('test:')&&k!=='test:admin').join(' '))"); do
             echo "::group::$T"
             if npm run --silent "$T"; then echo "PASS $T"; else echo "FAIL $T"; FAILED="$FAILED $T"; fi
             echo "::endgroup::"
@@ -112,20 +112,6 @@ jobs:
         env:
           DATABASE_URL: postgres://daro:daro@localhost:5432/daro_admin
 
-      # test:gating is NOT run, and this is the honest reason rather than a
-      # silent omission: lib/billing/entitlement.ts imports getCurrentUserId from
-      # lib/db/shop-context, which reaches lib/auth/session -> lib/auth/config ->
-      # next-auth -> next/navigation. Outside Next's own runtime that chain dies
-      # either on next/headers ("cannot be imported from a Client Component") or,
-      # under --conditions=react-server, on React's server build having no
-      # createContext. lib/marketplace/stock-sync pulls the same chain.
-      #
-      # It is a module-layering problem, not a failing assertion: billing rules
-      # should not depend on the auth stack. Only currentUserAccess() needs the
-      # session, and loadEntitlement/userHasFeature/everyActiveShopIsReadOnly —
-      # the three the test actually exercises — already take an explicit userId.
-      # Moving currentUserAccess into its own module would let this run.
-      # Tracked in AUDIT.md.
 
   build:
     name: Build

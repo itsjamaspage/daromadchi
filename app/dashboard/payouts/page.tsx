@@ -4,7 +4,7 @@ import { getPayoutEntries } from '@/lib/db/payouts'
 import PayoutsView from '@/components/dashboard/PayoutsView'
 import { getT, getLang } from '@/lib/server-i18n'
 import { startOfIsoWeek, localDateStr, shopWeekBounds } from '@/lib/period-week'
-import { currentUserAccess } from '@/lib/billing/entitlement'
+import { currentUserAccess } from '@/lib/billing/current-user-access'
 import FeatureLock from '@/components/dashboard/FeatureLock'
 
 // This page DEFAULTS to the current week. There are no preset chips: the
