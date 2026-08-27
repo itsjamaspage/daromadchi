@@ -9,7 +9,7 @@ import Pagination from '@/components/dashboard/Pagination'
 import LastSyncedServer from '@/components/dashboard/LastSyncedServer'
 import { getT } from '@/lib/server-i18n'
 import DateRangePicker from '@/components/dashboard/DateRangePicker'
-import { startOfIsoWeek, endOfIsoWeek, localDateStr } from '@/lib/period-week'
+import { startOfIsoWeek, endOfIsoWeek, localDateStr, shopWeekBounds } from '@/lib/period-week'
 import type { MarketplaceType } from '@/lib/types'
 
 const PAGE_SIZE = 50
@@ -31,8 +31,9 @@ export default async function OrdersPage({ searchParams }: Props) {
   // — see lib/period-week.ts — so the two pages can never disagree about which
   // days "this week" means.
   const now = new Date()
-  const from = params.from || localDateStr(startOfIsoWeek(now))
-  const to   = params.to   || localDateStr(endOfIsoWeek(now))
+  const week = shopWeekBounds(now)
+  const from = params.from || week.from
+  const to   = params.to   || week.to
 
   const [t, { rows: orders, total }, userShops] = await Promise.all([
     getT(),

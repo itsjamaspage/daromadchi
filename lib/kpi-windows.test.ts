@@ -51,25 +51,37 @@ describe('a Mon–Sun week compares against the previous Mon–Sun week', () => 
 
 describe('the baseline is always the same length, immediately before', () => {
   it('a 30-day preset compares against the previous 30 days', () => {
-    const w = kpiWindows({ days: 30, now: new Date(2026, 7, 26, 14, 30) })
+    const w = kpiWindows({ days: 30, now: new Date('2026-08-26T09:30:00Z') })  // 14:30 Tashkent
     assert.equal(f(w.since), '2026-07-28 00:00:00')
     assert.equal(f(w.until), '2026-08-26 23:59:59')
     assert.equal(f(w.prevSince), '2026-06-28 00:00:00')
     assert.equal(f(w.prevUntil), '2026-07-27 23:59:59')
   })
 
-  it('anchors a preset to midnight, not to the time the page was opened', () => {
-    // Two visits on the same day must describe the same window, or the number
-    // moves for a reason the seller cannot see.
-    const morning = kpiWindows({ days: 7, now: new Date(2026, 7, 26, 6, 0) })
-    const evening = kpiWindows({ days: 7, now: new Date(2026, 7, 26, 23, 0) })
-    assert.deepEqual(f(morning.since), f(evening.since))
-    assert.deepEqual(f(morning.prevSince), f(evening.prevSince))
+  it('anchors a preset to the seller\'s midnight, not to the time of the visit', () => {
+    // Two visits on the same SELLER day must describe the same window, or the
+    // number moves for a reason nobody can see. Given as explicit instants
+    // rather than `new Date(y, m, d, h)`, which would mean the process's day —
+    // and in New York 23:00 is already the seller's tomorrow, which is exactly
+    // the confusion this module exists to remove.
+    const morning = kpiWindows({ days: 7, now: new Date('2026-08-26T00:00:00Z') })  // 05:00 Tashkent
+    const evening = kpiWindows({ days: 7, now: new Date('2026-08-26T18:00:00Z') })  // 23:00 Tashkent
+    assert.equal(f(morning.since), f(evening.since))
+    assert.equal(f(morning.prevSince), f(evening.prevSince))
+    assert.equal(f(morning.since), '2026-08-20 00:00:00')
+  })
+
+  it('DOES move to the next window once the seller\'s day rolls over', () => {
+    // The other half of the same contract: 19:00 UTC is Tashkent midnight.
+    const before = kpiWindows({ days: 7, now: new Date('2026-08-26T18:59:59Z') })
+    const after  = kpiWindows({ days: 7, now: new Date('2026-08-26T19:00:00Z') })
+    assert.equal(f(before.until), '2026-08-26 23:59:59')
+    assert.equal(f(after.until),  '2026-08-27 23:59:59')
   })
 
   it('never lets the boundary instant fall in both windows', () => {
     // The old preset branch set prevUntil = since exactly.
-    const w = kpiWindows({ days: 7, now: new Date(2026, 7, 26, 9, 0) })
+    const w = kpiWindows({ days: 7, now: new Date('2026-08-26T04:00:00Z') })   // 09:00 Tashkent
     assert.ok(w.prevUntil!.getTime() < w.since!.getTime())
   })
 
