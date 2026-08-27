@@ -25,8 +25,8 @@ describe('toGroupOrders — RESERVING-anchored mapping', () => {
     assert.equal(ret.status, 'returned')
     assert.equal(ret.restockable, false)   // under-credit by design (undersell-safe)
   })
-  it('delivered → live (already committed, not re-counted elsewhere)', () => {
-    assert.equal(toGroupOrders([raw({ normalizedStatus: 'delivered', rawStatus: null })])[0].status, 'live')
+  it('delivered → delivered (live-CLOSED): kept, never re-consumed', () => {
+    assert.equal(toGroupOrders([raw({ normalizedStatus: 'delivered', rawStatus: null })])[0].status, 'delivered')
   })
 })
 

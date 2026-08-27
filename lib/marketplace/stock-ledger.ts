@@ -54,12 +54,20 @@ export function availableFromOnHand(onHand: number): number {
 
 /**
  * How an order maps onto the ledger:
- *   • live      — a real order competing for / consuming a unit
- *                 (pending | confirmed | delivered).
+ *   • live      — live-OPEN: reserving NOW (paid & committed, pre-delivery). It
+ *                 competes for a unit and CREATES a consume.
+ *   • delivered — live-CLOSED: the unit shipped and is gone. KEEP an existing
+ *                 consume, but NEVER create one. Splitting this out of `live` is
+ *                 the fix for the shadow's day-1 finding: an order first seen
+ *                 already delivered (shadow start, backfill, at seed) used to
+ *                 manufacture a debit-at-delivery, but Option A debits at
+ *                 PLACEMENT and a shipped unit's departure is already in physical /
+ *                 the seed baseline — so a first-seen-delivered order must record
+ *                 NOTHING.
  *   • cancelled — order cancelled; releases a unit it had consumed.
  *   • returned  — delivered unit came back; credits only if restockable.
  */
-export type OrderLedgerStatus = 'live' | 'cancelled' | 'returned'
+export type OrderLedgerStatus = 'live' | 'delivered' | 'cancelled' | 'returned'
 
 /**
  * Map one order (its RAW marketplace status + our normalized status) to its
@@ -74,13 +82,14 @@ export type OrderLedgerStatus = 'live' | 'cancelled' | 'returned'
  *
  *   • cancelled                       → 'cancelled' (release a consumed unit)
  *   • returned                        → 'returned'  (credit iff restockable)
- *   • delivered (customer collected)  → 'live'      — Option A debits at
- *                                        placement and the unit STAYS gone, so a
- *                                        delivered order is still consumed (its
- *                                        consume event was recorded while it was
- *                                        reserving; this keeps a first-seen-
- *                                        delivered order debited too).
- *   • raw status in RESERVING_RAW_STATUSES → 'live' (paid & committed)
+ *   • delivered (customer collected)  → 'delivered' — live-CLOSED: keep an
+ *                                        existing consume, but never CREATE one.
+ *                                        The unit is gone and already reflected in
+ *                                        physical / the seed, so a first-seen-
+ *                                        delivered order must not manufacture a
+ *                                        debit-at-delivery (Option A debits at
+ *                                        PLACEMENT, not at handover).
+ *   • raw status in RESERVING_RAW_STATUSES → 'live' (live-OPEN, paid & committed)
  *   • anything else (unpaid draft)    → null        (nothing to record)
  */
 export function orderLedgerStatus(
@@ -89,7 +98,7 @@ export function orderLedgerStatus(
 ): OrderLedgerStatus | null {
   if (normalizedStatus === 'cancelled') return 'cancelled'
   if (normalizedStatus === 'returned') return 'returned'
-  if (normalizedStatus === 'delivered') return 'live'
+  if (normalizedStatus === 'delivered') return 'delivered'
   if (rawStatus && (RESERVING_RAW_STATUSES as readonly string[]).includes(rawStatus)) return 'live'
   return null
 }
@@ -126,7 +135,10 @@ export function ledgerKey(reason: OrderDrivenReason, orderIdExternal: string): s
  * order) already in `recordedKeys` is never re-emitted, so a re-sync is a no-op.
  *
  * Rules (Option A — debit at placement):
- *   • live & not yet consumed                          → consume (−qty)
+ *   • live (OPEN) & not yet consumed                   → consume (−qty)
+ *   • delivered (live-CLOSED)                          → skip            [keep an existing
+ *                                                        consume; NEVER create one — a first-
+ *                                                        seen-delivered order records nothing]
  *   • cancelled & was consumed & not yet credited      → cancel  (+qty)  [release]
  *   • cancelled & never consumed                       → skip            [never competed]
  *   • returned & was consumed & restockable & not credited → return (+qty)
@@ -144,14 +156,20 @@ export function diffLedger(
   for (const o of orders) {
     const consumed = recordedKeys.has(ledgerKey('consume', o.orderIdExternal))
     if (o.status === 'live') {
+      // live-OPEN: create a consume the first time we see the order reserving.
       if (!consumed) {
         writes.push({ delta: -o.qty, reason: 'consume', orderIdExternal: o.orderIdExternal, marketplace: o.marketplace })
       }
+    } else if (o.status === 'delivered') {
+      // live-CLOSED: no-op. An existing consume (recorded while the order was
+      // reserving) stays untouched; a first-seen-delivered order records nothing —
+      // its departure is already in physical / the seed, so creating a consume here
+      // would be a debit-at-delivery (the shadow's day-1 phantom).
     } else if (o.status === 'cancelled') {
       if (consumed && !recordedKeys.has(ledgerKey('cancel', o.orderIdExternal))) {
         writes.push({ delta: o.qty, reason: 'cancel', orderIdExternal: o.orderIdExternal, marketplace: o.marketplace })
       }
-    } else { // returned
+    } else if (o.status === 'returned') {
       if (consumed && o.restockable && !recordedKeys.has(ledgerKey('return', o.orderIdExternal))) {
         writes.push({ delta: o.qty, reason: 'return', orderIdExternal: o.orderIdExternal, marketplace: o.marketplace })
       }
