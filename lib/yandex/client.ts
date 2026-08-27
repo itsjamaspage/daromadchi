@@ -222,6 +222,32 @@ export interface YandexModel {
 
 // ─── API calls ────────────────────────────────────────────────────────────────
 
+/**
+ * Units actually FREE TO SELL from a Yandex stocks array.
+ *
+ * Verified against the official spec (WarehouseStockType):
+ *   FIT    — «доступный для продажи ИЛИ УЖЕ ЗАРЕЗЕРВИРОВАН»  (available + reserved)
+ *   FREEZE — «зарезервирован для заказов»                     (reserved)
+ *
+ * We WRITE free-to-sell: UpdateStockItemDTO carries only `count`, documented as
+ * «Количество доступного товара», and has no type field at all. Reading FIT back
+ * therefore compared a written free-to-sell against an on-hand, which differ by
+ * exactly the reserve for as long as an order is open — so the diff could never
+ * close and the writer re-pushed the same value forever (#393).
+ *
+ * FIT − FREEZE rather than AVAILABLE: earlier work found AVAILABLE unreliable on
+ * these endpoints (it reflected campaign-level flags and showed phantom stock
+ * where YM's own UI said «Нет на складе»). This keeps to the field that was
+ * trusted and subtracts the reserve explicitly. With no FREEZE entry the result
+ * is identical to the previous behaviour.
+ */
+export function yandexSellableStock(stocks: { type?: string; count?: number }[] | undefined): number {
+  const list = stocks ?? []
+  const fit = list.find(s => s?.type === 'FIT')?.count ?? 0
+  const freeze = list.find(s => s?.type === 'FREEZE')?.count ?? 0
+  return Math.max(0, fit - freeze)
+}
+
 export async function fetchCampaigns(token: string): Promise<YandexCampaign[]> {
   return withRetry(async () => {
     const data = await request<{ campaigns: YandexCampaign[] }>('/v2/campaigns', token)
@@ -397,9 +423,7 @@ export async function fetchAllYandexCampaignOffers(
         // (they reflect campaign-level flags or reserved/frozen units), so
         // falling through to them makes daromadchi show phantom stock when
         // YM's UI correctly shows "Нет на складе".
-        const list = o.stocks ?? []
-        const fit = list.find(s => s?.type === 'FIT')
-        const qty = fit?.count ?? 0
+        const qty = yandexSellableStock(o.stocks)
         stocks.set(key, qty)
         if (o.marketSku) stocks.set(String(o.marketSku), qty)
       }
@@ -646,11 +670,7 @@ export async function fetchAllYandexStocks(
         // campaign-flag units that YM does NOT treat as sellable inventory,
         // so falling through to them causes daromadchi to show phantom
         // stock when YM says "Нет на складе".
-        const countStocks = (stocks: { type?: string; count?: number }[] | undefined): number => {
-          if (!stocks || stocks.length === 0) return 0
-          const fit = stocks.find(s => s?.type === 'FIT')
-          return fit?.count ?? 0
-        }
+        const countStocks = yandexSellableStock
         // Older response shape: result.skus[]
         for (const item of res.result.skus ?? []) {
           const key = item.sku ?? item.offerId ?? ''
@@ -721,10 +741,7 @@ export async function fetchYandexStockLocations(
     if (whs.length > 0) fallbackWarehouse = whs[0].id
   } catch { /* best-effort */ }
 
-  const countFit = (stocks: { type?: string; count?: number }[] | undefined): number => {
-    const fit = (stocks ?? []).find(s => s?.type === 'FIT')
-    return fit?.count ?? 0
-  }
+  const countFit = yandexSellableStock
 
   try {
     let pageToken: string | undefined
