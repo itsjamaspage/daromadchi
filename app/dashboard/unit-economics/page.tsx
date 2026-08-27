@@ -1,5 +1,5 @@
 import { getT, getLang } from '@/lib/server-i18n'
-import { currentUserAccess } from '@/lib/billing/entitlement'
+import { currentUserAccess } from '@/lib/billing/current-user-access'
 import FeatureLock from '@/components/dashboard/FeatureLock'
 import { Download, ArrowRight } from 'lucide-react'
 import UnitEconomicsTable from '@/components/dashboard/UnitEconomicsTable'
