@@ -10,7 +10,7 @@ import AnalyticsProductTable from '@/components/dashboard/AnalyticsProductTable'
 import { effective } from '@/lib/products/effective-values'
 import PeriodSelector from './PeriodSelector'
 import { getT, getLang } from '@/lib/server-i18n'
-import { currentUserAccess } from '@/lib/billing/entitlement'
+import { currentUserAccess } from '@/lib/billing/current-user-access'
 import FeatureLock from '@/components/dashboard/FeatureLock'
 import type { MarketplaceType } from '@/lib/types'
 

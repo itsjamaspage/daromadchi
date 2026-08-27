@@ -13,7 +13,7 @@ import ExportButton from '@/components/dashboard/ExportButton'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
 import CalendarPicker from '@/components/dashboard/CalendarPicker'
 import { getT, getLang } from '@/lib/server-i18n'
-import { currentUserAccess } from '@/lib/billing/entitlement'
+import { currentUserAccess } from '@/lib/billing/current-user-access'
 import FeatureLock from '@/components/dashboard/FeatureLock'
 import type { MarketplaceType } from '@/lib/types'
 
