@@ -14,6 +14,7 @@ import { reconcilePhysicalStock } from '@/lib/marketplace/physical-stock'
 import { refreshUzumStock, refreshYandexStock } from '@/lib/marketplace/stock-refresh'
 import { notifyManualStockUpdates } from '@/lib/marketplace/manual-stock-notify'
 import { notifyCancelRestore } from '@/lib/marketplace/cancel-restore-alert'
+import { runLedgerShadow, LEDGER_SHADOW_ENABLED } from '@/lib/marketplace/ledger-shadow'
 import { logger } from '@/lib/logger'
 import { computeEffectivePlan } from '@/lib/billing/features'
 
@@ -330,6 +331,24 @@ export const GET = withErrorHandler(async (req: Request) => {
     // finance/orders both refresh here, so blow away the shared tag
     // Dashboard / P&L / Payouts all subscribe to.
     revalidateTag('settlements', { expire: 0 })
+  }
+
+  // ── Ledger SHADOW evaluator (increment 2) ──
+  // LOG-ONLY, gated OFF (LEDGER_SHADOW_ENABLED). Computes what the event ledger
+  // would say and logs it per row beside the legacy pool. Never feeds on_hand into
+  // computeAvailable, never writes to a marketplace. A no-op unless the flag is on,
+  // so it is free until a human flips it to begin a shadow period. Best-effort —
+  // runLedgerShadow swallows its own errors so it can never disturb the sync.
+  if (LEDGER_SHADOW_ENABLED) {
+    const shopsByUser = new Map<string, string[]>()
+    for (const s of allShops) {
+      const list = shopsByUser.get(s.user_id) ?? []
+      list.push(s.id)
+      shopsByUser.set(s.user_id, list)
+    }
+    for (const uid of userIds) {
+      await runLedgerShadow(uid, shopsByUser.get(uid) ?? [])
+    }
   }
 
   return NextResponse.json({ ok: true, synced: results.length, heavy: heavyCount, stockRefreshed: stockCount, results })

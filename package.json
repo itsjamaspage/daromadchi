@@ -12,7 +12,7 @@
     "products:suggest": "tsx scripts/suggest-product-groups.ts",
     "test:workflows": "node --import tsx --test scripts/workflow-syntax.test.ts",
     "test:guard": "node --import tsx --test lib/marketplace-readonly-guard.test.ts",
-    "test:stock": "node --import tsx --test lib/marketplace-readonly-guard.test.ts lib/marketplace/stock-allocation.test.ts lib/marketplace/manual-stock-notify.test.ts lib/marketplace/cancel-restore-pure.test.ts lib/marketplace/stock-ledger.test.ts lib/db/stock-groups-pool.test.ts && node --import tsx --test lib/marketplace/manual-stock-notify.guardrail.test.ts",
+    "test:stock": "node --import tsx --test lib/marketplace-readonly-guard.test.ts lib/marketplace/stock-allocation.test.ts lib/marketplace/manual-stock-notify.test.ts lib/marketplace/cancel-restore-pure.test.ts lib/marketplace/stock-ledger.test.ts lib/db/stock-groups-pool.test.ts lib/marketplace/ledger-shadow-pure.test.ts && node --import tsx --test lib/marketplace/manual-stock-notify.guardrail.test.ts",
     "test:integration": "node --import tsx --test lib/marketplace/stock-writer.integration.test.ts",
     "test:seo": "node --import tsx --test lib/seo/canonical-host.test.ts",
     "test:atmos": "node --import tsx --test lib/billing/atmos-verify.test.ts",
