@@ -1,0 +1,53 @@
+name: Sync Watchdog
+
+# The OUTSIDE half of the watchdog. cron-runner.sh already checks freshness from
+# the box every 15 minutes and alerts on Telegram — but it cannot report a box
+# that is off, a crontab that was not installed, or a cron daemon that died. This
+# runs somewhere else entirely, so those failures have a witness too.
+#
+# Deliberately hourly rather than every 15 minutes: the box-local check is the
+# fast one, this is the backstop, and two watchdogs on the same cadence would
+# double every alert.
+on:
+  schedule:
+    - cron: '25 * * * *'
+  workflow_dispatch:
+
+# Never let two runs overlap into duplicate alerts.
+concurrency:
+  group: sync-watchdog
+  cancel-in-progress: true
+
+jobs:
+  freshness:
+    name: Has the sync run recently?
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe /api/health/freshness
+        id: probe
+        run: |
+          # 200 = fresh. 503 = stale, and the body says how stale. Anything else
+          # (000 included) means we could not ask, which is itself a failure — an
+          # unreachable app is exactly the outage this exists to catch.
+          BODY=$(curl -s -m 20 -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            "https://www.daromadchi.uz/api/health/freshness" || true)
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" -m 20 -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            "https://www.daromadchi.uz/api/health/freshness" || echo "000")
+          echo "http=$CODE"
+          echo "body=$BODY"
+          {
+            echo "code=$CODE"
+            echo "body<<BODY_EOF"
+            echo "$BODY"
+            echo "BODY_EOF"
+          } >> "$GITHUB_OUTPUT"
+          [ "$CODE" = "200" ] || exit 1
+
+      - name: Tell the operators
+        if: failure()
+        continue-on-error: true
+        run: |
+          MSG="SYNC WATCHDOG (external): the app is not reporting a recent sync.%0Ahttp=${{ steps.probe.outputs.code }}%0A${{ steps.probe.outputs.body }}%0A${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -sS -o /dev/null --max-time 15 \
+            "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=${MSG}" \
+            || echo "Telegram notify failed"

@@ -148,6 +148,10 @@ jobs:
           ( crontab -l 2>/dev/null | grep -v 'daromadchi/cron-runner.sh' || true
             echo '*/5 * * * * /var/www/daromadchi/cron-runner.sh sync >> $HOME/daromadchi-cron.log 2>&1'
             echo '*/5 * * * * /var/www/daromadchi/cron-runner.sh stock-sync >> $HOME/daromadchi-cron.log 2>&1'
+            # Freshness watchdog every 15 min — the same cadence as the stock
+            # refresh it measures. Alerts from the BOX, so it still speaks when
+            # the app is the thing that is down.
+            echo '*/15 * * * * /var/www/daromadchi/cron-runner.sh freshness >> $HOME/daromadchi-cron.log 2>&1'
             echo '5 * * * * /var/www/daromadchi/cron-runner.sh telegram-digest >> $HOME/daromadchi-cron.log 2>&1'
             # Daily: downgrade lapsed paid plans to free.
             echo '15 3 * * * /var/www/daromadchi/cron-runner.sh expire-plans >> $HOME/daromadchi-cron.log 2>&1'

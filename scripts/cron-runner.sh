@@ -45,6 +45,7 @@ TIMEOUT="${DAROMADCHI_CRON_TIMEOUT:-600}"
 JOBS="
 sync|/api/cron/sync
 stock-sync|/api/cron/stock-sync
+freshness|/api/health/freshness
 telegram-digest|/api/cron/telegram-digest
 billing-renew|/api/cron/billing-renew
 expire-plans|/api/billing/expire-plans
@@ -114,5 +115,46 @@ printf '%s %s rc=%s http=%s %ss %s\n' \
 
 if [ "$CURL_RC" -ne 0 ] || [ "$HTTP_CODE" != "200" ]; then
   echo "$(stamp) $JOB FAILED rc=$CURL_RC http=$HTTP_CODE" >&2
+
+  # The freshness job is the watchdog, so its failure is the one nobody can
+  # afford to discover by looking. It alerts from the BOX, not from the app:
+  # on 27 Aug the app itself was the thing that was down, and anything running
+  # inside it could not have said so. curl failing outright (rc!=0) is as much a
+  # signal as a 503 — an unreachable endpoint IS the outage.
+  #
+  # Rate-limited to one message an hour. A watchdog that fires every 15 minutes
+  # through a long outage gets muted, and a muted watchdog is no watchdog.
+  if [ "$JOB" = "freshness" ]; then
+    STAMP_FILE="$LOG_DIR/.freshness-alerted"
+    LAST=0; [ -f "$STAMP_FILE" ] && LAST=$(cat "$STAMP_FILE" 2>/dev/null || echo 0)
+    NOW_S=$(date +%s)
+    if [ $((NOW_S - LAST)) -ge "${FRESHNESS_ALERT_EVERY:-3600}" ]; then
+      echo "$NOW_S" > "$STAMP_FILE"
+      BOT="${TELEGRAM_BOT_TOKEN:-}"
+      CHATS="${TELEGRAM_ADMIN_CHAT_ID:-}"
+      if [ -z "$BOT" ] && [ -f "$APP_DIR/.env.production.local" ]; then
+        BOT=$(grep -m1 '^TELEGRAM_BOT_TOKEN=' "$APP_DIR/.env.production.local" | cut -d= -f2- | tr -d '"'"'"' \r')
+        CHATS=$(grep -m1 '^TELEGRAM_ADMIN_CHAT_ID=' "$APP_DIR/.env.production.local" | cut -d= -f2- | tr -d '"'"'"' \r')
+      fi
+      if [ -n "$BOT" ] && [ -n "$CHATS" ]; then
+        MSG="SYNC WATCHDOG: no sync has completed recently (rc=$CURL_RC http=$HTTP_CODE). $(printf '%s' "$BODY" | head -c 300)"
+        echo "$CHATS" | tr ',' '\n' | while read -r CHAT; do
+          [ -n "$CHAT" ] || continue
+          curl -sS -o /dev/null --max-time 10 \
+            --data-urlencode "chat_id=$CHAT" --data-urlencode "text=$MSG" \
+            "https://api.telegram.org/bot$BOT/sendMessage" >/dev/null 2>&1 || true
+        done
+      else
+        echo "$(stamp) freshness CANNOT ALERT: TELEGRAM_BOT_TOKEN or TELEGRAM_ADMIN_CHAT_ID unset" >> "$LOG_FILE"
+      fi
+    else
+      echo "$(stamp) freshness alert suppressed ($((NOW_S - LAST))s since last)" >> "$LOG_FILE"
+    fi
+  fi
+
   exit 1
 fi
+
+# A recovered watchdog clears the stamp so the NEXT outage alerts immediately
+# rather than waiting out the rate limit from the previous one.
+if [ "$JOB" = "freshness" ]; then rm -f "$LOG_DIR/.freshness-alerted"; fi
