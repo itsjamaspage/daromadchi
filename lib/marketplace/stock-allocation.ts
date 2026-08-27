@@ -123,28 +123,40 @@ export interface StockPlan {
  * every open order anywhere draws from that pool.
  */
 export function computeAvailable(members: SyncMember[], onHand?: number | null): number {
-  // LEDGER MODE (Option A): when the group has an authoritative on-hand from the
-  // event-sourced stock_ledger, that number already nets out every placed order
-  // (debit at placement), so free-to-sell is just it, clamped — NO cross-listing
-  // MAX, and NO pending re-subtraction (the reservation IS the debit). This is
-  // the real fix: the old path below could never decrement, because a sale only
-  // moved one marketplace's listing and MAX re-propagated the stale peer. `onHand`
-  // is null/undefined for groups not yet seeded onto the ledger; those fall
-  // through to the legacy listing-derived path unchanged.
-  if (onHand != null) return Math.max(0, onHand)
+  // Free-to-sell is the raw pool math, clamped at 0. The UNCLAMPED value is the
+  // single source of truth for BOTH free-to-sell AND oversell detection (below N
+  // < 0 = the same physical unit committed more than once) — keeping them on one
+  // computation is what stops the two from ever disagreeing about the pool.
+  return Math.max(0, rawGroupAvailable(members, onHand))
+}
+
+/**
+ * UNCLAMPED shared free-to-sell: MAX(physical pool) − SUM(pending). A NEGATIVE
+ * result means more units are on open orders than physically exist — an oversell.
+ * `computeAvailable` clamps this at 0; the oversell detector reads it raw.
+ *
+ * POOL = physical_stock (real on-hand), NOT stock_quantity (the THROTTLED / mirror
+ * listing). This is the whole point: on a normal last-unit sale the listing is
+ * driven to 0 on every marketplace (the sale + the mirror), while the same order
+ * is still counted in `pending`. Measuring the pool off the listing would then
+ * read 0 − 1 = −1 and cry "oversell" on a perfectly good sale — the false alarm
+ * this function exists to prevent. physical_stock holds the true unit, so a real
+ * last-unit sale reads 1 − 1 = 0 (no oversell) and a genuine double-sell reads
+ * 1 − 2 = −1 (oversell). Falls back to listedStock only to SEED a member whose
+ * physical_stock is still NULL.
+ */
+export function rawGroupAvailable(members: SyncMember[], onHand?: number | null): number {
+  // LEDGER MODE (Option A): an authoritative on-hand already nets out every placed
+  // order (the reservation IS the debit) — no cross-listing MAX, no pending
+  // re-subtraction. It can go negative (an oversell in ledger terms), so return it
+  // raw. null/undefined → fall through to the listing-derived path unchanged.
+  if (onHand != null) return onHand
 
   if (members.length === 0) return 0
-  // POOL = physical_stock (real on-hand inventory), NOT stock_quantity (the
-  // THROTTLED outbound listing). Reading the throttled listing back as the pool
-  // is exactly what ratcheted available 2→1→0: each cycle re-subtracted the open
-  // reserve from an already-throttled number. physical_stock is never written by
-  // our mirror writes, so it holds the true pool. Fall back to listedStock only
-  // to SEED a member whose physical_stock is still NULL (product sync populates
-  // it on the next seller-originated read).
   const poolOf = (m: SyncMember) => Math.max(0, m.physicalStock ?? m.listedStock)
   const maxStock = Math.max(0, ...members.map(poolOf))
   const pending = members.reduce((s, m) => s + Math.max(0, m.pending), 0)
-  return Math.max(0, maxStock - pending)
+  return maxStock - pending
 }
 
 /**
