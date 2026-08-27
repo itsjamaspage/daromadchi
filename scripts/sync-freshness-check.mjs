@@ -134,10 +134,11 @@ async function main() {
 
   const client = new pg.Client({ connectionString })
   let row
+  let driftRows = []
   try {
     await client.connect()
-    // One round-trip: active-shop count, freshest successful stock read, and the
-    // newest recorded stock write (context only).
+    // active-shop count, freshest successful stock read, and the newest recorded
+    // stock write (context only).
     const q = await client.query(`
       SELECT
         (SELECT count(*) FROM shops
@@ -147,6 +148,38 @@ async function main() {
         (SELECT max(created_at) FROM stock_write_log WHERE status = 'sent')          AS newest_write
     `)
     row = q.rows[0]
+
+    // ── Per-row physical_stock drift ────────────────────────────────────────
+    // A cross-marketplace SKU group shares ONE physical pool, so every member's
+    // physical_stock should agree. When one row sits BELOW its group's max, that
+    // row's pool has been corrupted (e.g. JMBLK uzum stuck at 1 vs yandex 2 after
+    // an Aug-26 cancellation the reconcile mis-adopted). The Stocks UI takes the
+    // MAX, so it shows the healthy number and this rot is invisible to the seller
+    // — hence a watchdog is the only place it surfaces.
+    //
+    // The MAX is scoped to the SAME owner's shops (user_id), because a "group" is
+    // one seller's same-SKU listings; a global MAX would false-flag two sellers
+    // who happen to share a SKU.
+    //
+    // ⚠️ INCOMPLETE BY CONSTRUCTION. This catches disagreement BETWEEN a group's
+    // members only. When EVERY row in a group drifts DOWN together (as KBWHT did,
+    // 2→1→0 on both marketplaces), they still agree, group max moves with them,
+    // and this sees nothing. It is a floor, not full coverage; only the event
+    // ledger closes the whole-group case.
+    const d = await client.query(`
+      SELECT s.marketplace, p.sku, p.stock_quantity, p.physical_stock,
+             (SELECT max(p2.physical_stock)
+                FROM products p2 JOIN shops s2 ON s2.id = p2.shop_id
+               WHERE s2.user_id = s.user_id AND p2.sku = p.sku) AS group_max
+        FROM products p JOIN shops s ON s.id = p.shop_id
+       WHERE s.api_mode = 'stock_sync'
+         AND p.physical_stock IS NOT NULL
+         AND p.physical_stock < (SELECT max(p2.physical_stock)
+                                   FROM products p2 JOIN shops s2 ON s2.id = p2.shop_id
+                                  WHERE s2.user_id = s.user_id AND p2.sku = p.sku)
+       ORDER BY p.sku, s.marketplace
+    `)
+    driftRows = d.rows
   } catch (e) {
     logLine(`FATAL database unreachable: ${String(e).slice(0, 300)}`)
     try { await client.end() } catch { /* ignore */ }
@@ -159,15 +192,31 @@ async function main() {
   const freshestMs = row.freshest_sync ? new Date(row.freshest_sync).getTime() : null
   const newestWriteMs = row.newest_write ? new Date(row.newest_write).getTime() : null
 
-  const { status, ageMs } = classifyFreshness({ activeShops, freshestMs, nowMs, thresholdMs: STALE_MS })
+  // Prior state is nested { freshness, drift }. Older flat state (pre-drift) reads
+  // as {} for both → one harmless re-alert on the first run after upgrade.
   const prev = readState()
-  const { notify, nextState } = decideNotification({ prev, currStatus: status, nowMs, reAlertMs: REALERT_MS })
-  writeState(nextState)
+
+  // ── Check 1: sync freshness ──────────────────────────────────────────────
+  const { status, ageMs } = classifyFreshness({ activeShops, freshestMs, nowMs, thresholdMs: STALE_MS })
+  const fresh = decideNotification({ prev: prev.freshness ?? {}, currStatus: status, nowMs, reAlertMs: REALERT_MS })
+
+  // ── Check 2: per-row physical_stock drift (same rate-limit + channels) ────
+  const driftCount = driftRows.length
+  const driftStatus = driftCount > 0 ? STATUS.STALE : STATUS.OK
+  const drift = decideNotification({ prev: prev.drift ?? {}, currStatus: driftStatus, nowMs, reAlertMs: REALERT_MS })
+
+  writeState({ freshness: fresh.nextState, drift: drift.nextState })
 
   const writeAge = newestWriteMs == null ? 'none' : fmtAge(nowMs - newestWriteMs)
-  logLine(`status=${status} activeShops=${activeShops} freshestSync=${fmtAge(ageMs)} newestWrite=${writeAge}${notify ? ` notify=${notify}` : ''}`)
+  const driftEx = driftRows.slice(0, 5)
+    .map(r => `${r.sku}/${r.marketplace} ${r.physical_stock}<${r.group_max}`).join(', ')
+  logLine(
+    `status=${status} activeShops=${activeShops} freshestSync=${fmtAge(ageMs)} newestWrite=${writeAge}` +
+    ` drift=${driftCount}${driftCount > 0 ? ` [${driftEx}]` : ''}` +
+    `${fresh.notify ? ` notifyFresh=${fresh.notify}` : ''}${drift.notify ? ` notifyDrift=${drift.notify}` : ''}`
+  )
 
-  if (notify === 'alert') {
+  if (fresh.notify === 'alert') {
     const detail = status === STATUS.STALE && ageMs == null
       ? 'no successful sync is on record for any active shop'
       : `the freshest successful stock read is ${fmtAge(ageMs)} old`
@@ -175,8 +224,18 @@ async function main() {
       `⚠️ Daromadchi sync is STALLED.\n${detail} (threshold ${STALE_MS / 60000}m).\n` +
       `${activeShops} active shop(s). Check PM2 and the cron log — the process can be "online" while no sync completes.`
     )
-  } else if (notify === 'recovery') {
+  } else if (fresh.notify === 'recovery') {
     await sendTelegram(`✅ Daromadchi sync recovered. Freshest stock read is now ${fmtAge(ageMs)} old.`)
+  }
+
+  if (drift.notify === 'alert') {
+    await sendTelegram(
+      `⚠️ Daromadchi stock DRIFT: ${driftCount} listing(s) below their group's on-hand.\n` +
+      `${driftEx}\nA shared-pool row is corrupted low (a lost unit). Catches BETWEEN-marketplace ` +
+      `disagreement only — a whole group drifting down together is invisible here.`
+    )
+  } else if (drift.notify === 'recovery') {
+    await sendTelegram(`✅ Daromadchi stock drift cleared — all listings agree with their group's on-hand.`)
   }
 }
 
