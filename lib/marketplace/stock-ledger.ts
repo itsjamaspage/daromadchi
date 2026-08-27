@@ -1,4 +1,5 @@
 import type { MarketplaceType } from '@/lib/types'
+import { RESERVING_RAW_STATUSES } from '@/lib/marketplace/stock-allocation'
 
 /**
  * Event-sourced on-hand ledger for the FBS shared pool.
@@ -59,6 +60,39 @@ export function availableFromOnHand(onHand: number): number {
  *   • returned  — delivered unit came back; credits only if restockable.
  */
 export type OrderLedgerStatus = 'live' | 'cancelled' | 'returned'
+
+/**
+ * Map one order (its RAW marketplace status + our normalized status) to its
+ * ledger meaning, or `null` for an order that touches nothing.
+ *
+ * `live` is anchored to the SAME paid-and-committed gate as reserve-at-payment
+ * (RESERVING_RAW_STATUSES), NOT the coarse normalized `pending`. This is the
+ * consistency requirement: an UNPAID draft (Uzum CREATED, Yandex
+ * UNPAID/PLACING/RESERVED — none in the reserving set, normalized `pending`)
+ * returns `null` and never debits the pool, so the phantom-stockout that
+ * reserve-at-payment (#347) fixed cannot come back through the ledger.
+ *
+ *   • cancelled                       → 'cancelled' (release a consumed unit)
+ *   • returned                        → 'returned'  (credit iff restockable)
+ *   • delivered (customer collected)  → 'live'      — Option A debits at
+ *                                        placement and the unit STAYS gone, so a
+ *                                        delivered order is still consumed (its
+ *                                        consume event was recorded while it was
+ *                                        reserving; this keeps a first-seen-
+ *                                        delivered order debited too).
+ *   • raw status in RESERVING_RAW_STATUSES → 'live' (paid & committed)
+ *   • anything else (unpaid draft)    → null        (nothing to record)
+ */
+export function orderLedgerStatus(
+  rawStatus: string | null,
+  normalizedStatus: string,
+): OrderLedgerStatus | null {
+  if (normalizedStatus === 'cancelled') return 'cancelled'
+  if (normalizedStatus === 'returned') return 'returned'
+  if (normalizedStatus === 'delivered') return 'live'
+  if (rawStatus && (RESERVING_RAW_STATUSES as readonly string[]).includes(rawStatus)) return 'live'
+  return null
+}
 
 export interface GroupOrder {
   orderIdExternal: string
