@@ -10,7 +10,8 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
-import { encrypt, decrypt, isEncrypted, encryptionStatus } from './crypto'
+import { encrypt, decrypt, isEncrypted, isLegacyEncryption, encryptionStatus } from './crypto'
+import { createCipheriv, randomBytes as rnd } from 'node:crypto'
 
 const GOOD_KEY = randomBytes(32).toString('base64')
 
@@ -39,14 +40,28 @@ const setEnv = (key: string | undefined, nodeEnv: string) => {
 }
 
 describe('a round trip, with a good key', () => {
-  it('encrypts to the enc: format and decrypts back', () => {
+  it('encrypts to the gcm: format and decrypts back', () => {
     setEnv(GOOD_KEY, 'production')
     const secret = 'uzum-api-token-abc123'
     const enc = encrypt(secret)
-    assert.ok(enc.startsWith('enc:'), 'tagged so isEncrypted can recognise it')
+    assert.ok(enc.startsWith('gcm:'), 'tagged so isEncrypted can recognise it')
+    assert.equal(enc.split(':').length, 4, 'prefix, iv, tag, ciphertext')
     assert.ok(!enc.includes(secret), 'and the plaintext is not sitting in it')
     assert.equal(isEncrypted(enc), true)
+    assert.equal(isLegacyEncryption(enc), false)
     assert.equal(decrypt(enc), secret)
+  })
+
+  it('round-trips a value with colons in it, which the format is full of', () => {
+    setEnv(GOOD_KEY, 'production')
+    const secret = 'Bearer:abc:def::ghi'
+    assert.equal(decrypt(encrypt(secret)), secret)
+  })
+
+  it('round-trips non-ASCII, since shop names and notes reach this too', () => {
+    setEnv(GOOD_KEY, 'production')
+    const secret = 'токен-калит-🔐'
+    assert.equal(decrypt(encrypt(secret)), secret)
   })
 
   it('uses a fresh IV, so the same secret does not encrypt to the same bytes', () => {
@@ -109,6 +124,77 @@ describe('decrypt', () => {
     const enc = encrypt('secret')
     setEnv(undefined, 'production')
     assert.throws(() => decrypt(enc), /ENCRYPTION_KEY is required/)
+  })
+})
+
+// Every credential in the database today is CBC, and nothing rewrites those
+// rows on its own — they change format only when a seller next saves that
+// credential. If this suite ever goes green with the legacy branch removed,
+// every seller is locked out of their own shop.
+function legacyCbc(plaintext: string, keyB64: string): string {
+  const key = Buffer.from(keyB64, 'base64')
+  const iv  = rnd(16)
+  const c   = createCipheriv('aes-256-cbc', key, iv)
+  const out = Buffer.concat([c.update(plaintext, 'utf8'), c.final()])
+  return `enc:${iv.toString('hex')}:${out.toString('hex')}`
+}
+
+describe('rows written by the old CBC code stay readable', () => {
+  it('decrypts a legacy enc: value with the same key', () => {
+    setEnv(GOOD_KEY, 'production')
+    const old = legacyCbc('uzum-token-written-in-2025', GOOD_KEY)
+    assert.equal(decrypt(old), 'uzum-token-written-in-2025')
+  })
+
+  it('recognises it as encrypted, and as the older cipher', () => {
+    setEnv(GOOD_KEY, 'production')
+    const old = legacyCbc('x', GOOD_KEY)
+    assert.equal(isEncrypted(old), true)
+    assert.equal(isLegacyEncryption(old), true)
+  })
+
+  it('re-encrypting a legacy value moves it to GCM', () => {
+    setEnv(GOOD_KEY, 'production')
+    const old = legacyCbc('rotate-me', GOOD_KEY)
+    const now = encrypt(decrypt(old))
+    assert.ok(now.startsWith('gcm:'))
+    assert.equal(isLegacyEncryption(now), false)
+    assert.equal(decrypt(now), 'rotate-me')
+  })
+})
+
+// The reason for the move. CBC decrypts an edited ciphertext without
+// complaining, so a row rewritten in the database becomes a string this app
+// then sends to a marketplace as a credential. GCM's tag makes that a throw.
+describe('a tampered ciphertext is refused, not decrypted', () => {
+  it('rejects a flipped byte in the ciphertext', () => {
+    setEnv(GOOD_KEY, 'production')
+    const parts = encrypt('uzum-api-token-abc123').split(':')
+    const ct = Buffer.from(parts[3], 'hex')
+    ct[0] ^= 0xff
+    parts[3] = ct.toString('hex')
+    assert.throws(() => decrypt(parts.join(':')))
+  })
+
+  it('rejects a substituted auth tag', () => {
+    setEnv(GOOD_KEY, 'production')
+    const parts = encrypt('uzum-api-token-abc123').split(':')
+    parts[2] = rnd(16).toString('hex')
+    assert.throws(() => decrypt(parts.join(':')))
+  })
+
+  it('rejects a tag of the wrong length rather than guessing', () => {
+    setEnv(GOOD_KEY, 'production')
+    const parts = encrypt('secret').split(':')
+    parts[2] = rnd(8).toString('hex')
+    assert.throws(() => decrypt(parts.join(':')), /well-formed AES-GCM/)
+  })
+
+  it('rejects a ciphertext re-encrypted under a different key', () => {
+    setEnv(GOOD_KEY, 'production')
+    const enc = encrypt('secret')
+    setEnv(rnd(32).toString('base64'), 'production')
+    assert.throws(() => decrypt(enc))
   })
 })
 
