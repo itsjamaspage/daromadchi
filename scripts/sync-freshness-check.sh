@@ -32,4 +32,17 @@ if [ -z "${DATABASE_URL:-}" ]; then load_env "$APP_DIR/.env.production.local"; f
 if [ -z "${DATABASE_URL:-}" ]; then load_env "$APP_DIR/.env"; fi
 
 export DAROMADCHI_DIR
-exec node "$SCRIPT_DIR/sync-freshness-check.mjs"
+
+# One run per pass. cron was firing this ~3× within 30ms (a duplicated crontab
+# line), which would page in triplicate. flock -n lets exactly ONE instance hold
+# the lock; a concurrent duplicate can't acquire it. `-E 0` makes that clean skip
+# exit 0 (not an error mail), while a real failure from the node script still
+# passes through as its own non-zero. If flock isn't installed, fall back — the
+# script's own debounce still collapses a staggered repeat.
+LOCK="${DAROMADCHI_LOG_DIR:-$APP_DIR/logs}/.sync-freshness.lock"
+mkdir -p "$(dirname "$LOCK")" 2>/dev/null || true
+if command -v flock >/dev/null 2>&1; then
+  exec flock -n -E 0 "$LOCK" node "$SCRIPT_DIR/sync-freshness-check.mjs"
+else
+  exec node "$SCRIPT_DIR/sync-freshness-check.mjs"
+fi
