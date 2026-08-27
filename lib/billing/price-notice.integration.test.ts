@@ -25,6 +25,32 @@ const DAY = 24 * 60 * 60 * 1000
 const ago = (d: number) => new Date(Date.now() - d * DAY)
 const ahead = (d: number) => new Date(Date.now() + d * DAY)
 
+/**
+ * Stage a change effective EXACTLY PRICE_NOTICE_DAYS out, without racing the
+ * clock.
+ *
+ * stagePriceChange() rejects when `effectiveDate - now < PRICE_NOTICE_DAYS`,
+ * and it reads its own `now` unless given one. A test that computes
+ * `ahead(PRICE_NOTICE_DAYS)` and then calls it is therefore asking for a gap of
+ * exactly 14 days measured from two different instants: it passes only while
+ * both land in the same millisecond, and fails the moment a millisecond ticks
+ * over between the two statements. That is a coin flip decided by machine
+ * load — green on a quiet laptop, red on a busy CI runner, with nothing in the
+ * diff to explain it.
+ *
+ * Pinning one `now` and passing it to both sides keeps the assertion on the
+ * exact boundary, which is what these cases are for, while removing the race.
+ */
+function stageAtNoticeBoundary(subscriptionId: string) {
+  const now = new Date()
+  return stagePriceChange({
+    subscriptionId,
+    newAmountTiyin: NEW_PRICE,
+    effectiveDate: new Date(now.getTime() + PRICE_NOTICE_DAYS * DAY),
+    now,
+  })
+}
+
 const OLD_PRICE = 15_000_000   // 150 000 so'm
 const NEW_PRICE = 25_000_000   // 250 000 so'm
 
@@ -131,7 +157,7 @@ describe('the notice sweep', () => {
   it('sends and records delivery once the change is inside the window', async () => {
     telegramOk = true; sent = []
     const { subscriptionId } = await seed()
-    await stagePriceChange({ subscriptionId, newAmountTiyin: NEW_PRICE, effectiveDate: ahead(PRICE_NOTICE_DAYS) })
+    await stageAtNoticeBoundary(subscriptionId)
 
     const result = await dispatchDuePriceNotices()
     assert.ok(result.notified >= 1)
@@ -145,7 +171,7 @@ describe('the notice sweep', () => {
   it('records NOTHING when delivery fails — the price then never rises', async () => {
     telegramOk = false; sent = []
     const { subscriptionId } = await seed()
-    await stagePriceChange({ subscriptionId, newAmountTiyin: NEW_PRICE, effectiveDate: ahead(PRICE_NOTICE_DAYS) })
+    await stageAtNoticeBoundary(subscriptionId)
 
     const result = await dispatchDuePriceNotices()
     assert.ok(result.undeliverable >= 1)
@@ -159,7 +185,7 @@ describe('the notice sweep', () => {
   it('treats an unreachable seller as un-notified', async () => {
     telegramOk = true
     const { subscriptionId } = await seed({ telegram: false })
-    await stagePriceChange({ subscriptionId, newAmountTiyin: NEW_PRICE, effectiveDate: ahead(PRICE_NOTICE_DAYS) })
+    await stageAtNoticeBoundary(subscriptionId)
 
     await dispatchDuePriceNotices()
     assert.equal((await readSub(subscriptionId)).pending_notified_at, null)
@@ -168,7 +194,7 @@ describe('the notice sweep', () => {
   it('does not re-notify someone already told', async () => {
     telegramOk = true
     const { subscriptionId } = await seed()
-    await stagePriceChange({ subscriptionId, newAmountTiyin: NEW_PRICE, effectiveDate: ahead(PRICE_NOTICE_DAYS) })
+    await stageAtNoticeBoundary(subscriptionId)
     await dispatchDuePriceNotices()
     const first = (await readSub(subscriptionId)).pending_notified_at
 
@@ -243,7 +269,7 @@ describe('the seller can get out before the new price lands', () => {
   it('cancelling stops the increase from ever being charged', async () => {
     telegramOk = true
     const { userId, subscriptionId } = await seed()
-    await stagePriceChange({ subscriptionId, newAmountTiyin: NEW_PRICE, effectiveDate: ahead(PRICE_NOTICE_DAYS) })
+    await stageAtNoticeBoundary(subscriptionId)
     await dispatchDuePriceNotices()
 
     // Told, and they say no.
