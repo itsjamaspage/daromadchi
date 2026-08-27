@@ -3,7 +3,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  ledgerOnHand, availableFromOnHand, diffLedger, ledgerKey,
+  ledgerOnHand, availableFromOnHand, diffLedger, ledgerKey, orderLedgerStatus,
   type LedgerEvent, type GroupOrder, type PendingLedgerWrite,
 } from './stock-ledger'
 
@@ -93,5 +93,61 @@ describe('diffLedger — Option A (debit at placement)', () => {
     for (const w of diffLedger([returned('o1', true)], rec)) events.push({ delta: w.delta, reason: w.reason })
     assert.equal(ledgerOnHand(events), 2)
     assert.equal(availableFromOnHand(ledgerOnHand(events)), 2)
+  })
+})
+
+describe('orderLedgerStatus — live is anchored to RESERVING_RAW_STATUSES (flag #1)', () => {
+  it('paid & committed raw statuses are live (consume a unit)', () => {
+    // Uzum
+    for (const raw of ['PACKING', 'PENDING_DELIVERY', 'DELIVERING', 'ACCEPTED_AT_DP']) {
+      assert.equal(orderLedgerStatus(raw, 'pending'), 'live', raw)
+    }
+    // Yandex
+    for (const raw of ['PROCESSING', 'DELIVERY', 'PICKUP']) {
+      assert.equal(orderLedgerStatus(raw, 'confirmed'), 'live', raw)
+    }
+  })
+
+  it('UNPAID DRAFTS never debit the pool → null (the reserve-at-payment guarantee)', () => {
+    // Uzum freshly-placed / unpaid; Yandex pre-payment states. All normalize to
+    // 'pending', none are in the reserving set → nothing recorded.
+    for (const raw of ['CREATED', 'NEW', 'PENDING']) {
+      assert.equal(orderLedgerStatus(raw, 'pending'), null, raw)
+    }
+    for (const raw of ['UNPAID', 'PLACING', 'RESERVED']) {
+      assert.equal(orderLedgerStatus(raw, 'pending'), null, raw)
+    }
+  })
+
+  it('delivered (collected) stays live — Option A keeps the consumed unit debited', () => {
+    assert.equal(orderLedgerStatus('DELIVERED', 'delivered'), 'live')
+    assert.equal(orderLedgerStatus(null, 'delivered'), 'live')   // first-seen-delivered still debits
+  })
+
+  it('cancelled and returned map to their credit reasons', () => {
+    assert.equal(orderLedgerStatus('CANCELLED', 'cancelled'), 'cancelled')
+    assert.equal(orderLedgerStatus('RETURNED', 'returned'), 'returned')
+    // A cancel FROM a reserving state is still a cancel (credit back), not live.
+    assert.equal(orderLedgerStatus('PACKING', 'cancelled'), 'cancelled')
+  })
+
+  it('the mapping feeds diffLedger: a draft is dropped before it can consume', () => {
+    // Only orders with a non-null status become GroupOrders; a draft never does,
+    // so diffLedger never sees it and the pool is never debited by an unpaid order.
+    const raws = [
+      { raw: 'PACKING', norm: 'pending' },   // live
+      { raw: 'CREATED', norm: 'pending' },   // draft → dropped
+    ]
+    const groupOrders: GroupOrder[] = raws
+      .map((r, i) => {
+        const s = orderLedgerStatus(r.raw, r.norm)
+        return s ? { orderIdExternal: `o${i}`, marketplace: 'uzum' as const, qty: 1, status: s } : null
+      })
+      .filter((o): o is GroupOrder => o !== null)
+    assert.equal(groupOrders.length, 1)
+    const writes = diffLedger(groupOrders, new Set())
+    assert.equal(writes.length, 1)
+    assert.equal(writes[0].reason, 'consume')
+    assert.equal(writes[0].delta, -1)
   })
 })
