@@ -69,12 +69,6 @@ interface Member {
  * any failure is logged and swallowed so it can never disturb the sync that calls it.
  */
 export async function runLedgerShadow(userId: string, shopIds: string[]): Promise<void> {
-  // INSTRUMENTATION (diagnostic): unconditional, BEFORE any gate. Proves the entry
-  // point is reached and what the flag reads at runtime. Goes to the app's stdout
-  // → pm2 log (~/.pm2/logs/daromadchi-out-0.log) — NOT logs/cron-sync.log (that is
-  // cron-runner's capture of the HTTP response body) nor $HOME/daromadchi-cron.log
-  // (cron-runner's own stdout). Grep the pm2 out log for `ledger_shadow_reached`.
-  logger.info('ledger_shadow_reached', { userId, flag: ledgerShadowEnabled(), shops: shopIds.length })
   if (!ledgerShadowEnabled()) return
   if (shopIds.length === 0) return
   try {
