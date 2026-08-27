@@ -967,6 +967,11 @@ export const stockSyncState = pgTable('stock_sync_state', {
   last_available: integer('last_available'),
   last_target:    integer('last_target'),
   last_pushed_at: timestamp('last_pushed_at', { withTimezone: true }),
+  // Consecutive pushes of the SAME last_target that the listing never converged
+  // on. Reset to 0 whenever the target changes or the listing agrees. The write
+  // path stops re-pushing past NON_CONVERGENCE_LIMIT so a value the marketplace
+  // will not accept cannot burn the rate limit forever (migration 089).
+  repeat_count:   integer('repeat_count').default(0).notNull(),
   updated_at:     timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   uniqueIndex('stock_sync_state_shop_sku_unique').on(t.shop_id, t.sku),

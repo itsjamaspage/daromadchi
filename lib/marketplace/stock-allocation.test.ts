@@ -2,7 +2,7 @@
 // Run: node --import tsx --test lib/marketplace/stock-allocation.test.ts
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { computeAvailable, rawGroupAvailable, planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, physicalStockFromRead, shouldAdoptPhysicalStock, RESERVING_RAW_STATUSES, type SyncMember } from './stock-allocation'
+import { computeAvailable, rawGroupAvailable, planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, physicalStockFromRead, shouldAdoptPhysicalStock, decidePush, NON_CONVERGENCE_LIMIT, RESERVING_RAW_STATUSES, type SyncMember, type PlannedWrite, type PushHistory } from './stock-allocation'
 
 function member(over: Partial<SyncMember>): SyncMember {
   return {
@@ -487,5 +487,79 @@ describe('shouldAdoptPhysicalStock — reconcile stopgap (order-decrement aware)
     // Order cancelled → pending 0; marketplace bumps the listing back up → looks
     // like a restock and ratchets the pool UP.
     assert.equal(shouldAdoptPhysicalStock(2, 1, 0), true)
+  })
+})
+
+// ── Issue #393: PBGRY re-pushed the same value every 15–20 min ──────────────
+//
+// The only no-op check the write path had was `target !== listedStock`
+// (willWrite), and the group reassert bypasses it on purpose: any member with a
+// diff re-pushes EVERY member. stock_sync_state.last_target already recorded
+// what we sent and nothing read it, so nothing could tell a re-push that is
+// doing something from one that is repeating itself. PBGRY pushed 1 to both
+// marketplaces every 15–20 minutes for hours against a ~100k/day Uzum cap.
+describe('decidePush — a repeat is not a write', () => {
+  const plan = (target: number, listed: number): PlannedWrite => ({
+    member: {
+      productId: 'p', shopId: 's', marketplace: 'uzum', apiMode: 'stock_sync',
+      priority: 0, listedStock: listed, physicalStock: listed, pending: 0, sku: 'PBGRY',
+    },
+    target,
+    willWrite: target !== listed,
+  })
+
+  it('pushes a member with a real diff', () => {
+    const d = decidePush(plan(1, 0), { lastTarget: 1, repeatCount: 1 })
+    assert.equal(d.push, true)
+  })
+
+  it('skips the reassert sibling that already shows a value we sent', () => {
+    // THE BUG: listed === target, and we already pushed that target. This member
+    // is being re-pushed on another member's behalf and has nothing to say.
+    const d = decidePush(plan(1, 1), { lastTarget: 1, repeatCount: 3 })
+    assert.equal(d.push, false)
+    assert.equal(d.push === false && d.reason, 'already_at_target')
+  })
+
+  it('resets the run once the listing agrees', () => {
+    const d = decidePush(plan(1, 1), { lastTarget: 1, repeatCount: 4 })
+    assert.equal(d.push === false && d.repeatCount, 0)
+  })
+
+  it('still reasserts a member we have NOT sent this value to', () => {
+    // The stale-copy case the reassert exists for: our stock_quantity says 1 so
+    // there is no diff, but we have never actually pushed 1 to this listing.
+    const d = decidePush(plan(1, 1), { lastTarget: 0, repeatCount: 9 })
+    assert.equal(d.push, true)
+  })
+
+  it('pushes when there is no history at all', () => {
+    assert.equal(decidePush(plan(1, 1), undefined).push, true)
+  })
+
+  it('gives up on a value the listing never converges on', () => {
+    const d = decidePush(plan(1, 0), { lastTarget: 1, repeatCount: NON_CONVERGENCE_LIMIT })
+    assert.equal(d.push, false)
+    assert.equal(d.push === false && d.reason, 'not_converging')
+  })
+
+  it('counts the run, and a changed target starts a new one', () => {
+    assert.equal(decidePush(plan(1, 0), { lastTarget: 1, repeatCount: 2 }).repeatCount, 3)
+    assert.equal(decidePush(plan(2, 0), { lastTarget: 1, repeatCount: 4 }).repeatCount, 1)
+  })
+
+  it('PBGRY: the loop terminates instead of running forever', () => {
+    // Replay the reported symptom — target 1, listing never agrees — and count
+    // the marketplace calls. Before this guard the answer was "every cycle,
+    // forever"; 40 cycles is ~13 hours at the observed 20-minute cadence.
+    let history: PushHistory | undefined = undefined
+    let calls = 0
+    for (let cycle = 0; cycle < 40; cycle++) {
+      const d = decidePush(plan(1, 0), history)
+      if (d.push) calls++
+      history = { lastTarget: 1, repeatCount: d.repeatCount }
+    }
+    assert.equal(calls, NON_CONVERGENCE_LIMIT,
+      'a value that never lands must stop costing marketplace calls')
   })
 })

@@ -276,6 +276,74 @@ export function planStockWrites(members: SyncMember[], mode: OversellMode, onHan
 }
 
 /**
+ * How many times in a row we will re-push the SAME target to a listing that
+ * never converges on it before giving up and saying so.
+ *
+ * PBGRY re-pushed 1 to both marketplaces every 15-20 minutes for hours. At that
+ * cadence a limit of 5 stops the loop inside ~2 hours and logs, instead of
+ * spending ~144 marketplace calls a day per SKU pair against a ~100k/day Uzum
+ * cap. High enough that a genuinely transient disagreement still settles on its
+ * own; low enough that a stuck listing cannot fund itself indefinitely.
+ */
+export const NON_CONVERGENCE_LIMIT = 5
+
+/** What we last sent to ONE listing, from stock_sync_state. */
+export interface PushHistory {
+  /** The value last pushed to this (shop, sku), or null if never pushed. */
+  lastTarget: number | null
+  /** Consecutive pushes of lastTarget the listing never converged on. */
+  repeatCount: number
+}
+
+export type PushSkipReason = 'already_at_target' | 'not_converging'
+
+export type PushDecision =
+  | { push: true;  repeatCount: number }
+  | { push: false; reason: PushSkipReason; repeatCount: number }
+
+/**
+ * Whether this planned write should actually reach the marketplace.
+ *
+ * The ONLY no-op check the write path had was `target !== listedStock`
+ * (`willWrite`), and the group reassert bypasses it deliberately — any member
+ * with a diff re-pushes EVERY member. Nothing then asked the one question that
+ * matters for a repeat: have we already sent this exact value to this listing?
+ * stock_sync_state.last_target held the answer and was never read.
+ *
+ * Two independent skips:
+ *
+ *   already_at_target — the member shows the target AND we already pushed it.
+ *     This is the reassert's wasted sibling write: it is being re-pushed on
+ *     another member's behalf, and it has nothing to say. The reassert still
+ *     fires for a member we have NOT sent this value to, which is the
+ *     stale-copy case it exists for (our stock_quantity lagging a listing that
+ *     really does need re-raising).
+ *
+ *   not_converging — we have pushed this same value NON_CONVERGENCE_LIMIT times
+ *     and the listing still disagrees. The marketplace is not accepting the
+ *     write, or something outside us keeps undoing it. Retrying cannot fix
+ *     either, and a bare HTTP 200 does not prove a write landed — which is why
+ *     verifiedLivePush reads back. Stop, and let the caller log it.
+ *
+ * A member with a REAL diff still writes, so a legitimate correction is never
+ * suppressed until it has proved it cannot land.
+ */
+export function decidePush(plan: PlannedWrite, history?: PushHistory): PushDecision {
+  const same = history != null && history.lastTarget === plan.target
+  const repeats = same ? history.repeatCount : 0
+
+  if (same && repeats >= NON_CONVERGENCE_LIMIT) {
+    return { push: false, reason: 'not_converging', repeatCount: repeats }
+  }
+  if (!plan.willWrite && same) {
+    // The listing agrees with what we sent. Whatever made it diverge before is
+    // resolved, so the run of failed attempts is over — reset it.
+    return { push: false, reason: 'already_at_target', repeatCount: 0 }
+  }
+  return { push: true, repeatCount: repeats + 1 }
+}
+
+/**
  * Group-level REASSERT: the members to actually push this cycle.
  *
  * If ANY writable member has a real diff (willWrite), the whole group is
