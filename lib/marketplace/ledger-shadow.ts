@@ -34,8 +34,20 @@ import {
 import type { MarketplaceType } from '@/lib/types'
 import { logger } from '@/lib/logger'
 
-export const LEDGER_SHADOW_ENABLED =
-  process.env.LEDGER_SHADOW_ENABLED === 'true' || process.env.LEDGER_SHADOW_ENABLED === '1'
+/**
+ * Read the flag at RUNTIME, inside a function — never at module scope.
+ *
+ * A module-scope `const X = process.env.LEDGER_SHADOW_ENABLED === 'true'` is the
+ * bug that kept the evaluator dark: the bundler inlines `process.env.X`, and when
+ * X is absent at BUILD time it becomes `undefined`, folding `=== 'true'` to a
+ * compile-time `false` and dead-code-eliminating the whole call — so the flag can
+ * never turn on at runtime no matter what the process env says. Every other
+ * kill-switch in the app (cancel-restore, autorenew, lifecycle) reads inside a
+ * function for exactly this reason. Match them.
+ */
+export function ledgerShadowEnabled(): boolean {
+  return /^(1|true|on|yes)$/i.test((process.env.LEDGER_SHADOW_ENABLED ?? '').trim())
+}
 
 // Bound the order scan: a cancel/return only emits when its consume is already
 // recorded, and consumes are recorded while the order is recent, so a 90-day
@@ -57,7 +69,7 @@ interface Member {
  * any failure is logged and swallowed so it can never disturb the sync that calls it.
  */
 export async function runLedgerShadow(userId: string, shopIds: string[]): Promise<void> {
-  if (!LEDGER_SHADOW_ENABLED) return
+  if (!ledgerShadowEnabled()) return
   if (shopIds.length === 0) return
   try {
     const since = new Date(Date.now() - ORDER_WINDOW_DAYS * 24 * 60 * 60 * 1000)

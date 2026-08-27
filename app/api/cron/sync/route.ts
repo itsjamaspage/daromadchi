@@ -14,7 +14,7 @@ import { reconcilePhysicalStock } from '@/lib/marketplace/physical-stock'
 import { refreshUzumStock, refreshYandexStock } from '@/lib/marketplace/stock-refresh'
 import { notifyManualStockUpdates } from '@/lib/marketplace/manual-stock-notify'
 import { notifyCancelRestore } from '@/lib/marketplace/cancel-restore-alert'
-import { runLedgerShadow, LEDGER_SHADOW_ENABLED } from '@/lib/marketplace/ledger-shadow'
+import { runLedgerShadow, ledgerShadowEnabled } from '@/lib/marketplace/ledger-shadow'
 import { logger } from '@/lib/logger'
 import { computeEffectivePlan } from '@/lib/billing/features'
 
@@ -339,7 +339,7 @@ export const GET = withErrorHandler(async (req: Request) => {
   // computeAvailable, never writes to a marketplace. A no-op unless the flag is on,
   // so it is free until a human flips it to begin a shadow period. Best-effort —
   // runLedgerShadow swallows its own errors so it can never disturb the sync.
-  if (LEDGER_SHADOW_ENABLED) {
+  if (ledgerShadowEnabled()) {
     const shopsByUser = new Map<string, string[]>()
     for (const s of allShops) {
       const list = shopsByUser.get(s.user_id) ?? []
