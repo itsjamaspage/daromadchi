@@ -339,17 +339,26 @@ export const GET = withErrorHandler(async (req: Request) => {
   // computeAvailable, never writes to a marketplace. A no-op unless the flag is on,
   // so it is free until a human flips it to begin a shadow period. Best-effort —
   // runLedgerShadow swallows its own errors so it can never disturb the sync.
-  if (ledgerShadowEnabled()) {
-    const shopsByUser = new Map<string, string[]>()
-    for (const s of allShops) {
-      const list = shopsByUser.get(s.user_id) ?? []
-      list.push(s.id)
-      shopsByUser.set(s.user_id, list)
-    }
-    for (const uid of userIds) {
-      await runLedgerShadow(uid, shopsByUser.get(uid) ?? [])
-    }
+  // INSTRUMENTATION (diagnostic): reach the call site UNCONDITIONALLY and report it
+  // in the HTTP RESPONSE, which cron-runner captures into logs/cron-sync.log — the
+  // file being grepped. `ledgerShadow` sits right after `ok`, so it survives
+  // cron-runner's 900-char truncation. runLedgerShadow self-gates (and logs
+  // `ledger_shadow_reached` to pm2 stdout before its gate), so calling it always is
+  // safe: disabled → it returns immediately after that one log line.
+  //   • field absent      → this route isn't the running build (stale process)
+  //   • reached, flag=false→ call site runs but the flag reads false at runtime (env)
+  //   • reached, flag=true → it ran; the pass line is in the pm2 out log, and
+  //                          `SELECT count(*) FROM stock_ledger` shows consume rows
+  const ledgerShadowFlag = ledgerShadowEnabled()
+  const shopsByUser = new Map<string, string[]>()
+  for (const s of allShops) {
+    const list = shopsByUser.get(s.user_id) ?? []
+    list.push(s.id)
+    shopsByUser.set(s.user_id, list)
+  }
+  for (const uid of userIds) {
+    await runLedgerShadow(uid, shopsByUser.get(uid) ?? [])
   }
 
-  return NextResponse.json({ ok: true, synced: results.length, heavy: heavyCount, stockRefreshed: stockCount, results })
+  return NextResponse.json({ ok: true, ledgerShadow: { reached: true, flag: ledgerShadowFlag }, synced: results.length, heavy: heavyCount, stockRefreshed: stockCount, results })
 })
