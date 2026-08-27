@@ -72,29 +72,65 @@ jobs:
           # a plain restart, so without it this would take effect only on a
           # process the box happened to recreate.
           pm2 restart daromadchi --update-env
-          echo "Installing cron schedule..."
-          cat > /var/www/daromadchi/cron-runner.sh <<'EOS'
-          #!/bin/bash
-          # Hits Daromadchi cron endpoints on the local app. Installed by deploy.yml.
-          cd /var/www/daromadchi || exit 1
-          getvar() {
-            for f in .env.production.local .env.local .env .env.production; do
-              [ -f "$f" ] || continue
-              v=$(grep -m1 "^$1=" "$f" | cut -d= -f2- | sed "s/^[\"']//;s/[\"']$//")
-              [ -n "$v" ] && { echo "$v"; return; }
-            done
-          }
-          SECRET=$(getvar CRON_SECRET)
-          PORT=$(getvar PORT); PORT=${PORT:-3000}
-          case "$1" in
-            sync)            curl -sf -m 280 -H "x-cron-secret: $SECRET" "http://127.0.0.1:$PORT/api/cron/sync" ;;
-            stock-sync)      curl -sf -m 280 -H "x-cron-secret: $SECRET" "http://127.0.0.1:$PORT/api/cron/stock-sync" ;;
-            digest)          curl -sf -m 110 -H "Authorization: Bearer $SECRET" "http://127.0.0.1:$PORT/api/cron/telegram-digest" ;;
-            expire-plans)    curl -sf -m 60  -H "Authorization: Bearer $SECRET" "http://127.0.0.1:$PORT/api/billing/expire-plans" ;;
-            billing-renew)   curl -sf -m 280 -H "x-cron-secret: $SECRET" "http://127.0.0.1:$PORT/api/cron/billing-renew" ;;
-          esac
-          EOS
-          chmod +x /var/www/daromadchi/cron-runner.sh
+
+          # ── Post-deploy smoke check: ABORT if the build we just started is not
+          # actually serving. ───────────────────────────────────────────────────
+          #
+          # `pm2 restart` returns 0 when pm2 ACCEPTS the command, not when the app
+          # answers a request, and this script had nothing after it. On 27 Aug the
+          # deploy for #392 reported success at 14:23 while production was dead:
+          # .next referenced a Next internal missing from node_modules,
+          # instrumentation.js failed to load, and pm2 still reported "online".
+          # Nobody knew for 40 minutes.
+          #
+          # Two probes, because one is not enough:
+          #   /api/health  — must return the SHA WE JUST DEPLOYED. A 200 alone
+          #     proves nothing; an old process serving an old build also returns
+          #     200, which is the hole BUILD_SHA was added to close and which the
+          #     ci.yml health poll still leaves open by checking only the status.
+          #   /            — must render. The health route touches no filesystem
+          #     by design, so it can answer from a process whose .next is gutted.
+          #     Rendering a real page exercises the chunk loading that actually
+          #     broke.
+          #
+          # ABORT-ONLY: a failure fails the deploy and leaves the PREVIOUS build
+          # running, which is the safe state. No rollback is attempted.
+          echo "Verifying the running build..."
+          TARGET_SHA=$(git rev-parse HEAD)
+          SMOKE_PORT=$(grep -hm1 '^PORT=' .env.production.local .env.local .env .env.production 2>/dev/null | cut -d= -f2- | tr -d "\"'")
+          SMOKE_PORT=${SMOKE_PORT:-3000}
+          RUNNING=""
+          for i in $(seq 1 30); do
+            BODY=$(curl -s -m 5 "http://127.0.0.1:$SMOKE_PORT/api/health" 2>/dev/null || true)
+            RUNNING=$(printf %s "$BODY" | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p')
+            [ "$RUNNING" = "$TARGET_SHA" ] && break
+            sleep 3
+          done
+          if [ "$RUNNING" != "$TARGET_SHA" ]; then
+            echo "SMOKE FAIL: /api/health reports commit '${RUNNING:-<unreachable>}', deployed $TARGET_SHA"
+            echo "The previous build is still running. Investigate before retrying."
+            exit 1
+          fi
+          HOME_CODE=$(curl -s -o /dev/null -w "%{http_code}" -m 15 "http://127.0.0.1:$SMOKE_PORT/" 2>/dev/null || echo "000")
+          if [ "$HOME_CODE" != "200" ]; then
+            echo "SMOKE FAIL: the app answers /api/health but cannot render / (HTTP $HOME_CODE)."
+            echo "That is the signature of a broken .next served by a live process."
+            exit 1
+          fi
+          echo "Smoke check passed: serving $TARGET_SHA, / renders."
+          echo "Installing cron runner..."
+          # Install the TRACKED script. It has existed at scripts/cron-runner.sh
+          # since #249 ("put cron scheduling in version control") — and this
+          # deploy step has been overwriting it on every run with an inline
+          # heredoc copy, so the reviewed, version-controlled script was dead code
+          # and the box ran an inferior duplicate nobody could see in a diff.
+          #
+          # The duplicate is why the 27 Aug outage was silent. It used `curl -sf`,
+          # which exits non-zero with NO output on an HTTP error, and logged every
+          # job to one file. The tracked script uses `curl -sS`, captures the
+          # response body (so a 200-with-an-error-payload is visible), writes a
+          # per-job logfile with rc/http/elapsed, and exits non-zero loudly.
+          install -m 755 scripts/cron-runner.sh /var/www/daromadchi/cron-runner.sh
           if ! grep -q '^CRON_SECRET=' .env .env.local .env.production .env.production.local 2>/dev/null; then
             echo "WARNING: CRON_SECRET is not set in the server .env — scheduled sync will be rejected with 403 until it is added."
           fi
@@ -112,7 +148,7 @@ jobs:
           ( crontab -l 2>/dev/null | grep -v 'daromadchi/cron-runner.sh' || true
             echo '*/5 * * * * /var/www/daromadchi/cron-runner.sh sync >> $HOME/daromadchi-cron.log 2>&1'
             echo '*/5 * * * * /var/www/daromadchi/cron-runner.sh stock-sync >> $HOME/daromadchi-cron.log 2>&1'
-            echo '5 * * * * /var/www/daromadchi/cron-runner.sh digest >> $HOME/daromadchi-cron.log 2>&1'
+            echo '5 * * * * /var/www/daromadchi/cron-runner.sh telegram-digest >> $HOME/daromadchi-cron.log 2>&1'
             # Daily: downgrade lapsed paid plans to free.
             echo '15 3 * * * /var/www/daromadchi/cron-runner.sh expire-plans >> $HOME/daromadchi-cron.log 2>&1'
             # Hourly: auto-renew subscriptions (no-op until BILLING_AUTORENEW_ENABLED=1).

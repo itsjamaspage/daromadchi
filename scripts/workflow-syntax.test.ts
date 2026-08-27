@@ -144,3 +144,60 @@ test('every workflow run: block is valid shell', () => {
     `${checked} run: blocks checked, ${failures.length} do not parse:\n\n  ` +
     failures.join('\n\n  ') + '\n')
 })
+
+// The cron runner is deploy-installed shell that runs unattended in production
+// every five minutes. It has been tracked at scripts/cron-runner.sh since #249 —
+// and deploy.yml spent months OVERWRITING it with an inline heredoc duplicate, so
+// the reviewed script was dead code and the box ran a copy nobody could diff.
+//
+// That duplicate is why the 27 Aug outage was silent: it used `curl -sf`, which
+// exits non-zero with NO output on an HTTP error, so six failing cron ticks wrote
+// nothing but blank lines.
+test('the deploy-installed cron runner is valid shell', () => {
+  const runner = join(__dirname, 'cron-runner.sh')
+  assert.ok(existsSync(runner), 'scripts/cron-runner.sh should exist — deploy.yml installs it')
+  execFileSync('bash', ['-n', runner], { stdio: 'pipe' })
+
+  // Comments are stripped first: the file may legitimately DOCUMENT why -sf is
+  // wrong, and a check that reads its own explanation as a violation fails the
+  // very file that got it right.
+  const code = readFileSync(runner, 'utf8').split('\n').filter(l => !/^\s*#/.test(l)).join('\n')
+  assert.doesNotMatch(code, /curl\s+-sf\b/,
+    'curl -sf fails silently on an HTTP error — the cron log must record the status')
+})
+
+// The trap this exists for: the crontab said `digest`, the tracked script's job
+// is `telegram-digest`. Installing the script without fixing the schedule would
+// have turned the digest into "unknown job" and exit 2 — a job that silently
+// stops running, which is the exact failure class we are here to end.
+test('every job the crontab schedules exists in the cron runner', () => {
+  const deploy = readFileSync(join(WORKFLOWS, 'deploy.yml'), 'utf8')
+  // Horizontal whitespace only: `\s+` crosses newlines and would read the next
+  // line's first word as a job name.
+  const scheduled = [...deploy.matchAll(/cron-runner\.sh[^\S\n]+([a-z][a-z-]*)/g)].map(m => m[1])
+  assert.ok(scheduled.length >= 5, `expected the scheduled jobs, found ${scheduled.length}`)
+
+  const runner = readFileSync(join(__dirname, 'cron-runner.sh'), 'utf8')
+  const known = [...runner.matchAll(/^([a-z][a-z-]*)\|\//gm)].map(m => m[1])
+  assert.ok(known.length > 0, "could not parse the runner's JOBS table")
+
+  for (const job of new Set(scheduled)) {
+    assert.ok(known.includes(job),
+      `crontab schedules '${job}' but the runner only knows: ${known.join(', ')}`)
+  }
+})
+
+// deploy.yml must verify the build it just started. pm2 restart returns 0 when
+// pm2 ACCEPTS the command, not when the app serves a request: on 27 Aug the
+// deploy reported success while production had been dead for 40 minutes.
+test('the deploy verifies the build it started', () => {
+  const deploy = readFileSync(join(WORKFLOWS, 'deploy.yml'), 'utf8')
+  assert.match(deploy, /api\/health/, 'deploy must probe /api/health')
+  assert.match(deploy, /TARGET_SHA/,
+    'probing /api/health is not enough — it must compare the reported commit against the deployed SHA')
+  assert.match(deploy, /SMOKE FAIL/, 'a failed probe must abort the deploy')
+  const restartAt = deploy.indexOf('pm2 restart daromadchi')
+  const smokeAt = deploy.indexOf('Verifying the running build')
+  assert.ok(restartAt > 0 && smokeAt > restartAt,
+    'the smoke check must run AFTER the restart, or it verifies the old process')
+})
