@@ -201,3 +201,35 @@ test('the deploy verifies the build it started', () => {
   assert.ok(restartAt > 0 && smokeAt > restartAt,
     'the smoke check must run AFTER the restart, or it verifies the old process')
 })
+
+// scripts/crontab.example documents the schedule; deploy.yml installs a
+// SEPARATE inline crontab, and that inline list is what actually runs. They had
+// already drifted: #395 added the freshness watchdog to the example and not to
+// deploy.yml, so the work-liveness alarm built after the 27 Aug outage had never
+// once fired in production.
+//
+// Two sources of truth for the same schedule is the same defect as the two cron
+// runners. This pins them together.
+test('every job the example crontab documents is actually installed', () => {
+  const example = readFileSync(join(__dirname, 'crontab.example'), 'utf8')
+  const deploy = readFileSync(join(WORKFLOWS, 'deploy.yml'), 'utf8')
+
+  // The script each active (non-comment) schedule line invokes.
+  const invoked = (src: string) =>
+    new Set(
+      [...src.matchAll(/(?:^|['"\s])(?:\/var\/www\/daromadchi\/)([\w./-]+\.(?:sh|mjs))\s+([a-z][a-z-]*)?/gm)]
+        .map(m => `${m[1]}${m[2] ? ' ' + m[2] : ''}`),
+    )
+
+  const documented = invoked(
+    example.split('\n').filter(l => !/^\s*#/.test(l)).join('\n'),
+  )
+  const installed = invoked(deploy)
+
+  assert.ok(documented.size > 0, 'could not parse crontab.example — the check would pass vacuously')
+  for (const job of documented) {
+    assert.ok(installed.has(job),
+      `crontab.example documents "${job}" but deploy.yml never installs it — ` +
+      `the example is documentation, the deploy list is what runs`)
+  }
+})
