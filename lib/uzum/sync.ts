@@ -695,16 +695,17 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
         for (const p of prodRows) physByMpid.set(String(p.mpid), p.physical_stock)
       }
 
-      // physical_stock to snapshot for an order the FIRST time it is reserving —
-      // the primary (first) item's pool. NULL when the order isn't reserving, has
-      // no known product yet, or has no physical_stock (can't determine the
-      // restore target). Multi-item orders snapshot the primary item only (single
-      // column) — see the PR note. Never overwrites an existing snapshot.
+      // physical_stock to snapshot the FIRST time an order is reserving — the
+      // restore target for the read-only cancel alert. NULL (→ no alert) when the
+      // order isn't reserving, its product isn't known yet, or it has no
+      // physical_stock. FAIL-SAFE on multi-ITEM orders: a single column can hold
+      // only one restore target, so an order with more than one item stores NULL
+      // rather than name the wrong SKU's number. Never overwrites an existing snap.
       const reservingSnapshot = (extId: string, mpStatus: string | null): number | null => {
         if (!mpStatus || !(RESERVING_RAW_STATUSES as readonly string[]).includes(mpStatus)) return null
-        const primary = (rawByExtId.get(extId) ?? [])[0]
-        if (!primary) return null
-        return physByMpid.get(primary.skuId) ?? null
+        const items = rawByExtId.get(extId) ?? []
+        if (items.length !== 1) return null   // 0 = unknown, >1 = multi-item → silent
+        return physByMpid.get(items[0].skuId) ?? null
       }
 
       // Which inserts were announced. Uzum alerts on insert only, and until now

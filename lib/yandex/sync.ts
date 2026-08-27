@@ -684,13 +684,14 @@ async function syncFromYandexLocked(
       }
 
       // physical_stock to snapshot the FIRST time an order is reserving — the
-      // primary (first) item's pool. NULL when not reserving / product unknown /
-      // no physical_stock. Multi-item orders snapshot the primary item only.
+      // restore target. NULL (→ no alert) when not reserving / product unknown /
+      // no physical_stock. FAIL-SAFE: a multi-ITEM order stores NULL rather than
+      // name the wrong SKU's restore target (a single column holds only one).
       const reservingSnapshot = (extId: string, mpStatus: string | null): number | null => {
         if (!mpStatus || !(RESERVING_RAW_STATUSES as readonly string[]).includes(mpStatus)) return null
-        const primary = (itemsByExtId.get(extId) ?? [])[0]
-        if (!primary?.sku) return null
-        return physBySku.get(primary.sku) ?? null
+        const items = itemsByExtId.get(extId) ?? []
+        if (items.length !== 1 || !items[0].sku) return null   // 0/>1 items → silent
+        return physBySku.get(items[0].sku) ?? null
       }
 
       // ── New-order alert gate ────────────────────────────────────────────

@@ -301,12 +301,17 @@ export const orders = pgTable('orders', {
   // alert_sent_at plays for the new-order alert. NULL = not told yet.
   cancel_alert_sent_at: timestamp('cancel_alert_sent_at', { withTimezone: true }),
   // The on-hand pool (products.physical_stock) captured the FIRST time this order
-  // was seen in a RESERVING_RAW_STATUS. On accept, the marketplace decrements the
-  // listing but physical_stock (the true pool) does not move, so this is the value
-  // the listing should be RESTORED to if the seller later cancels. Feeds the
-  // read-only "the listing didn't come back" cancellation alert. Write-once; NULL
-  // for orders never seen reserving, multi-marketplace edge cases with no known
-  // product, or orders synced before this column existed (no backfill). Migration 087.
+  // was seen in a RESERVING_RAW_STATUS — the value the listing should be RESTORED
+  // to if the seller later cancels (the sale decrements the listing, not the
+  // shelf). Feeds the read-only "the listing didn't come back" cancellation alert.
+  // Write-once; NULL for orders never seen reserving, MULTI-ITEM orders (fail-safe:
+  // one column can't name the right SKU), orders with no known product, or rows
+  // synced before this column existed (no backfill). Migration 087.
+  //   ⚠️ physical_stock is NOT corruption-proof today: in stock_sync mode the
+  //   write→marketplace-decrement→reconcile loop can adopt an already-decremented
+  //   listing back as on-hand (verified on KBWHT: pool 2 → adopted to 1). This is
+  //   still the right column to snapshot, but the alert (Part 2) MUST stay disabled
+  //   until that pool feedback-loop is fixed, or it will name a corrupted target.
   reserved_stock_snapshot: integer('reserved_stock_snapshot'),
 }, (t) => [
   index('orders_shop_id_idx').on(t.shop_id),
