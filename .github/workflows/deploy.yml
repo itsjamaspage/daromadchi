@@ -145,7 +145,12 @@ jobs:
           elif [ "$(printf %s "$ENC_LINE" | base64 -d 2>/dev/null | wc -c)" != "32" ]; then
             echo "WARNING: ENCRYPTION_KEY is set but does not decode to 32 bytes — credential writes will fail. Generate one with: openssl rand -base64 32"
           fi
-          ( crontab -l 2>/dev/null | grep -v 'daromadchi/cron-runner.sh' || true
+          # Strip EVERY daromadchi-managed line before re-adding the canonical set,
+          # so a redeploy replaces rather than appends. The old filter matched only
+          # cron-runner.sh, so the watchdog line (sync-freshness-check.sh) was never
+          # removed and accumulated one copy per deploy — it reached 8 identical
+          # entries. Match both entrypoints.
+          ( crontab -l 2>/dev/null | grep -vE 'daromadchi/(cron-runner\.sh|scripts/sync-freshness-check\.sh)' || true
             echo '*/5 * * * * /var/www/daromadchi/cron-runner.sh sync >> $HOME/daromadchi-cron.log 2>&1'
             echo '*/5 * * * * /var/www/daromadchi/cron-runner.sh stock-sync >> $HOME/daromadchi-cron.log 2>&1'
             echo '5 * * * * /var/www/daromadchi/cron-runner.sh telegram-digest >> $HOME/daromadchi-cron.log 2>&1'
