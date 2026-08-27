@@ -434,6 +434,59 @@ Both are Part 2's design, not this one's.
 
 ---
 
+## 12.1 What the marketplaces actually want written — and what feeds the pool
+
+Two findings landed after this spec was drafted. Both change what Part 1 writes
+out, so they belong here rather than in the issue alone.
+
+### `available` is not one number to mirror
+
+Verified against the official Yandex OpenAPI spec
+(`github.com/yandex-market/yandex-market-partner-api`), not inferred:
+
+| direction | schema | meaning |
+|---|---|---|
+| write | `UpdateStockItemDTO` — `count` only, **no `type` field exists** | «Количество доступного товара» — *available* |
+| read | `WarehouseStockDTO` — `{type, count}`; we take `FIT` | «доступный для продажи **или уже зарезервирован**» — available **+ reserved** |
+
+`WarehouseStockType` defines `FIT = AVAILABLE + FREEZE`. So we write
+free-to-sell and read back free-to-sell PLUS the reserve, and the two differ by
+exactly the reserved count for as long as an order is open.
+
+**For the ledger this settles a design question.** The write side is
+symmetric after all — both marketplaces want free-to-sell, so
+`available = max(0, on_hand)` is the right thing to send to each. The asymmetry
+is on the READ side only. A ledger that stops reading listings for the pool
+(§2) is therefore not just cheaper to reason about; it is the thing that makes
+this class of bug impossible, because a mis-typed read can no longer become the
+pool.
+
+But §5's drift adoption DOES read listings, and it must read the same quantity
+it writes. **Drift adoption must compare against `AVAILABLE`, never `FIT`** —
+comparing a written free-to-sell against a read on-hand would see a permanent
+phantom rise of exactly the reserve, and §5 adopts rises. That is the
+oversell direction. This is a hard requirement on Part 1, not a nicety.
+
+### Optimistic writes feed the pool
+
+The batch path sets `stock_quantity = target` on a bare HTTP 200
+(`stockWriteBack`), and `reconcilePhysicalStock` then reads that value into
+`physical_stock`. A write we merely BELIEVE landed becomes an input to the pool
+— the same class of problem as the adopt loop, one step removed.
+
+`verifiedLivePush` exists because "a bare 200 is not trusted" and reads the value
+back; the batch path does not, deliberately, because a read-back per write would
+double the marketplace calls that #393 was about reducing.
+
+**Consequence for Part 1:** a ledger-active group must not take
+`stock_quantity` as evidence of anything. `seedGroup` reads it once, at seed
+time, and after that the ledger is authoritative — which is already the design,
+and this is the reason it has to stay the design. The repeat cap added in #394
+(`stock_write_not_converging`) is the cheap detector that a write is not landing;
+the ledger should log against it rather than grow its own read-back.
+
+---
+
 ## 13. Risks
 
 **Live listings move.** The first seeded tick changes what edit-mode shops write.
