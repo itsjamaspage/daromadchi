@@ -12,6 +12,7 @@ import StockAlerts from '@/components/dashboard/StockAlerts'
 import CategoryChart from '@/components/dashboard/CategoryChart'
 import LastSynced from '@/components/dashboard/LastSynced'
 import SyncAlert from '@/components/dashboard/SyncAlert'
+import DataErrorBanner from '@/components/dashboard/DataErrorBanner'
 import NewDataToast from '@/components/dashboard/NewDataToast'
 import { sellerOrderUrl } from '@/components/dashboard/OrdersTable'
 import { useSyncPolling } from '@/hooks/useSyncPolling'
@@ -75,6 +76,15 @@ interface CategoryData {
   percent: number
 }
 
+// The panels fetchSlice() loads independently. A name here appears in
+// `failed` when that panel's query threw, which is NOT the same as it
+// returning nothing — see app/dashboard/page.tsx.
+// What a KPI card shows when its query failed. Deliberately not '0': a zero is
+// an answer, and we do not have one.
+const UNKNOWN = '—'
+
+export type PanelKey = 'kpis' | 'orders' | 'products' | 'productSales' | 'chart' | 'categories'
+
 export interface MarketplaceSlice {
   kpis: Kpis
   recentOrders: Order[]
@@ -83,6 +93,8 @@ export interface MarketplaceSlice {
   chartData: DailyRevenue[]
   categoryData: CategoryData[]
   hasConnectedShop: boolean
+  // Panels whose query failed. Their value above is a fallback, not an answer.
+  failed: PanelKey[]
 }
 
 interface Props {
@@ -150,10 +162,15 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
   }
 
   const sliceKey = marketplace ?? 'all'
-  const { kpis, recentOrders, allProducts, productSales, chartData, categoryData, hasConnectedShop } =
+  const { kpis, recentOrders, allProducts, productSales, chartData, categoryData, hasConnectedShop, failed } =
     slices[sliceKey as keyof typeof slices]
+  const failedPanels = failed ?? []
+  const kpisFailed = failedPanels.includes('kpis')
 
-  const isEmpty = kpis.total_orders === 0 && allProducts.length === 0
+  // A failed query is not an empty week. Without this, a thrown getKpis falls
+  // back to zeroes and the page renders the "nothing here yet" state, which
+  // tells the seller something the data does not support.
+  const isEmpty = !kpisFailed && kpis.total_orders === 0 && allProducts.length === 0
 
   // "Учтено: Uzum · Ожидает расчёта: Yandex Market (115 ming so'm)". Names the
   // marketplaces behind the profit and the ones whose money has not landed, so
@@ -270,6 +287,9 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
 
       {/* Sync alert banner */}
       {syncInfo.alerts.length > 0 && <SyncAlert alerts={syncInfo.alerts} />}
+
+      {/* Above the fold, and above the KPI cards it explains. */}
+      {failedPanels.length > 0 && <DataErrorBanner panels={failedPanels} />}
 
       {/* Marketplace tabs — client-side switching, no page reload */}
       <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
@@ -434,7 +454,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
       {/* KPI cards */}
       {!hiddenWidgets.has('kpis') && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <KpiCard title={d.revenue} value={formatSum(kpis.total_revenue)}             change={isEmpty ? null : kpis.change_revenue} icon={DollarSign}  color="violet" />
+          <KpiCard title={d.revenue} value={kpisFailed ? UNKNOWN : formatSum(kpis.total_revenue)} change={isEmpty || kpisFailed ? null : kpis.change_revenue} icon={DollarSign}  color="violet" />
           {/* Profit shows its working. 40 000 next to 200 000 of sales reads as a
               bug until the 130 000 of stock and 30 000 of fees are visible — so
               the card sets out the arithmetic instead of asserting a total.
@@ -443,25 +463,25 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
               money a marketplace has not reported yet is named in the coverage
               line rather than folded in. Nothing counted → no arithmetic worth
               showing, and that line carries the whole story. */}
-          <KpiCard title={d.profit}  value={formatSum(kpis.total_profit)}              change={isEmpty ? null : kpis.change_profit}  icon={TrendingUp}  color="emerald"
-            breakdown={isEmpty || (kpis.profit_revenue_counted ?? 0) === 0 ? undefined : [
+          <KpiCard title={d.profit}  value={kpisFailed ? UNKNOWN : formatSum(kpis.total_profit)} change={isEmpty || kpisFailed ? null : kpis.change_profit}  icon={TrendingUp}  color="emerald"
+            breakdown={isEmpty || kpisFailed || (kpis.profit_revenue_counted ?? 0) === 0 ? undefined : [
               { label: t.kpi.sales, value: formatSum(kpis.profit_revenue_counted ?? 0) },
               { label: t.kpi.cogs,  value: formatSum(kpis.profit_cogs ?? 0), kind: 'minus' },
               { label: t.kpi.fees,  value: formatSum(kpis.profit_fees ?? 0), kind: 'minus' },
               { label: t.kpi.net,   value: formatSum(kpis.total_profit),     kind: 'total' },
             ]}
-            warning={(kpis.missing_cost_products ?? 0) > 0
+            warning={!kpisFailed && (kpis.missing_cost_products ?? 0) > 0
               ? t.kpi.noCost.replace('{n}', String(kpis.missing_cost_products ?? 0))
               : undefined}
-            coverage={isEmpty ? undefined : coverageLine}
+            coverage={isEmpty || kpisFailed ? undefined : coverageLine}
           />
           <KpiCard title={d.orders}
-            value={(kpis.total_orders - (kpis.cancelled_orders ?? 0)).toLocaleString('uz-UZ')}
-            note={(kpis.cancelled_orders ?? 0) > 0
+            value={kpisFailed ? UNKNOWN : (kpis.total_orders - (kpis.cancelled_orders ?? 0)).toLocaleString('uz-UZ')}
+            note={!kpisFailed && (kpis.cancelled_orders ?? 0) > 0
               ? `+${kpis.cancelled_orders} ${t.status.cancelled.toLowerCase()}${(kpis.cancelled_units ?? 0) > 0 ? ` (${kpis.cancelled_units} ${lang === 'ru' ? 'шт' : lang === 'en' ? 'pcs' : 'dona'})` : ''}`
               : undefined}
-            change={isEmpty ? null : kpis.change_orders} icon={ShoppingBag} color="blue" />
-          <KpiCard title={d.stock}   value={kpis.total_stock.toLocaleString('uz-UZ')}  change={isEmpty ? null : undefined}           icon={Package}     color="amber" />
+            change={isEmpty || kpisFailed ? null : kpis.change_orders} icon={ShoppingBag} color="blue" />
+          <KpiCard title={d.stock}   value={kpisFailed ? UNKNOWN : kpis.total_stock.toLocaleString('uz-UZ')} change={isEmpty ? null : undefined}           icon={Package}     color="amber" />
         </div>
       )}
 
