@@ -7,6 +7,7 @@ import { db, shops } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
 import { withErrorHandler } from '@/lib/api-handler'
+import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -60,7 +61,12 @@ export const GET = withErrorHandler(async () => {
 
   try {
     const token = decrypt(shop.api_key_encrypted)
-    const res = await fetch('https://api-seller.uzum.uz/api/seller-openapi/v1/shops', {
+    // Through the guard, like every other marketplace call. It is a GET and was
+    // never a read-only violation — but a raw fetch is invisible to
+    // lib/marketplace-readonly-guard, so nothing structural stopped a later edit
+    // adding `method: 'PUT'` here. AGENTS.md makes read-only the top constraint;
+    // an unguarded path is a hole in it whatever today's method happens to be.
+    const res = await marketplaceFetch('https://api-seller.uzum.uz/api/seller-openapi/v1/shops', {
       headers: { Authorization: token, Accept: 'application/json' },
       next: { revalidate: 0 },
     })
