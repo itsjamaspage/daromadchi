@@ -138,3 +138,54 @@ to call a **single shared** `on_hand`/`available` accessor rather than re-implem
 it. Item 7 reads the listing directly and must be pointed at the same accessor. Until
 then, `poolOnHand` (stock-groups.ts) is the shared display-side helper; the three
 display consumers should converge on it.
+
+## Day-1 shadow finding: a delivered order first-seen as terminal creates a phantom consume
+
+Observed on the first real shadow pass:
+
+```
+ledger_shadow_row  pbblk  legacyPhysicalStock:0  legacyAvailable:0  ledgerOnHand:-1
+```
+
+PBBLK's only order (yandex 60675080064) was **DELIVERED on 2026-08-21** — shipped and
+gone, which is why physical_stock is 0. Yet the ledger holds an open `consume -1`.
+
+**Is this a "delivered reserves forever" bug? Not in the available sense.**
+`available = max(0, on_hand) = max(0, -1) = 0`, so the ledger does NOT claim the unit
+is sellable — it wouldn't oversell. Under Option A a completed sale's consume is
+*meant* to be permanent (the unit physically left; crediting it back would falsely
+restore on-hand), so the **absence of a "delivered closes the consume" transition is
+correct by design**, and `orderLedgerStatus` mapping `delivered → live` correctly
+*keeps* the consume for an order observed from placement. DELIVERED is (correctly)
+NOT in `RESERVING_RAW_STATUSES` — the legacy pool reads `physical − pending`, and
+physical already dropped, so counting it there would double-count.
+
+**The real bug is at the BOUNDARY.** PBBLK was delivered six days before the ledger
+first saw it. `diffLedger`'s rule is "live & not yet consumed → create a consume", so
+a first-sighting of an already-delivered order **creates a consume NOW** — a *debit at
+delivery*, which is exactly what Option A's *debit at placement* was designed to
+avoid. For an order observed through its lifecycle this never happens (consume at
+placement, kept through delivery). It happens only for orders first seen already
+terminal — i.e. at shadow start, and **at seed time**.
+
+**Why it would corrupt a seed.** The seed snapshots physical (or seller-confirmed
+free-to-sell) on-hand, which *already excludes* every delivered unit. Any consume for
+an order delivered BEFORE the seed therefore double-counts against that snapshot —
+`on_hand` would start one unit low per pre-seed completed sale. This is the phantom
+the finding warns about.
+
+### Resolution — settle before the seed writer
+1. **Only CREATE a consume for an order currently reserving (open).** `diffLedger`
+   must split "keep an existing consume" (delivered → keep, don't credit) from
+   "create a new consume" (only when the order is in a reserving raw status now). A
+   first-sighting in a terminal state (delivered/cancelled/returned) creates nothing —
+   its effect is already in physical / the seed baseline.
+2. **Seed = snapshot; only open orders carry consumes across it.** The seed event sets
+   `on_hand` to the confirmed value; the only consumes that may survive the seed are
+   for orders still OPEN (reserving) at seed time. Pre-seed delivered/cancelled/
+   returned orders contribute nothing beyond the baseline.
+3. This is the concrete change the shadow's first pass forced: `orderLedgerStatus` /
+   `diffLedger` need a "live-open vs live-closed" distinction, not a single `live`.
+
+Until (1)–(2) are agreed and implemented, **do not build the seed writer** — seeding
+onto the current create-on-first-sight rule bakes the phantom reservations in.
