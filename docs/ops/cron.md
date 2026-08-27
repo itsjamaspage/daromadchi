@@ -6,30 +6,44 @@ always been in git; the schedule that drives it was not, which meant losing the
 box would have left a working application that did nothing — no renewals, no
 plan expiry, no syncs — with no record of what the cadence had been.
 
-## The one thing to do first
+## Status: reconciled 2025-08-27
 
-`scripts/crontab.example` is **not** a copy of the live crontab. It could not be:
-the live schedule was never committed, so it cannot be recovered from this
-repository. Only `expire-plans` (`15 3 * * *`) is known-correct, from
-`docs/plans/turnover-pricing-spec.md`. Everything else is a proposal derived from
-what the code implies.
+`scripts/crontab.example` now holds the **real** live cadences (`crontab -l`), not
+proposals. It is the source of truth. When you change the live crontab, update it
+here in the same commit.
 
-**Reconcile before installing anything:**
+### The source-of-truth fix
+
+The live crontab called `/var/www/daromadchi/cron-runner.sh` — an **untracked copy
+at the repo root** that had drifted from `scripts/cron-runner.sh` (it stopped
+writing the per-job `logs/` files and used the `digest` job name). Repoint the root
+path at the tracked script, one command on the box, so the drift cannot recur:
 
 ```bash
-ssh <vps>
+ln -sfn scripts/cron-runner.sh /var/www/daromadchi/cron-runner.sh
+```
+
+The crontab keeps its historical root path; the symlink makes that path resolve to
+the version-controlled script. `digest` is accepted as an alias for
+`telegram-digest` in `cron-runner.sh`, so the existing crontab line needs no edit.
+
+### If you ever re-reconcile
+
+```bash
 crontab -l > /tmp/crontab.live
 diff /tmp/crontab.live /var/www/daromadchi/scripts/crontab.example
 ```
 
 Where they disagree, **the live file wins** — it is the schedule that has actually
-been running the business. Copy its real cadences into `crontab.example`, commit
-that, and only then consider installing. Overwriting the live crontab with the
-proposals would silently change how often sellers' data syncs and when their
-cards are charged.
+been running the business — so copy its cadences into `crontab.example` and commit,
+rather than overwriting the live crontab with this file.
 
-Once `crontab.example` matches reality, this file stops being a reconstruction
-and becomes the source of truth.
+## Monitoring
+
+Deploy smoke gate and the sync-freshness watchdog are documented in
+`docs/ops/monitoring.md`. The watchdog runs from its own crontab line (already in
+`crontab.example`), not through this runner, because it must survive the app being
+down.
 
 ## Jobs
 

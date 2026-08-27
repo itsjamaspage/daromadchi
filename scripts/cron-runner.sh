@@ -42,10 +42,14 @@ LOG_DIR="${DAROMADCHI_LOG_DIR:-$APP_DIR/logs}"
 TIMEOUT="${DAROMADCHI_CRON_TIMEOUT:-600}"
 
 # job name | path
+# `digest` is an alias for `telegram-digest`: the live VPS crontab calls `digest`,
+# so the tracked script must answer to it or a reinstall from here would break that
+# line. Both names hit the same endpoint.
 JOBS="
 sync|/api/cron/sync
 stock-sync|/api/cron/stock-sync
 telegram-digest|/api/cron/telegram-digest
+digest|/api/cron/telegram-digest
 billing-renew|/api/cron/billing-renew
 expire-plans|/api/billing/expire-plans
 "

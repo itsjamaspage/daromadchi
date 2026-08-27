@@ -1,16 +1,18 @@
-# Daromadchi scheduled jobs — install with `crontab scripts/crontab.example`
-# AFTER reconciling with the live crontab. See docs/ops/cron.md.
+# Daromadchi scheduled jobs — install with `crontab scripts/crontab.example`.
 #
-# ⚠️  ONLY ONE LINE HERE IS KNOWN-CORRECT.
+# RECONCILED WITH THE LIVE CRONTAB on 2025-08-27. The cadences below are the ones
+# actually running on the VPS (`crontab -l`), not proposals. See docs/ops/cron.md.
 #
-# The live schedule has never been in version control, so this file cannot be a
-# copy of it. `expire-plans` is documented in docs/plans/turnover-pricing-spec.md
-# and is reproduced exactly. Every other cadence below is a PROPOSAL derived from
-# what the code implies, and must be checked against `crontab -l` on the VPS
-# before it replaces anything — see docs/ops/cron.md for the diff procedure.
+# ── SOURCE-OF-TRUTH FIX (2025-08-27) ─────────────────────────────────────────
+# The live crontab called `/var/www/daromadchi/cron-runner.sh` — an UNTRACKED copy
+# at the repo root that had drifted from scripts/cron-runner.sh (it no longer wrote
+# the per-job logs/ files, and used the `digest` job name). Fix, one command on the
+# box, so the crontab runs the version-controlled script and the drift cannot recur:
 #
-# Overwriting the live crontab with these guesses would silently change how often
-# sellers' data syncs and when they are charged. Reconcile first.
+#   ln -sfn scripts/cron-runner.sh /var/www/daromadchi/cron-runner.sh
+#
+# With that symlink in place the paths below (which keep the historical root path so
+# the live crontab needs no edit) resolve to the tracked script.
 
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -18,30 +20,32 @@ DAROMADCHI_DIR=/var/www/daromadchi
 DAROMADCHI_URL=https://www.daromadchi.uz
 MAILTO=""
 
-# ── KNOWN ────────────────────────────────────────────────────────────────────
-# Daily housekeeping, and the busiest job in the product: it expires lapsed
-# plans, recomputes every derived tier, sends due price notices, runs the
-# free-tier nudges, and steps the account-lifecycle ladder. Documented at
-# docs/plans/turnover-pricing-spec.md §3.
-15 3 * * *   /var/www/daromadchi/cron-runner.sh expire-plans
+# Marketplace order/product sync. Orders re-read every tick; heavy work throttled
+# per plan inside the route.
+*/5 * * * *   /var/www/daromadchi/cron-runner.sh sync        >> $HOME/daromadchi-cron.log 2>&1
 
-# ── PROPOSED — verify against `crontab -l` before use ─────────────────────────
+# Stock write-back for stock_sync shops.
+*/5 * * * *   /var/www/daromadchi/cron-runner.sh stock-sync  >> $HOME/daromadchi-cron.log 2>&1
 
-# Marketplace order/product sync. The landing page tells sellers orders update
-# "every 15 minutes", and lib/uzum/sync.ts calls the cron "half-hourly" — those
-# two disagree, so the live value decides.
-*/15 * * * *  /var/www/daromadchi/cron-runner.sh sync
+# Telegram digests. Live crontab uses the `digest` job name (aliased to
+# telegram-digest in cron-runner.sh). The route filters on each seller's own
+# notification window, so hourly at :05 is enough to never miss a window.
+5 * * * *     /var/www/daromadchi/cron-runner.sh digest      >> $HOME/daromadchi-cron.log 2>&1
 
-# Stock write-back. Frequency is a trade-off nobody has written down: too slow
-# oversells, too fast burns marketplace rate limit.
-*/10 * * * *  /var/www/daromadchi/cron-runner.sh stock-sync
+# Daily housekeeping and the busiest job in the product: expires lapsed plans,
+# recomputes derived tiers, sends due price notices, runs free-tier nudges, steps
+# the account-lifecycle ladder. Documented at docs/plans/turnover-pricing-spec.md §3.
+15 3 * * *    /var/www/daromadchi/cron-runner.sh expire-plans >> $HOME/daromadchi-cron.log 2>&1
 
-# Telegram digests. The route filters on each seller's own notification window
-# (lib/telegram.ts isInNotificationWindow), so this only needs to run often
-# enough that no window is missed — hourly at :05 clears the hour boundary.
-5 * * * *     /var/www/daromadchi/cron-runner.sh telegram-digest
+# Renewals. Charges stored cards, gated by BILLING_AUTORENEW_ENABLED (a no-op with
+# that unset). Live cadence is HOURLY at :20 — note this differs from the earlier
+# proposal of once-a-day; the route only charges cards actually near expiry.
+20 * * * *    /var/www/daromadchi/cron-runner.sh billing-renew >> $HOME/daromadchi-cron.log 2>&1
 
-# Renewals. Charges cards, so it runs once a day and early, leaving the working
-# day for a human to see failures. Gated by BILLING_AUTORENEW_ENABLED — with that
-# unset this is a no-op regardless of schedule.
-30 2 * * *    /var/www/daromadchi/cron-runner.sh billing-renew
+# ── Watchdog (added 2025-08-27) ──────────────────────────────────────────────
+# WORK-liveness alarm. Reads the DB directly and pages operators when no sync has
+# completed within the expected window — the failure PM2 "online" hides. Its OWN
+# line, NOT via cron-runner.sh: cron-runner is HTTP-only and therefore dead exactly
+# when the alarm is needed. Depends only on `pg` + node, so it survives a broken app
+# build. See docs/ops/monitoring.md.
+*/5 * * * *   /var/www/daromadchi/scripts/sync-freshness-check.sh >> $HOME/daromadchi-cron.log 2>&1
