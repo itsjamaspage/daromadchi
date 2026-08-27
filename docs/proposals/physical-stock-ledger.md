@@ -80,3 +80,30 @@ Two quiet weeks prove nothing; a busy three days may prove everything. Length is
 4. **Retirement**: remove the stopgap reconcile for migrated sellers; eventually drop `physical_stock`.
 
 The read-only **cancel-restore alert (#388)** stays gated OFF until a seller is shadow-validated and flipped — it inherits `on_hand`, not the stopgap.
+
+## Regression cases (from prod — must be tests before the ledger is authoritative)
+
+### JMBLK — a cancellation permanently cost a unit of pool (the originally reported bug)
+Uzum, `stock_sync`, confirmed on real data:
+
+| time (2026) | event |
+|---|---|
+| Aug 25 21:09 | order `124456232` created, qty 1 |
+| Aug 25 21:20 | we pushed **2** |
+| Aug 26 12:50 | order **CANCELED** — we pushed **1**, not back up to 2 |
+
+Result: `physical_stock` for JMBLK is now **uzum=1 / yandex=2**. The Uzum row was adopted **down** off the decremented listing and never recovered — a cancelled order permanently cost a unit of pool. This is exactly the class the #389 stopgap **cannot** close (a restore-on-cancel is an upward move, adopted as a restock; and the down-adoption already happened).
+
+**Ledger requirement:** with the JMBLK group on the ledger, `seed 2 → consume(124456232) −1 → cancel(124456232) +1` must return `on_hand` to **2**, and neither the down-adoption nor the failure-to-recover can occur (the value of the listing never feeds the pool). Add as a ledger regression test.
+
+## Post-merge verification for the #389 stopgap (prod, before building the shadow evaluator)
+
+Run on real data using SKUs with known-good manual corrections (`KBWHT` physical_stock=2, `KBBLK`=2):
+- [ ] `physical_stock` **holds** across multiple sync passes with an order open (the ratchet is stopped).
+- [ ] a **genuine seller restock** is still adopted — raise stock in the marketplace UI, verify it propagates to `physical_stock`.
+- [ ] a **drop beyond pending** is still adopted.
+
+The shadow evaluator (increment 2) is deliberately **held** until #389 has run in prod for several days: once it lands, "legacy" in the shadow comparison means the *stopgap's* behaviour, so the comparator must be built against a **stable** legacy, not one that's about to move.
+
+## Open unknown: does a marketplace self-restore on cancellation?
+It **cannot be answered from our data** — `stock_write_log` records only our writes, and `products.stock_quantity` keeps no history. Treat it as **unknown**. The cancel-restore alert's INFO branch (#388) is already observation-driven — it fires only when a restore is actually observed (`after >= before`) and does nothing if restores never happen — so it is correct either way. Do not build any ledger/alert logic that *assumes* a self-restore; wait for a live cancellation to be observed to settle it.
