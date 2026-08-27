@@ -132,6 +132,19 @@ async function main() {
     process.exit(1)
   }
 
+  // One pass per interval. A doubled crontab line was firing this ~3× within 30ms,
+  // which would page in triplicate. The wrapper's flock stops truly concurrent
+  // invocations; this debounce stops a STAGGERED repeat (each finishing before the
+  // next starts). A real 5-min tick is far above the 60s floor, so legitimate runs
+  // are never skipped.
+  const startedMs = Date.now()
+  const preState = readState()
+  const minRunMs = Number(process.env.FRESHNESS_MIN_RUN_SECONDS ?? 60) * 1000
+  if (preState.lastRunMs && startedMs - preState.lastRunMs < minRunMs) {
+    logLine(`skipped (ran ${Math.round((startedMs - preState.lastRunMs) / 1000)}s ago — duplicate schedule)`)
+    return
+  }
+
   const client = new pg.Client({ connectionString })
   let row
   let driftRows = []
@@ -194,7 +207,7 @@ async function main() {
 
   // Prior state is nested { freshness, drift }. Older flat state (pre-drift) reads
   // as {} for both → one harmless re-alert on the first run after upgrade.
-  const prev = readState()
+  const prev = preState
 
   // ── Check 1: sync freshness ──────────────────────────────────────────────
   const { status, ageMs } = classifyFreshness({ activeShops, freshestMs, nowMs, thresholdMs: STALE_MS })
@@ -205,7 +218,7 @@ async function main() {
   const driftStatus = driftCount > 0 ? STATUS.STALE : STATUS.OK
   const drift = decideNotification({ prev: prev.drift ?? {}, currStatus: driftStatus, nowMs, reAlertMs: REALERT_MS })
 
-  writeState({ freshness: fresh.nextState, drift: drift.nextState })
+  writeState({ freshness: fresh.nextState, drift: drift.nextState, lastRunMs: startedMs })
 
   const writeAge = newestWriteMs == null ? 'none' : fmtAge(nowMs - newestWriteMs)
   const driftEx = driftRows.slice(0, 5)
