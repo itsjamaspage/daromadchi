@@ -29,6 +29,7 @@ const _fetchProducts = unstable_cache(
         cost_price: products.cost_price,
         selling_price: products.selling_price,
         stock_quantity: products.stock_quantity,
+        physical_stock: products.physical_stock,
         price_override: products.price_override,
         stock_override: products.stock_override,
         quantity_sold: products.quantity_sold,
@@ -91,10 +92,10 @@ const _fetchProducts = unstable_cache(
       groupMaxStock.set(key, Math.max(groupMaxStock.get(key) ?? 0, p.stock_quantity))
       const isFbs = p.fulfillment_type === 'fbs' || p.fulfillment_type === null
       if (isFbs) {
-        groupFbsMax.set(key, Math.max(groupFbsMax.get(key) ?? 0, p.stock_quantity))
+        groupFbsMax.set(key, Math.max(groupFbsMax.get(key) ?? 0, p.physical_stock ?? p.stock_quantity))
         groupTotalPending.set(key, (groupTotalPending.get(key) ?? 0) + (inTransitByProductId.get(p.id) ?? 0))
       } else {
-        groupFboSum.set(key, (groupFboSum.get(key) ?? 0) + p.stock_quantity)
+        groupFboSum.set(key, (groupFboSum.get(key) ?? 0) + (p.physical_stock ?? p.stock_quantity))
       }
     }
 
@@ -106,7 +107,10 @@ const _fetchProducts = unstable_cache(
       const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
       const key = p.sku ? p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
-      const availableStock = Math.max(0, p.stock_quantity - dbInTransit)
+      // Pool = physical_stock (real on-hand), NOT stock_quantity (the listing mirror
+      // the marketplace already decremented for this order). Reading the mirror here
+      // subtracted the order twice → 0 shown with a sellable unit on hand.
+      const availableStock = Math.max(0, (p.physical_stock ?? p.stock_quantity) - dbInTransit)
       const totalPhysical = key
         ? (groupFbsMax.get(key) ?? 0) + (groupFboSum.get(key) ?? 0)
         : p.stock_quantity
@@ -121,7 +125,7 @@ const _fetchProducts = unstable_cache(
         stock_quantity: p.stock_quantity,
         price_override: p.price_override != null ? Number(p.price_override) : null,
         stock_override: p.stock_override,
-        physical_stock: null,
+        physical_stock: p.physical_stock,
         category: p.category,
         marketplace_product_id: p.marketplace_product_id,
         fulfillment_type: p.fulfillment_type,
@@ -537,6 +541,7 @@ const _fetchProductsPaginated = unstable_cache(
         cost_price: products.cost_price,
         selling_price: products.selling_price,
         stock_quantity: products.stock_quantity,
+        physical_stock: products.physical_stock,
         price_override: products.price_override,
         stock_override: products.stock_override,
         quantity_sold: products.quantity_sold,
@@ -593,10 +598,10 @@ const _fetchProductsPaginated = unstable_cache(
       groupMaxStock.set(key, Math.max(groupMaxStock.get(key) ?? 0, p.stock_quantity))
       const isFbs = p.fulfillment_type === 'fbs' || p.fulfillment_type === null
       if (isFbs) {
-        groupFbsMax.set(key, Math.max(groupFbsMax.get(key) ?? 0, p.stock_quantity))
+        groupFbsMax.set(key, Math.max(groupFbsMax.get(key) ?? 0, p.physical_stock ?? p.stock_quantity))
         groupTotalPending.set(key, (groupTotalPending.get(key) ?? 0) + (inTransitMap.get(p.id) ?? 0))
       } else {
-        groupFboSum.set(key, (groupFboSum.get(key) ?? 0) + p.stock_quantity)
+        groupFboSum.set(key, (groupFboSum.get(key) ?? 0) + (p.physical_stock ?? p.stock_quantity))
       }
     }
 
@@ -608,7 +613,10 @@ const _fetchProductsPaginated = unstable_cache(
       const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
       const key = p.sku ? p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
-      const availableStock = Math.max(0, p.stock_quantity - dbInTransit)
+      // Pool = physical_stock (real on-hand), NOT stock_quantity (the listing mirror
+      // the marketplace already decremented for this order). Reading the mirror here
+      // subtracted the order twice → 0 shown with a sellable unit on hand.
+      const availableStock = Math.max(0, (p.physical_stock ?? p.stock_quantity) - dbInTransit)
       const totalPhysical = key
         ? (groupFbsMax.get(key) ?? 0) + (groupFboSum.get(key) ?? 0)
         : p.stock_quantity
@@ -623,7 +631,7 @@ const _fetchProductsPaginated = unstable_cache(
         stock_quantity: p.stock_quantity,
         price_override: p.price_override != null ? Number(p.price_override) : null,
         stock_override: p.stock_override,
-        physical_stock: null,
+        physical_stock: p.physical_stock,
         category: p.category,
         marketplace_product_id: p.marketplace_product_id,
         fulfillment_type: p.fulfillment_type,

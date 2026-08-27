@@ -34,6 +34,7 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
     title: products.title,
     sku: products.sku,
     stock_quantity: products.stock_quantity,
+    physical_stock: products.physical_stock,
     shop_id: products.shop_id,
     fulfillment_type: products.fulfillment_type,
     variant_group_key: products.variant_group_key,
@@ -91,10 +92,13 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
     if (!key) continue
     groupShopCount.set(key, (groupShopCount.get(key) ?? 0) + 1)
     const isFbs = p.fulfillment_type === 'fbs' || p.fulfillment_type === null
+    // Pool = physical_stock (real on-hand), NOT the listing mirror (already
+    // decremented for the open order). Reading the mirror double-counted the order
+    // and fired false low-stock alerts. Same rule as the sync engine.
     if (isFbs) {
-      groupFbsMax.set(key, Math.max(groupFbsMax.get(key) ?? 0, p.stock_quantity))
+      groupFbsMax.set(key, Math.max(groupFbsMax.get(key) ?? 0, p.physical_stock ?? p.stock_quantity))
     } else {
-      groupFboSum.set(key, (groupFboSum.get(key) ?? 0) + p.stock_quantity)
+      groupFboSum.set(key, (groupFboSum.get(key) ?? 0) + (p.physical_stock ?? p.stock_quantity))
     }
   }
 
@@ -109,7 +113,7 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
     // Units on open orders (pending/confirmed) are reserved — subtract
     // them so остаток reflects units actually available to sell.
     const inTransit = inTransitMap.get(row.id) ?? 0
-    const availableStock = Math.max(0, row.stock_quantity - inTransit)
+    const availableStock = Math.max(0, (row.physical_stock ?? row.stock_quantity) - inTransit)
 
     if (availableStock > threshold) continue
 

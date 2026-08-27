@@ -503,12 +503,15 @@ function FragmentRow({ group: g, badge, isOpen, isMobileOpen, onToggle, onMobile
           )}
         </td>
         <td className="px-5 py-3.5">
+          {/* Free-to-sell is the headline; on-hand and reserved sit under it so the
+              three never collapse into one figure that can hide a reserved unit. */}
           <span className="inline-block text-sm font-bold px-2.5 py-1 rounded-lg"
             style={{ background: badge.bg, color: badge.color, fontVariantNumeric: 'tabular-nums' }}>
-            {g.leftover} {d.units}
+            {g.available} {d.units}
           </span>
-          <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
-            {g.mode === 'baseline' ? `${d.baselineModeBadge}: ${g.total_physical_stock}` : d.apiModeBadge}
+          <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+            {g.on_hand} {d.onHandLabel}
+            {g.reserved > 0 && <> · {g.reserved} {d.reservedLabel}</>}
           </p>
         </td>
         <td className="px-2 py-3.5">
