@@ -93,7 +93,7 @@ if [ -n "${uptime1//[!0-9]/}" ]; then
   [ "$code2" = "200" ] || fail "health stopped answering on the second probe (code=${code2:-none}) — the process is unstable."
   uptime2="$(json_field "$body2" uptimeSeconds)"
   if [ -n "${uptime2//[!0-9]/}" ] && [ "$uptime2" -le "$uptime1" ]; then
-    fail "uptime did not increase ($uptime1s → ${uptime2}s) — the process is crash-looping."
+    fail "uptime did not increase (${uptime1}s → ${uptime2}s) — the process is crash-looping."
   fi
   echo "smoke: process stable (uptime ${uptime1}s → ${uptime2}s)."
 fi
