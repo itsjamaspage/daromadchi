@@ -2,7 +2,7 @@
 // Run: node --import tsx --test lib/marketplace/stock-allocation.test.ts
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { computeAvailable, rawGroupAvailable, planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, physicalStockFromRead, RESERVING_RAW_STATUSES, type SyncMember } from './stock-allocation'
+import { computeAvailable, rawGroupAvailable, planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, physicalStockFromRead, shouldAdoptPhysicalStock, RESERVING_RAW_STATUSES, type SyncMember } from './stock-allocation'
 
 function member(over: Partial<SyncMember>): SyncMember {
   return {
@@ -450,5 +450,42 @@ describe('real-diff-only + read-only members', () => {
     assert.equal(available, 2)
     assert.equal(plans.length, 1)              // only the stock_sync Uzum member
     assert.equal(plans[0].member.shopId, 'uzum-shop')
+  })
+})
+
+describe('shouldAdoptPhysicalStock — reconcile stopgap (order-decrement aware)', () => {
+  it('THE KBWHT RATCHET: an order-decrement is NOT adopted (pool held)', () => {
+    // pool 2, one order qty 1 → we pushed available 1; Uzum then nets the same
+    // order off its listing → reads 0. drop (1) == pending (1) → order-decrement.
+    assert.equal(shouldAdoptPhysicalStock(0, 1, 1), false)   // fix: do NOT collapse the pool
+    // Prove the OLD exact-match rule would have adopted 0 (the bug):
+    assert.equal(physicalStockFromRead(0, 1), 0)             // 0 !== 1 → adopted → pool → 0
+  })
+
+  it('our own write coming back is never adopted', () => {
+    assert.equal(shouldAdoptPhysicalStock(1, 1, 1), false)
+    assert.equal(shouldAdoptPhysicalStock(0, 0, 0), false)
+  })
+
+  it('a genuine restock UP is adopted', () => {
+    assert.equal(shouldAdoptPhysicalStock(5, 1, 1), true)
+    assert.equal(shouldAdoptPhysicalStock(3, null, 0), true)  // never-written → adopt
+  })
+
+  it('a drop BEYOND the open reserving units is a real seller reduction → adopted', () => {
+    assert.equal(shouldAdoptPhysicalStock(0, 3, 1), true)     // dropped 3, only 1 pending
+    assert.equal(shouldAdoptPhysicalStock(2, 5, 0), true)     // no pending at all
+  })
+
+  // ── The two ACCEPTED holes (documented in the PR — closed only by the ledger) ──
+  it('HOLE 1: a genuine seller reduction WITHIN the band is (wrongly) ignored', () => {
+    // Seller really removed the unit (sold elsewhere) while an order is open, to a
+    // value inside the order-decrement band — indistinguishable by value alone.
+    assert.equal(shouldAdoptPhysicalStock(0, 1, 1), false)   // real change, silently dropped
+  })
+  it('HOLE 2: a restore-on-cancel (upward, pending gone) is (wrongly) adopted as a restock', () => {
+    // Order cancelled → pending 0; marketplace bumps the listing back up → looks
+    // like a restock and ratchets the pool UP.
+    assert.equal(shouldAdoptPhysicalStock(2, 1, 0), true)
   })
 })

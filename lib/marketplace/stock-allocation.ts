@@ -177,6 +177,40 @@ export function physicalStockFromRead(read: number, lastSentTarget: number | nul
   return read
 }
 
+/**
+ * STOPGAP guard behind reconcilePhysicalStock (replaces the plain
+ * physicalStockFromRead match). Should `read` (the freshly-synced listing) be
+ * adopted as the on-hand pool?
+ *
+ * The old rule adopted every read that wasn't an EXACT match to our last write.
+ * That collapsed the pool on a marketplace ORDER-DECREMENT: after we push
+ * `available`, the marketplace nets the SAME accepted order off its listing
+ * again, so the listing reads below our write and the old rule mistook it for a
+ * seller change and pulled it into physical_stock (the KBWHT 2→1→0 ratchet).
+ *
+ * This adds a `pending`-aware band: a DOWNWARD move no deeper than the units on
+ * open reserving orders for this listing is the marketplace netting an order we
+ * already know about — NOT the seller — so it is ignored. Genuine seller changes
+ * (a restock UP, or a drop BEYOND pending) are still adopted.
+ *
+ * ⚠️ This is a value-comparison heuristic, and the listing carries one number
+ * with two meanings, so two cases are UNAVOIDABLY wrong and are accepted here:
+ *   1. A genuine seller REDUCTION while an order is open, landing within the band
+ *      (sold one elsewhere, damaged unit), is read as an order-decrement and
+ *      SILENTLY IGNORED — today's bug in reverse.
+ *   2. A marketplace RESTORE on cancellation is an upward move, adopted as a
+ *      restock, ratcheting the pool UP — the same failure, other direction.
+ * Only an event ledger (which tracks the events instead of inferring them from
+ * the value) closes these. This stops the current bleeding; it is not the fix.
+ */
+export function shouldAdoptPhysicalStock(read: number, lastWrite: number | null, pending: number): boolean {
+  if (lastWrite != null && read === lastWrite) return false            // our own write coming back
+  // Order-decrement band: a drop no deeper than the open reserving units on this
+  // listing is the marketplace netting a known order, not a seller change.
+  if (lastWrite != null && pending > 0 && read < lastWrite && (lastWrite - read) <= pending) return false
+  return true                                                          // seller change → adopt
+}
+
 // Deterministic ordering: priority asc, then Uzum before others (so Uzum is the
 // default primary), then shopId for a stable final tiebreak.
 function byPriority(a: SyncMember, b: SyncMember): number {
