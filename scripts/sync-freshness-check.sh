@@ -33,6 +33,18 @@ if [ -z "${DATABASE_URL:-}" ]; then load_env "$APP_DIR/.env"; fi
 
 export DAROMADCHI_DIR
 
+# Resolve `node` the SAME way cron does. cron runs with a minimal PATH (system
+# dirs), while an interactive shell often prepends a different `node` (e.g. nvm) —
+# and the two can resolve a CJS dependency like `pg` differently, so a manual run
+# of this script failed with ERR_MODULE_NOT_FOUND while the scheduled run worked.
+# A monitoring tool must behave identically no matter who invokes it, or a manual
+# check reads as an outage that isn't one. Prepend the standard system dirs so
+# `node` resolves to the binary cron uses; the caller's PATH stays as a fallback
+# for a box where node lives only elsewhere. Override with DAROMADCHI_NODE if the
+# app runs a pinned interpreter.
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+NODE_BIN="${DAROMADCHI_NODE:-node}"
+
 # One run per pass. cron was firing this ~3× within 30ms (a duplicated crontab
 # line), which would page in triplicate. flock -n lets exactly ONE instance hold
 # the lock; a concurrent duplicate can't acquire it. `-E 0` makes that clean skip
@@ -42,7 +54,7 @@ export DAROMADCHI_DIR
 LOCK="${DAROMADCHI_LOG_DIR:-$APP_DIR/logs}/.sync-freshness.lock"
 mkdir -p "$(dirname "$LOCK")" 2>/dev/null || true
 if command -v flock >/dev/null 2>&1; then
-  exec flock -n -E 0 "$LOCK" node "$SCRIPT_DIR/sync-freshness-check.mjs"
+  exec flock -n -E 0 "$LOCK" "$NODE_BIN" "$SCRIPT_DIR/sync-freshness-check.mjs"
 else
-  exec node "$SCRIPT_DIR/sync-freshness-check.mjs"
+  exec "$NODE_BIN" "$SCRIPT_DIR/sync-freshness-check.mjs"
 fi
