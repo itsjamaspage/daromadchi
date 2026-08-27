@@ -136,10 +136,11 @@ export async function runLedgerShadow(userId: string, shopIds: string[]): Promis
       eventsByKey.set(e.match_key, list)
     }
 
-    let groupsLogged = 0, eventsAppended = 0, groupsDiverging = 0
+    let groupsLogged = 0, seededGroups = 0, eventsAppended = 0, groupsDiverging = 0
     for (const [key, members] of membersByKey) {
       const groupOrders = toGroupOrders([...(ordersByKey.get(key)?.values() ?? [])])
       const existing = eventsByKey.get(key) ?? []
+      const seeded = existing.some(e => e.reason === 'seed')
       const recordedKeys = new Set(
         existing.filter(e => e.reason === 'consume' || e.reason === 'cancel' || e.reason === 'return')
           .map(e => ledgerKey(e.reason as OrderDrivenReason, e.orderIdExternal!)))
@@ -154,6 +155,22 @@ export async function runLedgerShadow(userId: string, shopIds: string[]): Promis
         eventsAppended += writes.length
       }
 
+      // Check (3) as a grep-able yes/no: a release (cancel/return) completes a
+      // lifecycle for an order that was previously consumed. Log whether the
+      // consume and release net to zero — i.e. the group returns to its pre-order
+      // on-hand. This is seed-INDEPENDENT (the net is 0 regardless of any seed), so
+      // it is the closest thing to proof the release logic works before seeding.
+      for (const w of writes) {
+        if (w.reason !== 'cancel' && w.reason !== 'return') continue
+        const consumeDelta = existing.find(e => e.reason === 'consume' && e.orderIdExternal === w.orderIdExternal)?.delta ?? 0
+        const nettedBack = consumeDelta + w.delta === 0
+        logger.info('ledger_shadow_lifecycle', {
+          matchKey: key, orderIdExternal: w.orderIdExternal, reason: w.reason,
+          consumeDelta, releaseDelta: w.delta, nettedBack,
+        })
+        logger.info(`[ledger-shadow] lifecycle ${key} order=${w.orderIdExternal} ${w.reason} consume=${consumeDelta} release=${w.delta} nettedBack=${nettedBack}`)
+      }
+
       const onHand = ledgerOnHand([...existing, ...writes.map(w => ({ delta: w.delta, reason: w.reason, orderIdExternal: w.orderIdExternal }))])
       const syncMembers: SyncMember[] = members.map(m => ({
         productId: m.productId, shopId: '', marketplace: m.marketplace, apiMode: 'read_only',
@@ -162,20 +179,26 @@ export async function runLedgerShadow(userId: string, shopIds: string[]): Promis
       const legacyAvailable = computeAvailable(syncMembers)   // legacy pool — NOT fed onHand
 
       const shadowMembers: ShadowMember[] = members.map(m => ({ marketplace: m.marketplace, sku: m.sku, physicalStock: m.physicalStock }))
-      for (const row of comparisonRows(key, shadowMembers, legacyAvailable, onHand)) {
+      for (const row of comparisonRows(key, shadowMembers, legacyAvailable, onHand, seeded)) {
         logger.info('ledger_shadow_row', {
           matchKey: row.matchKey, marketplace: row.marketplace, sku: row.sku,
           legacyPhysicalStock: row.legacyPhysicalStock, legacyAvailable: row.legacyAvailable,
-          ledgerOnHand: row.ledgerOnHand, diff: row.diff,
+          ledgerOnHand: row.ledgerOnHand, seeded: row.seeded,
+          // diff is omitted entirely when unseeded — it is uniformly −pool and
+          // carries no signal, and printing it invites misreading it as corruption.
+          ...(row.diff != null ? { diff: row.diff } : {}),
         })
-        // Also the compact single-line form for eyeballing the cron log.
         logger.info(formatShadowRow(row))
       }
       groupsLogged++
-      if (onHand !== legacyAvailable) groupsDiverging++
+      if (seeded) seededGroups++
+      // Divergence only means something once seeded — pre-seed every group "diverges".
+      if (seeded && onHand !== legacyAvailable) groupsDiverging++
     }
 
-    logger.info('ledger_shadow_pass', { userId, groupsLogged, eventsAppended, groupsDiverging })
+    // Emitted on EVERY pass, including a zero one — a missing line (disabled or
+    // errored → see ledger_shadow_failed) must never look like a quiet zero pass.
+    logger.info('ledger_shadow_pass', { userId, groupsLogged, seededGroups, eventsAppended, groupsDiverging })
   } catch (e) {
     logger.warn('ledger_shadow_failed', { userId, error: String(e).slice(0, 200) })
   }
