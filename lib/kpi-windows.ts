@@ -1,4 +1,4 @@
-import { parseLocalDate, localDateStr, shiftLocalDate, endOfLocalDay } from '@/lib/period-week'
+import { shopDateStr, shopDayStart, shopDayEnd, shiftShopDate, shopDaysBetween } from '@/lib/shop-time'
 
 /**
  * The two windows behind the % badges on the dashboard KPI cards: the period
@@ -33,10 +33,7 @@ export interface KpiWindows {
 }
 
 /** Inclusive day count: Mon→Sun is 7, not 6. */
-export function inclusiveDays(from: string, to: string): number {
-  const ms = parseLocalDate(to).getTime() - parseLocalDate(from).getTime()
-  return Math.round(ms / 86_400_000) + 1
-}
+export const inclusiveDays = shopDaysBetween
 
 export function kpiWindows(opts: {
   from?: string
@@ -49,10 +46,10 @@ export function kpiWindows(opts: {
   if (opts.from && opts.to) {
     const span = inclusiveDays(opts.from, opts.to)
     return {
-      since:     parseLocalDate(opts.from),
-      until:     endOfLocalDay(parseLocalDate(opts.to)),
-      prevSince: parseLocalDate(shiftLocalDate(opts.from, -span)),
-      prevUntil: endOfLocalDay(parseLocalDate(shiftLocalDate(opts.to, -span))),
+      since:     shopDayStart(opts.from),
+      until:     shopDayEnd(opts.to),
+      prevSince: shopDayStart(shiftShopDate(opts.from, -span)),
+      prevUntil: shopDayEnd(shiftShopDate(opts.to, -span)),
     }
   }
 
@@ -61,15 +58,15 @@ export function kpiWindows(opts: {
     // rather than to the current time of day — otherwise the first day of the
     // window is a partial one whose length depends on when the page was opened,
     // and the baseline inherits that.
-    const today = localDateStr(now)
-    const fromStr = shiftLocalDate(today, -(opts.days - 1))
+    const today = shopDateStr(now)
+    const fromStr = shiftShopDate(today, -(opts.days - 1))
     return {
-      since:     parseLocalDate(fromStr),
-      until:     endOfLocalDay(parseLocalDate(today)),
-      prevSince: parseLocalDate(shiftLocalDate(fromStr, -opts.days)),
+      since:     shopDayStart(fromStr),
+      until:     shopDayEnd(today),
+      prevSince: shopDayStart(shiftShopDate(fromStr, -opts.days)),
       // Ends the day BEFORE the current window starts. The old code ended it
       // exactly AT the start instant, so the boundary moment fell in both.
-      prevUntil: endOfLocalDay(parseLocalDate(shiftLocalDate(fromStr, -1))),
+      prevUntil: shopDayEnd(shiftShopDate(fromStr, -1)),
     }
   }
 

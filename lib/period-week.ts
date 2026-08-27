@@ -1,3 +1,7 @@
+import {
+  shopDateStr, shopDayStart, shopDayEnd, shiftShopDate,
+  startOfShopWeek, endOfShopWeek, isShopCalendarWeek, shopDaysBetween,
+} from './shop-time'
 /**
  * ISO week periods for the Заработок page — NO db, NO React. Shared by the
  * server aggregation (lib/db/payouts.ts) and the client view.
@@ -21,28 +25,30 @@
 
 /** Monday 00:00 of the week containing `d`, in local time. */
 export function startOfIsoWeek(d: Date): Date {
-  const out = new Date(d)
-  const day = out.getDay() || 7          // JS Sunday is 0; ISO wants 7
-  out.setDate(out.getDate() - (day - 1)) // back up to Monday
-  out.setHours(0, 0, 0, 0)
-  return out
+  return shopDayStart(startOfShopWeek(shopDateStr(d)))
 }
 
 /** Sunday 23:59:59.999 of the week containing `d`, in local time. */
 export function endOfIsoWeek(d: Date): Date {
-  const out = startOfIsoWeek(d)
-  out.setDate(out.getDate() + 6)
-  out.setHours(23, 59, 59, 999)
-  return out
+  return shopDayEnd(endOfShopWeek(shopDateStr(d)))
 }
 
 /** `2026-W34` for the ISO week containing `d`. Matches Postgres IYYY-"W"IW. */
 export function isoWeekKey(d: Date): string {
-  // Work in UTC on the date parts only, so a local DST shift cannot move the
-  // day across a boundary mid-calculation.
-  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
-  const day = t.getUTCDay() || 7
-  t.setUTCDate(t.getUTCDate() + 4 - day)        // the week's Thursday decides the year
+  // The seller's calendar week. This read the PROCESS's date parts, so the same
+  // instant produced a different key depending on where the code ran — and once
+  // isoWeekBounds started returning Tashkent midnight (19:00 UTC the day
+  // before), a US-Eastern process read that Monday as the previous Sunday and
+  // keyed the whole week one back.
+  //
+  // Postgres must agree byte-for-byte: lib/db/payouts.ts buckets with
+  // `to_char(… AT TIME ZONE 'Asia/Tashkent', 'IYYY-"W"IW')` for exactly this
+  // reason. Change one and you must change the other.
+  const dateStr = shopDateStr(d)
+  const [y, m, day] = dateStr.split('-').map(Number)
+  const t = new Date(Date.UTC(y, m - 1, day))
+  const dow = t.getUTCDay() || 7
+  t.setUTCDate(t.getUTCDate() + 4 - dow)        // the week's Thursday decides the year
   const year = t.getUTCFullYear()
   const jan1 = Date.UTC(year, 0, 1)
   const week = Math.ceil(((t.getTime() - jan1) / 86_400_000 + 1) / 7)
@@ -66,18 +72,29 @@ export function isoWeekBounds(key: string): { start: Date; end: Date } | null {
   if (!m) return null
   const year = Number(m[1]), week = Number(m[2])
   if (week < 1 || week > 53) return null
-  const week1Monday = startOfIsoWeek(new Date(year, 0, 4))
-  const start = new Date(week1Monday)
-  start.setDate(start.getDate() + (week - 1) * 7)
-  const end = new Date(start)
-  end.setDate(end.getDate() + 6)
-  end.setHours(23, 59, 59, 999)
-  return { start, end }
+  // All of this on date STRINGS, converting to instants only at the end. It used
+  // to take a Date from startOfIsoWeek and then call setDate()/setHours() on it,
+  // which operate in the PROCESS's zone — so once startOfIsoWeek returned the
+  // seller's midnight, every subsequent step nudged it off that boundary.
+  //
+  // 4 January is the date ISO-8601 guarantees is in week 1 of its year; 1 January
+  // may belong to the previous year's last week.
+  const week1Monday = startOfShopWeek(`${m[1]}-01-04`)
+  const startStr = shiftShopDate(week1Monday, (week - 1) * 7)
+  return { start: shopDayStart(startStr), end: shopDayEnd(shiftShopDate(startStr, 6)) }
 }
 
-/** `YYYY-MM-DD` in LOCAL time — never toISOString(), which shifts to UTC. */
+/**
+ * `YYYY-MM-DD` in the SELLER's zone — see lib/shop-time.ts.
+ *
+ * The name says "local" for historical reasons and the call sites are unchanged,
+ * but the meaning is now explicit rather than ambient: it no longer depends on
+ * where the browser or the server happens to be. A person running this from US
+ * Eastern, a server in UTC and a seller in Tashkent can sit on three different
+ * calendar days at once, and every one of them needs the seller's answer.
+ */
 export function localDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return shopDateStr(d)
 }
 
 /**
@@ -89,16 +106,15 @@ export function localDateStr(d: Date): string {
  * inputs said 08/20 — 08/26: same range, two answers. Date-only strings carry no
  * timezone and must not acquire one on the way in.
  */
+/** The instant of midnight on `s` in the SELLER's zone. */
 export function parseLocalDate(s: string): Date {
-  const [y, m, d] = s.split('-').map(Number)
-  return new Date(y, (m ?? 1) - 1, d ?? 1)
+  return shopDayStart(s)
 }
 
 /** Move a `YYYY-MM-DD` string by whole days, staying in local time. */
+/** Add days to a `YYYY-MM-DD` string. Zone-free string arithmetic. */
 export function shiftLocalDate(s: string, days: number): string {
-  const d = parseLocalDate(s)
-  d.setDate(d.getDate() + days)
-  return localDateStr(d)
+  return shiftShopDate(s, days)
 }
 
 /**
@@ -109,9 +125,12 @@ export function shiftLocalDate(s: string, days: number): string {
  * Thu–Wed after paging forward, and every week after that inherited the drift.
  */
 export function isCalendarWeek(from: string, to: string): boolean {
-  const start = parseLocalDate(from)
-  if (start.getDay() !== 1) return false                 // must begin on a Monday
-  return localDateStr(endOfIsoWeek(start)) === to
+  // Pure string arithmetic. This used to parse `from` to a Date and call
+  // getDay() on it — which asks the PROCESS what weekday it is. Once
+  // parseLocalDate started returning the seller's midnight (19:00 UTC the day
+  // before), getDay() in a US-Eastern browser read that Monday as a Sunday and
+  // the picker stopped recognising its own week.
+  return isShopCalendarWeek(from, to)
 }
 
 /**
@@ -147,20 +166,17 @@ export function pageRange(
   dir: -1 | 1,
   now: Date = new Date(),
 ): { from: string; to: string } {
-  if (isCalendarWeek(from, to)) {
-    const anchor = parseLocalDate(from)
-    anchor.setDate(anchor.getDate() + dir * 7)
-    return { from: localDateStr(startOfIsoWeek(anchor)), to: localDateStr(endOfIsoWeek(anchor)) }
+  if (isShopCalendarWeek(from, to)) {
+    const anchor = shiftShopDate(from, dir * 7)
+    return { from: startOfShopWeek(anchor), to: endOfShopWeek(anchor) }
   }
   // An arbitrary range keeps its own length and its own alignment. Clamping the
   // end to today is fine HERE — there is no weekday anchor to destroy — and it
   // stops a 90-day window from being paged entirely into the future.
-  const today = localDateStr(now)
-  const rangeDays = Math.round(
-    (parseLocalDate(to).getTime() - parseLocalDate(from).getTime()) / 86_400_000,
-  ) + 1
-  let newFrom = shiftLocalDate(from, dir * 7)
-  let newTo = shiftLocalDate(to, dir * 7)
+  const today = shopDateStr(now)
+  const rangeDays = shopDaysBetween(from, to)
+  let newFrom = shiftShopDate(from, dir * 7)
+  let newTo = shiftShopDate(to, dir * 7)
   if (newTo > today) {
     newTo = today
     newFrom = shiftLocalDate(today, -(rangeDays - 1))
@@ -177,8 +193,8 @@ export function pageRange(
  * what let the clamp above fire in the first place.
  */
 export function canPageForward(from: string, to: string, now: Date = new Date()): boolean {
-  if (isCalendarWeek(from, to)) return from < localDateStr(startOfIsoWeek(now))
-  return to < localDateStr(now)
+  if (isShopCalendarWeek(from, to)) return from < shopWeekBounds(now).from
+  return to < shopDateStr(now)
 }
 
 /**
@@ -249,13 +265,31 @@ export function localMonthStr(d: Date): string {
  * from the KPI cards, the chart, the product table and the orders list alike.
  */
 export function endOfLocalDay(d: Date): Date {
-  const out = new Date(d)
-  out.setHours(23, 59, 59, 999)
-  return out
+  return shopDayEnd(shopDateStr(d))
+}
+
+/** 23:59:59.999 on a `YYYY-MM-DD` string, in the seller's zone. */
+export function parseLocalDateEnd(s: string): Date {
+  return shopDayEnd(s)
 }
 
 /** Local midnight → local end-of-day for a `YYYY-MM-DD` string, in one step. */
 export function localDayRange(dateStr: string): { start: Date; end: Date } {
   const start = parseLocalDate(dateStr)
   return { start, end: endOfLocalDay(start) }
+}
+
+/**
+ * The seller's current week, as `YYYY-MM-DD` strings.
+ *
+ * A convenience over startOfShopWeek/endOfShopWeek for the common case: what
+ * week is the seller in right now. (An earlier draft of this comment said
+ * startOfIsoWeek/endOfIsoWeek stayed process-local — they did not survive that
+ * way. Mixing a shop instant with process-local accessors turned out to be the
+ * bug, so those are shop-zone too, and isoWeekKey carries the matching
+ * AT TIME ZONE cast in lib/db/payouts.ts.) See lib/shop-time.ts.
+ */
+export function shopWeekBounds(now: Date = new Date()): { from: string; to: string } {
+  const today = shopDateStr(now)
+  return { from: startOfShopWeek(today), to: endOfShopWeek(today) }
 }
