@@ -18,7 +18,7 @@
     "test:atmos": "node --import tsx --test lib/billing/atmos-verify.test.ts",
     "test:tiers": "node --import tsx --test lib/billing/tiers.test.ts",
     "test:features": "node --import tsx --test lib/billing/features.test.ts",
-    "test:gating": "node --import tsx --test lib/billing/entitlement.integration.test.ts",
+    "test:gating": "node --conditions=react-server --import tsx --test lib/billing/entitlement.integration.test.ts",
     "test:trial-copy": "node --import tsx --test lib/trial-copy.test.ts",
     "test:notif": "node --import tsx --test lib/notif-i18n.test.ts lib/telegram-retry.test.ts lib/telegram-seller-render.test.ts && node --conditions=react-server --import tsx --test lib/marketplace/stock-notify.test.ts",
     "test:grouping": "node --import tsx --test lib/variant-grouping.test.ts lib/products/store-variant-grouping.test.ts",
