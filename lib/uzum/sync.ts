@@ -21,6 +21,17 @@ import { resolveColor } from '@/lib/products/resolveColor'
 import { buildVariantIndex, resolveVariant } from '@/lib/uzum/variant-match'
 import { withShopLock } from '@/lib/db/shop-lock'
 
+// A uuid list as ONE bound parameter.
+//
+// Drizzle expands a JS array into `($1, $2, …)`, one placeholder per element,
+// which caps out at Postgres's 65 535-parameter limit and grows the query text
+// with the shop. A comma-joined string parsed back into a uuid[] server-side is
+// a single parameter whatever the length; the cast rejects anything that is not
+// a uuid, so the join is not a hole.
+function idArray(ids: string[]) {
+  return sql`string_to_array(${ids.join(',')}, ',')::uuid[]`
+}
+
 // Resolve a SKU's colour: prefer the skuTitle suffix (БЕЖЕВ / БЕЛЫЙ …), then
 // fall back to the structured «Цвет» / «Rang» characteristic already present in
 // the product-card payload. Its RU value resolves cleanly (e.g. «Бежевый» →
@@ -1219,40 +1230,56 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
 
           if (missingCommission.length > 0 && totalExistingFee === 0) {
             const feeRate = totalFees / totalRevenue
-            for (const o of missingCommission) {
-              const rev = Number(o.revenue ?? 0)
-              if (rev > 0) {
-                // DERIVED, and it must say so. This number is the shop-wide gap
-                // between revenue and balance, spread across orders in
-                // proportion to revenue — a plausible guess, not a fee Uzum
-                // charged on THIS order. Written into the same column as real
-                // fees, an unstamped estimate is indistinguishable from a fact,
-                // and lib/money would count it as one.
-                await db.execute(sql`
-                  update orders
-                     set marketplace_fee = ${String(Math.round(rev * feeRate))},
-                         fee_source = 'derived'
-                   where id = ${o.id}
-                `)
-              }
+            // ONE statement, not one per order.
+            //
+            // This used to issue an UPDATE for every non-cancelled order in the
+            // shop — unbounded, so a seller with 5 000 orders paid 5 000 round
+            // trips inside a sync that cron gives 280 seconds. Sync slowness is
+            // what turns overlapping runs from theoretical into routine (see
+            // lib/db/shop-lock.ts), so the cost was not only the wait.
+            //
+            // The rows are addressed by the ids we already selected, not by a
+            // re-derived predicate: same set as the loop touched, immune to a
+            // row that changed underneath us between the SELECT and here.
+            //
+            // DERIVED, and it must say so. This number is the shop-wide gap
+            // between revenue and balance, spread across orders in proportion to
+            // revenue — a plausible guess, not a fee Uzum charged on THIS order.
+            // An unstamped estimate is indistinguishable from a fact, and
+            // lib/money would count it as one.
+            //
+            // round() on a positive numeric rounds half up, as Math.round does.
+            // It works on the stored decimal rather than a float64 product, so a
+            // knife-edge row can land a so'm away from what the loop wrote —
+            // immaterial in a number that is an estimate to begin with.
+            const commissionIds = missingCommission
+              .filter(o => Number(o.revenue ?? 0) > 0)
+              .map(o => o.id)
+            if (commissionIds.length > 0) {
+              await db.execute(sql`
+                update orders
+                   set marketplace_fee = round(revenue * ${String(feeRate)}::numeric),
+                       fee_source = 'derived'
+                 where id = any(${idArray(commissionIds)})
+              `)
             }
             debug.financeBalanceFallback = `balance=${financeResult.balance}, totalRev=${totalRevenue}, feeRate=${(feeRate * 100).toFixed(1)}%`
           } else if (totalExistingFee > 0 && missingDelivery.length > 0) {
             const totalDelivery = totalFees - totalExistingFee - totalExistingDelivery
             if (totalDelivery > 0) {
               const deliveryPerOrder = Math.round(totalDelivery / missingDelivery.length)
-              for (const o of missingDelivery) {
-                // DERIVED for the same reason: a flat per-order split of a
-                // shop-wide remainder. lib/money adds delivery to the fee, so an
-                // estimated delivery makes the row's fee TOTAL an estimate — the
-                // stamp describes the row, not just one column.
-                await db.execute(sql`
-                  update orders
-                     set delivery_cost = ${String(deliveryPerOrder)},
-                         fee_source = 'derived'
-                   where id = ${o.id}
-                `)
-              }
+              // One statement, addressed by id, for the reasons above.
+              //
+              // DERIVED for the same reason too: a flat per-order split of a
+              // shop-wide remainder. lib/money adds delivery to the fee, so an
+              // estimated delivery makes the row's fee TOTAL an estimate — the
+              // stamp describes the row, not just one column.
+              await db.execute(sql`
+                update orders
+                   set delivery_cost = ${String(deliveryPerOrder)},
+                       fee_source = 'derived'
+                 where id = any(${idArray(missingDelivery.map(o => o.id))})
+              `)
               debug.financeDeliveryFallback = `balance=${financeResult.balance}, totalDelivery=${totalDelivery}, perOrder=${deliveryPerOrder}`
             }
           }
