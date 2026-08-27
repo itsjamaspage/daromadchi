@@ -84,6 +84,17 @@ describe('diffLedger — Option A (debit at placement)', () => {
       [{ delta: -3, reason: 'consume', orderIdExternal: 'o1', marketplace: 'yandex_market' }])
   })
 
+  it('delivered is live-CLOSED: first-seen-delivered records NOTHING (the PBBLK phantom)', () => {
+    const delivered = (id: string, qty = 1): GroupOrder =>
+      ({ orderIdExternal: id, marketplace: 'yandex_market', qty, status: 'delivered' })
+    // First sighting already delivered → no consume created (was the debit-at-delivery bug).
+    assert.deepEqual(diffLedger([delivered('pbblk-ord')], new Set()), [])
+    // A delivered order whose consume was recorded while it was reserving → no-op,
+    // the consume stays (diffLedger never removes), so on-hand keeps the debit.
+    const rec = applied(new Set(), diffLedger([live('o1')], new Set()))
+    assert.deepEqual(diffLedger([delivered('o1')], rec), [])
+  })
+
   it('full lifecycle nets to zero: seed 2, sell 1, return-restock → back to 2', () => {
     const events: LedgerEvent[] = [seed(2)]
     let rec = new Set<string>()
@@ -119,9 +130,9 @@ describe('orderLedgerStatus — live is anchored to RESERVING_RAW_STATUSES (flag
     }
   })
 
-  it('delivered (collected) stays live — Option A keeps the consumed unit debited', () => {
-    assert.equal(orderLedgerStatus('DELIVERED', 'delivered'), 'live')
-    assert.equal(orderLedgerStatus(null, 'delivered'), 'live')   // first-seen-delivered still debits
+  it('delivered maps to live-CLOSED (delivered), not live — keep a consume, never create one', () => {
+    assert.equal(orderLedgerStatus('DELIVERED', 'delivered'), 'delivered')
+    assert.equal(orderLedgerStatus(null, 'delivered'), 'delivered')   // first-seen-delivered records NOTHING
   })
 
   it('cancelled and returned map to their credit reasons', () => {
