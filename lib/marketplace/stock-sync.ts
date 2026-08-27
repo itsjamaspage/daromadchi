@@ -18,7 +18,7 @@ import { db, shops, products, orders, orderItems, stockSyncState, stockNotifyOrd
 import { logger } from '@/lib/logger'
 import { pushStock, type StockWriteStatus } from '@/lib/marketplace/stock-writer'
 import { userHasFeature } from '@/lib/billing/entitlement'
-import { planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
+import { planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, rawGroupAvailable, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
 import { reservingOrderCondition } from '@/lib/marketplace/reserving-orders'
 import { handleOversell } from '@/lib/marketplace/oversell'
 import { notifyStockUpdates, type StockUpdateEvent } from '@/lib/marketplace/stock-notify'
@@ -443,11 +443,13 @@ async function syncStockSyncGroupsLocked(opts: RunOptions): Promise<StockSyncRun
     const { available, plans } = planStockWrites(group.members, oversellMode)
     anyDisplayChange = true // available may have moved; refresh the display
 
-    // Oversell detection: raw (pre-clamp) available below zero means the same
-    // physical unit was sold more than once. Alert + (rate-limited) auto-cancel.
-    const maxStock = Math.max(0, ...group.members.map(m => Math.max(0, m.listedStock)))
-    const pending = group.members.reduce((s, m) => s + Math.max(0, m.pending), 0)
-    const rawAvailable = maxStock - pending
+    // Oversell detection: the raw (pre-clamp) shared free-to-sell below zero means
+    // the same physical unit was sold more than once. Uses the SAME physical-pool
+    // computation as `available` (rawGroupAvailable), NOT the throttled listing —
+    // measuring the pool off the listing double-counted a normal last-unit sale
+    // (listing driven to 0 by the sale while the order was still pending → −1) and
+    // fired a false oversell alert. Alert + (rate-limited) auto-cancel.
+    const rawAvailable = rawGroupAvailable(group.members)
     if (rawAvailable < 0) {
       try {
         await handleOversell({

@@ -2,7 +2,7 @@
 // Run: node --import tsx --test lib/marketplace/stock-allocation.test.ts
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { computeAvailable, planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, physicalStockFromRead, RESERVING_RAW_STATUSES, type SyncMember } from './stock-allocation'
+import { computeAvailable, rawGroupAvailable, planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, physicalStockFromRead, RESERVING_RAW_STATUSES, type SyncMember } from './stock-allocation'
 
 function member(over: Partial<SyncMember>): SyncMember {
   return {
@@ -23,6 +23,44 @@ function member(over: Partial<SyncMember>): SyncMember {
 // The worked example: JMJ16BEG on Uzum (listed 1) + YM (listed 1), one Uzum sale.
 const uzum = (o: Partial<SyncMember> = {}) => member({ shopId: 'uzum-shop', marketplace: 'uzum', priority: 0, listedStock: 1, ...o })
 const ym = (o: Partial<SyncMember> = {}) => member({ shopId: 'ym-shop', marketplace: 'yandex_market', priority: 100, listedStock: 1, ...o })
+
+describe('rawGroupAvailable — oversell detection reads the PHYSICAL pool, not the listing', () => {
+  it('the false-alarm case (KBWHT): last unit sold, both listings mirrored to 0, order still pending → 0, NOT −1', () => {
+    // Reproduces the reported bug. A real unit existed (physical 1 on each), it
+    // sold on Uzum, the listing was driven to 0 on BOTH marketplaces (sale +
+    // mirror), and the order is still counted as pending. The pool is physical=1,
+    // so raw = MAX(1,1) − 1 = 0 → NO oversell. The old listing-based math read
+    // MAX(0,0) − 1 = −1 and fired a false "Товар закончился … выполнить нечем".
+    const members = [
+      uzum({ listedStock: 0, physicalStock: 1, pending: 1 }),
+      ym({ listedStock: 0, physicalStock: 1, pending: 0 }),
+    ]
+    assert.equal(rawGroupAvailable(members), 0)          // fixed: not negative
+    assert.equal(rawGroupAvailable(members) < 0, false)  // → no oversell alert
+    // Prove the OLD listing-based computation would have false-alarmed:
+    const oldListingBased = Math.max(0, Math.max(0, 0, 0)) - 1
+    assert.equal(oldListingBased, -1)
+  })
+
+  it('a GENUINE oversell still fires: one physical unit, two committed orders → −1', () => {
+    const members = [
+      uzum({ listedStock: 0, physicalStock: 1, pending: 1 }),
+      ym({ listedStock: 0, physicalStock: 1, pending: 1 }),   // second order on the sibling
+    ]
+    // MAX(physical 1,1) − (1+1) = −1 → oversell (the seller genuinely oversold).
+    assert.equal(rawGroupAvailable(members), -1)
+    assert.equal(rawGroupAvailable(members) < 0, true)
+  })
+
+  it('computeAvailable is exactly rawGroupAvailable clamped at 0', () => {
+    const sold = [uzum({ listedStock: 0, physicalStock: 1, pending: 1 }), ym({ listedStock: 0, physicalStock: 1 })]
+    assert.equal(rawGroupAvailable(sold), 0)
+    assert.equal(computeAvailable(sold), 0)
+    const over = [uzum({ physicalStock: 1, pending: 2 }), ym({ physicalStock: 1 })]
+    assert.equal(rawGroupAvailable(over), -1)
+    assert.equal(computeAvailable(over), 0)   // clamped
+  })
+})
 
 describe('computeAvailable — ledger mode (Option A on_hand override)', () => {
   it('THE JMBLK fix: both pools stale at 2, ledger on_hand=1 → available 1 (NOT MAX(2,2)=2)', () => {
