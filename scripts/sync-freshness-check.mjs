@@ -101,7 +101,17 @@ function adminChatIds() {
   return ids.length ? ids : [FALLBACK_ADMIN_CHAT_ID]
 }
 
+// Telegram paging is OFF by default: the watchdog's findings live in the logfile
+// and in the app's in-app health view (getSystemHealth). Operators who want a push
+// can opt in with FRESHNESS_TELEGRAM=on. Keeps the seller's Telegram free of
+// English operator diagnostics.
+const TELEGRAM_ALERTS = /^(1|true|on|yes)$/i.test((process.env.FRESHNESS_TELEGRAM ?? 'off').trim())
+
 async function sendTelegram(text) {
+  if (!TELEGRAM_ALERTS) {
+    logLine(`telegram disabled (FRESHNESS_TELEGRAM=off) — would page: ${text.replace(/\n/g, ' ').slice(0, 200)}`)
+    return
+  }
   const token = process.env.TELEGRAM_BOT_TOKEN
   if (!token) {
     logLine('WARN no TELEGRAM_BOT_TOKEN — cannot page; logfile is the only record')
