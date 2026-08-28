@@ -19,7 +19,6 @@ import { useSyncPolling } from '@/hooks/useSyncPolling'
 import { useLang, useTheme } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 import { formatSum } from '@/lib/format-sum'
-import { profitTier } from '@/lib/money/profit-presentation'
 import type { Kpis, Order, Product, DailyRevenue, MarketplaceType } from '@/lib/types'
 import { orderDisplayStatus } from '@/lib/marketplace/order-display-status'
 import type { ProductSalesRow } from '@/lib/db/products'
@@ -221,58 +220,22 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
     ? `${t.kpi.counted}: ${formatSum(countedRevenue)} · ${t.kpi.awaiting}: ${formatSum(pendingRevenue)}`
     : undefined
 
-  // Profit card, tiered by how much of the COUNTED revenue is uncosted. The
-  // boundary maths (40% material, 100% suppress) lives in a tested pure helper —
-  // see lib/money/profit-presentation.ts for why a profit with missing cost is
-  // an upper bound, not a fact.
-  const missingRev = kpis.cost_missing_revenue ?? 0
-  const tier = profitTier({ countedRevenue, costMissingRevenue: missingRev })
-
-  const profitBreakdown: KpiBreakdownRow[] = [
-    { label: t.kpi.sales, value: formatSum(countedRevenue) },
-    { label: t.kpi.cogs,  value: formatSum(kpis.profit_cogs ?? 0), kind: 'minus' },
-    { label: t.kpi.fees,  value: formatSum(kpis.profit_fees ?? 0), kind: 'minus' },
-    { label: t.kpi.net,   value: formatSum(kpis.total_profit),     kind: 'total' },
+  // «Маржа после комиссии» = revenue − what the marketplace kept, over the
+  // counted orders only. Replaces the old net-profit card: it needs no
+  // cost_price, so it never lands in an "enter your costs" empty state. Computed
+  // server-side (revenueCounted − fees, unreported-fee orders excluded not
+  // zeroed — see lib/money/order-economics.ts); the card just presents it.
+  const margin = kpis.margin_after_commission ?? 0
+  const marginBreakdown: KpiBreakdownRow[] = [
+    { label: t.kpi.sales,  value: formatSum(countedRevenue) },
+    { label: t.kpi.fees,   value: formatSum(kpis.profit_fees ?? 0), kind: 'minus' },
+    { label: t.kpi.margin, value: formatSum(margin),                kind: 'total' },
   ]
-
-  let profitValue: string
-  let profitBreakdownProp: KpiBreakdownRow[] | undefined
-  let profitWarning: string | undefined
-  let profitChange: number | null | undefined
-  if (isEmpty || kpisFailed) {
-    profitValue = kpisFailed ? UNKNOWN : formatSum(kpis.total_profit)
-    profitBreakdownProp = undefined
-    profitWarning = undefined
-    profitChange = null
-  } else if (countedRevenue === 0) {
-    // Nothing counted → the coverage line carries the whole story.
-    profitValue = formatSum(kpis.total_profit)
-    profitBreakdownProp = undefined
-    profitWarning = undefined
-    profitChange = kpis.change_profit
-  } else if (tier.kind === 'suppressed') {
-    // 100% uncosted: the number would be revenue − commission wearing a net
-    // label. Suppress it — a % vs prior on a non-number is meaningless too.
-    profitValue = t.kpi.netUnknown
-    profitBreakdownProp = undefined
-    profitWarning = t.kpi.costNoneCta
-    profitChange = null
-  } else if (tier.kind === 'bounded') {
-    profitValue = `≤ ${formatSum(kpis.total_profit)}`
-    profitBreakdownProp = profitBreakdown
-    profitWarning = t.kpi.costPartial
-    profitChange = kpis.change_profit
-  } else {
-    profitValue = formatSum(kpis.total_profit)
-    profitBreakdownProp = profitBreakdown
-    // Gate on counted-scope missing revenue, not the all-delivered product
-    // count: an uncosted product only on a pending (Yandex) order must not fire
-    // "profit overstated" about a profit it isn't part of.
-    profitWarning = tier.warnMissingCost
-      ? t.kpi.noCost.replace('{n}', String(kpis.missing_cost_products ?? 0))
-      : undefined
-    profitChange = kpis.change_profit
-  }
+  const marginValue = kpisFailed ? UNKNOWN : formatSum(margin)
+  // Breakdown only when something is counted; otherwise the coverage line below
+  // carries the whole story (everything is still awaiting settlement).
+  const marginBreakdownProp = isEmpty || kpisFailed || countedRevenue === 0 ? undefined : marginBreakdown
+  const marginChange = isEmpty || kpisFailed ? null : kpis.change_margin
 
 
   // Top products: collapse listings that are really ONE product into a single
@@ -552,16 +515,14 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
           <KpiCard title={d.revenue} value={kpisFailed ? UNKNOWN : formatSum(kpis.total_revenue)} change={isEmpty || kpisFailed ? null : kpis.change_revenue} icon={DollarSign}  color="violet"
             coverage={isEmpty || kpisFailed ? undefined : revenueCoverageLine}
           />
-          {/* Profit shows its working, and only as far as it can. The breakdown
-              adds up the COUNTED sales, not every sale in the period: the revenue
-              card next door is where total sales live, and money a marketplace
-              has not reported yet is named in the coverage line rather than
-              folded in. When cost is missing on a material share of those counted
-              sales, the headline stops asserting a net figure — see the tiering
-              built above (profitValue / profitWarning). */}
-          <KpiCard title={d.profit}  value={profitValue} change={profitChange}  icon={TrendingUp}  color="emerald"
-            breakdown={profitBreakdownProp}
-            warning={profitWarning}
+          {/* Margin after commission — what the seller keeps after the
+              marketplace's cut, with NO cost_price anywhere (so no "enter your
+              costs" empty state, ever). The breakdown adds up the COUNTED sales
+              minus the reported commission; money a marketplace has not settled
+              yet is named in the coverage line rather than folded in, the same
+              counted/pending honesty the figure has always had. */}
+          <KpiCard title={d.marginAfterCommission} value={marginValue} change={marginChange} icon={TrendingUp} color="emerald"
+            breakdown={marginBreakdownProp}
             coverage={isEmpty || kpisFailed ? undefined : coverageLine}
           />
           <KpiCard title={d.orders}

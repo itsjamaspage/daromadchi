@@ -24,7 +24,7 @@
 import { inArray, gte, lte, and, eq, sql } from 'drizzle-orm'
 import { db, orders, orderItems, products } from '@/lib/db'
 import { loadOrderInputs } from '@/lib/money/load-order-economics'
-import { sumEconomics } from '@/lib/money/order-economics'
+import { sumEconomics, marginAfterCommission } from '@/lib/money/order-economics'
 
 export async function fetchPeriodKpis(shopIds: string[], since: Date | null, until: Date | null) {
   // Orders KPI counts EVERY order received (a cancelled order still happened);
@@ -76,6 +76,11 @@ export async function fetchPeriodKpis(shopIds: string[], since: Date | null, unt
   return {
     revenue,
     profit,
+    // Revenue − what the marketplace kept, over the counted orders only. The
+    // dashboard shows THIS instead of net profit: it needs no cost_price, so it
+    // never falls into an "enter your costs" empty state. Same counted/pending
+    // basis as the profit figure — reuses countedRevenue/fees, no new fee maths.
+    marginAfterCommission: marginAfterCommission(money),
     // The parts the profit is made of, so the dashboard can show its working:
     // sales − cost of goods − what the marketplace kept = net. `fees` is derived
     // rather than queried, because it is exactly the gap between what the sale
@@ -93,14 +98,6 @@ export async function fetchPeriodKpis(shopIds: string[], since: Date | null, unt
       marketplace: e.key, revenue: e.revenue, orders: e.orders, reason: e.reason,
     })),
     missingCostProducts: Number(missingCostAgg[0]?.products ?? 0),
-    // Counted-scope missing cost — how much of the COUNTED revenue rests on
-    // orders with no known cost. This is the honest trigger for the profit
-    // card: missingCostProducts above spans both counted and pending sales, so
-    // an uncosted product on an EXCLUDED (Yandex) order would raise that count
-    // without touching the profit shown. costMissing comes from the same
-    // per-order pass that built the profit, so it can't drift from it.
-    costMissingRevenue: money.costMissing.revenue,
-    costMissingOrders: money.costMissing.orders,
     orders: Number(orderAgg[0]?.total_orders ?? 0),
     cancelled: Number(orderAgg[0]?.cancelled_orders ?? 0),
     cancelledUnits: Number(unitAgg[0]?.units ?? 0),

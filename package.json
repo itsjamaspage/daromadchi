@@ -69,7 +69,7 @@
     "test:kpi-windows": "for TZ in America/New_York UTC Asia/Tashkent; do echo \"-- TZ=$TZ\"; TZ=$TZ node --import tsx --test lib/kpi-windows.test.ts || exit 1; done",
     "test:shop-time": "for TZ in America/New_York UTC Asia/Tashkent; do echo \"-- TZ=$TZ\"; TZ=$TZ node --import tsx --test lib/shop-time.test.ts || exit 1; done",
     "test:variant-match": "node --import tsx --test lib/uzum/variant-match.test.ts",
-    "test:money": "node --import tsx --test lib/money/order-economics.test.ts lib/money/order-economics.guardrail.test.ts",
+    "test:money": "node --import tsx --test lib/money/order-economics.test.ts lib/money/order-economics.guardrail.test.ts lib/money/margin-after-commission.test.ts",
     "test:crypto": "node --import tsx --test lib/crypto.test.ts",
     "test:shop-lock": "node --import tsx --test lib/db/shop-lock.integration.test.ts",
     "test:dash-fallback": "node --import tsx --test lib/dashboard-fallbacks.guardrail.test.ts",
