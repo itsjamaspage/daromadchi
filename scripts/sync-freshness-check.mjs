@@ -221,12 +221,21 @@ async function main() {
   const { status, ageMs } = classifyFreshness({ activeShops, freshestMs, nowMs, thresholdMs: STALE_MS })
   const fresh = decideNotification({ prev: prev.freshness ?? {}, currStatus: status, nowMs, reAlertMs: REALERT_MS })
 
-  // ── Check 2: per-row physical_stock drift (same rate-limit + channels) ────
+  // ── Check 2: per-row physical_stock drift ────────────────────────────────
+  // A drift is a data-quality signal, NOT an outage, so it alerts only when the
+  // SET of drifting listings CHANGES: a new or changed drift pages ONCE, then stays
+  // quiet — a stable known case (e.g. the JMBLK regression row we left uncorrected)
+  // must not re-nag every hour. When drift clears it sends one recovery. Silence it
+  // entirely with FRESHNESS_DRIFT_ALERT=off; the logfile still records drift each run.
   const driftCount = driftRows.length
-  const driftStatus = driftCount > 0 ? STATUS.STALE : STATUS.OK
-  const drift = decideNotification({ prev: prev.drift ?? {}, currStatus: driftStatus, nowMs, reAlertMs: REALERT_MS })
+  const driftKeys = driftRows.map(r => `${r.sku}/${r.marketplace}`).sort().join(',')
+  const prevDriftKeys = prev.drift?.keys ?? ''
+  const driftAlertOn = /^(1|true|on|yes)$/i.test((process.env.FRESHNESS_DRIFT_ALERT ?? 'on').trim())
+  let driftNotify = null
+  if (driftKeys && driftKeys !== prevDriftKeys) driftNotify = 'alert'       // new / changed drift
+  else if (!driftKeys && prevDriftKeys) driftNotify = 'recovery'            // all cleared
 
-  writeState({ freshness: fresh.nextState, drift: drift.nextState, lastRunMs: startedMs })
+  writeState({ freshness: fresh.nextState, drift: { keys: driftKeys }, lastRunMs: startedMs })
 
   const writeAge = newestWriteMs == null ? 'none' : fmtAge(nowMs - newestWriteMs)
   const driftEx = driftRows.slice(0, 5)
@@ -234,7 +243,7 @@ async function main() {
   logLine(
     `status=${status} activeShops=${activeShops} freshestSync=${fmtAge(ageMs)} newestWrite=${writeAge}` +
     ` drift=${driftCount}${driftCount > 0 ? ` [${driftEx}]` : ''}` +
-    `${fresh.notify ? ` notifyFresh=${fresh.notify}` : ''}${drift.notify ? ` notifyDrift=${drift.notify}` : ''}`
+    `${fresh.notify ? ` notifyFresh=${fresh.notify}` : ''}${driftNotify ? ` notifyDrift=${driftNotify}${driftAlertOn ? '' : '(muted)'}` : ''}`
   )
 
   if (fresh.notify === 'alert') {
@@ -249,13 +258,13 @@ async function main() {
     await sendTelegram(`✅ Daromadchi sync recovered. Freshest stock read is now ${fmtAge(ageMs)} old.`)
   }
 
-  if (drift.notify === 'alert') {
+  if (driftAlertOn && driftNotify === 'alert') {
     await sendTelegram(
       `⚠️ Daromadchi stock DRIFT: ${driftCount} listing(s) below their group's on-hand.\n` +
       `${driftEx}\nA shared-pool row is corrupted low (a lost unit). Catches BETWEEN-marketplace ` +
       `disagreement only — a whole group drifting down together is invisible here.`
     )
-  } else if (drift.notify === 'recovery') {
+  } else if (driftAlertOn && driftNotify === 'recovery') {
     await sendTelegram(`✅ Daromadchi stock drift cleared — all listings agree with their group's on-hand.`)
   }
 }
