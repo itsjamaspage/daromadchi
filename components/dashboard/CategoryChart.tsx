@@ -3,6 +3,7 @@
 import { PieChart, Pie, Cell, Tooltip } from 'recharts'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
+import { formatSum } from '@/lib/format-sum'
 
 const COLORS = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
 
@@ -80,7 +81,7 @@ export default function CategoryChart({ data }: { data: CategoryData[] }) {
                     <div className="flex items-center gap-2 ml-2 flex-shrink-0">
                       <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{d.percent.toFixed(1)}%</span>
                       <span className="text-[11px] font-medium tabular-nums" style={{ color: 'var(--text-dim)' }}>
-                        {new Intl.NumberFormat('uz-UZ').format(Math.round(d.revenue / 1_000_000))}M
+                        {formatSum(d.revenue)}
                       </span>
                     </div>
                   </div>

@@ -14,6 +14,12 @@ export const dashT = {
       counted: 'Hisobga olindi',
       awaiting: 'Hisob-kitob kutilmoqda',
       noCost: 'Tannarx kiritilmagan (mahsulot: {n}) — foyda haqiqiydan yuqori',
+      // When cost is missing on a MATERIAL share of the counted sales the net is
+      // just an upper bound (cost ≥ 0). At ≥40% we show "≤ X"; at 100% we don't
+      // show a number at all — it would be gross margin wearing a net label.
+      costPartial: "Tannarxning bir qismi kiritilmagan — bu yuqori chegara, haqiqiy foyda pastroq.",
+      netUnknown: 'Hisoblanmadi',
+      costNoneCta: "Foydani ko'rish uchun tovarlar tannarxini kiriting.",
     },
     nav: {
       dashboard: 'Dashboard', products: 'Mahsulotlar', orders: 'Buyurtmalar',
@@ -454,6 +460,12 @@ export const dashT = {
       counted: 'Counted',
       awaiting: 'Awaiting settlement',
       noCost: 'Cost not set (products: {n}) — profit is overstated',
+      // When cost is missing on a MATERIAL share of the counted sales the net is
+      // just an upper bound (cost ≥ 0). At ≥40% we show "≤ X"; at 100% we don't
+      // show a number at all — it would be gross margin wearing a net label.
+      costPartial: 'Part of the cost is missing — this is a ceiling, real profit is lower.',
+      netUnknown: 'Not calculated',
+      costNoneCta: 'Enter your product costs to see profit.',
     },
     nav: {
       dashboard: 'Dashboard', products: 'Products', orders: 'Orders',
@@ -888,6 +900,12 @@ export const dashT = {
       counted: 'Учтено',
       awaiting: 'Ожидает расчёта',
       noCost: 'Себестоимость не указана (товаров: {n}) — прибыль завышена',
+      // When cost is missing on a MATERIAL share of the counted sales the net is
+      // just an upper bound (cost ≥ 0). At ≥40% we show "≤ X"; at 100% we don't
+      // show a number at all — it would be gross margin wearing a net label.
+      costPartial: 'Часть себестоимости не указана — это верхняя граница, реальная прибыль ниже.',
+      netUnknown: 'Не рассчитана',
+      costNoneCta: 'Укажите себестоимость товаров, чтобы увидеть прибыль.',
     },
     nav: {
       dashboard: 'Дашборд', products: 'Товары', orders: 'Заказы',

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { DollarSign, TrendingUp, ShoppingBag, Package, Settings, ArrowRight, RefreshCw, LayoutDashboard } from 'lucide-react'
-import KpiCard from '@/components/dashboard/KpiCard'
+import KpiCard, { type KpiBreakdownRow } from '@/components/dashboard/KpiCard'
 import RevenueChart from '@/components/dashboard/RevenueChart'
 import DateRangePicker from '@/components/dashboard/DateRangePicker'
 import StockAlerts from '@/components/dashboard/StockAlerts'
@@ -18,17 +18,16 @@ import { sellerOrderUrl } from '@/components/dashboard/OrdersTable'
 import { useSyncPolling } from '@/hooks/useSyncPolling'
 import { useLang, useTheme } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
+import { formatSum } from '@/lib/format-sum'
+import { profitTier } from '@/lib/money/profit-presentation'
 import type { Kpis, Order, Product, DailyRevenue, MarketplaceType } from '@/lib/types'
 import { orderDisplayStatus } from '@/lib/marketplace/order-display-status'
 import type { ProductSalesRow } from '@/lib/db/products'
 import type { StockGroup } from '@/lib/db/stock-groups'
 import { colorMetaFor, COLOR_LABELS, type ColorKey } from '@/lib/products/resolveColor'
 
-function formatSum(n: number) {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + " mln so'm"
-  if (n >= 1_000)     return (n / 1_000).toFixed(1).replace(/\.0$/, '')     + " ming so'm"
-  return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
-}
+// formatSum lives in lib/format-sum.ts so the KPI cards and the category
+// breakdown share one currency formatter and can't drift apart.
 
 // Short marketplace badge for the Top-products list: UZ (Uzum) / YM (Yandex
 // Market). Colour-coded so a store is recognisable at a glance without
@@ -61,6 +60,32 @@ function VariantColorChip({ colorKey, lang }: { colorKey: string | null | undefi
       <span className="h-2.5 w-2.5 rounded-full"
         style={{ backgroundColor: meta.hex, boxShadow: meta.ring ? 'inset 0 0 0 1px var(--border)' : undefined }} />
       {name}
+    </span>
+  )
+}
+
+// A Top-products row that merges several colours of one model (M9 black + white)
+// must not borrow one child's colour label. This neutral marker names the group
+// instead: a swatch per colour + a plain count, so the combined units read as
+// the MODEL's total, not one variant's. Abbreviated count avoids Russian plural
+// agreement ("2 цвета" vs "5 цветов") — "N цв." is correct at any number.
+const COLORS_LABEL: Record<'uz' | 'ru' | 'en', (n: number) => string> = {
+  uz: n => `${n} rang`,
+  ru: n => `${n} цв.`,
+  en: n => `${n} colors`,
+}
+
+function VariantGroupChip({ colors, lang }: { colors: string[]; lang: 'uz' | 'ru' | 'en' }) {
+  const dots = colors.map(c => colorMetaFor(c)).filter((m): m is NonNullable<typeof m> => m != null).slice(0, 4)
+  return (
+    <span className="inline-flex items-center gap-1 text-xs text-[var(--text-muted)]">
+      <span className="inline-flex items-center gap-0.5">
+        {dots.map((m, i) => (
+          <span key={i} className="h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: m.hex, boxShadow: m.ring ? 'inset 0 0 0 1px var(--border)' : undefined }} />
+        ))}
+      </span>
+      {COLORS_LABEL[lang](colors.length)}
     </span>
   )
 }
@@ -185,6 +210,70 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
   }
   const coverageLine = coverageParts.length > 0 ? coverageParts.join(' · ') : undefined
 
+  // The revenue card carries the SAME counted/pending split as the profit card,
+  // in money. Общая выручка shows all delivered sales (315k); the profit under
+  // it rests on the counted subset (200k). Without this line a reader pairs 25.5k
+  // against 315k and reads an 8% margin that doesn't exist — so the revenue card
+  // states its own basis: "Учтено: 200 000 · Ожидает расчёта: 115 000".
+  const pendingRevenue = (kpis.pending_marketplaces ?? []).reduce((s, p) => s + p.revenue, 0)
+  const countedRevenue = kpis.profit_revenue_counted ?? 0
+  const revenueCoverageLine = pendingRevenue > 0
+    ? `${t.kpi.counted}: ${formatSum(countedRevenue)} · ${t.kpi.awaiting}: ${formatSum(pendingRevenue)}`
+    : undefined
+
+  // Profit card, tiered by how much of the COUNTED revenue is uncosted. The
+  // boundary maths (40% material, 100% suppress) lives in a tested pure helper —
+  // see lib/money/profit-presentation.ts for why a profit with missing cost is
+  // an upper bound, not a fact.
+  const missingRev = kpis.cost_missing_revenue ?? 0
+  const tier = profitTier({ countedRevenue, costMissingRevenue: missingRev })
+
+  const profitBreakdown: KpiBreakdownRow[] = [
+    { label: t.kpi.sales, value: formatSum(countedRevenue) },
+    { label: t.kpi.cogs,  value: formatSum(kpis.profit_cogs ?? 0), kind: 'minus' },
+    { label: t.kpi.fees,  value: formatSum(kpis.profit_fees ?? 0), kind: 'minus' },
+    { label: t.kpi.net,   value: formatSum(kpis.total_profit),     kind: 'total' },
+  ]
+
+  let profitValue: string
+  let profitBreakdownProp: KpiBreakdownRow[] | undefined
+  let profitWarning: string | undefined
+  let profitChange: number | null | undefined
+  if (isEmpty || kpisFailed) {
+    profitValue = kpisFailed ? UNKNOWN : formatSum(kpis.total_profit)
+    profitBreakdownProp = undefined
+    profitWarning = undefined
+    profitChange = null
+  } else if (countedRevenue === 0) {
+    // Nothing counted → the coverage line carries the whole story.
+    profitValue = formatSum(kpis.total_profit)
+    profitBreakdownProp = undefined
+    profitWarning = undefined
+    profitChange = kpis.change_profit
+  } else if (tier.kind === 'suppressed') {
+    // 100% uncosted: the number would be revenue − commission wearing a net
+    // label. Suppress it — a % vs prior on a non-number is meaningless too.
+    profitValue = t.kpi.netUnknown
+    profitBreakdownProp = undefined
+    profitWarning = t.kpi.costNoneCta
+    profitChange = null
+  } else if (tier.kind === 'bounded') {
+    profitValue = `≤ ${formatSum(kpis.total_profit)}`
+    profitBreakdownProp = profitBreakdown
+    profitWarning = t.kpi.costPartial
+    profitChange = kpis.change_profit
+  } else {
+    profitValue = formatSum(kpis.total_profit)
+    profitBreakdownProp = profitBreakdown
+    // Gate on counted-scope missing revenue, not the all-delivered product
+    // count: an uncosted product only on a pending (Yandex) order must not fire
+    // "profit overstated" about a profit it isn't part of.
+    profitWarning = tier.warnMissingCost
+      ? t.kpi.noCost.replace('{n}', String(kpis.missing_cost_products ?? 0))
+      : undefined
+    profitChange = kpis.change_profit
+  }
+
 
   // Top products: collapse listings that are really ONE product into a single
   // line with combined delivered units + revenue. Two rows merge when they
@@ -195,7 +284,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
   // additionally covers rows that carry no variant_group_key. Rows with neither
   // key stay individual. Sorted by revenue so it's actually "top", capped at 5.
   const topProducts = useMemo(() => {
-    type Row = { key: string; title: string; sku: string | null; variant_color: string | null; qty: number; revenue: number; marketplaces: Set<MarketplaceType> }
+    type Row = { key: string; title: string; sku: string | null; variant_color: string | null; qty: number; revenue: number; marketplaces: Set<MarketplaceType>; colors: string[] }
     const norm = (s: string | null) => { const t = s?.trim().toLowerCase(); return t && t.length ? t : null }
 
     // Union-find over row indices: union any two rows sharing a SKU or a group.
@@ -210,22 +299,28 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
       if (p.variant_group_key) { const j = firstByVgk.get(p.variant_group_key); if (j === undefined) firstByVgk.set(p.variant_group_key, i); else union(i, j) }
     })
 
-    // Aggregate each component; the highest-revenue member names the row.
-    const byRoot = new Map<number, Row & { repRevenue: number }>()
+    // Aggregate each component; the highest-revenue member names the row. We
+    // also collect the DISTINCT colours the group spans: a row that merges M9
+    // black + M9 white must not be labelled with one child's colour ("Белый")
+    // as if that variant sold the whole quantity — see the multi-colour marker
+    // in the render. colorSet holds resolved colour keys; a cross-listing of the
+    // SAME colour on two marketplaces stays single-colour and keeps its chip.
+    const byRoot = new Map<number, Row & { repRevenue: number; colorSet: Set<string> }>()
     productSales.forEach((p, i) => {
       const r = find(i)
       const ex = byRoot.get(r)
       if (!ex) {
-        byRoot.set(r, { key: `grp:${r}`, title: p.title, sku: p.sku, variant_color: p.variant_color, qty: p.qty_sold, revenue: p.revenue, marketplaces: new Set(p.marketplace ? [p.marketplace] : []), repRevenue: p.revenue })
+        byRoot.set(r, { key: `grp:${r}`, title: p.title, sku: p.sku, variant_color: p.variant_color, qty: p.qty_sold, revenue: p.revenue, marketplaces: new Set(p.marketplace ? [p.marketplace] : []), colors: [], colorSet: new Set(p.variant_color ? [p.variant_color] : []), repRevenue: p.revenue })
       } else {
         ex.qty += p.qty_sold
         ex.revenue += p.revenue
         if (p.marketplace) ex.marketplaces.add(p.marketplace)
+        if (p.variant_color) ex.colorSet.add(p.variant_color)
         if (p.revenue > ex.repRevenue) { ex.repRevenue = p.revenue; ex.title = p.title; ex.sku = p.sku; ex.variant_color = p.variant_color }
       }
     })
     return [...byRoot.values()]
-      .map((r): Row => ({ key: r.key, title: r.title, sku: r.sku, variant_color: r.variant_color, qty: r.qty, revenue: r.revenue, marketplaces: r.marketplaces }))
+      .map((r): Row => ({ key: r.key, title: r.title, sku: r.sku, variant_color: r.variant_color, qty: r.qty, revenue: r.revenue, marketplaces: r.marketplaces, colors: [...r.colorSet] }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
   }, [productSales])
@@ -454,25 +549,19 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
       {/* KPI cards */}
       {!hiddenWidgets.has('kpis') && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <KpiCard title={d.revenue} value={kpisFailed ? UNKNOWN : formatSum(kpis.total_revenue)} change={isEmpty || kpisFailed ? null : kpis.change_revenue} icon={DollarSign}  color="violet" />
-          {/* Profit shows its working. 40 000 next to 200 000 of sales reads as a
-              bug until the 130 000 of stock and 30 000 of fees are visible — so
-              the card sets out the arithmetic instead of asserting a total.
-              The breakdown adds up the COUNTED sales, not every sale in the
-              period: the revenue card next door is where total sales live, and
-              money a marketplace has not reported yet is named in the coverage
-              line rather than folded in. Nothing counted → no arithmetic worth
-              showing, and that line carries the whole story. */}
-          <KpiCard title={d.profit}  value={kpisFailed ? UNKNOWN : formatSum(kpis.total_profit)} change={isEmpty || kpisFailed ? null : kpis.change_profit}  icon={TrendingUp}  color="emerald"
-            breakdown={isEmpty || kpisFailed || (kpis.profit_revenue_counted ?? 0) === 0 ? undefined : [
-              { label: t.kpi.sales, value: formatSum(kpis.profit_revenue_counted ?? 0) },
-              { label: t.kpi.cogs,  value: formatSum(kpis.profit_cogs ?? 0), kind: 'minus' },
-              { label: t.kpi.fees,  value: formatSum(kpis.profit_fees ?? 0), kind: 'minus' },
-              { label: t.kpi.net,   value: formatSum(kpis.total_profit),     kind: 'total' },
-            ]}
-            warning={!kpisFailed && (kpis.missing_cost_products ?? 0) > 0
-              ? t.kpi.noCost.replace('{n}', String(kpis.missing_cost_products ?? 0))
-              : undefined}
+          <KpiCard title={d.revenue} value={kpisFailed ? UNKNOWN : formatSum(kpis.total_revenue)} change={isEmpty || kpisFailed ? null : kpis.change_revenue} icon={DollarSign}  color="violet"
+            coverage={isEmpty || kpisFailed ? undefined : revenueCoverageLine}
+          />
+          {/* Profit shows its working, and only as far as it can. The breakdown
+              adds up the COUNTED sales, not every sale in the period: the revenue
+              card next door is where total sales live, and money a marketplace
+              has not reported yet is named in the coverage line rather than
+              folded in. When cost is missing on a material share of those counted
+              sales, the headline stops asserting a net figure — see the tiering
+              built above (profitValue / profitWarning). */}
+          <KpiCard title={d.profit}  value={profitValue} change={profitChange}  icon={TrendingUp}  color="emerald"
+            breakdown={profitBreakdownProp}
+            warning={profitWarning}
             coverage={isEmpty || kpisFailed ? undefined : coverageLine}
           />
           <KpiCard title={d.orders}
@@ -574,9 +663,11 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                       <td className="py-3 pr-4">
                         <p className="text-[var(--text-base)] font-medium text-xs">{p.title}</p>
                         <p className="text-[var(--text-muted)] text-xs flex items-center gap-1.5">
-                          {p.sku}
+                          {p.colors.length > 1 ? null : p.sku}
                           {[...p.marketplaces].map(mp => <MarketplaceBadge key={mp} marketplace={mp} />)}
-                          <VariantColorChip colorKey={p.variant_color} lang={lang} />
+                          {p.colors.length > 1
+                            ? <VariantGroupChip colors={p.colors} lang={lang} />
+                            : <VariantColorChip colorKey={p.variant_color} lang={lang} />}
                         </p>
                       </td>
                       <td className="py-3 pr-4 text-right">

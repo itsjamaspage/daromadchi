@@ -93,6 +93,14 @@ export async function fetchPeriodKpis(shopIds: string[], since: Date | null, unt
       marketplace: e.key, revenue: e.revenue, orders: e.orders, reason: e.reason,
     })),
     missingCostProducts: Number(missingCostAgg[0]?.products ?? 0),
+    // Counted-scope missing cost — how much of the COUNTED revenue rests on
+    // orders with no known cost. This is the honest trigger for the profit
+    // card: missingCostProducts above spans both counted and pending sales, so
+    // an uncosted product on an EXCLUDED (Yandex) order would raise that count
+    // without touching the profit shown. costMissing comes from the same
+    // per-order pass that built the profit, so it can't drift from it.
+    costMissingRevenue: money.costMissing.revenue,
+    costMissingOrders: money.costMissing.orders,
     orders: Number(orderAgg[0]?.total_orders ?? 0),
     cancelled: Number(orderAgg[0]?.cancelled_orders ?? 0),
     cancelledUnits: Number(unitAgg[0]?.units ?? 0),
