@@ -51,6 +51,8 @@ const _fetchKpis = unstable_cache(
       profit_fees: current.fees,
       profit_revenue_counted: current.revenueCounted,
       missing_cost_products: current.missingCostProducts,
+      cost_missing_revenue: current.costMissingRevenue,
+      cost_missing_orders: current.costMissingOrders,
       counted_marketplaces: current.countedMarketplaces,
       pending_marketplaces: current.pendingMarketplaces,
       total_orders: current.orders,

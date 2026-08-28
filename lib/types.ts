@@ -229,8 +229,17 @@ export interface Kpis {
    *  every sale; this is what the breakdown under the profit adds up from. */
   profit_revenue_counted?: number
   /** Distinct products sold in the period with no cost_price entered. Their
-   *  cost counts as zero, so profit is OVERSTATED by whatever they cost. */
+   *  cost counts as zero, so profit is OVERSTATED by whatever they cost.
+   *  NOTE: this count spans ALL delivered items, both counted and pending
+   *  marketplaces — it is only the display count, never the trigger. Whether a
+   *  missing cost actually affects the shown profit is cost_missing_revenue. */
   missing_cost_products?: number
+  /** Of the COUNTED revenue (profit_revenue_counted), how much sits on orders
+   *  whose cost is unknown — the counted-scope figure the profit card tiers on.
+   *  net ≤ revenue − commission always (cost ≥ 0), so a large share here means
+   *  the shown "profit" is really an upper bound / gross margin, not net. */
+  cost_missing_revenue?: number
+  cost_missing_orders?: number
   /** Marketplaces whose money is in total_profit. */
   counted_marketplaces?: string[]
   /** Marketplaces with delivered sales the marketplace has not reported money
