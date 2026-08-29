@@ -221,6 +221,12 @@ export interface DailyRevenue {
 export interface Kpis {
   total_revenue: number
   total_profit: number
+  /** Revenue − marketplace commission over the COUNTED orders (revenueCounted −
+   *  fees). The dashboard's headline "kept after the marketplace's cut" metric —
+   *  needs no cost_price, so it never lands in an "enter your costs" empty state.
+   *  Same counted/pending basis as total_profit; unreported-fee orders excluded,
+   *  never zeroed (see lib/money/order-economics.ts marginAfterCommission). */
+  margin_after_commission?: number
   /** The parts total_profit is made of: revenue − cogs − fees = profit. Shown
    *  on the card so a low number explains itself instead of looking broken. */
   profit_cogs?: number
@@ -228,18 +234,10 @@ export interface Kpis {
   /** Sales behind total_profit — the counted subset. total_revenue still shows
    *  every sale; this is what the breakdown under the profit adds up from. */
   profit_revenue_counted?: number
-  /** Distinct products sold in the period with no cost_price entered. Their
-   *  cost counts as zero, so profit is OVERSTATED by whatever they cost.
-   *  NOTE: this count spans ALL delivered items, both counted and pending
-   *  marketplaces — it is only the display count, never the trigger. Whether a
-   *  missing cost actually affects the shown profit is cost_missing_revenue. */
+  /** Distinct products sold in the period with no cost_price entered. Retained
+   *  for the P&L page / other consumers; the dashboard margin card no longer
+   *  depends on cost at all. */
   missing_cost_products?: number
-  /** Of the COUNTED revenue (profit_revenue_counted), how much sits on orders
-   *  whose cost is unknown — the counted-scope figure the profit card tiers on.
-   *  net ≤ revenue − commission always (cost ≥ 0), so a large share here means
-   *  the shown "profit" is really an upper bound / gross margin, not net. */
-  cost_missing_revenue?: number
-  cost_missing_orders?: number
   /** Marketplaces whose money is in total_profit. */
   counted_marketplaces?: string[]
   /** Marketplaces with delivered sales the marketplace has not reported money
@@ -259,6 +257,7 @@ export interface Kpis {
   total_stock: number
   change_revenue?: number | null  // % vs prior period
   change_profit?: number | null
+  change_margin?: number | null   // margin-after-commission, period over period
   change_orders?: number | null
 }
 

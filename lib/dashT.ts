@@ -14,12 +14,8 @@ export const dashT = {
       counted: 'Hisobga olindi',
       awaiting: 'Hisob-kitob kutilmoqda',
       noCost: 'Tannarx kiritilmagan (mahsulot: {n}) — foyda haqiqiydan yuqori',
-      // When cost is missing on a MATERIAL share of the counted sales the net is
-      // just an upper bound (cost ≥ 0). At ≥40% we show "≤ X"; at 100% we don't
-      // show a number at all — it would be gross margin wearing a net label.
-      costPartial: "Tannarxning bir qismi kiritilmagan — bu yuqori chegara, haqiqiy foyda pastroq.",
-      netUnknown: 'Hisoblanmadi',
-      costNoneCta: "Foydani ko'rish uchun tovarlar tannarxini kiriting.",
+      // Breakdown total for the margin card: revenue − commission, no cost data.
+      margin: 'Marja',
     },
     nav: {
       dashboard: 'Dashboard', products: 'Mahsulotlar', orders: 'Buyurtmalar',
@@ -32,6 +28,7 @@ export const dashT = {
       title: 'Dashboard', subtitle: "Xush kelibsiz! Bu sizning do'koningiz analitikasi.",
       badge: "Sizning ma'lumotingiz", sync: 'Sinxronlash',
       all: 'Hammasi', revenue: 'Umumiy daromad', profit: 'Sof foyda',
+      marginAfterCommission: 'Komissiyadan keyingi marja',
       orders: 'Buyurtmalar', stock: 'Ombordagi mahsulot',
       recentOrders: "So'nggi buyurtmalar", topProducts: 'Top mahsulotlar',
       viewAll: "Hammasini ko'rish", noData: "Hali ma'lumot yo'q",
@@ -460,12 +457,8 @@ export const dashT = {
       counted: 'Counted',
       awaiting: 'Awaiting settlement',
       noCost: 'Cost not set (products: {n}) — profit is overstated',
-      // When cost is missing on a MATERIAL share of the counted sales the net is
-      // just an upper bound (cost ≥ 0). At ≥40% we show "≤ X"; at 100% we don't
-      // show a number at all — it would be gross margin wearing a net label.
-      costPartial: 'Part of the cost is missing — this is a ceiling, real profit is lower.',
-      netUnknown: 'Not calculated',
-      costNoneCta: 'Enter your product costs to see profit.',
+      // Breakdown total for the margin card: revenue − commission, no cost data.
+      margin: 'Margin',
     },
     nav: {
       dashboard: 'Dashboard', products: 'Products', orders: 'Orders',
@@ -478,6 +471,7 @@ export const dashT = {
       title: 'Dashboard', subtitle: 'Welcome! This is your store analytics.',
       badge: 'Your data', sync: 'Sync',
       all: 'All', revenue: 'Total revenue', profit: 'Net profit',
+      marginAfterCommission: 'Margin after commission',
       orders: 'Orders', stock: 'Stock',
       recentOrders: 'Recent orders', topProducts: 'Top products',
       viewAll: 'View all', noData: 'No data yet',
@@ -900,12 +894,8 @@ export const dashT = {
       counted: 'Учтено',
       awaiting: 'Ожидает расчёта',
       noCost: 'Себестоимость не указана (товаров: {n}) — прибыль завышена',
-      // When cost is missing on a MATERIAL share of the counted sales the net is
-      // just an upper bound (cost ≥ 0). At ≥40% we show "≤ X"; at 100% we don't
-      // show a number at all — it would be gross margin wearing a net label.
-      costPartial: 'Часть себестоимости не указана — это верхняя граница, реальная прибыль ниже.',
-      netUnknown: 'Не рассчитана',
-      costNoneCta: 'Укажите себестоимость товаров, чтобы увидеть прибыль.',
+      // Breakdown total for the margin card: revenue − commission, no cost data.
+      margin: 'Маржа',
     },
     nav: {
       dashboard: 'Дашборд', products: 'Товары', orders: 'Заказы',
@@ -917,6 +907,7 @@ export const dashT = {
       title: 'Дашборд', subtitle: 'Добро пожаловать! Это аналитика вашего магазина.',
       badge: 'Ваши данные', sync: 'Синхронизировать',
       all: 'Все', revenue: 'Общая выручка', profit: 'Чистая прибыль',
+      marginAfterCommission: 'Маржа после комиссии',
       orders: 'Заказы', stock: 'Остатки',
       recentOrders: 'Последние заказы', topProducts: 'Топ товаров',
       viewAll: 'Смотреть все', noData: 'Данных пока нет',

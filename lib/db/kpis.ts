@@ -47,12 +47,11 @@ const _fetchKpis = unstable_cache(
     const result: Kpis = {
       total_revenue: current.revenue,
       total_profit: current.profit,
+      margin_after_commission: current.marginAfterCommission,
       profit_cogs: current.cogs,
       profit_fees: current.fees,
       profit_revenue_counted: current.revenueCounted,
       missing_cost_products: current.missingCostProducts,
-      cost_missing_revenue: current.costMissingRevenue,
-      cost_missing_orders: current.costMissingOrders,
       counted_marketplaces: current.countedMarketplaces,
       pending_marketplaces: current.pendingMarketplaces,
       total_orders: current.orders,
@@ -65,6 +64,9 @@ const _fetchKpis = unstable_cache(
       const prev = await fetchPeriodKpis(shopIds, prevSinceDate, prevUntilDate)
       result.change_revenue = pct(current.revenue, prev.revenue)
       result.change_profit = pct(current.profit, prev.profit)
+      // Margin badge compares like-for-like: this period's margin-after-commission
+      // vs last period's, both revenue−fees over counted orders (#376).
+      result.change_margin = pct(current.marginAfterCommission, prev.marginAfterCommission)
       // The card SHOWS total − cancelled, so the badge beside it has to describe
       // that same number. It was comparing raw count(*), cancelled included —
       // which is how a week of 3 fulfilled orders and 5 cancellations came to

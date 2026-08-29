@@ -214,3 +214,19 @@ export function sumEconomics(orders: (OrderInput & { key: string })[]): PeriodTo
     costMissing: { orders: costMissingOrders, revenue: costMissingRevenue },
   }
 }
+
+/**
+ * Margin after commission — revenue minus what the marketplace kept, over the
+ * COUNTED orders only. The closest honest figure to profit that needs NO cost
+ * data: it never touches cost_price, so it can't land in the "enter your costs"
+ * empty state.
+ *
+ * It reuses the same numbers sumEconomics already produced — no new fee maths.
+ * Orders whose commission the marketplace has not reported are already out of
+ * countedRevenue and fees (they sit in `excluded`), so they drop out of the
+ * margin instead of being counted at a zero fee. Same counted/pending honesty
+ * the profit figure had, one subtraction shorter.
+ */
+export function marginAfterCommission(t: PeriodTotals): number {
+  return t.countedRevenue - t.fees
+}
