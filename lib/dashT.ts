@@ -30,6 +30,9 @@ export const dashT = {
       all: 'Hammasi', revenue: 'Umumiy daromad', profit: 'Sof foyda',
       marginAfterCommission: 'Komissiyadan keyingi marja',
       orders: 'Buyurtmalar', stock: 'Ombordagi mahsulot',
+      returns: 'Qaytarilgan', avgCheck: 'O\'rtacha chek',
+      stockMixed: 'aralash',
+
       recentOrders: "So'nggi buyurtmalar", topProducts: 'Top mahsulotlar',
       viewAll: "Hammasini ko'rish", noData: "Hali ma'lumot yo'q",
       noDataDesc: "Do'koningizni ulash uchun Sozlamalar sahifasiga o'ting, API tokeningizni kiriting va sinxronizatsiyani boshlang. Uzum Market va Yandex Market qo'llab-quvvatlanadi.",
@@ -473,6 +476,9 @@ export const dashT = {
       all: 'All', revenue: 'Total revenue', profit: 'Net profit',
       marginAfterCommission: 'Margin after commission',
       orders: 'Orders', stock: 'Stock',
+      returns: 'Returns', avgCheck: 'Avg. order',
+      stockMixed: 'mixed',
+
       recentOrders: 'Recent orders', topProducts: 'Top products',
       viewAll: 'View all', noData: 'No data yet',
       noDataDesc: 'Go to Settings, enter your API token and start syncing. Uzum Market and Yandex Market are supported.',
@@ -909,6 +915,9 @@ export const dashT = {
       all: 'Все', revenue: 'Общая выручка', profit: 'Чистая прибыль',
       marginAfterCommission: 'Маржа после комиссии',
       orders: 'Заказы', stock: 'Остатки',
+      returns: 'Возвраты', avgCheck: 'Средний чек',
+      stockMixed: 'смеш.',
+
       recentOrders: 'Последние заказы', topProducts: 'Топ товаров',
       viewAll: 'Смотреть все', noData: 'Данных пока нет',
       noDataDesc: 'Перейдите в Настройки, введите API-токен и запустите синхронизацию. Поддерживаются Uzum Market и Yandex Market.',

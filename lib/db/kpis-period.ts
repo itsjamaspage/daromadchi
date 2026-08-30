@@ -44,6 +44,14 @@ export async function fetchPeriodKpis(shopIds: string[], since: Date | null, unt
       total_revenue: sql<number>`coalesce(sum(${orders.revenue}::numeric) filter (where ${orders.status} = 'delivered'), 0)`,
       total_orders: sql<number>`count(*)`,
       cancelled_orders: sql<number>`count(*) filter (where ${orders.status} = 'cancelled')`,
+      // Returned orders. Counted as ORDERS, not units, and that is a limit of the
+      // data rather than a preference: Yandex maps PARTIALLY_RETURNED («возвращен
+      // частично») onto the same 'returned' status as a full return, so nothing
+      // here knows how many units of a partial actually came back. Counting units
+      // would silently treat every partial as a total loss. The dedicated
+      // /v2/campaigns/{id}/returns endpoint is what would separate them, and we do
+      // not call it yet.
+      returned_orders: sql<number>`count(*) filter (where ${orders.status} = 'returned')`,
     }).from(orders).where(and(...conditions)),
     // Cancelled UNITS (a single cancelled order can hold several items — users
     // think in items, so the KPI note shows both counts).
@@ -101,5 +109,6 @@ export async function fetchPeriodKpis(shopIds: string[], since: Date | null, unt
     orders: Number(orderAgg[0]?.total_orders ?? 0),
     cancelled: Number(orderAgg[0]?.cancelled_orders ?? 0),
     cancelledUnits: Number(unitAgg[0]?.units ?? 0),
+    returned: Number(orderAgg[0]?.returned_orders ?? 0),
   }
 }
