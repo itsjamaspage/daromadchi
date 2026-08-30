@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { DollarSign, TrendingUp, ShoppingBag, Package, Undo2, Settings, ArrowRight, RefreshCw, LayoutDashboard } from 'lucide-react'
 import KpiCard, { type KpiBreakdownRow } from '@/components/dashboard/KpiCard'
 import RevenueChart from '@/components/dashboard/RevenueChart'
-import DateRangePicker from '@/components/dashboard/DateRangePicker'
+import CalendarPicker from '@/components/dashboard/CalendarPicker'
 import StockAlerts from '@/components/dashboard/StockAlerts'
 import CategoryChart from '@/components/dashboard/CategoryChart'
 import LastSynced from '@/components/dashboard/LastSynced'
@@ -368,9 +368,9 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
         <div className="flex items-center gap-2 flex-wrap">
           <LastSynced lastSyncedAt={syncInfo.lastSyncedAt} lastSyncFailed={syncInfo.lastSyncFailed} />
           <Suspense>
-            {/* Chips off: the dashboard uses the current-week default + the ‹ ›
-                week arrows + a custom from–to range. No preset chips. */}
-            <DateRangePicker period={period} from={from} to={to} presets={[]} />
+            {/* Same calendar-grid picker as the P&L page: ‹ › week arrows + a
+                month-grid range picker. Current-week default, custom from–to. */}
+            <CalendarPicker from={from} to={to} />
           </Suspense>
           <button
             onClick={() => setShowCustomize(v => !v)}

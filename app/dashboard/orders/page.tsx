@@ -8,7 +8,7 @@ import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
 import Pagination from '@/components/dashboard/Pagination'
 import LastSyncedServer from '@/components/dashboard/LastSyncedServer'
 import { getT } from '@/lib/server-i18n'
-import DateRangePicker from '@/components/dashboard/DateRangePicker'
+import CalendarPicker from '@/components/dashboard/CalendarPicker'
 import { startOfIsoWeek, endOfIsoWeek, localDateStr, shopWeekBounds } from '@/lib/period-week'
 import type { MarketplaceType } from '@/lib/types'
 
@@ -57,7 +57,7 @@ export default async function OrdersPage({ searchParams }: Props) {
         </Suspense>
         <div className="flex items-center gap-3">
           <Suspense>
-            <DateRangePicker period="" from={from} to={to} presets={[]} />
+            <CalendarPicker from={from} to={to} />
           </Suspense>
           <Suspense>
             <LastSyncedServer />

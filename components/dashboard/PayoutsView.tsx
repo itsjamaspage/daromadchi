@@ -6,7 +6,7 @@ import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical, CreditCard
 import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine, MarketplaceType } from '@/lib/types'
 import { isoWeekBounds, isoWeekKey } from '@/lib/period-week'
 import ExportButton from '@/components/dashboard/ExportButton'
-import DateRangePicker from '@/components/dashboard/DateRangePicker'
+import CalendarPicker from '@/components/dashboard/CalendarPicker'
 import MpBadge from '@/components/dashboard/MpBadge'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
@@ -41,7 +41,7 @@ function formatPeriod(
 
 interface Props {
   entries: PayoutEntry[]
-  /** Custom range from the URL, when the seller set one. Drives DateRangePicker. */
+  /** Custom range from the URL, when the seller set one. Drives CalendarPicker. */
   from?: string
   to?: string
 }
@@ -370,15 +370,6 @@ export default function PayoutsView({ entries, from, to }: Props) {
   // Exclude awaitingSettlement rows from KPI totals — those have
   // netPayout=0 as a placeholder and would drag averages/totals down
   // if summed.
-  // Which week is on screen. Derived from the clock, exactly as the server
-  // derives the query range, so the two cannot disagree.
-  const currentWeekLabel = (() => {
-    const b = isoWeekBounds(isoWeekKey(new Date()))
-    if (!b) return ''
-    const dm = (d: Date) => d.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
-    return `${dm(b.start)} – ${dm(b.end)}`
-  })()
-
   const withKnownNet = filteredEntries.filter(e => !e.awaitingSettlement)
   // Both tiles are sums of money columns — no status anywhere.
   //
@@ -476,7 +467,7 @@ export default function PayoutsView({ entries, from, to }: Props) {
           {/* Opens to НАЧАЛО/КОНЕЦ date inputs only — no preset chips. The page
               lands on the current week without anyone choosing it, and a seller
               who wants another week picks the dates. */}
-          <DateRangePicker period="" from={from} to={to} presets={[]} fallbackLabel={currentWeekLabel} />
+          <CalendarPicker from={from} to={to} />
           <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
           {/* Kebab (⋮) menu: single icon that expands into a dropdown.
               Currently one action — "Обновить данные Yandex" — but the
