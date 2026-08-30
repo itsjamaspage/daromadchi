@@ -74,7 +74,8 @@
     "test:shop-lock": "node --import tsx --test lib/db/shop-lock.integration.test.ts",
     "test:dash-fallback": "node --import tsx --test lib/dashboard-fallbacks.guardrail.test.ts",
     "test:monitoring": "node --test scripts/sync-freshness-lib.test.mjs",
-    "test:yandex-stock": "node --import tsx --test lib/yandex/sellable-stock.test.ts"
+    "test:yandex-stock": "node --import tsx --test lib/yandex/sellable-stock.test.ts",
+    "test:stock-split": "node --import tsx --test lib/db/stock-split.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
