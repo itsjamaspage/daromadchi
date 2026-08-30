@@ -13,12 +13,15 @@
  */
 
 import { revalidateTag } from 'next/cache'
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
-import { db, shops, products, orders, orderItems, stockSyncState, stockNotifyOrderSeen } from '@/lib/db'
+import { and, eq, gte, inArray, isNull, isNotNull, sql } from 'drizzle-orm'
+import { db, shops, products, orders, orderItems, stockSyncState, stockNotifyOrderSeen, productGroupMerges, productLinks, users } from '@/lib/db'
+import { buildKeyResolver, matchKeyForProduct } from '@/lib/db/stock-groups'
 import { logger } from '@/lib/logger'
-import { pushStock, type StockWriteStatus } from '@/lib/marketplace/stock-writer'
+import { pushStock, ledgerDryRunOn, type StockWriteStatus } from '@/lib/marketplace/stock-writer'
 import { userHasFeature } from '@/lib/billing/entitlement'
-import { planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, rawGroupAvailable, decidePush, type PushHistory, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
+import { planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, rawGroupAvailable, computeAvailable, decidePush, type PushHistory, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
+import { orderLedgerStatus, diffLedger, ledgerOnHand, availableFromOnHand, seedGrossOnHand, driftCredit, sellerListingAvailable, type GroupOrder } from '@/lib/marketplace/stock-ledger'
+import { readLedgerEventsByKey, isSeeded, recordedOrderKeys, seedGroup, appendOrderDriven, appendManualCredit, type SeedConsume } from '@/lib/marketplace/stock-ledger-db'
 import { reservingOrderCondition } from '@/lib/marketplace/reserving-orders'
 import { handleOversell } from '@/lib/marketplace/oversell'
 import { notifyStockUpdates, type StockUpdateEvent } from '@/lib/marketplace/stock-notify'
@@ -39,10 +42,6 @@ const ACTIONABLE_SKIP_REASONS = new Set([
   'missing_barcode', 'missing_sku', 'missing_warehouse', 'missing_campaign', 'no_token',
 ])
 
-function normalizeKey(sku: string): string {
-  return sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '')
-}
-
 interface ShopRow {
   id: string
   marketplace: MarketplaceType
@@ -62,6 +61,7 @@ interface ProductRow {
   market_barcode: string | null
   market_sku: string | null
   market_warehouse_id: string | null
+  fulfillment_type: string | null
   title: string | null
   variant_color: string | null
   selling_price: string | null
@@ -112,6 +112,16 @@ interface SyncGroup {
   /** Ids (orders.id) of the reserving orders drawing on this group right now —
    *  the raw material for the new-order notification gate (detectNewOrders). */
   reservingOrderIds: Set<string>
+  /** This group's orders as the ledger sees them (live / delivered / cancelled /
+   *  returned), one per external order — the input to diffLedger. */
+  ledgerOrders: GroupOrder[]
+  /** True if any member is FBO/FBY. Such groups are EXCLUDED from the ledger
+   *  (spec §7): the ledger is the FBS shared pool, and FBO warehouses hold
+   *  genuinely independent inventory. They keep the legacy path. */
+  hasFbo: boolean
+  /** Seller-confirmed baseline shelf count (product_links.total_physical_stock)
+   *  for this group, or null. The seed prefers it over the listing (spec §3.2). */
+  baseline: number | null
 }
 
 async function loadGroups(userId: string): Promise<{
@@ -133,7 +143,7 @@ async function loadGroups(userId: string): Promise<{
   const groups = new Map<string, SyncGroup>()
   if (shopIds.length === 0) return { shopsById, groups }
 
-  const [prodRows, pendingRows, reservingRows] = await Promise.all([
+  const [prodRows, pendingRows, reservingRows, mergeRows, orderStatusRows, baselineRows] = await Promise.all([
     db.select({
       id: products.id,
       shop_id: products.shop_id,
@@ -143,6 +153,7 @@ async function loadGroups(userId: string): Promise<{
       market_barcode: products.market_barcode,
       market_sku: products.market_sku,
       market_warehouse_id: products.market_warehouse_id,
+      fulfillment_type: products.fulfillment_type,
       title: products.title,
       variant_color: products.variant_color,
       selling_price: products.selling_price,
@@ -170,8 +181,60 @@ async function loadGroups(userId: string): Promise<{
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .where(and(inArray(orders.shop_id, shopIds), reservingOrderCondition()))
       .groupBy(orderItems.product_id, orders.id),
+    // Merge rows for the merge-resolving group key (§6): the sync must group by
+    // the SAME key the display and the ledger use, or a merged group's credit
+    // lands on a key the sync never looks up.
+    db.select({ source_key: productGroupMerges.source_key, target_key: productGroupMerges.target_key })
+      .from(productGroupMerges).where(eq(productGroupMerges.user_id, userId)),
+    // One row per (product, external order) with summed qty + raw & normalized
+    // status — the input to diffLedger. Bounded to 90 days: a cancel/return only
+    // emits when its consume is already recorded, and consumes are recorded while
+    // the order is recent, so the window is ample and keeps the scan cheap.
+    db.select({
+      product_id: orderItems.product_id,
+      order_id_external: orders.order_id_external,
+      marketplace: shops.marketplace,
+      raw_status: orders.marketplace_status,
+      normalized_status: orders.status,
+      qty: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`.as('qty'),
+    }).from(orderItems)
+      .innerJoin(orders, eq(orderItems.order_id, orders.id))
+      .innerJoin(shops, eq(shops.id, orders.shop_id))
+      .where(and(
+        inArray(orders.shop_id, shopIds),
+        isNotNull(orders.order_id_external),
+        gte(orders.ordered_at, new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)),
+      ))
+      .groupBy(orderItems.product_id, orders.order_id_external, shops.marketplace, orders.marketplace_status, orders.status),
+    // Seller-confirmed baseline shelf count per group (spec §3.2 seed preference).
+    db.select({ match_key: productLinks.match_key, total_physical_stock: productLinks.total_physical_stock })
+      .from(productLinks)
+      .where(and(eq(productLinks.user_id, userId), isNotNull(productLinks.total_physical_stock), isNotNull(productLinks.baseline_at))),
   ])
 
+  const resolveKey = buildKeyResolver(mergeRows)
+  const baselineByKey = new Map(baselineRows.map(l => [resolveKey(l.match_key), Number(l.total_physical_stock)]))
+  // Roll order rows up to (match_key → GroupOrder[]), summing per (group, order)
+  // and mapping raw+normalized status to the ledger's live/delivered/cancelled/
+  // returned. Orders whose status touches nothing (unpaid drafts) are dropped.
+  const skuByProduct = new Map(prodRows.map(p => [p.id, p.sku]))
+  const orderAccum = new Map<string, Map<string, GroupOrder>>()
+  for (const r of orderStatusRows) {
+    if (!r.product_id || !r.order_id_external) continue
+    const sku = skuByProduct.get(r.product_id)
+    if (sku === undefined) continue
+    const key = matchKeyForProduct(sku, r.product_id, resolveKey)
+    const status = orderLedgerStatus(r.raw_status, r.normalized_status)
+    if (status === null) continue
+    const perOrder = orderAccum.get(key) ?? new Map<string, GroupOrder>()
+    const existing = perOrder.get(r.order_id_external)
+    if (existing) existing.qty += Number(r.qty)
+    else perOrder.set(r.order_id_external, {
+      orderIdExternal: r.order_id_external, marketplace: r.marketplace as MarketplaceType,
+      qty: Number(r.qty), status,
+    })
+    orderAccum.set(key, perOrder)
+  }
   const pendingByProduct = new Map(pendingRows.map(r => [r.product_id, Number(r.qty)]))
   // product_id → reserving order ids on it (product_id can be null when a Yandex
   // line never linked to a products row — those are un-attributable, exactly as
@@ -186,10 +249,19 @@ async function loadGroups(userId: string): Promise<{
   for (const p of prodRows) {
     const shop = shopsById.get(p.shop_id)
     if (!shop) continue
-    const key = p.sku ? normalizeKey(p.sku) : `#${p.id}`
+    const key = matchKeyForProduct(p.sku, p.id, resolveKey)
     let g = groups.get(key)
-    if (!g) { g = { members: [], products: new Map(), reservingOrderIds: new Set() }; groups.set(key, g) }
+    if (!g) {
+      g = {
+        members: [], products: new Map(), reservingOrderIds: new Set(),
+        ledgerOrders: [...(orderAccum.get(key)?.values() ?? [])],
+        hasFbo: false,
+        baseline: baselineByKey.get(key) ?? null,
+      }
+      groups.set(key, g)
+    }
     g.products.set(p.id, p)
+    if (p.fulfillment_type === 'fbo' || p.fulfillment_type === 'fby') g.hasFbo = true
     for (const oid of orderIdsByProduct.get(p.id) ?? []) g.reservingOrderIds.add(oid)
     g.members.push({
       productId: p.id,
@@ -390,6 +462,77 @@ async function syncStockSyncGroupsLocked(opts: RunOptions): Promise<StockSyncRun
   // once for the whole run; per-group updates are written back only when the set
   // actually changed, so idle cycles issue zero writes here.
   const seenByKey = await loadSeenOrderIds(opts.userId)
+
+  // ── Ledger (Part 1) inputs, loaded once for the run ───────────────────────────
+  // The group event history (→ on_hand), this user's kill switch (§8), and every
+  // listing's last-written target — the drift adoption (§5) must NOT treat a
+  // listing still showing OUR own last push as a seller restock (that stale value
+  // is exactly what the 0→1 incident rode on).
+  const shopIdList = [...shopsById.keys()]
+  const eventsByKey = await readLedgerEventsByKey(opts.userId)
+  const [killRow] = await db.select({ v: users.ledger_kill_switch }).from(users).where(eq(users.id, opts.userId))
+  const ledgerKilled = killRow?.v ?? false
+  const lastTargetRows = shopIdList.length > 0
+    ? await db.select({ shop_id: stockSyncState.shop_id, sku: stockSyncState.sku, last_target: stockSyncState.last_target })
+        .from(stockSyncState).where(inArray(stockSyncState.shop_id, shopIdList))
+    : []
+  const lastTargetByShopKey = new Map(lastTargetRows.map(r => [`${r.shop_id}:${r.sku}`, r.last_target]))
+
+  /**
+   * The authoritative on-hand for a group, or null for the legacy MAX path.
+   *
+   * Null (legacy, byte-unchanged) when the group is FBO/FBY or the user is
+   * kill-switched (§7/§8). Otherwise the group auto-seeds on first touch (§3),
+   * then: append the order-driven diff (§4 step 2), then adopt an unexplained
+   * seller restock as a manual credit (§4 step 3 / §5), and return Σ delta.
+   */
+  async function resolveOnHand(matchKey: string, group: SyncGroup): Promise<number | null> {
+    if (group.hasFbo || ledgerKilled) return null
+
+    let existing = eventsByKey.get(matchKey) ?? []
+    if (!isSeeded(existing)) {
+      // Lazy auto-seed (§3.1). Gross = baseline ?? (free-to-sell + open units);
+      // consume markers for open reserving orders net it down in the same tx.
+      const freeToSell = computeAvailable(group.members)
+      const openUnits = group.members.reduce((s, m) => s + Math.max(0, m.pending), 0)
+      const gross = seedGrossOnHand(group.baseline, freeToSell, openUnits)
+      const openConsumes: SeedConsume[] = group.ledgerOrders
+        .filter(o => o.status === 'live')
+        .map(o => ({ orderIdExternal: o.orderIdExternal, marketplace: o.marketplace, qty: o.qty }))
+      const note = `seed baseline=${group.baseline ?? 'null'} freeToSell=${freeToSell} openUnits=${openUnits}`
+      const didSeed = await seedGroup(opts.userId, matchKey, gross, openConsumes, note)
+      logger.info('ledger_seed', { userId: opts.userId, matchKey, gross, openConsumes: openConsumes.length, didSeed })
+      existing = didSeed
+        ? [{ delta: gross, reason: 'seed' as const, orderIdExternal: null },
+           ...openConsumes.map(c => ({ delta: -Math.abs(c.qty), reason: 'consume' as const, orderIdExternal: c.orderIdExternal }))]
+        : (await readLedgerEventsByKey(opts.userId)).get(matchKey) ?? existing
+    }
+
+    // §4 step 2 — order-driven diff (consume / cancel / return), idempotent.
+    const writes = diffLedger(group.ledgerOrders, recordedOrderKeys(existing))
+    if (writes.length > 0) {
+      await appendOrderDriven(opts.userId, matchKey, writes)
+      existing = [...existing, ...writes.map(w => ({ delta: w.delta, reason: w.reason, orderIdExternal: w.orderIdExternal }))]
+    }
+    let onHand = ledgerOnHand(existing)
+
+    // §4 step 3 / §5 — adopt an unexplained seller restock (increases only). A
+    // listing still equal to OUR last write is excluded; reserved is netted out
+    // so the comparison is AVAILABLE, never FIT (§12.1).
+    const ledgerAvail = availableFromOnHand(onHand)
+    const listingAvail = sellerListingAvailable(group.members.map(m => ({
+      listedStock: m.listedStock,
+      pending: m.pending,
+      lastWrite: lastTargetByShopKey.get(`${m.shopId}:${matchKey}`) ?? null,
+    })))
+    const credit = driftCredit(listingAvail, ledgerAvail)
+    if (credit > 0) {
+      await appendManualCredit(opts.userId, matchKey, credit, `drift listingAvail=${listingAvail} ledgerAvail=${ledgerAvail}`)
+      logger.info('ledger_drift_credit', { userId: opts.userId, matchKey, credit, listingAvail, ledgerAvail })
+      onHand += credit
+    }
+    return onHand
+  }
   const entries: StockSyncLogEntry[] = []
   // Collected across the run and dispatched once at the end (best-effort). Only
   // actual write attempts (sent / error / blocked) become notification events.
@@ -455,16 +598,20 @@ async function syncStockSyncGroupsLocked(opts: RunOptions): Promise<StockSyncRun
     // or carries no policy. Never resolve to undefined.
     const { mode: oversellMode, sourceShopId } = resolveOversellPolicy(writableMembers, shopsById)
 
-    const { available, plans } = planStockWrites(group.members, oversellMode)
+    // The ledger's authoritative on-hand for this group, or null → legacy MAX
+    // path (byte-unchanged). This is the fix: for a seeded group `available =
+    // max(0, on_hand)`, so a stale-high listing can no longer be MAXed into a
+    // phantom write of 1 onto a sold-out SKU.
+    const onHand = await resolveOnHand(matchKey, group)
+
+    const { available, plans } = planStockWrites(group.members, oversellMode, onHand)
     anyDisplayChange = true // available may have moved; refresh the display
 
     // Oversell detection: the raw (pre-clamp) shared free-to-sell below zero means
-    // the same physical unit was sold more than once. Uses the SAME physical-pool
-    // computation as `available` (rawGroupAvailable), NOT the throttled listing —
-    // measuring the pool off the listing double-counted a normal last-unit sale
-    // (listing driven to 0 by the sale while the order was still pending → −1) and
-    // fired a false oversell alert. Alert + (rate-limited) auto-cancel.
-    const rawAvailable = rawGroupAvailable(group.members)
+    // the same physical unit was sold more than once. On the ledger, on_hand can
+    // itself go negative (more consumed than seeded) — that IS the oversell signal,
+    // so pass it through; the legacy MAX(pool) − pending is used only off-ledger.
+    const rawAvailable = rawGroupAvailable(group.members, onHand)
     if (rawAvailable < 0) {
       try {
         await handleOversell({

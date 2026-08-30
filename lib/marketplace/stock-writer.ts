@@ -99,6 +99,19 @@ function killSwitchOn(): boolean {
   return KILL_SWITCH_VALUES.has(v)
 }
 
+/**
+ * Gate A dry run (stock-ledger spec §9). When on, every intended write is
+ * recorded as a dry_run row carrying the target quantity and NOTHING reaches a
+ * marketplace — so the first seeded tick's would-write-vs-current diff can be
+ * reviewed before writes go live. Read at RUNTIME inside a function, never at
+ * module scope, so the bundler cannot fold it to a compile-time false (the same
+ * trap the ledger-shadow flag hit). Promotion is unsetting the env var.
+ */
+export function ledgerDryRunOn(): boolean {
+  const v = (process.env.STOCK_LEDGER_DRY_RUN ?? '').trim().toLowerCase()
+  return KILL_SWITCH_VALUES.has(v)
+}
+
 interface AuditFields {
   shop_id: string
   product_id?: string | null
@@ -297,6 +310,17 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
         items: [{ count: clamped, type: 'FIT', updatedAt }],
       }],
     })
+  }
+
+  // 4b. Gate A dry run (spec §9). The request is fully built (identifier,
+  //     warehouse, target quantity all resolved), so the recorded row is exactly
+  //     what WOULD have been sent — but the marketplace fetch is skipped. Placed
+  //     after the request build so the review query sees the real target, and
+  //     after the guards above so a write that would skip anyway still skips for
+  //     its real reason.
+  if (ledgerDryRunOn()) {
+    const logId = await audit({ ...base, dry_run: true, endpoint: url, method, identifier, warehouse_id: whId, status: 'skipped', reason: 'dry_run', request_body: body })
+    return { status: 'skipped', reason: 'dry_run', quantity: clamped, logId }
   }
 
   // 5. Freshness guard — refuse a stale/out-of-order write (HARD: monotonic

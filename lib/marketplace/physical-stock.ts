@@ -53,6 +53,21 @@ export async function reconcilePhysicalStock(shopId: string): Promise<void> {
        AND NOT (ref.last_write IS NOT NULL AND ref.pending > 0
                 AND p.stock_quantity < ref.last_write
                 AND (ref.last_write - p.stock_quantity) <= ref.pending)
+       -- LEDGER-ACTIVE groups are excluded: once a group has a seed row, on_hand
+       -- is authoritative and a listing must never feed the pool again (spec §7,
+       -- §11, §12.1). match_key is the normalized SKU — the SQL twin of
+       -- normalizeKey() (trim → lowercase → strip whitespace / . _ / -), written
+       -- as a POSIX class so the SQL string needs no backslash escapes. Merge-
+       -- remapped keys (rare) are not caught here, but that is inert: a seeded
+       -- group's WRITES read on_hand, not physical_stock, so a stale
+       -- physical_stock can never reach a marketplace.
+       AND NOT EXISTS (
+         SELECT 1 FROM stock_ledger sl
+          WHERE sl.user_id = (SELECT sh.user_id FROM shops sh WHERE sh.id = ${shopId})
+            AND sl.reason = 'seed'
+            AND p.sku IS NOT NULL
+            AND sl.match_key = lower(regexp_replace(trim(p.sku), '[[:space:]_./-]+', '', 'g'))
+       )
   `)
   logger.info('physical_stock_reconciled', { shopId })
 }

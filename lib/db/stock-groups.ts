@@ -109,6 +109,39 @@ export function normalizeKey(sku: string): string {
   return sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '')
 }
 
+/**
+ * Build the merge-chain resolver for a user from their product_group_merges rows.
+ * Follows source_key → target_key to the final target, cycle-guarded.
+ *
+ * §6 of the ledger spec: stock-sync had its OWN local normalizeKey and did NOT
+ * resolve merges, while computeStockGroups does — so a group the seller merged in
+ * the UI was one match_key for display and two for the sync. stock_ledger is keyed
+ * on match_key, so a credit would land on a key the sync never looks up. This
+ * exported resolver + matchKeyForProduct are the single key function both use.
+ */
+export function buildKeyResolver(
+  merges: readonly { source_key: string; target_key: string }[],
+): (rawKey: string) => string {
+  const mergeMap = new Map(merges.map(m => [m.source_key, m.target_key]))
+  return (key: string) => {
+    const seen = new Set<string>()
+    let k = key
+    while (mergeMap.has(k) && !seen.has(k)) { seen.add(k); k = mergeMap.get(k)! }
+    return k
+  }
+}
+
+/** A product's merge-resolved match_key: normalized SKU (or #id when unsku'd),
+ *  run through the merge resolver. The one key stock-sync, the ledger and the
+ *  display all agree on. */
+export function matchKeyForProduct(
+  sku: string | null,
+  productId: string,
+  resolve: (rawKey: string) => string,
+): string {
+  return resolve(sku ? normalizeKey(sku) : `#${productId}`)
+}
+
 type PoolMember = { fulfillment_type: string | null; stock: number; physical_stock: number | null }
 
 const isFbo = (m: PoolMember) => m.fulfillment_type === 'fbo' || m.fulfillment_type === 'fby'
@@ -229,24 +262,14 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
   const sold14ByProduct = new Map(sold14Rows.map(r => [r.product_id, Number(r.qty)]))
   const linkByKey = new Map(linkRows.map(l => [l.match_key, l]))
 
-  // Build merge resolution map (source → final target, resolving chains).
-  const mergeMap = new Map<string, string>()
-  for (const m of mergeRows) mergeMap.set(m.source_key, m.target_key)
-  function resolveKey(key: string): string {
-    const seen = new Set<string>()
-    let k = key
-    while (mergeMap.has(k) && !seen.has(k)) {
-      seen.add(k)
-      k = mergeMap.get(k)!
-    }
-    return k
-  }
+  // Build merge resolution map (source → final target, resolving chains). Shared
+  // with stock-sync and the ledger via buildKeyResolver — see §6.
+  const resolveKey = buildKeyResolver(mergeRows)
 
   // Group products by normalized SKU; products without a SKU stand alone.
   const groups = new Map<string, StockGroupMember[]>()
   for (const p of productRows) {
-    const rawKey = p.sku ? normalizeKey(p.sku) : `#${p.id}`
-    const key = resolveKey(rawKey)
+    const key = matchKeyForProduct(p.sku, p.id, resolveKey)
     const member: StockGroupMember = {
       product_id: p.id,
       marketplace: mpByShop.get(p.shop_id) ?? 'uzum',

@@ -116,6 +116,11 @@ export const users = pgTable('users', {
   // one-click reactivate and destroys nothing. See lib/billing/lifecycle.ts.
   last_active_at:  timestamp('last_active_at', { withTimezone: true }),
   frozen_at:       timestamp('frozen_at', { withTimezone: true }),
+  // Per-user stock-ledger kill switch (migration 089). When true, this user's
+  // groups return onHand = null and fall back to the legacy MAX pool path,
+  // byte-for-byte as before the ledger — one seller can be parked without a
+  // deploy and without stopping everyone else. See stock-ledger spec §8.
+  ledger_kill_switch: boolean('ledger_kill_switch').default(false).notNull(),
   created_at:      timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at:      timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
