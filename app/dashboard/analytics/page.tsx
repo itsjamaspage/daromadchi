@@ -8,7 +8,7 @@ import { getKpis } from '@/lib/db/kpis'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
 import AnalyticsProductTable from '@/components/dashboard/AnalyticsProductTable'
 import { effective } from '@/lib/products/effective-values'
-import PeriodSelector from './PeriodSelector'
+import CalendarPicker from '@/components/dashboard/CalendarPicker'
 import { getT, getLang } from '@/lib/server-i18n'
 import { currentUserAccess } from '@/lib/billing/current-user-access'
 import FeatureLock from '@/components/dashboard/FeatureLock'
@@ -130,15 +130,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
           <MarketplaceTabs current={marketplace} />
         </Suspense>
         <Suspense>
-          <PeriodSelector
-            currentFrom={from}
-            currentTo={to}
-            labels={{
-              label: d.periodLabel,
-              apply: d.periodApply,
-              clear: d.periodClear,
-            }}
-          />
+          <CalendarPicker from={from ?? undefined} to={to ?? undefined} />
         </Suspense>
       </div>
 
