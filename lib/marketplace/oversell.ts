@@ -149,9 +149,13 @@ export async function handleOversell(g: OversellGroup): Promise<OversellOutcome>
   const laterLabel = later
     ? `${MP_LABEL[later.marketplace] ?? later.marketplace} #${later.orderIdExternal ?? later.orderId}`
     : '—'
-  // Localised, plain-language head with the real numbers (in stock vs ordered),
-  // built inside each alert's builder so it follows the seller's notif_lang like
-  // every other alert. Was hardcoded English — see lib/telegram-seller.ts.
+  // Localised, plain-language head: "you're sold out — buyers can't order this,
+  // restock". Built inside each alert's builder so it follows the seller's
+  // notif_lang. It no longer names the unfulfillable order or tells the seller to
+  // cancel one by hand — that framing read as "you got an order but have no
+  // stock, now go fix it", which sellers found confusing and alarming. The
+  // laterLabel is still passed for signature compatibility (the auto-cancel-ON
+  // lines below use it) but the default alert no longer surfaces it.
   const head = (T: NotifStrings) => T.oversellHead(g.title, laterLabel)
 
   // DEDUP: fire ONCE per distinct oversell situation, not every reconcile cycle.
