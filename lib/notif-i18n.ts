@@ -191,9 +191,9 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     extLowStock:    '⚠️ <b>Kam zaxira:</b>',
     extUnit:        'dona',
     extFooter:      "daromadchi.uz da to'liq tahlil",
-    oversellHead: (title, lastOrder) =>
-      `⚠️ <b>Tovar tugadi: ${title}</b>\nYangi buyurtma keldi, lekin boʻsh dona qolmadi — bu tovar allaqachon toʻliq buyurtma qilingan. Buyurtma: ${lastOrder} — bajarishning iloji yoʻq.\nTovarni toʻldiring va Uzum va Yandex hisobingizda qoldiqni yangilang.`,
-    oversellAutoCancelOff: "Keraksiz buyurtmani qo'lda bekor qiling.",
+    oversellHead: (title, _lastOrder) =>
+      `⚠️ <b>Tovar tugadi: ${title}</b>\nZaxira 0 ga yetdi — xaridorlar bu tovarni endi buyurtma qila olmaydi.`,
+    oversellAutoCancelOff: "Zaxirani to'ldiring va Uzum hamda Yandex'da qoldiqni yangilang.",
     oversellNoLaterOrder:  "Bekor qilish uchun ochiq buyurtma topilmadi — qo'lda tekshiring.",
     oversellRateLimited:   (used, max, mp) => `🚫 Avtomatik bekor qilish chegarasi (${used}/${max} shu soatda). Bekor QILINMADI — ${mp} uchun qo'lda bekor qiling.`,
     oversellCancelling:    (mp) => `🤖 Keyingi buyurtma bekor qilinmoqda (${mp}, sabab OUT_OF_STOCK).`,
@@ -267,9 +267,9 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     extLowStock:    '⚠️ <b>Низкий остаток:</b>',
     extUnit:        'шт',
     extFooter:      'полная аналитика на daromadchi.uz',
-    oversellHead: (title, lastOrder) =>
-      `⚠️ <b>Товар закончился: ${title}</b>\nПришёл новый заказ, но свободных единиц не осталось — этот товар уже весь заказан. Заказ: ${lastOrder} выполнить нечем.\nПополните товар и обновите остаток на Uzum и Yandex.`,
-    oversellAutoCancelOff: 'Отмените лишний заказ вручную, если нужно.',
+    oversellHead: (title, _lastOrder) =>
+      `⚠️ <b>Товар распродан: ${title}</b>\nОстаток дошёл до 0 — покупатели больше не могут заказать этот товар.`,
+    oversellAutoCancelOff: 'Пополните запас и обновите остаток на Uzum и Yandex.',
     oversellNoLaterOrder:  'Не найден открытый заказ для автоотмены — проверьте вручную.',
     oversellRateLimited:   (used, max, mp) => `🚫 Достигнут лимит автоотмены (${used}/${max} за час). НЕ отменяем автоматически — отмените ${mp} вручную.`,
     oversellCancelling:    (mp) => `🤖 Отменяем поздний заказ (${mp}, причина OUT_OF_STOCK).`,
@@ -343,9 +343,9 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     extLowStock:    '⚠️ <b>Low stock:</b>',
     extUnit:        'pcs',
     extFooter:      'full analytics at daromadchi.uz',
-    oversellHead: (title, lastOrder) =>
-      `⚠️ <b>Out of stock: ${title}</b>\nA new order came in, but there are no units left — this product is already fully ordered. Order: ${lastOrder} can't be fulfilled.\nRestock and update the quantity on Uzum and Yandex.`,
-    oversellAutoCancelOff: 'Cancel the extra order manually if needed.',
+    oversellHead: (title, _lastOrder) =>
+      `⚠️ <b>Sold out: ${title}</b>\nStock has reached 0 — buyers can no longer order this product.`,
+    oversellAutoCancelOff: 'Restock and update the quantity on Uzum and Yandex.',
     oversellNoLaterOrder:  'No open order found to auto-cancel — please check manually.',
     oversellRateLimited:   (used, max, mp) => `🚫 Auto-cancel rate limit reached (${used}/${max} this hour). NOT auto-cancelling — use one-click cancel for ${mp}.`,
     oversellCancelling:    (mp) => `🤖 Auto-cancelling the later order (${mp}, reason OUT_OF_STOCK).`,

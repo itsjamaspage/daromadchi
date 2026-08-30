@@ -148,6 +148,13 @@ const MIGRATIONS = [
   // At-most-once marker for the read-only cancel-restore alert. Additive + idempotent.
   'migrations/migrations/088_orders_restore_alert_sent_at.sql',
   'migrations/migrations/089_stock_sync_state_repeat_count.sql',
+  // Per-user stock-ledger kill switch. The users schema (lib/db/schema.ts)
+  // selects this column on every full-row read, so an unapplied 090 makes the
+  // auth/session `SELECT * FROM users` throw "column ledger_kill_switch does not
+  // exist" — a 500 on every page that resolves the signed-in user. It shipped in
+  // #421 but was never registered here, so the runner skipped it. Additive +
+  // idempotent (ADD COLUMN IF NOT EXISTS).
+  'migrations/migrations/090_users_ledger_kill_switch.sql',
 ]
 
 function loadDatabaseUrl() {
