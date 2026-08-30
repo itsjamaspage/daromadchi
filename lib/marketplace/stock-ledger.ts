@@ -103,6 +103,72 @@ export function orderLedgerStatus(
   return null
 }
 
+/**
+ * §3.2 — the GROSS seed on-hand: everything on the shelf, committed units
+ * included. The consume rows written in the same seed transaction net it down.
+ *   • baseline set (product_links.total_physical_stock, seller-confirmed) → use it
+ *     as-is; it is already gross.
+ *   • no baseline → current free-to-sell + units on open reserving orders. The
+ *     listing has already had the marketplace's reservations removed, so the
+ *     committed units are added back to recover the shelf count.
+ * Getting this wrong in either direction invents or loses a unit per open order,
+ * so the two sources are explicit.
+ */
+export function seedGrossOnHand(
+  baseline: number | null,
+  freeToSell: number,
+  openReservingUnits: number,
+): number {
+  return baseline != null ? baseline : freeToSell + openReservingUnits
+}
+
+/**
+ * §5 restock adoption — how much to CREDIT for an unexplained seller restock.
+ *
+ * `listingAvailable` is the highest SELLER-driven free-to-sell across the group's
+ * listings. The caller builds it having already (a) EXCLUDED any listing that
+ * equals a value WE wrote — a stale listing still showing our own last push is not
+ * a seller restock, which is exactly the number the 0→1 incident rode on — and
+ * (b) netted out reserved units, so this is AVAILABLE, never FIT (§12.1).
+ *
+ * A value ABOVE the ledger's available is a restock we have not ingested → credit
+ * the difference so it propagates to the sibling. A value at or below is ignored:
+ * a drop looks identical to an un-ingested order, and adopting it would raise the
+ * sibling into an oversell. Increases only — the deliberate undersell-not-oversell
+ * bias the ledger already chose.
+ */
+export function driftCredit(listingAvailable: number, ledgerAvailable: number): number {
+  return Math.max(0, listingAvailable - ledgerAvailable)
+}
+
+export interface DriftMember {
+  listedStock: number
+  /** units on open reserving orders for this listing (nets a FIT read to AVAILABLE). */
+  pending: number
+  /** what WE last wrote to this listing, or null if never written. */
+  lastWrite: number | null
+}
+
+/**
+ * §5 + §12.1 — the highest SELLER-driven free-to-sell across a group's listings,
+ * the number `driftCredit` compares against the ledger's available.
+ *
+ * Two exclusions make this safe, and both are load-bearing:
+ *   • A listing still EQUAL to our own last write is dropped. A stale listing
+ *     showing the value WE pushed is not a seller restock — this is the exact
+ *     0→1 incident: our own write of 1 sitting on a sold-out listing must never
+ *     be read back as evidence to re-credit the pool.
+ *   • Reserved units are netted out (listing − pending), so a Yandex FIT read
+ *     (available + reserved) is compared as AVAILABLE, never FIT (§12.1) — a
+ *     permanent phantom rise of exactly the reserve would otherwise be adopted.
+ */
+export function sellerListingAvailable(members: readonly DriftMember[]): number {
+  const seller = members
+    .filter(m => m.lastWrite !== m.listedStock)
+    .map(m => Math.max(0, m.listedStock - Math.max(0, m.pending)))
+  return seller.length > 0 ? Math.max(0, ...seller) : 0
+}
+
 export interface GroupOrder {
   orderIdExternal: string
   marketplace: MarketplaceType

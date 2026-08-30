@@ -106,11 +106,12 @@ export interface StockGroup {
   variant_color: string | null
 }
 
-// The canonical cross-marketplace grouping key. Exported so the product-group
-// suggester writes/reads the exact same key `computeStockGroups` groups by.
-export function normalizeKey(sku: string): string {
-  return sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '')
-}
+// The canonical cross-marketplace grouping key. Defined in the PURE ./group-key
+// module (no db/auth imports) so the write path and the ledger can share it
+// without pulling this file's dependency graph into a react-server context.
+// Re-exported here so existing importers of these from stock-groups keep working.
+export { normalizeKey, buildKeyResolver, matchKeyForProduct } from './group-key'
+import { buildKeyResolver, matchKeyForProduct } from './group-key'
 
 type PoolMember = { fulfillment_type: string | null; stock: number; physical_stock: number | null }
 
@@ -248,24 +249,14 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
   const sold14ByProduct = new Map(sold14Rows.map(r => [r.product_id, Number(r.qty)]))
   const linkByKey = new Map(linkRows.map(l => [l.match_key, l]))
 
-  // Build merge resolution map (source → final target, resolving chains).
-  const mergeMap = new Map<string, string>()
-  for (const m of mergeRows) mergeMap.set(m.source_key, m.target_key)
-  function resolveKey(key: string): string {
-    const seen = new Set<string>()
-    let k = key
-    while (mergeMap.has(k) && !seen.has(k)) {
-      seen.add(k)
-      k = mergeMap.get(k)!
-    }
-    return k
-  }
+  // Build merge resolution map (source → final target, resolving chains). Shared
+  // with stock-sync and the ledger via buildKeyResolver — see §6.
+  const resolveKey = buildKeyResolver(mergeRows)
 
   // Group products by normalized SKU; products without a SKU stand alone.
   const groups = new Map<string, StockGroupMember[]>()
   for (const p of productRows) {
-    const rawKey = p.sku ? normalizeKey(p.sku) : `#${p.id}`
-    const key = resolveKey(rawKey)
+    const key = matchKeyForProduct(p.sku, p.id, resolveKey)
     const member: StockGroupMember = {
       product_id: p.id,
       marketplace: mpByShop.get(p.shop_id) ?? 'uzum',
