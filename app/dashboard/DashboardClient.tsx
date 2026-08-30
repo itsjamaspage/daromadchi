@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { DollarSign, TrendingUp, ShoppingBag, Package, Settings, ArrowRight, RefreshCw, LayoutDashboard } from 'lucide-react'
+import { DollarSign, TrendingUp, ShoppingBag, Package, Undo2, Settings, ArrowRight, RefreshCw, LayoutDashboard } from 'lucide-react'
 import KpiCard, { type KpiBreakdownRow } from '@/components/dashboard/KpiCard'
 import RevenueChart from '@/components/dashboard/RevenueChart'
 import DateRangePicker from '@/components/dashboard/DateRangePicker'
@@ -208,6 +208,49 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
     coverageParts.push(`${t.kpi.awaiting}: ${mpName(p.marketplace)} (${formatSum(p.revenue)})`)
   }
   const coverageLine = coverageParts.length > 0 ? coverageParts.join(' · ') : undefined
+
+  // ── The three sub-lines under Заказы / Остатки / Возвраты ────────────────
+  const units = lang === 'ru' ? 'шт' : lang === 'en' ? 'pcs' : 'dona'
+  const fulfilled = kpis.total_orders - (kpis.cancelled_orders ?? 0)
+
+  // Average order value. Over FULFILLED orders, matching the number on the card
+  // above it — dividing by every order received would quietly deflate the figure
+  // by whatever the seller cancelled. Suppressed at zero orders rather than
+  // rendering a division by nothing.
+  const ordersNote = useMemo(() => {
+    if (kpisFailed) return undefined
+    const parts: string[] = []
+    if (fulfilled > 0) {
+      parts.push(`${d.avgCheck}: ${formatSum(Math.round(kpis.total_revenue / fulfilled))}`)
+    }
+    if ((kpis.cancelled_orders ?? 0) > 0) {
+      parts.push(`+${kpis.cancelled_orders} ${t.status.cancelled.toLowerCase()}`
+        + ((kpis.cancelled_units ?? 0) > 0 ? ` (${kpis.cancelled_units} ${units})` : ''))
+    }
+    return parts.length > 0 ? parts.join(' · ') : undefined
+  }, [kpisFailed, fulfilled, kpis.total_revenue, kpis.cancelled_orders, kpis.cancelled_units, units, d])
+
+  // Where the stock physically sits. These three add up to the number above them
+  // exactly — the split is computed by group in lib/db/kpis.ts, never by ratio.
+  // `mixed` is only shown when it is non-zero, so the common case reads cleanly.
+  const stockNote = useMemo(() => {
+    if (kpisFailed || kpis.stock_fbo == null) return undefined
+    const parts = [`FBO: ${kpis.stock_fbo.toLocaleString('uz-UZ')}`,
+                   `FBS: ${(kpis.stock_fbs ?? 0).toLocaleString('uz-UZ')}`]
+    if ((kpis.stock_mixed ?? 0) > 0) {
+      parts.push(`${d.stockMixed}: ${(kpis.stock_mixed ?? 0).toLocaleString('uz-UZ')}`)
+    }
+    return parts.join(' · ')
+  }, [kpisFailed, kpis.stock_fbo, kpis.stock_fbs, kpis.stock_mixed, d])
+
+  // Return rate against every order received, cancellations included — the
+  // denominator a seller means by "what share came back". Suppressed when no
+  // orders exist rather than showing 0%, which would read as a measured result.
+  const returnsNote = useMemo(() => {
+    if (kpisFailed || kpis.total_orders === 0) return undefined
+    const rate = ((kpis.returned_orders ?? 0) / kpis.total_orders) * 100
+    return `${rate.toFixed(1)}%`
+  }, [kpisFailed, kpis.returned_orders, kpis.total_orders])
 
   // The revenue card carries the SAME counted/pending split as the profit card,
   // in money. Общая выручка shows all delivered sales (315k); the profit under
@@ -511,7 +554,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
 
       {/* KPI cards */}
       {!hiddenWidgets.has('kpis') && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
           <KpiCard title={d.revenue} value={kpisFailed ? UNKNOWN : formatSum(kpis.total_revenue)} change={isEmpty || kpisFailed ? null : kpis.change_revenue} icon={DollarSign}  color="violet"
             coverage={isEmpty || kpisFailed ? undefined : revenueCoverageLine}
           />
@@ -527,11 +570,12 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
           />
           <KpiCard title={d.orders}
             value={kpisFailed ? UNKNOWN : (kpis.total_orders - (kpis.cancelled_orders ?? 0)).toLocaleString('uz-UZ')}
-            note={!kpisFailed && (kpis.cancelled_orders ?? 0) > 0
-              ? `+${kpis.cancelled_orders} ${t.status.cancelled.toLowerCase()}${(kpis.cancelled_units ?? 0) > 0 ? ` (${kpis.cancelled_units} ${lang === 'ru' ? 'шт' : lang === 'en' ? 'pcs' : 'dona'})` : ''}`
-              : undefined}
+            note={ordersNote}
             change={isEmpty || kpisFailed ? null : kpis.change_orders} icon={ShoppingBag} color="blue" />
-          <KpiCard title={d.stock}   value={kpisFailed ? UNKNOWN : kpis.total_stock.toLocaleString('uz-UZ')} change={isEmpty ? null : undefined}           icon={Package}     color="amber" />
+          <KpiCard title={d.stock} value={kpisFailed ? UNKNOWN : kpis.total_stock.toLocaleString('uz-UZ')}
+            note={stockNote} change={isEmpty ? null : undefined} icon={Package} color="amber" />
+          <KpiCard title={d.returns} value={kpisFailed ? UNKNOWN : (kpis.returned_orders ?? 0).toLocaleString('uz-UZ')}
+            note={returnsNote} change={isEmpty ? null : undefined} icon={Undo2} color="violet" />
         </div>
       )}
 

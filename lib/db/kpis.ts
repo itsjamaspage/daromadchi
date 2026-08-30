@@ -44,6 +44,31 @@ const _fetchKpis = unstable_cache(
       ? Number(stockNaive[0]?.total ?? 0)
       : groups.reduce((sum, g) => sum + g.leftover, 0)
 
+    // Where that stock physically sits. Split the SAME number the card shows
+    // (leftover, i.e. free-to-sell) rather than total_stock_api — the two differ
+    // by the reserved units, and a breakdown that does not add up to the figure
+    // above it is worse than no breakdown.
+    //
+    // Attribution is by GROUP, not by proportion: a group whose members are all
+    // FBO/FBY contributes its leftover to fbo, all-FBS to fbs, and a genuinely
+    // mixed group goes to `mixed` rather than being divided by a ratio nobody
+    // measured. The three always sum to totalStock.
+    //
+    // Only meaningful across the whole account: the marketplace-filtered branch
+    // has no groups to classify, so it reports no split at all.
+    let stockSplit: { fbo: number; fbs: number; mixed: number } | undefined
+    if (!marketplaceFiltered && groups.length > 0) {
+      const isFboMember = (m: { fulfillment_type: string | null }) =>
+        m.fulfillment_type === 'fbo' || m.fulfillment_type === 'fby'
+      stockSplit = { fbo: 0, fbs: 0, mixed: 0 }
+      for (const g of groups) {
+        const anyFbo = g.members.some(isFboMember)
+        const anyFbs = g.members.some(m => !isFboMember(m))
+        const bucket = anyFbo && anyFbs ? 'mixed' : anyFbo ? 'fbo' : 'fbs'
+        stockSplit[bucket] += g.leftover
+      }
+    }
+
     const result: Kpis = {
       total_revenue: current.revenue,
       total_profit: current.profit,
@@ -58,6 +83,10 @@ const _fetchKpis = unstable_cache(
       cancelled_orders: current.cancelled,
       cancelled_units: current.cancelledUnits,
       total_stock: totalStock,
+      stock_fbo: stockSplit?.fbo,
+      stock_fbs: stockSplit?.fbs,
+      stock_mixed: stockSplit?.mixed,
+      returned_orders: current.returned,
     }
 
     if (prevSinceDate) {

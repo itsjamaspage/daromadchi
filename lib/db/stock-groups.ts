@@ -62,6 +62,9 @@ export interface StockGroup {
   /** marketplace → exact units sold (from synced orders) */
   sold_by_marketplace: Partial<Record<MarketplaceType, number>>
   total_stock_api: number
+  /** total_stock_api, split by fulfilment: FBO/FBY warehouses add, FBS members share one pool. */
+  fbo_stock: number
+  fbs_stock: number
   total_sold: number
   /** units on cancelled/returned orders — visible, but never counted as sold */
   total_cancelled: number
@@ -134,10 +137,26 @@ export function poolOnHand(members: readonly PoolMember[]): number {
 /** The listing-mirror total (FBO sum + FBS max of stock_quantity). Display only —
  *  what each marketplace reports, before our physical-pool correction. */
 export function groupListedStock(members: readonly PoolMember[]): number {
+  const { fbo, fbs } = groupListedStockSplit(members)
+  return fbo + fbs
+}
+
+/**
+ * The same computation, with the two halves kept apart.
+ *
+ * The split is not cosmetic: FBO/FBY members hold INDEPENDENT inventory at each
+ * marketplace's warehouse, so they add; FBS members list one physical pool on
+ * every marketplace, so they MAX. Summing FBS would invent units that do not
+ * exist, which is the direction that lets a seller oversell.
+ *
+ * Exposed so the dashboard can show the split without re-deriving it — a second
+ * copy of this rule is how the two halves would drift apart.
+ */
+export function groupListedStockSplit(members: readonly PoolMember[]): { fbo: number; fbs: number } {
   const fbo = members.filter(isFbo).reduce((s, m) => s + Math.max(0, m.stock), 0)
   const fbsMembers = members.filter(m => !isFbo(m))
   const fbs = fbsMembers.length > 0 ? Math.max(0, ...fbsMembers.map(m => Math.max(0, m.stock))) : 0
-  return fbo + fbs
+  return { fbo, fbs }
 }
 
 /** Session-scoped variant for dashboard pages and API routes. */
@@ -333,7 +352,8 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
     // total_stock_api — it is NOT the pool. The marketplace has ALREADY decremented
     // its listing for an open order, so subtracting pending from it double-counts
     // that order — the KBWHT/JMBLK "shows 0 with a sellable unit" bug.
-    const totalStock = groupListedStock(members)
+    const stockSplit = groupListedStockSplit(members)
+    const totalStock = stockSplit.fbo + stockSplit.fbs
 
     // The real on-hand pool: physical_stock (the SAME source the sync engine reads
     // — poolOnHand mirrors rawGroupAvailable's `physicalStock ?? listedStock`).
@@ -367,6 +387,8 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       stock_by_marketplace: stockByMp,
       sold_by_marketplace: soldByMp,
       total_stock_api: totalStock,
+      fbo_stock: stockSplit.fbo,
+      fbs_stock: stockSplit.fbs,
       total_sold: totalSold,
       total_cancelled: totalCancelled,
       total_in_process: totalInProcess,
