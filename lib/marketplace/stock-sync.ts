@@ -15,7 +15,7 @@
 import { revalidateTag } from 'next/cache'
 import { and, eq, gte, inArray, isNull, isNotNull, sql } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, stockSyncState, stockNotifyOrderSeen, productGroupMerges, productLinks, users } from '@/lib/db'
-import { buildKeyResolver, matchKeyForProduct } from '@/lib/db/stock-groups'
+import { buildKeyResolver, matchKeyForProduct } from '@/lib/db/group-key'
 import { logger } from '@/lib/logger'
 import { pushStock, ledgerDryRunOn, type StockWriteStatus } from '@/lib/marketplace/stock-writer'
 import { userHasFeature } from '@/lib/billing/entitlement'
