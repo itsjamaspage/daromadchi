@@ -147,9 +147,17 @@ export function formatOrderLine(
 }
 
 // dateCreated may be an ISO string, an epoch number, or a numeric string —
-// and the epoch may be seconds or milliseconds. An unparseable value must not
-// become Invalid Date (that would abort the whole upsert), so fall back to now.
-function parseOrderedAt(v: unknown): Date {
+// and the epoch may be seconds or milliseconds. Returns null when the value is
+// missing or unparseable: `ordered_at` is the immutable moment a sale was
+// PLACED, and it drives every date bucket on the dashboard, P&L and revenue
+// chart. Defaulting a missing date to `new Date()` (the sync time) is how a
+// re-sync silently walks an order's date forward to "today" — and since the
+// update path below runs on every poll, an active order can have its real order
+// date overwritten with the sync day over and over, collapsing many days of
+// sales onto one bar in the chart. The caller uses now() ONLY for a brand-new
+// insert (an order must have some date) and NEVER overwrites a stored date with
+// a null on update. See docs/investigations/pnl-single-day-revenue-findings.md.
+export function parseOrderedAt(v: unknown): Date | null {
   if (typeof v === 'number' || (typeof v === 'string' && /^\d{10,}$/.test(v))) {
     const n = Number(v)
     const d = new Date(n < 1e12 ? n * 1000 : n)
@@ -159,7 +167,7 @@ function parseOrderedAt(v: unknown): Date {
     const d = new Date(v)
     if (!Number.isNaN(d.getTime())) return d
   }
-  return new Date()
+  return null
 }
 
 // Product identity snapshotted from an Uzum order item onto order_items, so a
@@ -752,7 +760,11 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
             marketplace_status: r.marketplace_status,
             revenue: String(r.revenue),
             items_count: r.items_count,
-            ordered_at: r.ordered_at,
+            // First sighting of this order: it must carry a date, and if the
+            // payload didn't give a parseable one, the sync time is the only
+            // fallback we have. Every LATER sync goes through the update path
+            // below, which never overwrites this with a fallback.
+            ordered_at: r.ordered_at ?? new Date(),
             alert_sent_at: alertedExtIds.has(r.order_id_external) ? alertStampedAt : null,
             cancel_alert_sent_at: cancelledExtIds.has(r.order_id_external) ? alertStampedAt : null,
             // Snapshot the restore target the first time we see the order reserving
@@ -785,7 +797,12 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
           marketplace_status: r.marketplace_status,
           revenue: String(r.revenue),
           items_count: r.items_count,
-          ordered_at: r.ordered_at,
+          // ordered_at is the immutable placement date. Only refresh it when
+          // THIS payload carried a parseable one — which also lets a good later
+          // sync heal an earlier now() fallback. When the payload has no date
+          // (r.ordered_at == null) we leave the stored value untouched rather
+          // than stamping it with the sync time and collapsing the chart.
+          ...(r.ordered_at != null ? { ordered_at: r.ordered_at } : {}),
           ...(cancelledExtIds.has(r.order_id_external) ? { cancel_alert_sent_at: alertStampedAt } : {}),
           ...(snap != null ? { reserved_stock_snapshot: snap } : {}),
         }).where(eq(orders.id, existingOrdMap.get(r.order_id_external)!))
