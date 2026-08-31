@@ -54,13 +54,6 @@ function MpCount({ mp, value }: { mp: MarketplaceType; value: number }) {
   )
 }
 
-function leftoverBadge(leftover: number, threshold: number | null) {
-  const limit = threshold ?? 15
-  if (leftover <= limit)     return { bg: 'rgba(239, 68, 68, 0.1)',  color: '#ef4444' }
-  if (leftover <= limit * 2) return { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }
-  return                            { bg: 'rgba(52, 211, 153, 0.1)', color: '#10b981' }
-}
-
 function GroupEditor({ group, onDone }: { group: StockGroup; onDone: () => void }) {
   const { lang } = useLang()
   const d = translations[lang].dashboard.stocksPage
@@ -291,7 +284,6 @@ export default function StocksTable({ groups }: { groups: StockGroup[] }) {
               <th className="px-5 py-3 font-semibold">{d.colProduct}</th>
               <th className="hidden sm:table-cell px-5 py-3 font-semibold">{d.colStock}</th>
               <th className="hidden sm:table-cell px-5 py-3 font-semibold">{d.colSold}</th>
-              <th className="px-5 py-3 font-semibold">{d.colLeftover}</th>
               <th className="px-2 py-3" />
             </tr>
           </thead>
@@ -303,7 +295,7 @@ export default function StocksTable({ groups }: { groups: StockGroup[] }) {
                 const isMobileOpen = mobileInfoKey === g.match_key
                 return (
                   <FragmentRow key={g.match_key} group={g}
-                    badge={leftoverBadge(g.leftover, g.stock_threshold)} isOpen={isOpen}
+                    isOpen={isOpen}
                     isMobileOpen={isMobileOpen}
                     onToggle={() => setOpenKey(isOpen ? null : g.match_key)}
                     onMobileToggle={() => setMobileInfoKey(isMobileOpen ? null : g.match_key)}
@@ -321,7 +313,7 @@ export default function StocksTable({ groups }: { groups: StockGroup[] }) {
                     const isMobileOpen = mobileInfoKey === cg.match_key
                     return (
                       <FragmentRow key={cg.match_key} group={cg} isChild lang={lang}
-                        badge={leftoverBadge(cg.leftover, cg.stock_threshold)} isOpen={isOpen}
+                        isOpen={isOpen}
                         isMobileOpen={isMobileOpen}
                         onToggle={() => setOpenKey(isOpen ? null : cg.match_key)}
                         onMobileToggle={() => setMobileInfoKey(isMobileOpen ? null : cg.match_key)}
@@ -377,7 +369,6 @@ function VariantParentRow({ item, expanded, onToggle, lang }: {
   onToggle: () => void
   lang: 'uz' | 'ru' | 'en'
 }) {
-  const totalLeftover = item.children.reduce((s, c) => s + c.leftover, 0)
   return (
     <tr className="border-t cursor-pointer" style={{ borderColor: 'var(--border)', background: 'var(--bg-card2)' }}
       onClick={onToggle}>
@@ -395,17 +386,13 @@ function VariantParentRow({ item, expanded, onToggle, lang }: {
       </td>
       <td className="hidden sm:table-cell px-5 py-3" />
       <td className="hidden sm:table-cell px-5 py-3" />
-      <td className="px-5 py-3">
-        <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>Σ {totalLeftover}</span>
-      </td>
       <td className="px-2 py-3" />
     </tr>
   )
 }
 
-function FragmentRow({ group: g, badge, isOpen, isMobileOpen, onToggle, onMobileToggle, onLink, d, isChild, lang }: {
+function FragmentRow({ group: g, isOpen, isMobileOpen, onToggle, onMobileToggle, onLink, d, isChild, lang }: {
   group: StockGroup
-  badge: { bg: string; color: string }
   isOpen: boolean
   isMobileOpen: boolean
   onToggle: () => void
@@ -502,18 +489,6 @@ function FragmentRow({ group: g, badge, isOpen, isMobileOpen, onToggle, onMobile
             </p>
           )}
         </td>
-        <td className="px-5 py-3.5">
-          {/* Free-to-sell is the headline; on-hand and reserved sit under it so the
-              three never collapse into one figure that can hide a reserved unit. */}
-          <span className="inline-block text-sm font-bold px-2.5 py-1 rounded-lg"
-            style={{ background: badge.bg, color: badge.color, fontVariantNumeric: 'tabular-nums' }}>
-            {g.available} {d.units}
-          </span>
-          <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-            {g.on_hand} {d.onHandLabel}
-            {g.reserved > 0 && <> · {g.reserved} {d.reservedLabel}</>}
-          </p>
-        </td>
         <td className="px-2 py-3.5">
           <div className="flex flex-col gap-1">
             <button onClick={onToggle} title={d.edit}
@@ -531,7 +506,7 @@ function FragmentRow({ group: g, badge, isOpen, isMobileOpen, onToggle, onMobile
       </tr>
       {isMobileOpen && (
         <tr className="sm:hidden border-t" style={{ borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
-          <td colSpan={5} className="px-5 py-3">
+          <td colSpan={4} className="px-5 py-3">
             <dl className="text-xs space-y-2">
               <div>
                 <dt className="uppercase tracking-wide font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>{d.colStock}</dt>
@@ -569,7 +544,7 @@ function FragmentRow({ group: g, badge, isOpen, isMobileOpen, onToggle, onMobile
       )}
       {isOpen && (
         <tr className="border-t" style={{  borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
-          <td colSpan={6} className="px-5">
+          <td colSpan={5} className="px-5">
             <GroupEditor group={g} onDone={onToggle} />
           </td>
         </tr>
