@@ -549,6 +549,17 @@ function MarqueeSection({ lang }: { lang: Lang }) {
     T.marquee.marginControl[lang],
     T.marquee.excelExport[lang],
   ]
+  // Seamless loop: the ticker keyframe scrolls the track from 0 to -50%, i.e. by
+  // exactly one of its two identical halves — so the second half lands where the
+  // first began and the motion never breaks. That only works if ONE half is at
+  // least as wide as the strip; otherwise a half runs out before the right edge
+  // and white shows through (the bug). Seven short items don't fill a wide
+  // monitor, so we repeat them until one half comfortably overflows even a 4–5K
+  // strip. Duration scales with the repeat count so the on-screen speed is
+  // unchanged — a longer track just takes proportionally longer to cross.
+  const REPEAT = 4
+  const half = Array.from({ length: REPEAT }, () => items).flat()
+  const tickerDurationS = 32 * REPEAT
   return (
     <div style={{
       position: 'relative', background: bg, overflow: 'hidden', display: 'flex', alignItems: 'stretch',
@@ -568,8 +579,8 @@ function MarqueeSection({ lang }: { lang: Lang }) {
         </p>
       </div>
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-        <div className="animate-ticker" style={{ display: 'flex', width: 'max-content' }}>
-          {[...items, ...items].map((item, i) => (
+        <div className="animate-ticker" style={{ display: 'flex', width: 'max-content', animationDuration: `${tickerDurationS}s` }}>
+          {[...half, ...half].map((item, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               <span style={{ padding: '14px 28px', fontSize: 13, fontWeight: 600, color: itemCol, whiteSpace: 'nowrap' }}>
                 {item}
