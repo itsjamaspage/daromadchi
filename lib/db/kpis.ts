@@ -2,7 +2,7 @@ import { unstable_cache } from 'next/cache'
 import { inArray, sql } from 'drizzle-orm'
 import { db, products } from '@/lib/db'
 import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
-import { computeStockGroups } from '@/lib/db/stock-groups'
+import { computeStockGroups, groupListedStockSplit } from '@/lib/db/stock-groups'
 import { fetchPeriodKpis } from '@/lib/db/kpis-period'
 import type { Kpis, MarketplaceType } from '@/lib/types'
 import { kpiWindows } from '@/lib/kpi-windows'
@@ -40,32 +40,39 @@ const _fetchKpis = unstable_cache(
         : Promise.resolve([{ total: 0 }]),
       marketplaceFiltered ? Promise.resolve([]) : computeStockGroups(userId, allShopIds),
     ])
+    // WHAT THE MARKETPLACES REPORT, not our inferred pool.
+    //
+    // This was groups.reduce(… g.leftover), i.e. available = physical_stock −
+    // reserved. physical_stock is not reported by anyone: it is inferred by
+    // comparing listing values between syncs and guessing which changes were the
+    // seller's. That inference has been wrong in both directions (#389, #427),
+    // and #428 removed the column that displayed it on the stocks page for
+    // exactly that reason — leaving this card quietly built on the same guess.
+    //
+    // total_stock_api is the listing mirror: FBO/FBY warehouses summed (they hold
+    // independent inventory), FBS members MAXed (one physical pool listed on every
+    // marketplace). It is what the seller sees in their own cabinets.
     const totalStock = marketplaceFiltered
       ? Number(stockNaive[0]?.total ?? 0)
-      : groups.reduce((sum, g) => sum + g.leftover, 0)
+      : groups.reduce((sum, g) => sum + g.total_stock_api, 0)
 
-    // Where that stock physically sits. Split the SAME number the card shows
-    // (leftover, i.e. free-to-sell) rather than total_stock_api — the two differ
-    // by the reserved units, and a breakdown that does not add up to the figure
-    // above it is worse than no breakdown.
-    //
-    // Attribution is by GROUP, not by proportion: a group whose members are all
-    // FBO/FBY contributes its leftover to fbo, all-FBS to fbs, and a genuinely
-    // mixed group goes to `mixed` rather than being divided by a ratio nobody
-    // measured. The three always sum to totalStock.
+    // Where that stock physically sits — the two halves of the SAME number the
+    // card shows, taken straight from groupListedStockSplit so there is no second
+    // copy of the FBO-adds / FBS-MAXes rule to drift from. fbo + fbs reconstructs
+    // total_stock_api exactly, including for a group listed both ways, which is
+    // why this no longer needs the `mixed` bucket the leftover-based attribution
+    // required: leftover could only be attributed per GROUP, this splits per
+    // MEMBER.
     //
     // Only meaningful across the whole account: the marketplace-filtered branch
-    // has no groups to classify, so it reports no split at all.
-    let stockSplit: { fbo: number; fbs: number; mixed: number } | undefined
+    // has no groups to split, so it reports no breakdown at all.
+    let stockSplit: { fbo: number; fbs: number } | undefined
     if (!marketplaceFiltered && groups.length > 0) {
-      const isFboMember = (m: { fulfillment_type: string | null }) =>
-        m.fulfillment_type === 'fbo' || m.fulfillment_type === 'fby'
-      stockSplit = { fbo: 0, fbs: 0, mixed: 0 }
+      stockSplit = { fbo: 0, fbs: 0 }
       for (const g of groups) {
-        const anyFbo = g.members.some(isFboMember)
-        const anyFbs = g.members.some(m => !isFboMember(m))
-        const bucket = anyFbo && anyFbs ? 'mixed' : anyFbo ? 'fbo' : 'fbs'
-        stockSplit[bucket] += g.leftover
+        const s = groupListedStockSplit(g.members)
+        stockSplit.fbo += s.fbo
+        stockSplit.fbs += s.fbs
       }
     }
 
@@ -85,7 +92,6 @@ const _fetchKpis = unstable_cache(
       total_stock: totalStock,
       stock_fbo: stockSplit?.fbo,
       stock_fbs: stockSplit?.fbs,
-      stock_mixed: stockSplit?.mixed,
       returned_orders: current.returned,
     }
 

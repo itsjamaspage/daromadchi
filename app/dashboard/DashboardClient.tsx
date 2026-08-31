@@ -230,18 +230,14 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
     return parts.length > 0 ? parts.join(' · ') : undefined
   }, [kpisFailed, fulfilled, kpis.total_revenue, kpis.cancelled_orders, kpis.cancelled_units, units, d])
 
-  // Where the stock physically sits. These three add up to the number above them
-  // exactly — the split is computed by group in lib/db/kpis.ts, never by ratio.
-  // `mixed` is only shown when it is non-zero, so the common case reads cleanly.
+  // Where the stock physically sits. The two halves reconstruct the number above
+  // them exactly — same groupListedStockSplit the stock engine uses, so there is
+  // no second copy of the FBO-adds / FBS-MAXes rule to drift from.
   const stockNote = useMemo(() => {
     if (kpisFailed || kpis.stock_fbo == null) return undefined
-    const parts = [`FBO: ${kpis.stock_fbo.toLocaleString('uz-UZ')}`,
-                   `FBS: ${(kpis.stock_fbs ?? 0).toLocaleString('uz-UZ')}`]
-    if ((kpis.stock_mixed ?? 0) > 0) {
-      parts.push(`${d.stockMixed}: ${(kpis.stock_mixed ?? 0).toLocaleString('uz-UZ')}`)
-    }
-    return parts.join(' · ')
-  }, [kpisFailed, kpis.stock_fbo, kpis.stock_fbs, kpis.stock_mixed, d])
+    return `FBO: ${kpis.stock_fbo.toLocaleString('uz-UZ')}`
+         + ` · FBS: ${(kpis.stock_fbs ?? 0).toLocaleString('uz-UZ')}`
+  }, [kpisFailed, kpis.stock_fbo, kpis.stock_fbs])
 
   // Return rate against every order received, cancellations included — the
   // denominator a seller means by "what share came back". Suppressed when no

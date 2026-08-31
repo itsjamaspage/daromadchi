@@ -257,12 +257,11 @@ export interface Kpis {
   /** Orders whose status is 'returned'. ORDERS, not units — Yandex collapses a
    *  partial return into the same status, so unit counts would over-state. */
   returned_orders?: number
-  /** total_stock split by where it physically sits. Sums to total_stock; `mixed`
-   *  holds groups listed BOTH ways, which are not divisible by any ratio we
-   *  measured. Undefined when a single marketplace is filtered in. */
+  /** total_stock split by where it physically sits: FBO/FBY warehouses hold
+   *  independent inventory and add, FBS members share one pool and MAX. The two
+   *  reconstruct total_stock exactly. Undefined when a marketplace is filtered in. */
   stock_fbo?: number
-  stock_fbs?: number
-  stock_mixed?: number        // item units on those cancelled orders
+  stock_fbs?: number        // item units on those cancelled orders
   total_stock: number
   change_revenue?: number | null  // % vs prior period
   change_profit?: number | null
