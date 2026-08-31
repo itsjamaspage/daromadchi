@@ -134,6 +134,17 @@ overwrite a correct combined FBO+FBS figure with an FBS-only one). And a SKU
 **absent** from the response is UNKNOWN, never zero (the "RUN_OUT" fix — treating
 absence as sold-out would zero a whole catalogue on a paging hiccup).
 
+**Order dates are immutable after first insert.** Every date bucket on the
+dashboard, P&L and revenue chart keys off `orders.ordered_at`. Uzum's sync used
+to fall back to the sync time when a payload had no parseable `dateCreated` **and**
+re-write `ordered_at` on every poll — so an active order's date walked forward to
+"today" each tick, collapsing a whole period's sales onto one chart bar. Now
+`parseOrderedAt` returns `null` on a missing/unparseable date; insert uses the
+sync time only for a first sighting, and update never overwrites a stored date
+with a fallback (a later good sync still heals one). Yandex already dropped
+undated orders rather than defaulting to now. See
+`docs/investigations/pnl-single-day-revenue-findings.md`.
+
 **Cache invalidation.** Mutation endpoints call `revalidateTag(tag, { expire: 0 })`.
 `{ expire: 0 }` is critical — `'max'` serves stale data on the first request.
 
@@ -493,10 +504,15 @@ on our own infrastructure and GitHub is not a data processor.
   by `scripts/apply-sql-migrations.mjs`.
 - **A migration file only runs if it is registered in the `MIGRATIONS` array** in
   `scripts/apply-sql-migrations.mjs`. Unregistered files are silently skipped —
-  always add the new file to that list in the same change. (Two dated
-  `20260629_*` files — `token_valid`, `warehouses` — exist on disk but are **not
-  yet registered**.)
-- **Migrations are current through 085** (the runner registers 021→085; 044/048
+  always add the new file to that list in the same change. This is not
+  hypothetical: `090` shipped unregistered, so prod never got
+  `users.ledger_kill_switch`, and because the Drizzle `users` schema selects that
+  column on every full-row read, the auth/session `SELECT * FROM users` threw
+  `column does not exist` — a 500 on every page that resolves the signed-in user.
+  (Two dated `20260629_*` files — `token_valid`, `warehouses` — are also **not
+  registered**; both columns/tables happen to exist on prod already, but a fresh
+  DB rebuild would miss them.)
+- **Migrations are current through 090** (the runner registers 021→090; 044/048
   are intentionally absent). Notable recent ones:
   - `064` — ATMOS billing: `subscriptions` table + ATMOS columns on `payments` + `atmos_status` enum
   - `065` — `stock_ledger` (event-sourced authoritative on-hand per SKU group)
@@ -513,6 +529,14 @@ on our own infrastructure and GitHub is not a data processor.
   - `078` — `user_notices` table (throttled nudges)
   - `079` — `last_active_at` + `frozen_at` (account lifecycle)
   - `080` — `shops.stock_synced_at` (independent stock-refresh clock)
+  - `081`–`084` — order alert-dedup stamps (`alert_sent_at`, `cancel_alert_sent_at`,
+    `restore_alert_sent_at`) + `products.stock_changed_at`
+  - `085` — `notif_stock_manual` toggle (manual-stock-update notifications)
+  - `086` — `orders.fee_source` (marks a derived vs reported marketplace fee)
+  - `087` — `orders.reserved_stock_snapshot` (read-only cancel-restore target)
+  - `089` — `stock_sync_state.repeat_count`
+  - `090` — `users.ledger_kill_switch` (per-user stock-ledger off-switch; see the
+    registration lesson above)
 
 ## Deployment
 
@@ -550,11 +574,13 @@ must describe the same week.
 `canPageForward()` decides the "next" button from the week you are **on**, not
 from its Sunday; the end-based test is what let the clamp fire.
 
-**Two picker components share this module:** `DateRangePicker` (dashboard,
-Orders) and `CalendarPicker` (P&L). They render differently — plain date inputs
-versus a month grid — but both call `pageRange` / `canPageForward`. They each
-owned a copy of the paging arithmetic until the copies drifted and a fix landed
-on one and missed the other.
+**One picker component, everywhere:** `CalendarPicker` (a month-grid range picker
+with ‹ › week paging) is the single date picker across Dashboard, Orders,
+Analytics, Payouts **and** P&L. It replaced the old `DateRangePicker` /
+`PeriodSelector` (both deleted in #422). Those earlier pickers each owned a copy
+of the paging arithmetic; the copies drifted and a fix landed on one and missed
+the other — which is why the maths now lives only in `lib/period-week.ts` and
+only one component consumes it.
 
 ## Testing & guardrails
 
