@@ -9,7 +9,7 @@
  *
  * The single UPDATE below is the SQL translation of shouldAdoptPhysicalStock()
  * (kept in stock-allocation.ts and unit-tested):
- *   • listing == our last write            → our throttle       → leave physical_stock
+ *   • listing == a RECENT write of ours     → our throttle       → leave physical_stock
  *   • a DROP within the open reserving qty  → order-decrement    → leave physical_stock
  *   • otherwise (restock up / drop beyond pending / never-written) → seller → adopt
  *
@@ -32,9 +32,29 @@ export async function reconcilePhysicalStock(shopId: string): Promise<void> {
        SET physical_stock = p.stock_quantity
       FROM (
         SELECT pr.id,
-          -- our authoritative last push to this listing (value-match = our write)
+          -- Our last push to this listing, WITHIN A WINDOW IT COULD STILL EXPLAIN.
+          --
+          -- The window is the fix for a permanent freeze. This used to take the
+          -- most recent 'sent' write with no time bound, so once a listing's TRUE
+          -- value happened to equal a value we had written at any point in the
+          -- past, the value-match below read it as "our own write coming back"
+          -- and refused to adopt it — forever.
+          --
+          -- That is not a corner case. We write the free-to-sell number, so we write 0 on
+          -- every product that sells out, which is exactly when the pool most
+          -- needs to reach 0. Once we had written 0, physical_stock could never
+          -- adopt a genuine 0 again: JMBLK sat at 1 while both marketplaces
+          -- reported 0, because a mirror write of 0 minutes earlier had poisoned
+          -- the comparison permanently.
+          --
+          -- A write can only explain a read taken shortly after it. Stock
+          -- refreshes every 15 minutes (STOCK_REFRESH_MS), so two hours is several
+          -- cycles of slack and still rules out a write from days ago. Beyond the
+          -- window last_write is NULL, both guards fall through, and a genuine
+          -- listing value is adopted like any other seller change.
           (SELECT w.quantity FROM stock_write_log w
              WHERE w.product_id = pr.id AND w.status = 'sent'
+               AND w.created_at > now() - interval '2 hours'
              ORDER BY w.created_at DESC LIMIT 1) AS last_write,
           -- units on open RESERVING orders for this listing (the order-decrement band)
           (SELECT COALESCE(SUM(oi.quantity), 0) FROM order_items oi
