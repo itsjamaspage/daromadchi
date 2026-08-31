@@ -31,7 +31,6 @@ export const dashT = {
       marginAfterCommission: 'Komissiyadan keyingi marja',
       orders: 'Buyurtmalar', stock: 'Ombordagi mahsulot',
       returns: 'Qaytarilgan', avgCheck: 'O\'rtacha chek',
-      stockMixed: 'aralash',
 
       recentOrders: "So'nggi buyurtmalar", topProducts: 'Top mahsulotlar',
       viewAll: "Hammasini ko'rish", noData: "Hali ma'lumot yo'q",
@@ -477,7 +476,6 @@ export const dashT = {
       marginAfterCommission: 'Margin after commission',
       orders: 'Orders', stock: 'Stock',
       returns: 'Returns', avgCheck: 'Avg. order',
-      stockMixed: 'mixed',
 
       recentOrders: 'Recent orders', topProducts: 'Top products',
       viewAll: 'View all', noData: 'No data yet',
@@ -916,7 +914,6 @@ export const dashT = {
       marginAfterCommission: 'Маржа после комиссии',
       orders: 'Заказы', stock: 'Остатки',
       returns: 'Возвраты', avgCheck: 'Средний чек',
-      stockMixed: 'смеш.',
 
       recentOrders: 'Последние заказы', topProducts: 'Топ товаров',
       viewAll: 'Смотреть все', noData: 'Данных пока нет',
