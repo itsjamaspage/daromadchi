@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Package, ShoppingCart,
-  ChevronRight, X, BarChart2, Calculator, FileText,
+  ChevronRight, X, BarChart2, FileText,
   Layers, AlertTriangle, CreditCard,
   CalendarDays, Users, Lock, Activity,
 } from 'lucide-react'
@@ -27,7 +27,6 @@ const storeNavItems: NavItem[] = [
   { href: '/dashboard/analytics',      key: 'analytics',     icon: BarChart2       },
   { href: '/dashboard/unit-economics', key: 'unitEconomics', icon: Layers          },
   { href: '/dashboard/pnl',            key: 'pnl',           icon: FileText        },
-  { href: '/dashboard/calculator',     key: 'calculator',    icon: Calculator      },
   { href: '/dashboard/alerts',         key: 'alerts',        icon: AlertTriangle   },
   { href: '/dashboard/status',         key: 'status',        icon: Activity        },
   { href: '/dashboard/payouts',        key: 'payouts',       icon: CreditCard      },

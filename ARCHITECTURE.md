@@ -37,7 +37,7 @@ app/
     settings/          # Shop tokens, preferences
     sync/              # Manual sync trigger
     account/           # Account management, incl. "Request account deletion"
-    ...                # alerts, notifications, calculator, referral, team, etc.
+    ...                # alerts, notifications, referral, team, etc.
   api/
     cron/sync/             # Scheduled sync: plan-gated heavy pass + 15-min stock refresh
     cron/stock-sync/       # Scheduled cross-marketplace stock reconcile / write-back
