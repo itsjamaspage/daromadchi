@@ -42,8 +42,9 @@ The daily revenue chart lumps orders from different days into one day. Fix the d
 
 ## Phase 2 — Analytics restructure
 
-### Task 5 — [SAFE] Analytics = 3 tabs — status: TODO
+### Task 5 — [SAFE] Analytics = 3 tabs — status: DONE
 Restructure Analytics into three sub-sections: **Аналитика товаров · Прибыль и убытки · Вывод денег**. Rename the current «Заработок» → **«Вывод денег»** and change its logic to mean money actually paid out (settlements received), not accrued earnings. Reuse the money layer (`order-economics.ts`) — no new fee/profit math. Keep the counted/pending honesty already built.
+> **CC note (what shipped):** Created `app/dashboard/analytics/layout.tsx` with `AnalyticsTabs` component providing 3 URL-driven tabs (Product analytics, P&L, Payouts). Moved P&L route from `app/dashboard/pnl/` → `app/dashboard/analytics/pnl/` and Payouts from `app/dashboard/payouts/` → `app/dashboard/analytics/payouts/`. Old routes redirect via `next/navigation.redirect()`. Removed `pnl` and `payouts` from sidebar nav (`storeNavItems`); analytics entry now highlights for all sub-routes. Updated BottomNav to match. Renamed "Заработок"/"Earnings"/"Daromad" → "Вывод денег"/"Payouts"/"To'lovlar" in i18n.ts (nav + page title/subtitle, 3 locales). Removed dead `finances → pnl/payouts` lock from `nav-gating.ts` (pages still self-gate). Underlying data logic unchanged — `getPayoutEntries` already reads settlement data.
 
 ### Task 6 — [SAFE] Product analytics detail — status: TODO
 In Аналитика товаров: show product photos (like Uzum), names, sold count, cancelled count, editable filters. Reuse existing product/photo data. Delivered-only rule stays consistent with the money layer.

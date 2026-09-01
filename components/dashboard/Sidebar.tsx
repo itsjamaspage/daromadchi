@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Package, ShoppingCart,
-  ChevronRight, X, BarChart2, FileText,
-  Layers, AlertTriangle, CreditCard,
+  ChevronRight, X, BarChart2,
+  Layers, AlertTriangle,
   CalendarDays, Users, Lock, Activity,
 } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
@@ -26,10 +26,8 @@ const storeNavItems: NavItem[] = [
   { href: '/dashboard/orders',         key: 'orders',        icon: ShoppingCart    },
   { href: '/dashboard/analytics',      key: 'analytics',     icon: BarChart2       },
   { href: '/dashboard/unit-economics', key: 'unitEconomics', icon: Layers          },
-  { href: '/dashboard/pnl',            key: 'pnl',           icon: FileText        },
   { href: '/dashboard/alerts',         key: 'alerts',        icon: AlertTriangle   },
   { href: '/dashboard/status',         key: 'status',        icon: Activity        },
-  { href: '/dashboard/payouts',        key: 'payouts',       icon: CreditCard      },
   { href: '/dashboard/team',           key: 'team',          icon: Users           },
   { href: '/dashboard/seasonality',    key: 'seasonality',   icon: CalendarDays    },
 ]
@@ -112,7 +110,7 @@ export default function Sidebar({ onClose, lockedKeys = [] }: SidebarProps) {
         {storeNavItems.map(({ href, key, icon: Icon }) => {
           const isUpcoming = UPCOMING_KEYS.has(key)
           const isLocked = lockedKeys.includes(key)
-          const active = !isUpcoming && pathname === href
+          const active = !isUpcoming && (pathname === href || (key === 'analytics' && pathname.startsWith(href + '/')))
           const label = (d.nav as unknown as Record<string, string>)[key] ?? key
 
           if (isUpcoming) {

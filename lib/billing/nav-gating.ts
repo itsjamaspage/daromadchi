@@ -20,8 +20,6 @@ export async function lockedNavKeys(userId: string | null): Promise<string[]> {
 
   if (!hasFeature(entitlement, 'analytics')) locked.push('analytics')
   if (!hasFeature(entitlement, 'unit_economics')) locked.push('unitEconomics')
-  if (!hasFeature(entitlement, 'finances')) locked.push('pnl', 'payouts')
-
   // Stocks follows the page's own rule: it survives the gate while one active
   // shop is still in stock_sync mode, so the lock icon must not appear then.
   if (!hasFeature(entitlement, 'stock_sync') && await everyActiveShopIsReadOnly(userId)) {
