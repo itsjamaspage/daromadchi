@@ -5,6 +5,7 @@ import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import { getRealFinancialsByBucket } from '@/lib/db/real-financials'
 import type { MarketplaceType } from '@/lib/types'
 import { addMonths } from '@/lib/period-week'
+import { shopDateStr, shopMonthStr } from '@/lib/shop-time'
 
 /**
  * Daily P&L with a full expense breakdown. Marketplaces rarely report fees
@@ -99,7 +100,7 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
   if (!shopIds || shopIds.length === 0) return { rows: [], params }
 
   const fmt = bucket === 'day' ? 'YYYY-MM-DD' : 'YYYY-MM'
-  const orderBucketSql   = sql<string>`to_char(${orders.ordered_at}, ${sql.raw(`'${fmt}'`)})`
+  const orderBucketSql   = sql<string>`to_char(${orders.ordered_at} AT TIME ZONE 'Asia/Tashkent', ${sql.raw(`'${fmt}'`)})`
 
   const [rows, cogsRows] = await Promise.all([
     db.select({
@@ -183,9 +184,7 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
   // something sold, not a wall of "0 so'm" days padding out the chart and table.
   for (const row of rows) {
     const d = row.ordered_at
-    const key = bucket === 'day'
-      ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const key = bucket === 'day' ? shopDateStr(d) : shopMonthStr(d)
     const ex = grouped.get(key) ?? {
       revenue: 0, realFee: 0, realDelivery: 0, count: 0, revenueEstimable: 0, hasYandex: false,
       cancelledCount: 0, cancelledAmount: 0,

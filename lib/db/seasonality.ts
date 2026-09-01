@@ -3,6 +3,7 @@ import { db, orders, orderItems, products } from '@/lib/db'
 import { getShopIds as resolveShopIds } from '@/lib/db/shop-context'
 import type { MarketplaceType } from '@/lib/types'
 import { addMonths, startOfMonth, localMonthStr } from '@/lib/period-week'
+import { shopMonthStr } from '@/lib/shop-time'
 
 export interface SeasonalityPoint {
   month: string
@@ -51,7 +52,7 @@ export async function getSeasonality(maxProducts = 6, marketplace?: MarketplaceT
   const orderMonth = new Map<string, string>()
   for (const o of orderRows) {
     const d = o.ordered_at
-    orderMonth.set(o.id, `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+    orderMonth.set(o.id, shopMonthStr(d))
   }
 
   const orderIds = [...orderMonth.keys()]

@@ -31,19 +31,20 @@ const _fetchRevenue = unstable_cache(
     if (untilDate) conditions.push(lte(orders.ordered_at, untilDate))
 
     const rows = await db.select({
-      day: sql<string>`date(${orders.ordered_at})`.as('day'),
+      day: sql<string>`date(${orders.ordered_at} AT TIME ZONE 'Asia/Tashkent')`.as('day'),
       revenue: sql<number>`coalesce(sum(${orders.revenue}::numeric), 0)`.as('revenue'),
       order_count: sql<number>`count(*)`.as('order_count'),
     }).from(orders)
       .where(and(...conditions))
-      .groupBy(sql`date(${orders.ordered_at})`)
-      .orderBy(sql`date(${orders.ordered_at})`)
+      .groupBy(sql`date(${orders.ordered_at} AT TIME ZONE 'Asia/Tashkent')`)
+      .orderBy(sql`date(${orders.ordered_at} AT TIME ZONE 'Asia/Tashkent')`)
 
     return rows.map(row => {
-      const d = new Date(row.day)
-      const label = d.toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric' })
+      const [y, m, dd] = row.day.split('-')
+      const d = new Date(Date.UTC(Number(y), Number(m) - 1, Number(dd)))
+      const label = d.toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric', timeZone: 'UTC' })
       return {
-        date: `${label} ${d.getFullYear()}`,
+        date: `${label} ${y}`,
         revenue: Number(row.revenue),
         order_count: Number(row.order_count),
       }
