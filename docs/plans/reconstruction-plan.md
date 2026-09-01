@@ -15,11 +15,14 @@
 
 ## Phase 1 — Foundations & cleanups
 
-### Task 1 — [SAFE] Move stock into «Товары», Uzum-style — status: TODO
+### Task 1 — [SAFE] Move stock into «Товары», Uzum-style — status: DONE (PR open — owner to verify parity + decide on photos)
 Relocate the standalone «Остатки» view into the Products («Товары») section. Lay out like the Uzum seller Products table: row = product photo + name + SKU/ID + status badge + **«Остатки FBS, шт»** column. Delete the standalone Остатки page/route and its nav entry.
 - Show **FBS only** for now (real, both marketplaces). Do NOT add an FBO column — FBO is not synced (see Task 14); a blank FBO column is misleading. Add FBO here only after Task 14.
 - Drop the old page's per-marketplace sold/cancelled/«Отменено» split (owner's decision — Products view is a clean product+stock table).
 - **Display relocation only** — do NOT change stock computation or the write path (#421 intact). Parity check: FBS numbers shown must equal what the old Остатки page showed.
+
+> **CC note (what shipped):** Added an **«Остатки FBS, шт»** column to the Products table, reusing the SAME `available_stock` figure the low-stock tab/export and the old Остатки page already computed — no stock math changed (#421 untouched). FBO/FBY listings show «—» (not synced). Deleted the standalone view: `/dashboard/stocks` now redirects to `/dashboard/products` and the sidebar entry is gone. Sold/cancelled split dropped as instructed.
+> **⚠️ Owner to verify:** (1) **Parity** — the old page grouped SKUs *across* marketplaces into one leftover; Products shows one row *per listing*, each reading the same shared pool. Please confirm the per-listing FBS numbers match what you saw before. (2) **Photos** — products carry **no photo data** (sync never stores an image; the `image` column is on `unit_economics_items`, not `products`), so the Uzum-style photo was NOT added rather than faked — it needs a photo-sync feature (fits Task 11/14 scope). (3) The cross-marketplace **merge-suggestions** tool (`ProductGroupSuggestions`) lived on the deleted page; its code is kept but currently unlinked — where should it live?
 
 ### Task 2 — [SAFE] Category mapping — status: DONE
 Daromadchi isn't picking up Russian categories. Investigate why, then map synonyms to one canonical category (e.g. «умные часы» + «смартчасы» → one). Foundation for filters (Task 8) and analytics (Task 5/6). Deliver a mapping mechanism, not a one-off patch.

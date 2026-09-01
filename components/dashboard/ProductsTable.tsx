@@ -162,6 +162,22 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
   const allLabel = d.status.all
 
+  // «Остатки FBS» for one listing. FBS (and unknown, which the whole app treats
+  // as FBS) shows its free-to-sell figure — the SAME available_stock the low-
+  // stock tab, export and the deleted Остатки page all read, so no number moves.
+  // FBO/FBY listings show «—», not a wrong FBS number: their warehouse stock is
+  // not synced (see reconstruction-plan Task 14), and a blank is honest where a
+  // 0 would read as "sold out".
+  const fbsUnits = (p: Product): number | null =>
+    (p.fulfillment_type === 'fbs' || p.fulfillment_type == null) ? p.available_stock : null
+
+  const FbsCell = ({ value }: { value: number | null }) => (
+    <td className="px-5 py-4 text-right tabular-nums"
+      style={{ color: value == null ? 'var(--text-muted)' : value > 0 ? 'var(--text-base)' : '#ef4444' }}>
+      {value == null ? '—' : value}
+    </td>
+  )
+
   const [query,          setQuery]          = useState('')
   const [sortBy,         setSortBy]         = useState<SortKey>('profit')
   const [sortDir,        setSortDir]        = useState<'asc' | 'desc'>('desc')
@@ -333,6 +349,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
               </div>
             </div>
           </td>
+          <FbsCell value={fbsUnits(p)} />
           <td className="px-5 py-4">
             <span className="text-xs px-2.5 py-1 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>{catDisplay(p.category, lang)}</span>
           </td>
@@ -405,6 +422,10 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       ? Number(((profit / price) * 100).toFixed(1)) : null
     const marginColor = margin == null ? 'var(--text-muted)'
       : margin > 35 ? '#10b981' : margin > 20 ? '#f59e0b' : '#ef4444'
+    // FBS units SUM across the group's colours — each colour is its own stock,
+    // unlike price/margin which are one shared figure. «—» when no member is FBS.
+    const fbsKids = kids.map(fbsUnits).filter((v): v is number => v != null)
+    const groupFbs = fbsKids.length > 0 ? fbsKids.reduce((s, v) => s + v, 0) : null
 
     return (
       <tr style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg-card2)' }}
@@ -430,6 +451,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             </div>
           </div>
         </td>
+        <FbsCell value={groupFbs} />
         <td className="px-5 py-4">
           <span className="text-xs px-2.5 py-1 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>{catDisplay(category, lang)}</span>
         </td>
@@ -557,6 +579,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 <th className="text-left font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('title')}>
                   {d.product} <SortIcon col="title" sortBy={sortBy} sortDir={sortDir} />
                 </th>
+                <th className="text-right font-medium px-5 py-3 cursor-pointer select-none whitespace-nowrap" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('stock_quantity')}>
+                  {d.fbsStockCol} <SortIcon col="stock_quantity" sortBy={sortBy} sortDir={sortDir} />
+                </th>
                 <th className="text-left font-medium px-5 py-3">{d.category}</th>
                 <th className="text-right font-medium px-5 py-3">{d.price}</th>
                 <th className="text-right font-medium px-5 py-3">{d.costPrice}</th>
@@ -570,7 +595,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             </thead>
             <tbody>
               {displayItems.length === 0 ? (
-                <tr><td colSpan={6} className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noProductsTitle}</td></tr>
+                <tr><td colSpan={7} className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noProductsTitle}</td></tr>
               ) : displayItems.map(item => {
                 if (item.type === 'flat') return renderRow(item.product)
                 const isOpen = openGroups.has(item.key)
