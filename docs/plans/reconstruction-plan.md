@@ -23,7 +23,6 @@ Relocate the standalone «Остатки» view into the Products («Товар�
 
 > **CC note (what shipped):** Added an **«Остатки FBS, шт»** column to the Products table, reusing the SAME `available_stock` figure the low-stock tab/export and the old Остатки page already computed — no stock math changed (#421 untouched). FBO/FBY listings show «—» (not synced). Deleted the standalone view: `/dashboard/stocks` now redirects to `/dashboard/products` and the sidebar entry is gone. Sold/cancelled split dropped as instructed.
 > **⚠️ Owner to verify:** (1) **Parity** — the old page grouped SKUs *across* marketplaces into one leftover; Products shows one row *per listing*, each reading the same shared pool. Please confirm the per-listing FBS numbers match what you saw before. (2) **Photos** — products carry **no photo data** (sync never stores an image; the `image` column is on `unit_economics_items`, not `products`), so the Uzum-style photo was NOT added rather than faked — it needs a photo-sync feature (fits Task 11/14 scope). (3) The cross-marketplace **merge-suggestions** tool (`ProductGroupSuggestions`) lived on the deleted page; its code is kept but currently unlinked — where should it live?
-
 ### Task 2 — [SAFE] Category mapping — status: TODO
 Daromadchi isn't picking up Russian categories. Investigate why, then map synonyms to one canonical category (e.g. «умные часы» + «смартчасы» → one). Foundation for filters (Task 8) and analytics (Task 5/6). Deliver a mapping mechanism, not a one-off patch.
 
