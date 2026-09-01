@@ -5,6 +5,7 @@ import { db, shops, products, orders, orderItems, categoryAliases, categoriesCan
 import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
 import type { Product, MarketplaceType } from '@/lib/types'
 import { parseLocalDate, endOfLocalDay } from '@/lib/period-week'
+import { resolveCanonical } from '@/lib/categories/resolve'
 
 export interface PaginatedProducts {
   rows: Product[]
@@ -427,7 +428,32 @@ const _fetchCategoryRevenue = unstable_cache(
         )
 
       for (const r of rows) {
-        const key = r.canonical_id != null ? `c:${r.canonical_id}` : r.raw_category
+        let key: string
+        let name: string
+        let name_ru: string | undefined
+        let name_uz: string | undefined
+        let name_en: string | undefined
+
+        if (r.canonical_id != null) {
+          key = `c:${r.canonical_id}`
+          name = r.canonical_ru ?? r.raw_category
+          name_ru = r.canonical_ru ?? undefined
+          name_uz = r.canonical_uz ?? undefined
+          name_en = r.canonical_en ?? undefined
+        } else {
+          const resolved = resolveCanonical(r.raw_category)
+          if (resolved) {
+            key = `t:${resolved.canonical_id}`
+            name = resolved.name_ru
+            name_ru = resolved.name_ru
+            name_uz = resolved.name_uz
+            name_en = resolved.name_en
+          } else {
+            key = r.raw_category
+            name = r.raw_category
+          }
+        }
+
         const existing = merged.get(key)
         if (existing) {
           existing.revenue += Number(r.revenue)
@@ -435,10 +461,10 @@ const _fetchCategoryRevenue = unstable_cache(
           existing.costMissing += Number(r.cost_missing)
         } else {
           merged.set(key, {
-            name: r.canonical_ru ?? r.raw_category,
-            name_ru: r.canonical_ru ?? undefined,
-            name_uz: r.canonical_uz ?? undefined,
-            name_en: r.canonical_en ?? undefined,
+            name,
+            name_ru,
+            name_uz,
+            name_en,
             revenue: Number(r.revenue),
             profit: Number(r.profit),
             costMissing: Number(r.cost_missing),
@@ -463,12 +489,24 @@ const _fetchCategoryRevenue = unstable_cache(
         .groupBy(products.category)
 
       for (const r of rows) {
-        merged.set(r.raw_category, {
-          name: r.raw_category,
-          revenue: Number(r.revenue),
-          profit: Number(r.profit),
-          costMissing: Number(r.cost_missing),
-        })
+        const resolved = resolveCanonical(r.raw_category)
+        const key = resolved ? `t:${resolved.canonical_id}` : r.raw_category
+        const existing = merged.get(key)
+        if (existing) {
+          existing.revenue += Number(r.revenue)
+          existing.profit += Number(r.profit)
+          existing.costMissing += Number(r.cost_missing)
+        } else {
+          merged.set(key, {
+            name: resolved?.name_ru ?? r.raw_category,
+            name_ru: resolved?.name_ru,
+            name_uz: resolved?.name_uz,
+            name_en: resolved?.name_en,
+            revenue: Number(r.revenue),
+            profit: Number(r.profit),
+            costMissing: Number(r.cost_missing),
+          })
+        }
       }
     }
 

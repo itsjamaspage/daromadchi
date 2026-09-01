@@ -302,7 +302,7 @@ Kengaytmaning o'z ogohlantirishlari: kam qoldiq chegarasi, savdo pasayishi, qayt
 
 Chrome va Chromium asosidagi brauzerlar: Edge, Brave, Opera.
 
-<info>Panelning hisob-kitobi Daromadchi'dagi **Birlik iqtisodiyoti** sahifasi bilan bir xil formulalarga asoslanadi. Paneldagi tugma sizni to'liq kalkulyatorga olib o'tadi.</info>
+<info>Panelning hisob-kitobi Daromadchi'dagi **Birlik iqtisodiyoti** sahifasi bilan bir xil formulalarga asoslanadi.</info>
 `,
   },
   {
@@ -486,8 +486,8 @@ Bu qisqartmalarning barchasi dashboard'dagi **Qisqartmalar** bo'limida ham izohl
 
 ## Reklama xarajati Daromadchi'ga qayerdan kiradi?
 
-### 1. Birlik iqtisodiyoti kalkulyatori
-**Dashboard → Kalkulyator** dagi **Reklama (%)** maydoniga o'zingizning DRR'ingizni kiritasiz. Kalkulyator uni xarajat sifatida hisobga oladi va sof foyda hamda zararsizlik narxini shunga qarab chiqaradi.
+### 1. Birlik iqtisodiyoti
+**Dashboard → Birlik iqtisodiyoti** dagi **Reklama (%)** maydoniga o'zingizning DRR'ingizni kiritasiz. Sahifa uni xarajat sifatida hisobga oladi va sof foyda hamda zararsizlik narxini shunga qarab chiqaradi.
 
 ### 2. F&Z (P&L) hisobot
 Marketplace reklama pulini to'lovingizdan ushlab qolgan bo'lsa, u **"Marketplace'ning boshqa ushlab qolishlari"** qatoriga tushadi (ekvayring, jarimalar bilan birga). Bu — marketplace hisobotidan olingan haqiqiy ushlanma, taxmin emas.
@@ -528,7 +528,7 @@ Kategoriyaga qarab farq qiladi:
 
 Yuqoridagi jadval — umumiy o'rtacha ko'rsatkich. Aniq javob sizning marjangizga bog'liq:
 
-1. **Dashboard → Kalkulyator** ni oching va mahsulotni tanlang
+1. **Dashboard → Birlik iqtisodiyoti** ni oching va mahsulotni tanlang
 2. **Reklama (%)** maydonini 0 ga qo'ying — bu sof marjangiz
 3. Foyda nolga yaqinlashguncha foizni asta oshiring
 
@@ -597,7 +597,7 @@ Marketplace kabinetida so'nggi 7-30 kunlik har bir mahsulot bo'yicha sarfni ko'c
 Tovar tahlili jadvalidagi **% qaytarish** ustuni. Qaytarish yuqori bo'lsa, buyurtma foyda emas — bu reklamani ikki marta qimmatga tushiradi.
 
 ### Marjasi past mahsulotlar
-Marja 10% dan past bo'lsa, kichik DRR ham mahsulotni zararga o'tkazadi. Chegarani **Kalkulyator** da hisoblang.
+Marja 10% dan past bo'lsa, kichik DRR ham mahsulotni zararga o'tkazadi. Chegarani **Birlik iqtisodiyoti** da hisoblang.
 
 <warning>Barcha kam konversiyali kampaniyalarni birdan to'xtatib qo'ymang — ba'zilari brendni tanitishga xizmat qilishi mumkin.</warning>
 `,
@@ -618,7 +618,7 @@ Daromadchi bergan narsa — **byudjetni qancha qo'yish kerakligini hisoblash uch
 ## Byudjetni hisoblash
 
 ### 1. Bir buyurtmadan qancha foyda olasiz?
-**Dashboard → Kalkulyator** da mahsulotni tanlang, tannarx va narxni kiriting, **Reklama (%)** ni 0 ga qo'ying. Chiqqan sof foyda — bitta buyurtmadan reklamasiz oladigan pulingiz.
+**Dashboard → Birlik iqtisodiyoti** da mahsulotni toping, tannarx va narxni kiriting, **Reklama (%)** ni 0 ga qo'ying. Chiqqan sof foyda — bitta buyurtmadan reklamasiz oladigan pulingiz.
 
 ### 2. Maksimal CPO'ni aniqlang
 \`Maksimal CPO = Bir buyurtmadagi sof foyda\`
@@ -852,7 +852,7 @@ Yetkazib berish muddatini o'zingiz bilasiz — Daromadchi uni bilmaydi, shuning 
   // ───────────────────────────────────────────────
   {
     slug: 'birlik-iqtisodiyoti',
-    title: "Birlik iqtisodiyoti kalkulyatori",
+    title: "Birlik iqtisodiyoti",
     category: 'Birlik Iqtisodiyoti',
     categorySlug: 'birlik-iqtisodiyoti',
     summary: "Har bir mahsulot uchun sof foyda, marja va zararsizlik narxini hisoblash.",
@@ -861,28 +861,7 @@ Yetkazib berish muddatini o'zingiz bilasiz — Daromadchi uni bilmaydi, shuning 
 
 Birlik iqtisodiyoti (Unit Economics) — bir dona mahsulotni sotishdan qancha foyda qolishini ko'rsatuvchi hisob-kitob.
 
-Daromadchi'da buning uchun **ikkita** vosita bor.
-
-## 1. Foyda kalkulyatori — bitta mahsulot uchun tez hisob
-
-**Dashboard → Kalkulyator**. Hech narsa ulash shart emas: marketplace'ni (**Uzum** yoki **Yandex**) va kategoriyani tanlaysiz — komissiya foizi o'zi qo'yiladi.
-
-Kiritiladigan maydonlar:
-- Sotish narxi
-- Tannarx
-- Logistika
-- Reklama xarajati
-- Qaytarish foizi (%)
-- Oylik savdo (dona)
-
-Natijada quyidagilar chiqadi:
-- **1 donadagi xarajatlar taqsimoti** — komissiya, tannarx, logistika, qaytarish zarari, reklama
-- **Sof foyda (dona)**, **Marja**, **ROI**, **DRR**, **zararsizlik narxi**
-- **Reality Check** — oylik savdoga ko'paytirilgan haqiqiy foyda, siz kutgan raqam bilan yonma-yon
-
-Marja 20% dan past bo'lsa yoki narx zarar keltirsa, kalkulyator ogohlantiradi.
-
-## 2. Birlik iqtisodiyoti jadvali — barcha mahsulotlar bo'yicha
+## Birlik iqtisodiyoti jadvali
 
 **Dashboard → Birlik iqtisodiyoti**. Bu yerda mahsulotlar ro'yxati va har biri uchun to'liq hisob turadi: tannarx, yetkazib berilgan tannarx (landed cost), komissiya, yetkazib berish, reklama, jami xarajatlar, sof foyda, ROI, marja, qoldiq va yetkazib beruvchi havolasi.
 
@@ -905,7 +884,7 @@ Ustunlarni yoqib-o'chirish mumkin — kerakli ko'rinishni o'zingiz yig'asiz.
 
 Kengaytmadagi panel xuddi shu formulalarni ishlatadi va mahsulotni to'g'ridan-to'g'ri shu jadvalga qo'shib qo'yishi mumkin.
 
-<warning>Kalkulyatordagi barcha raqamlar taxminiy. Marketplace tariflari o'zgaradi — muhim qarordan oldin kabinetdagi joriy tarifni tekshiring.</warning>
+<warning>Barcha raqamlar taxminiy. Marketplace tariflari o'zgaradi — muhim qarordan oldin kabinetdagi joriy tarifni tekshiring.</warning>
 `,
   },
   {
@@ -925,16 +904,7 @@ Zararsizlik narxi (breakeven) — barcha xarajatlarni qoplaydigan eng past sotuv
 
 ## Daromadchi'da hisoblash
 
-**Dashboard → Kalkulyator** ni oching:
-
-1. Marketplace'ni tanlang: **Uzum** yoki **Yandex**
-2. Kategoriyani tanlang — komissiya foizi o'zi qo'yiladi
-3. **Tannarx** ni kiriting
-4. **Logistika** ni kiriting (marketplace tarifidan)
-5. **Qaytarish foizi** ni kiriting — haqiqiy foizni **Mahsulot tahlili** jadvalidagi **% qaytarish** ustunidan oling
-6. **Reklama xarajati** ni kiriting
-
-Kalkulyator **Zararlanmaslik** qiymatini boshqa ko'rsatkichlar (marja, ROI, DRR) bilan birga chiqaradi.
+**Dashboard → Birlik iqtisodiyoti** ni oching. Har bir mahsulot uchun jadvalda zararsizlik qiymati boshqa ko'rsatkichlar (marja, ROI, DRR) bilan birga ko'rsatiladi. Tannarx, logistika, qaytarish foizi va reklama xarajatini kiriting — to'liq hisob chiqadi.
 
 ## Maqsadli foyda qo'shish
 
@@ -947,7 +917,7 @@ Kalkulyator **Zararlanmaslik** qiymatini boshqa ko'rsatkichlar (marja, ROI, DRR)
 
 ## Joriy narxingiz yetarlimi?
 
-Kalkulyatordagi **Reality Check** bo'limi joriy narx bilan oyiga qancha foyda (yoki zarar) chiqishini ko'rsatadi. Narx zararli bo'lsa, kalkulyator uni qanchaga ko'tarish kerakligini aytadi.
+**Birlik iqtisodiyoti** jadvali joriy narx bilan har bir dona mahsulotdan qancha foyda (yoki zarar) chiqishini ko'rsatadi. Narx zararli bo'lsa, sahifa buni belgilab qo'yadi.
 
 <info>Komissiya foizi kategoriya bo'yicha oldindan qo'yiladi, lekin uni qo'lda o'zgartirish mumkin — o'z shartnomangizdagi foiz aniqroq.</info>
 `,
@@ -983,7 +953,7 @@ Bu ikkisi tez-tez adashtiriladi:
 Ota-qatorni ochsangiz, har bir variant (rang, o'lcham) uchun marja alohida ko'rinadi — bittasi butun guruh raqamini pasaytirayotgan bo'lishi mumkin.
 
 ### Rejalashtirishda
-**Kalkulyator** va **Birlik iqtisodiyoti** jadvali marjani siz kiritgan qiymatlar asosida hisoblaydi.
+**Birlik iqtisodiyoti** jadvali marjani siz kiritgan qiymatlar asosida hisoblaydi.
 
 ## Tannarxsiz marja bo'lmaydi
 
@@ -1006,7 +976,7 @@ Tannarx kiritilmagan mahsulotning marjasi haqiqiydan yuqori chiqadi — chunki e
     title: "Logistika xarajatlarini hisoblash",
     category: 'Birlik Iqtisodiyoti',
     categorySlug: 'birlik-iqtisodiyoti',
-    summary: "FBO va FBS logistika tariflarini birlik iqtisodiyoti kalkulyatoriga qo'shish.",
+    summary: "FBO va FBS logistika tariflarini birlik iqtisodiyotiga qo'shish.",
     content: `
 ## Logistika xarajatlari
 
@@ -1014,8 +984,8 @@ Yetkazib berish narxi mahsulotning og'irligi, hajmi va ombor modeliga (FBO/FBS, 
 
 ## Daromadchi logistikani qanday hisobga oladi
 
-### Kalkulyatorda — qo'lda
-**Dashboard → Kalkulyator** dagi **Logistika (so'm)** maydoniga bir dona uchun yetkazib berish xarajatini kiritasiz. Raqamni marketplace tarifidan olasiz.
+### Birlik iqtisodiyoti jadvalida — qo'lda
+**Dashboard → Birlik iqtisodiyoti** dagi **Logistika** maydoniga bir dona uchun yetkazib berish xarajatini kiritasiz. Raqamni marketplace tarifidan olasiz.
 
 ### Birlik iqtisodiyoti jadvalida — qo'lda va foizli
 **Birlik iqtisodiyoti** jadvalida yetkazib berish alohida ustun bo'lib turadi. Sozlamalardagi **Oxirgi milya (%)** esa narxdan foiz sifatida qo'shiladi — tarifi foizga bog'liq bo'lgan yetkazib berish uchun qulay.
@@ -1023,7 +993,7 @@ Yetkazib berish narxi mahsulotning og'irligi, hajmi va ombor modeliga (FBO/FBS, 
 ### F&Z hisobotda — haqiqiy raqam
 **F&Z hisobot** sahifasidagi **Yetkazib berish** qatori taxmin emas: u marketplace hisobotidan olinadi. Marketplace hali yakuniy hisobotni bermagan bo'lsa, qiymat yonida **≈** turadi va hisobot kelgach haqiqiysiga almashadi.
 
-<info>Ya'ni rejalashtirish uchun kalkulyatordagi taxminni, o'tgan davrni baholash uchun F&Z hisobotdagi haqiqiy raqamni ishlating.</info>
+<info>Ya'ni rejalashtirish uchun Birlik iqtisodiyoti taxminini, o'tgan davrni baholash uchun F&Z hisobotdagi haqiqiy raqamni ishlating.</info>
 
 ## Qaytarish xarajati
 
@@ -1737,10 +1707,10 @@ const ARTICLE_TITLES: Record<string, Record<string, { title: string; summary: st
   'qoldiq-ogohlantirish':   { ru: { title: 'Оповещения об остатках',                  summary: 'Настройка оповещений о низких остатках и получение их в Telegram.' },    en: { title: 'Stock alerts',                           summary: 'Setting up low-stock alerts and receiving them in Telegram.' } },
   'fbo-fbs-rfbs':           { ru: { title: 'Разница между FBO, FBS и rFBS',           summary: 'Uzum FBO/FBS и Yandex FBY/FBS/DBS: кто собирает и на что это влияет.' }, en: { title: 'FBO, FBS and rFBS differences',          summary: 'Uzum FBO/FBS and Yandex FBY/FBS/DBS: who packs, and why it matters.' } },
   'tovar-aylanmasi':        { ru: { title: 'Оборачиваемость товаров и прогноз заказа',summary: 'Скорость оборота остатков и расчёт времени следующего заказа.' },        en: { title: 'Stock turnover and order forecast',      summary: 'Stock rotation speed and calculating when to reorder.' } },
-  'birlik-iqtisodiyoti':    { ru: { title: 'Калькулятор юнит-экономики',              summary: 'Расчёт чистой прибыли, маржи и точки безубыточности для каждого товара.' }, en: { title: 'Unit economics calculator',            summary: 'Calculate net profit, margin and break-even for each product.' } },
+  'birlik-iqtisodiyoti':    { ru: { title: 'Юнит-экономика',                           summary: 'Расчёт чистой прибыли, маржи и точки безубыточности для каждого товара.' }, en: { title: 'Unit economics',                      summary: 'Calculate net profit, margin and break-even for each product.' } },
   'zararsizlik-narxi':     { ru: { title: 'Расчёт точки безубыточности',             summary: 'Как определить минимальную прибыльную цену продажи.' },                   en: { title: 'Break-even price calculation',           summary: 'How to find the minimum profitable selling price.' } },
   'marja-hisoblash':       { ru: { title: 'Расчёт маржи прибыли',                   summary: 'Показатели маржи прибыли на уровне товара и магазина.' },                  en: { title: 'Profit margin calculation',              summary: 'Profit margin metrics at product and store level.' } },
-  'logistika-xarajatlari': { ru: { title: 'Расчёт расходов на логистику',           summary: 'Добавление тарифов FBO и FBS в калькулятор юнит-экономики.' },             en: { title: 'Calculating logistics costs',            summary: 'Adding FBO and FBS rates to the unit economics calculator.' } },
+  'logistika-xarajatlari': { ru: { title: 'Расчёт расходов на логистику',           summary: 'Добавление тарифов FBO и FBS в юнит-экономику.' },                        en: { title: 'Calculating logistics costs',            summary: 'Adding FBO and FBS rates to the unit economics page.' } },
   'dashboard-korsatkichlari': { ru: { title: 'Понимание показателей дашборда',      summary: 'Основные карточки дашборда и их значение.' },                             en: { title: 'Understanding dashboard metrics',        summary: 'Main dashboard cards and what they mean.' } },
   'pnl-hisobot':           { ru: { title: 'Отчёт P&L (Прибыли и убытки)',           summary: 'Как читать и анализировать ежемесячный отчёт о прибылях и убытках.' },    en: { title: 'P&L report (Profit & Loss)',             summary: 'How to read and analyse the monthly profit and loss report.' } },
   'kategoriya-tahlili':    { ru: { title: 'Анализ категорий и товаров',             summary: 'Выручка по категориям, классификация ABC и страница ABC-XYZ.' },           en: { title: 'Category and product analysis',          summary: 'Revenue by category, ABC classification and the ABC-XYZ page.' } },
@@ -2024,7 +1994,7 @@ Daromadchi подготовит вашу персональную ссылку.
 
 Chrome и браузеры на Chromium: Edge, Brave, Opera.
 
-<info>Расчёт в панели использует те же формулы, что и страница **Юнит-экономика** в Daromadchi. Кнопка в панели открывает полный калькулятор.</info>
+<info>Расчёт в панели использует те же формулы, что и страница **Юнит-экономика** в Daromadchi. Кнопка в панели открывает страницу юнит-экономики.</info>
 `,
   'vidzhet-nima-korsatadi': `
 ## Из чего состоит панель
@@ -2176,8 +2146,8 @@ https://chromewebstore.google.com/detail/daromadchi-%E2%80%94-uzum-yandex/kdgmhe
 
 ## Где рекламный расход попадает в Daromadchi?
 
-### 1. Калькулятор юнит-экономики
-В поле **Реклама (%)** на странице **Дашборд → Калькулятор** вы вводите свой ДРР. Калькулятор учитывает его как расход и пересчитывает чистую прибыль и точку безубыточности.
+### 1. Таблица юнит-экономики
+В столбце **Реклама (%)** таблицы **Дашборд → Юнит-экономика** вы задаёте свой ДРР. Таблица учитывает его как расход и пересчитывает чистую прибыль.
 
 ### 2. Отчёт P&L
 Если маркетплейс удержал рекламные деньги из вашей выплаты, они попадают в строку **«Прочие удержания маркетплейса»** (вместе с эквайрингом и штрафами). Это фактическое удержание из отчёта маркетплейса, а не оценка.
@@ -2211,7 +2181,7 @@ https://chromewebstore.google.com/detail/daromadchi-%E2%80%94-uzum-yandex/kdgmhe
 
 Таблица выше — усреднённый ориентир. Точный ответ зависит от вашей маржи:
 
-1. Откройте **Дашборд → Калькулятор** и выберите товар
+1. Откройте **Дашборд → Юнит-экономика** и найдите товар
 2. Поставьте **Реклама (%)** = 0 — это ваша чистая маржа
 3. Постепенно повышайте процент, пока прибыль не приблизится к нулю
 
@@ -2273,7 +2243,7 @@ https://chromewebstore.google.com/detail/daromadchi-%E2%80%94-uzum-yandex/kdgmhe
 Столбец **% возвратов** в таблице аналитики товаров. Если возвратов много, заказ не равен прибыли — и реклама обходится вдвое дороже.
 
 ### Товары с низкой маржой
-При марже ниже 10% даже небольшой ДРР уводит товар в минус. Посчитайте порог в **Калькуляторе**.
+При марже ниже 10% даже небольшой ДРР уводит товар в минус. Посчитайте порог в таблице **Юнит-экономика**.
 
 <warning>Не останавливайте разом все кампании с низкой конверсией — часть из них работает на узнаваемость бренда.</warning>
 `,
@@ -2287,7 +2257,7 @@ https://chromewebstore.google.com/detail/daromadchi-%E2%80%94-uzum-yandex/kdgmhe
 ## Расчёт бюджета
 
 ### 1. Сколько прибыли даёт один заказ?
-В **Дашборд → Калькулятор** выберите товар, введите себестоимость и цену, поставьте **Реклама (%)** = 0. Полученная чистая прибыль — то, что вы зарабатываете с заказа без рекламы.
+В **Дашборд → Юнит-экономика** найдите товар; столбец **Чистая прибыль** (при **Реклама (%)** = 0) — то, что вы зарабатываете с заказа без рекламы.
 
 ### 2. Определите предельный CPO
 \`Предельный CPO = чистая прибыль с одного заказа\`
@@ -2487,28 +2457,9 @@ Daromadchi следит за остатками с учётом скорости
 
 Юнит-экономика — расчёт того, сколько прибыли остаётся с продажи одной единицы товара.
 
-В Daromadchi для этого есть **два** инструмента.
+Расчёт доступен на странице **Дашборд → Юнит-экономика**.
 
-## 1. Калькулятор прибыли — быстрый расчёт по одному товару
-
-**Дашборд → Калькулятор**. Ничего подключать не нужно: выбираете маркетплейс (**Uzum** или **Yandex**) и категорию — процент комиссии подставляется сам.
-
-Поля для ввода:
-- Цена продажи
-- Себестоимость
-- Логистика
-- Расход на рекламу
-- Процент возвратов (%)
-- Продажи в месяц (шт.)
-
-На выходе:
-- **Разбивка расходов на 1 шт.** — комиссия, себестоимость, логистика, потери на возвратах, реклама
-- **Чистая прибыль (шт.)**, **Маржа**, **ROI**, **ДРР**, точка безубыточности
-- **Reality Check** — реальная прибыль за месяц рядом с той, которую вы ожидали
-
-Если маржа ниже 20% или цена уводит в минус, калькулятор предупреждает.
-
-## 2. Таблица юнит-экономики — по всем товарам
+## Таблица юнит-экономики
 
 **Дашборд → Юнит-экономика**. Здесь список товаров и полный расчёт по каждому: себестоимость, landed cost, комиссия, доставка, реклама, итого расходы, чистая прибыль, ROI, маржа, остаток и ссылка на поставщика.
 
@@ -2531,7 +2482,7 @@ Daromadchi следит за остатками с учётом скорости
 
 Панель расширения использует те же формулы и может добавить товар прямо в эту таблицу.
 
-<warning>Все цифры в калькуляторе ориентировочные. Тарифы маркетплейсов меняются — перед важным решением сверьтесь с актуальным тарифом в кабинете.</warning>
+<warning>Все цифры ориентировочные. Тарифы маркетплейсов меняются — перед важным решением сверьтесь с актуальным тарифом в кабинете.</warning>
 `,
   'zararsizlik-narxi': `
 ## Что такое точка безубыточности?
@@ -2544,16 +2495,7 @@ Daromadchi следит за остатками с учётом скорости
 
 ## Расчёт в Daromadchi
 
-Откройте **Дашборд → Калькулятор**:
-
-1. Выберите маркетплейс: **Uzum** или **Yandex**
-2. Выберите категорию — процент комиссии подставится сам
-3. Введите **себестоимость**
-4. Введите **логистику** (из тарифов маркетплейса)
-5. Введите **процент возвратов** — фактический возьмите из столбца **% возвратов** в таблице **Аналитика товаров**
-6. Введите **расход на рекламу**
-
-Калькулятор покажет **точку безубыточности** вместе с остальными показателями (маржа, ROI, ДРР).
+На странице **Дашборд → Юнит-экономика** заполните себестоимость и расходы (логистику, рекламу, процент возвратов). Таблица покажет **точку безубыточности** вместе с остальными показателями (маржа, ROI, ДРР).
 
 ## Добавляем целевую прибыль
 
@@ -2566,7 +2508,7 @@ Daromadchi следит за остатками с учётом скорости
 
 ## Достаточна ли ваша текущая цена?
 
-Блок **Reality Check** в калькуляторе показывает, сколько прибыли (или убытка) даёт текущая цена за месяц. Если цена убыточна, калькулятор подскажет, на сколько её поднять.
+Столбцы **Маржа** и **Чистая прибыль** в таблице юнит-экономики показывают, сколько прибыли (или убытка) даёт текущая цена. Если товар убыточен, скорректируйте цену или расходы.
 
 <info>Процент комиссии подставляется по категории, но его можно изменить вручную — процент из вашего договора точнее.</info>
 `,
@@ -2595,7 +2537,7 @@ Daromadchi следит за остатками с учётом скорости
 Раскройте родительскую строку — маржа видна по каждому варианту (цвет, размер). Бывает, что один из них тянет вниз показатель всей группы.
 
 ### При планировании
-**Калькулятор** и таблица **Юнит-экономика** считают маржу по введённым вами значениям.
+Таблица **Юнит-экономика** считает маржу по введённым вами значениям.
 
 ## Без себестоимости маржи нет
 
@@ -2619,8 +2561,8 @@ Daromadchi следит за остатками с учётом скорости
 
 ## Как Daromadchi учитывает логистику
 
-### В калькуляторе — вручную
-В поле **Логистика (сум)** на странице **Дашборд → Калькулятор** вы вводите стоимость доставки одной единицы. Цифру берёте из тарифов маркетплейса.
+### В таблице юнит-экономики — вручную
+В столбце **Логистика** на странице **Дашборд → Юнит-экономика** вы вводите стоимость доставки одной единицы. Цифру берёте из тарифов маркетплейса.
 
 ### В таблице юнит-экономики — вручную и процентом
 В таблице **Юнит-экономика** доставка вынесена в отдельный столбец. А **Последняя миля (%)** из настроек добавляется процентом от цены — удобно, когда тариф процентный.
@@ -2628,7 +2570,7 @@ Daromadchi следит за остатками с учётом скорости
 ### В отчёте P&L — фактическая цифра
 Строка **Доставка** в отчёте **P&L** — не оценка: она берётся из отчёта маркетплейса. Если итоговый отчёт ещё не пришёл, рядом стоит **≈**, и после его получения значение заменится фактическим.
 
-<info>То есть: для планирования — оценка в калькуляторе, для оценки прошедшего периода — фактическая цифра в P&L.</info>
+<info>То есть: для планирования — оценка в таблице юнит-экономики, для оценки прошедшего периода — фактическая цифра в P&L.</info>
 
 ## Стоимость возвратов
 
@@ -2636,7 +2578,7 @@ Daromadchi следит за остатками с учётом скорости
 
 \`Расход на возвраты = (Возвраты % / 100) × (Логистика × 2)\`
 
-Процент возвратов вы вводите в калькулятор. Фактический процент берите из столбца **% возвратов** в таблице **Аналитика товаров** — он считается по вашим же данным.
+Процент возвратов вы вводите в таблицу юнит-экономики. Фактический процент берите из столбца **% возвратов** в таблице **Аналитика товаров** — он считается по вашим же данным.
 
 ## Где взять тарифы
 
@@ -2982,7 +2924,7 @@ Daromadchi принимает оплату **банковской картой**
 - **Аналитика товаров** — таблица из 14 столбцов, ABC, маржа
 - Страница **Остатки** и синхронизация остатков
 - **Финансы и выплаты** — отчёт P&L
-- Калькулятор **юнит-экономики**
+- Таблица **юнит-экономики**
 
 ## Что остаётся бесплатным и после пробного периода
 
@@ -3432,7 +3374,7 @@ The extension's own alerts: low-stock threshold, sales drop, return rate, "quiet
 
 Chrome and Chromium-based browsers: Edge, Brave, Opera.
 
-<info>The panel's maths uses the same formulas as the **Unit economics** page in Daromadchi. The button in the panel opens the full calculator.</info>
+<info>The panel's maths uses the same formulas as the **Unit economics** page in Daromadchi.</info>
 `,
   'vidzhet-nima-korsatadi': `
 ## What the panel contains
@@ -3584,8 +3526,8 @@ All of these abbreviations are also explained in the **Abbreviations** section o
 
 ## Where ad spend enters Daromadchi
 
-### 1. Unit economics calculator
-The **Ads (%)** field on **Dashboard → Calculator** is where you enter your own DRR. The calculator treats it as a cost and recalculates net profit and the break-even price accordingly.
+### 1. Unit economics
+The **Ads (%)** field on **Dashboard → Unit Economics** is where you enter your own DRR. The page treats it as a cost and recalculates net profit and the break-even price accordingly.
 
 ### 2. P&L report
 If the marketplace withheld ad money from your payout, it lands in the **"Other marketplace deductions"** line (alongside acquiring and penalties). That is an actual deduction taken from the marketplace's own report, not an estimate.
@@ -3619,7 +3561,7 @@ It depends on the category:
 
 The table above is an average. The exact answer depends on your margin:
 
-1. Open **Dashboard → Calculator** and pick a product
+1. Open **Dashboard → Unit Economics** and pick a product
 2. Set **Ads (%)** to 0 — that is your clean margin
 3. Raise the percentage gradually until profit approaches zero
 
@@ -3681,7 +3623,7 @@ Check the low-stock list on **Dashboard → Alerts**. Advertising an item with a
 The **Return %** column in the product analytics table. When returns are high an order is not profit — and the advertising costs you twice.
 
 ### Low-margin products
-Below a 10% margin even a small DRR pushes the product into a loss. Work out the threshold in the **Calculator**.
+Below a 10% margin even a small DRR pushes the product into a loss. Work out the threshold in **Unit Economics**.
 
 <warning>Do not stop every low-conversion campaign at once — some of them are building brand recognition.</warning>
 `,
@@ -3695,7 +3637,7 @@ What Daromadchi gives you is **the profit figures the budget should be derived f
 ## Working out the budget
 
 ### 1. How much profit does one order make?
-In **Dashboard → Calculator**, pick the product, enter cost price and selling price, and set **Ads (%)** to 0. The net profit shown is what one order earns before advertising.
+In **Dashboard → Unit Economics**, find the product, enter cost price and selling price, and set **Ads (%)** to 0. The net profit shown is what one order earns before advertising.
 
 ### 2. Find your maximum CPO
 \`Max CPO = net profit per order\`
@@ -3895,30 +3837,9 @@ You know your lead time — Daromadchi does not, so that subtraction is yours to
 
 Unit economics is the calculation of how much profit is left from selling a single unit.
 
-Daromadchi gives you **two** tools for it.
+## Unit economics table
 
-## 1. Profit calculator — a quick check on one product
-
-**Dashboard → Calculator**. Nothing needs connecting: pick the marketplace (**Uzum** or **Yandex**) and the category, and the commission percentage fills itself in.
-
-Fields you enter:
-- Selling price
-- Cost price
-- Logistics
-- Ad spend
-- Return rate (%)
-- Monthly units sold
-
-What comes out:
-- **Cost breakdown per unit** — commission, cost price, logistics, return losses, advertising
-- **Net profit per unit**, **Margin**, **ROI**, **DRR**, break-even price
-- **Reality Check** — the real monthly profit next to the one you assumed
-
-If margin falls below 20% or the price runs at a loss, the calculator warns you.
-
-## 2. Unit economics table — across all products
-
-**Dashboard → Unit economics**. Here you get a product list with the full calculation on each: cost price, landed cost, commission, delivery, advertising, total costs, net profit, ROI, margin, stock and a supplier link.
+**Dashboard → Unit Economics**. Here you get a product list with the full calculation on each: cost price, landed cost, commission, delivery, advertising, total costs, net profit, ROI, margin, stock and a supplier link.
 
 ### Default costs
 Set once in the table settings and applied to every row:
@@ -3939,7 +3860,7 @@ Columns can be switched on and off, so the view fits the question you're asking.
 
 The extension's panel uses the same formulas and can add a product straight into this table.
 
-<warning>Every figure in the calculator is an estimate. Marketplace rates change — check the current rate in your cabinet before an important decision.</warning>
+<warning>Every figure is an estimate. Marketplace rates change — check the current rate in your cabinet before an important decision.</warning>
 `,
   'zararsizlik-narxi': `
 ## What is the break-even price?
@@ -3952,16 +3873,7 @@ The break-even price is the lowest selling price that still covers every cost. S
 
 ## Calculating it in Daromadchi
 
-Open **Dashboard → Calculator**:
-
-1. Pick the marketplace: **Uzum** or **Yandex**
-2. Pick the category — the commission percentage fills itself in
-3. Enter the **cost price**
-4. Enter **logistics** (from the marketplace's rate card)
-5. Enter the **return rate** — take your real one from the **Return %** column in the **Product performance** table
-6. Enter **ad spend**
-
-The calculator shows the **break-even** figure alongside the other metrics (margin, ROI, DRR).
+Open **Dashboard → Unit Economics**. For each product the table shows the break-even figure alongside the other metrics (margin, ROI, DRR). Enter the cost price, logistics rate, return rate and ad spend to see the full calculation.
 
 ## Adding a target profit
 
@@ -3974,7 +3886,7 @@ The calculator shows the **break-even** figure alongside the other metrics (marg
 
 ## Is your current price enough?
 
-The **Reality Check** block in the calculator shows how much profit (or loss) the current price produces over a month. If the price runs at a loss, the calculator tells you how much to raise it by.
+The **Unit Economics** table shows how much profit (or loss) the current price produces per unit. If the price runs at a loss, the page highlights it.
 
 <info>The commission percentage is prefilled by category, but you can override it — the rate in your own contract is more accurate.</info>
 `,
@@ -4003,7 +3915,7 @@ The **Margin** column in the **Dashboard → Product analytics** table. At the t
 Expand a parent row and margin shows per variant (colour, size) — often one of them is dragging the whole group down.
 
 ### When planning
-The **Calculator** and the **Unit economics** table compute margin from the values you enter.
+The **Unit Economics** table computes margin from the values you enter.
 
 ## No cost price, no margin
 
@@ -4027,8 +3939,8 @@ Delivery cost depends on weight, volume and the fulfillment model (FBO/FBS, FBY/
 
 ## How Daromadchi accounts for logistics
 
-### In the calculator — manually
-The **Logistics (so'm)** field on **Dashboard → Calculator** is where you enter delivery cost per unit. You take the figure from the marketplace's rate card.
+### In the Unit Economics table — manually
+The **Logistics** field on **Dashboard → Unit Economics** is where you enter delivery cost per unit. You take the figure from the marketplace's rate card.
 
 ### In the unit economics table — manually and as a percentage
 In the **Unit economics** table, delivery is its own column. The **Last mile (%)** setting adds a percentage of the price on top — handy when the rate is percentage-based.
@@ -4036,7 +3948,7 @@ In the **Unit economics** table, delivery is its own column. The **Last mile (%)
 ### In the P&L report — the actual figure
 The **Delivery** line in the **P&L** report is not an estimate: it comes from the marketplace's own report. If the final report has not arrived, the value carries a **≈** and is replaced with the actual one once it does.
 
-<info>So: use the calculator's estimate to plan, and the P&L's actual figure to judge a period that has passed.</info>
+<info>So: use the Unit Economics estimate to plan, and the P&L's actual figure to judge a period that has passed.</info>
 
 ## Return costs
 
@@ -4044,7 +3956,7 @@ A returned item pays logistics twice — out and back.
 
 \`Return cost = (Return % / 100) × (Logistics × 2)\`
 
-You enter the return rate into the calculator. For your actual rate, use the **Return %** column in the **Product performance** table — it is computed from your own data.
+You enter the return rate on the **Unit Economics** page. For your actual rate, use the **Return %** column in the **Product performance** table — it is computed from your own data.
 
 ## Where to find the rates
 
@@ -4390,7 +4302,7 @@ During the trial the paid sections are open too:
 - **Product analytics** — the 14-column table, ABC, margin
 - The **Inventory** page and stock sync
 - **Finance and payouts** — the P&L report
-- The **unit economics** calculator
+- **Unit economics**
 
 ## What stays free after the trial
 

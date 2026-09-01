@@ -8,6 +8,7 @@ import {
 } from 'recharts'
 import { TrendingUp, Package } from 'lucide-react'
 import type { ProductSeasonality } from '@/lib/db/seasonality'
+import { canonicalName } from '@/lib/categories/resolve'
 import ExportButton from '@/components/dashboard/ExportButton'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
@@ -102,7 +103,7 @@ export default function SeasonalityView({ data }: Props) {
           { label: 'Eng yaxshi oy',   value: product.peakMonth,        color: 'text-[var(--c1)]', sub: 'Ko\'proq zaxira oling' },
           { label: 'Eng past oy',     value: product.lowMonth,         color: 'text-[var(--text-muted)]',  sub: 'Zaxirani kamaytiring' },
           { label: 'O\'sish',          value: `+${product.growthPct}%`, color: 'text-emerald-400',sub: 'Yillik trend' },
-          { label: 'Kategoriya',      value: product.category,         color: 'text-[var(--text-base)]',      sub: product.productTitle },
+          { label: 'Kategoriya',      value: canonicalName(product.category, 'uz'),  color: 'text-[var(--text-base)]',      sub: product.productTitle },
         ].map(({ label, value, color, sub }) => (
           <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3">
             <p className="text-xs text-[var(--text-muted)] mb-1">{label}</p>

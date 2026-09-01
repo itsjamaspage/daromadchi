@@ -10,11 +10,31 @@ import { COLOR_LABELS, colorMetaFor, type ColorKey } from '@/lib/products/resolv
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import { groupByStoreVariant } from '@/lib/products/store-variant-grouping'
+import { resolveCanonical, lookupTaxonomy } from '@/lib/categories/resolve'
 import type { Product } from '@/lib/types'
 import { useRouter } from 'next/navigation'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
+}
+
+function catKey(raw: string | null): string {
+  if (!raw) return ''
+  const r = resolveCanonical(raw)
+  return r ? r.canonical_id : raw
+}
+
+function catDisplay(raw: string | null, lang: 'ru' | 'uz' | 'en'): string {
+  if (!raw) return '—'
+  const r = resolveCanonical(raw)
+  if (!r) return raw
+  return lang === 'uz' ? r.name_uz : lang === 'en' ? r.name_en : r.name_ru
+}
+
+function catKeyLabel(key: string, lang: 'ru' | 'uz' | 'en'): string {
+  const cat = lookupTaxonomy(key)
+  if (cat) return lang === 'uz' ? cat.name.uz : lang === 'en' ? cat.name.en : cat.name.ru
+  return key
 }
 
 // Localised "N вариантов".
@@ -182,7 +202,13 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   // the page looked like the data had disappeared.
   const ALL_CAT = '__all__'
   const categories = useMemo(() => {
-    const cats = [...new Set(products.map(p => p.category).filter(Boolean))] as string[]
+    const seen = new Set<string>()
+    const cats: string[] = []
+    for (const p of products) {
+      if (!p.category) continue
+      const k = catKey(p.category)
+      if (!seen.has(k)) { seen.add(k); cats.push(k) }
+    }
     return [ALL_CAT, ...cats]
   }, [products])
   const [category, setCategory] = useState(ALL_CAT)
@@ -212,10 +238,10 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       rows = rows.filter(p =>
         p.title.toLowerCase().includes(q) ||
         (p.sku ?? '').toLowerCase().includes(q) ||
-        (p.category ?? '').toLowerCase().includes(q)
+        catDisplay(p.category, lang).toLowerCase().includes(q)
       )
     }
-    if (category !== ALL_CAT) rows = rows.filter(p => p.category === category)
+    if (category !== ALL_CAT) rows = rows.filter(p => catKey(p.category) === category)
 
     if (tab === 'low_stock') rows = rows.filter(p => p.available_stock < stockThreshold)
 
@@ -244,7 +270,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       return sortDir === 'desc' ? bv - av : av - bv
     })
     return rows
-  }, [enriched, query, category, tab, sortBy, sortDir, stockThreshold])
+  }, [enriched, query, category, tab, sortBy, sortDir, stockThreshold, lang])
 
   const displayItems = useMemo(() => groupByStoreVariant(filtered), [filtered])
 
@@ -262,7 +288,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     [d.product]:          p.title,
     'SKU':                p.sku ?? '',
     'Marketplace':        p.marketplace ? MP_META[p.marketplace]?.label : '',
-    [d.category]:         p.category ?? '',
+    [d.category]:         catDisplay(p.category, lang),
     [d.price]:            p.selling_price ?? 0,
     // Blank when the seller has not entered a cost — exporting 0 would make the
     // margin column beside it read 100%.
@@ -325,7 +351,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           </td>
           <FbsCell value={fbsUnits(p)} />
           <td className="px-5 py-4">
-            <span className="text-xs px-2.5 py-1 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>{p.category ?? '—'}</span>
+            <span className="text-xs px-2.5 py-1 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>{catDisplay(p.category, lang)}</span>
           </td>
           <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(price)}</td>
           <td className="px-5 py-4 text-right" style={{ color: p.cost_price ? 'var(--text-dim)' : 'var(--text-muted)' }}>
@@ -427,7 +453,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         </td>
         <FbsCell value={groupFbs} />
         <td className="px-5 py-4">
-          <span className="text-xs px-2.5 py-1 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>{category ?? '—'}</span>
+          <span className="text-xs px-2.5 py-1 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>{catDisplay(category, lang)}</span>
         </td>
         <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>{price != null ? fmt(price) : '—'}</td>
         <td className="px-5 py-4 text-right" style={{ color: cost ? 'var(--text-dim)' : 'var(--text-muted)' }}>{cost ? fmt(cost) : '—'}</td>
@@ -534,7 +560,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 color: 'var(--text-muted)',
                 borderColor: 'var(--border)',
               }}>
-              {c === ALL_CAT ? allLabel : c}
+              {c === ALL_CAT ? allLabel : catKeyLabel(c, lang)}
             </button>
           ))}
         </div>

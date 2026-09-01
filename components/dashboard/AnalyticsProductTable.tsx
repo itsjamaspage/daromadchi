@@ -28,9 +28,9 @@
  * revenue in this table still reconciles with the KPI cards above it.
  */
 
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import type React from 'react'
-import { ChevronRight, ChevronDown } from 'lucide-react'
+import { ChevronRight, ChevronDown, Search } from 'lucide-react'
 import EditableValueCell from '@/components/dashboard/EditableValueCell'
 import FulfillmentBadge from '@/components/dashboard/FulfillmentBadge'
 import { groupByVariant } from '@/lib/variant-grouping'
@@ -40,10 +40,30 @@ import type { Product } from '@/lib/types'
 import type { ProductSalesRow } from '@/lib/db/products'
 import { effective, groupSharedValues } from '@/lib/products/effective-values'
 import { deriveMetrics, abcClassify, type AbcClass } from '@/lib/products/product-analytics'
+import { resolveCanonical, lookupTaxonomy } from '@/lib/categories/resolve'
 import AnalyticsTableSettings from '@/components/dashboard/AnalyticsTableSettings'
 import {
   isVisible, normalizeHidden, COLUMN_PREFS_STORAGE_KEY,
 } from '@/lib/products/analytics-columns'
+
+function catKey(raw: string | null): string {
+  if (!raw) return ''
+  const r = resolveCanonical(raw)
+  return r ? r.canonical_id : raw
+}
+
+function catDisplay(raw: string | null, lang: 'ru' | 'uz' | 'en'): string {
+  if (!raw) return '—'
+  const r = resolveCanonical(raw)
+  if (!r) return raw
+  return lang === 'uz' ? r.name_uz : lang === 'en' ? r.name_en : r.name_ru
+}
+
+function catKeyLabel(key: string, lang: 'ru' | 'uz' | 'en'): string {
+  const cat = lookupTaxonomy(key)
+  if (cat) return lang === 'uz' ? cat.name.uz : lang === 'en' ? cat.name.en : cat.name.ru
+  return key
+}
 
 const MP_META: Record<string, { short: string; color: string; bg: string }> = {
   uzum:          { short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'  },
@@ -117,6 +137,9 @@ interface Props {
     salesShare: string
     avgPrice: string
     abc: string
+    searchPlaceholder: string
+    allCategories: string
+    productCount: string
     settings: {
       title: string
       button: string
@@ -132,6 +155,19 @@ interface Props {
 export default function AnalyticsProductTable({ products, sales, labels }: Props) {
   const { lang } = useLang()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [query, setQuery] = useState('')
+  const ALL_CAT = '__all__'
+  const categories = useMemo(() => {
+    const seen = new Set<string>()
+    const cats: string[] = []
+    for (const p of products) {
+      if (!p.category) continue
+      const k = catKey(p.category)
+      if (!seen.has(k)) { seen.add(k); cats.push(k) }
+    }
+    return [ALL_CAT, ...cats]
+  }, [products])
+  const [category, setCategory] = useState(ALL_CAT)
 
   // Column visibility. Read on mount rather than during render so the server
   // and the first client render agree — reading localStorage inline would
@@ -168,22 +204,22 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
     return n
   })
 
-  // Sales by listing. A product can appear once per marketplace in the sales
-  // query, so accumulate rather than overwrite — otherwise the second row
-  // silently replaces the first and half the revenue disappears.
-  const salesByProduct = new Map<string, Sales>()
-  const orphanSales: ProductSalesRow[] = []
-  for (const r of sales) {
-    if (!r.product_id) { orphanSales.push(r); continue }
-    const prev = salesByProduct.get(r.product_id) ?? NO_SALES
-    salesByProduct.set(r.product_id, {
-      qty_sold:       prev.qty_sold       + r.qty_sold,
-      qty_in_transit: prev.qty_in_transit + r.qty_in_transit,
-      qty_cancelled:  prev.qty_cancelled  + r.qty_cancelled,
-      qty_returned:   prev.qty_returned   + r.qty_returned,
-      revenue:        prev.revenue        + r.revenue,
-    })
-  }
+  const { salesByProduct, orphanSales } = useMemo(() => {
+    const byProduct = new Map<string, Sales>()
+    const orphans: ProductSalesRow[] = []
+    for (const r of sales) {
+      if (!r.product_id) { orphans.push(r); continue }
+      const prev = byProduct.get(r.product_id) ?? NO_SALES
+      byProduct.set(r.product_id, {
+        qty_sold:       prev.qty_sold       + r.qty_sold,
+        qty_in_transit: prev.qty_in_transit + r.qty_in_transit,
+        qty_cancelled:  prev.qty_cancelled  + r.qty_cancelled,
+        qty_returned:   prev.qty_returned   + r.qty_returned,
+        revenue:        prev.revenue        + r.revenue,
+      })
+    }
+    return { salesByProduct: byProduct, orphanSales: orphans }
+  }, [sales])
   const salesFor = (id: string): Sales => salesByProduct.get(id) ?? NO_SALES
 
   // Denominator for "share of sales". Every row on screen, including orphaned
@@ -203,7 +239,30 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
     return p.profit != null && price > 0 ? (p.profit / price) : 0
   }))
 
-  const grouped = groupByVariant(products.map(p => ({
+  const filteredProducts = useMemo(() => {
+    let rows = products
+    if (query.trim()) {
+      const q = query.toLowerCase()
+      rows = rows.filter(p =>
+        p.title.toLowerCase().includes(q) ||
+        (p.sku ?? '').toLowerCase().includes(q) ||
+        catDisplay(p.category, lang).toLowerCase().includes(q)
+      )
+    }
+    if (category !== ALL_CAT) rows = rows.filter(p => catKey(p.category) === category)
+    return rows
+  }, [products, query, category, lang])
+
+  const filteredOrphans = useMemo(() => {
+    if (!query.trim()) return orphanSales
+    const q = query.toLowerCase()
+    return orphanSales.filter(r =>
+      r.title.toLowerCase().includes(q) ||
+      (r.sku ?? '').toLowerCase().includes(q)
+    )
+  }, [orphanSales, query])
+
+  const grouped = groupByVariant(filteredProducts.map(p => ({
     id: p.id,
     sku: p.sku ?? null,
     variant_group_key: p.variant_group_key ?? null,
@@ -463,8 +522,42 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
 
   return (
     <>
-      <div className="px-5 py-2.5 flex justify-end" style={{ borderBottom: '1px solid var(--border)' }}>
-        <AnalyticsTableSettings hidden={hidden} onChange={changeHidden} labels={labels.settings} />
+      <div className="px-5 py-3 space-y-3" style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <div className="relative w-full sm:w-64 sm:shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+            <input
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder={labels.searchPlaceholder}
+              className="w-full rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none transition-all"
+              style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: 'var(--text-base)', border: '1px solid var(--border)' }}
+            />
+          </div>
+          <div className="flex items-center gap-2 flex-wrap flex-1">
+            {categories.map(c => (
+              <button key={c} onClick={() => setCategory(c)}
+                className="px-3 py-2 rounded-xl text-xs font-medium transition-all border"
+                style={category === c ? {
+                  background: 'var(--bg-card2)',
+                  color: 'var(--c1)',
+                  borderColor: 'var(--border)',
+                } : {
+                  color: 'var(--text-muted)',
+                  borderColor: 'var(--border)',
+                }}>
+                {c === ALL_CAT ? labels.allCategories : catKeyLabel(c, lang)}
+              </button>
+            ))}
+          </div>
+          <div className="sm:ml-auto shrink-0">
+            <AnalyticsTableSettings hidden={hidden} onChange={changeHidden} labels={labels.settings} />
+          </div>
+        </div>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          {filteredProducts.length} {labels.productCount} {query || category !== ALL_CAT ? '(filtr)' : ''}
+        </p>
       </div>
       <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -500,7 +593,7 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
               }
             </Fragment>
           ))}
-          {orphanSales.map(renderOrphan)}
+          {filteredOrphans.map(renderOrphan)}
         </tbody>
       </table>
       </div>

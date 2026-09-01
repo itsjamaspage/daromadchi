@@ -18,7 +18,6 @@ export type HelpSection =
   | 'searchPhrases'
   | 'unitEconomics'
   | 'pnl'
-  | 'calculator'
   | 'keywords'
   | 'team'
   | 'dataState'
@@ -379,45 +378,6 @@ export const helpContent: HelpDB = {
         { step: 2, text: 'Marketplace costs (commission, delivery, ads) are totalled' },
         { step: 3, text: 'Returns and taxes are subtracted' },
         { step: 4, text: 'Monthly net profit is calculated' },
-      ],
-    },
-  },
-
-  calculator: {
-    uz: {
-      title: 'Foyda kalkulyatori',
-      what: 'Mahsulot narxi, xarid narxi va marketplace xarajatlarini kiritib, foyda marjasini hisoblaydi.',
-      why: 'Yangi mahsulot qo\'shishdan oldin yoki narxni o\'zgartirishdan avval foydali yoki zararli ekanini bilib oling.',
-      how: 'Sotish narxi, xarid narxi, yetkazish va komissiya foizini kiriting. Kalkulyator sof foydani avtomatik chiqaradi.',
-      steps: [
-        { step: 1, text: 'Sotish narxini kiriting (so\'mda)' },
-        { step: 2, text: 'Xarid narxini kiriting' },
-        { step: 3, text: 'Marketplace komissiyasi va yetkazish narxini belgilang' },
-        { step: 4, text: 'Sof foyda va marja avtomatik hisoblanadi' },
-      ],
-    },
-    ru: {
-      title: 'Калькулятор прибыли',
-      what: 'Введите цену товара, закупочную цену и расходы маркетплейса — калькулятор покажет маржу прибыли.',
-      why: 'Проверьте прибыльность до добавления нового товара или изменения цены.',
-      how: 'Введите цену продажи, закупочную цену, стоимость доставки и процент комиссии. Калькулятор автоматически выдаст чистую прибыль.',
-      steps: [
-        { step: 1, text: 'Введите цену продажи (в сумах)' },
-        { step: 2, text: 'Введите закупочную цену' },
-        { step: 3, text: 'Укажите комиссию маркетплейса и стоимость доставки' },
-        { step: 4, text: 'Чистая прибыль и маржа рассчитываются автоматически' },
-      ],
-    },
-    en: {
-      title: 'Profit Calculator',
-      what: 'Enter the sale price, purchase price, and marketplace costs — the calculator shows your profit margin.',
-      why: 'Check profitability before adding a new product or changing a price.',
-      how: 'Enter the sale price, purchase cost, delivery fee, and commission rate. Net profit is calculated automatically.',
-      steps: [
-        { step: 1, text: 'Enter the sale price (in UZS)' },
-        { step: 2, text: 'Enter the purchase price' },
-        { step: 3, text: 'Set marketplace commission and delivery cost' },
-        { step: 4, text: 'Net profit and margin are calculated automatically' },
       ],
     },
   },

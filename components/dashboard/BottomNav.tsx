@@ -24,7 +24,7 @@ export default function BottomNav({ lockedKeys = [] }: { lockedKeys?: string[] }
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 12px)' }}>
       <div className="flex items-stretch h-16">
         {tabs.map(({ href, label, icon: Icon, key }) => {
-          const active = pathname === href
+          const active = pathname === href || (key === 'analytics' && pathname.startsWith(href + '/'))
           // Marked, not hidden — the tap still lands on the page, which is where
           // the lock is explained and the upgrade offered.
           const locked = key !== undefined && lockedKeys.includes(key)
