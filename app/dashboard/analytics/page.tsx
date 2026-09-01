@@ -232,6 +232,9 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                 salesShare:          d.colSalesShare,
                 avgPrice:            d.colAvgPrice,
                 abc:                 d.colAbc,
+                searchPlaceholder:   `${d.product}, SKU, ${d.category}...`,
+                allCategories:       d.status.all,
+                productCount:        d.productCount,
                 settings: {
                   title:         d.tblSettingsTitle,
                   button:        d.tblSettingsBtn,
