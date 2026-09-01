@@ -57,7 +57,7 @@ export default function StockAlerts({ groups, isDark }: { groups: StockGroup[]; 
           const mps = MP_ORDER.filter(mp => mp in g.stock_by_marketplace)
 
           return (
-            <Link href="/dashboard/stocks" key={g.match_key}
+            <Link href="/dashboard/products" key={g.match_key}
               className="flex items-center gap-4 px-5 py-3.5 transition-colors hover:opacity-90"
               style={{ borderBottom: idx < alerts.length - 1 ? '1px solid var(--border)' : 'none' }}>
               <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: bgColor, color: urgentColor }}>
