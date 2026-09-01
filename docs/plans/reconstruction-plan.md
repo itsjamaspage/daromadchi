@@ -21,8 +21,11 @@ Relocate the standalone «Остатки» view into the Products («Товар�
 - Drop the old page's per-marketplace sold/cancelled/«Отменено» split (owner's decision — Products view is a clean product+stock table).
 - **Display relocation only** — do NOT change stock computation or the write path (#421 intact). Parity check: FBS numbers shown must equal what the old Остатки page showed.
 
-### Task 2 — [SAFE] Category mapping — status: TODO
+### Task 2 — [SAFE] Category mapping — status: DONE
 Daromadchi isn't picking up Russian categories. Investigate why, then map synonyms to one canonical category (e.g. «умные часы» + «смартчасы» → one). Foundation for filters (Task 8) and analytics (Task 5/6). Deliver a mapping mechanism, not a one-off patch.
+
+> **CC note (what shipped):** Root cause: the `category_aliases` table was empty in prod — the Cyrillic-aware `matchCategory` matcher existed but was only called by a manual script, never at runtime. Fix: a runtime `resolveCanonical()` function (`lib/categories/resolve.ts`) that calls the existing matcher against the 40-category taxonomy and caches results. Wired into: (1) `_fetchCategoryRevenue` merge layer — synonyms now collapse in the category donut chart and analytics, both in the canonical-join path and the fallback path; (2) `ProductsTable` — category badges, filter chips, search, and export all show canonical names and deduplicate synonyms; (3) `SeasonalityView` — category label canonicalized. No DB writes, no new tables, no sync-path changes. Test: `test:categories` (11 assertions, CI-wired via `node --test`) proves «умные часы» + «Смарт-часы» → same `smart_watches` merge key, cross-marketplace collapse, trilingual names, fallback for unknown categories.
+> **Pre-existing gap found:** `lib/categories/matcher.test.ts` uses vitest in a repo that runs `node --test` — it never ran in CI. Not fixed here (separate concern), but noted.
 
 ### Task 3 — [SAFE] Delete the profit calculator — status: TODO
 Remove the profit calculator feature and its nav entry cleanly.
