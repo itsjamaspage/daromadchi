@@ -287,16 +287,19 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     const find = (x: number): number => { let r = x; while (uf[r] !== r) r = uf[r]; return r }
     const union = (a: number, b: number) => { const ra = find(a), rb = find(b); if (ra !== rb) uf[ra] = rb }
 
-    const vgkToIdx = new Map<string, number[]>()
+    const bridgeMap = new Map<string, number[]>()
+    const addBridge = (signal: string, i: number) => {
+      const list = bridgeMap.get(signal)
+      if (list) list.push(i); else bridgeMap.set(signal, [i])
+    }
     for (const [mk, members] of colorGroups) {
       const mi = idx.get(mk)!
       for (const p of members) {
-        if (!p.variant_group_key) continue
-        const list = vgkToIdx.get(p.variant_group_key)
-        if (list) list.push(mi); else vgkToIdx.set(p.variant_group_key, [mi])
+        if (p.variant_group_key) addBridge(`vgk:${p.variant_group_key}`, mi)
+        addBridge(`title:${p.title.trim().toLowerCase()}`, mi)
       }
     }
-    for (const idxs of vgkToIdx.values()) {
+    for (const idxs of bridgeMap.values()) {
       for (let j = 1; j < idxs.length; j++) union(idxs[0], idxs[j])
     }
 
