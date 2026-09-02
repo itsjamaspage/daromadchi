@@ -80,6 +80,22 @@ describe('merge-key simulation (what _fetchCategoryRevenue does)', () => {
     assert.equal(key1, key2, `merge keys must match: ${key1} vs ${key2}`)
   })
 
+  it('power bank synonyms across languages merge', () => {
+    const uz = resolveCanonical('Tashqi akkumulyatorlar')
+    const ru = resolveCanonical('Портативные аккумуляторы')
+    assert.ok(uz, '"Tashqi akkumulyatorlar" should resolve')
+    assert.ok(ru, '"Портативные аккумуляторы" should resolve')
+    assert.equal(uz!.canonical_id, ru!.canonical_id, 'UZ and RU power banks must merge')
+    assert.equal(uz!.canonical_id, 'power_banks_chargers')
+  })
+
+  it('keyboard+mouse set resolves to computer_peripherals', () => {
+    const r = resolveCanonical('Комплекты клавиатур и мышей')
+    assert.ok(r, '"Комплекты клавиатур и мышей" should resolve')
+    assert.equal(r!.canonical_id, 'computer_peripherals')
+  })
+
+
   it('smartphone synonyms produce the same merge key', () => {
     const uzum = resolveCanonical('Smartfonlar')
     const yandex = resolveCanonical('Мобильные телефоны')

@@ -22,7 +22,7 @@
     "test:trial-copy": "node --import tsx --test lib/trial-copy.test.ts",
     "test:notif": "node --import tsx --test lib/notif-i18n.test.ts lib/telegram-retry.test.ts lib/telegram-seller-render.test.ts && node --conditions=react-server --import tsx --test lib/marketplace/stock-notify.test.ts",
     "test:grouping": "node --import tsx --test lib/variant-grouping.test.ts lib/products/store-variant-grouping.test.ts",
-    "test:categories": "node --import tsx --test lib/categories/resolve.test.ts",
+    "test:categories": "node --import tsx --test lib/categories/matcher.test.ts lib/categories/resolve.test.ts",
     "atmos:manual": "node scripts/atmos-manual-test.mjs",
     "atmos:direct": "node scripts/atmos-direct-test.mjs",
     "stock-sync:demo": "tsx scripts/stock-sync-dry-run-demo.ts",
