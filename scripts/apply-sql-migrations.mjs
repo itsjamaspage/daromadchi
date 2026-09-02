@@ -155,6 +155,7 @@ const MIGRATIONS = [
   // #421 but was never registered here, so the runner skipped it. Additive +
   // idempotent (ADD COLUMN IF NOT EXISTS).
   'migrations/migrations/090_users_ledger_kill_switch.sql',
+  'migrations/migrations/091_products_image_url.sql',
 ]
 
 function loadDatabaseUrl() {
