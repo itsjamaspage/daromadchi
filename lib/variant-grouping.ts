@@ -32,7 +32,7 @@
 export interface Groupable {
   id: string
   sku: string | null
-  variant_group_key: string | null
+  variant_group_key?: string | null
 }
 
 export type GroupedItem<T extends Groupable> =

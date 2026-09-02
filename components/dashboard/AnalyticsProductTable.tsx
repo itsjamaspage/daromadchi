@@ -40,22 +40,20 @@ import type { Product } from '@/lib/types'
 import type { ProductSalesRow } from '@/lib/db/products'
 import { effective, groupSharedValues } from '@/lib/products/effective-values'
 import { deriveMetrics, abcClassify, type AbcClass } from '@/lib/products/product-analytics'
-import { resolveCanonical, lookupTaxonomy } from '@/lib/categories/resolve'
+import { resolveWithFallback, lookupTaxonomy } from '@/lib/categories/resolve'
 import AnalyticsTableSettings from '@/components/dashboard/AnalyticsTableSettings'
 import {
   isVisible, normalizeHidden, COLUMN_PREFS_STORAGE_KEY,
 } from '@/lib/products/analytics-columns'
 
-function catKey(raw: string | null): string {
-  if (!raw) return ''
-  const r = resolveCanonical(raw)
-  return r ? r.canonical_id : raw
+function catKey(raw: string | null, title?: string | null): string {
+  const r = resolveWithFallback(raw, title)
+  return r ? r.canonical_id : (raw || '')
 }
 
-function catDisplay(raw: string | null, lang: 'ru' | 'uz' | 'en'): string {
-  if (!raw) return '—'
-  const r = resolveCanonical(raw)
-  if (!r) return raw
+function catDisplay(raw: string | null, lang: 'ru' | 'uz' | 'en', title?: string | null): string {
+  const r = resolveWithFallback(raw, title)
+  if (!r) return raw || '—'
   return lang === 'uz' ? r.name_uz : lang === 'en' ? r.name_en : r.name_ru
 }
 
@@ -161,9 +159,9 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
     const seen = new Set<string>()
     const cats: string[] = []
     for (const p of products) {
-      if (!p.category) continue
-      const k = catKey(p.category)
-      if (!seen.has(k)) { seen.add(k); cats.push(k) }
+      const k = catKey(p.category, p.title)
+      if (!k || seen.has(k)) continue
+      seen.add(k); cats.push(k)
     }
     return [ALL_CAT, ...cats]
   }, [products])
@@ -246,10 +244,10 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
       rows = rows.filter(p =>
         p.title.toLowerCase().includes(q) ||
         (p.sku ?? '').toLowerCase().includes(q) ||
-        catDisplay(p.category, lang).toLowerCase().includes(q)
+        catDisplay(p.category, lang, p.title).toLowerCase().includes(q)
       )
     }
-    if (category !== ALL_CAT) rows = rows.filter(p => catKey(p.category) === category)
+    if (category !== ALL_CAT) rows = rows.filter(p => catKey(p.category, p.title) === category)
     return rows
   }, [products, query, category, lang])
 

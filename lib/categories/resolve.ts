@@ -38,6 +38,18 @@ export function resolveCanonical(rawCategory: string): ResolvedCategory | null {
   return resolved
 }
 
+export function resolveWithFallback(
+  rawCategory: string | null,
+  titleFallback?: string | null,
+): ResolvedCategory | null {
+  if (rawCategory) {
+    const r = resolveCanonical(rawCategory)
+    if (r) return r
+  }
+  if (titleFallback) return resolveCanonical(titleFallback)
+  return null
+}
+
 export function canonicalName(rawCategory: string, lang: 'ru' | 'uz' | 'en' = 'ru'): string {
   const resolved = resolveCanonical(rawCategory)
   if (!resolved) return rawCategory
