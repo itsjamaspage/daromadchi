@@ -95,6 +95,7 @@ describe('merge-key simulation (what _fetchCategoryRevenue does)', () => {
     assert.equal(r!.canonical_id, 'computer_peripherals')
   })
 
+
   it('smartphone synonyms produce the same merge key', () => {
     const uzum = resolveCanonical('Smartfonlar')
     const yandex = resolveCanonical('Мобильные телефоны')
