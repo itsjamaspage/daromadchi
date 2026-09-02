@@ -40,6 +40,7 @@ const _fetchProducts = unstable_cache(
         fulfillment_type: products.fulfillment_type,
         variant_group_key: products.variant_group_key,
         variant_color: products.variant_color,
+        image_url: products.image_url,
         updated_at: products.updated_at,
       }).from(products)
         // Active metrics (dashboard home, analytics, ABC-XYZ) exclude archived.
@@ -143,6 +144,7 @@ const _fetchProducts = unstable_cache(
         in_transit: dbInTransit + surplus,
         cancelled: cancelledByProductId.get(p.id) ?? 0,
         is_shared: isShared,
+        image_url: p.image_url,
         variant_group_key: p.variant_group_key,
         variant_color: p.variant_color,
       } as Product
@@ -154,7 +156,7 @@ const _fetchProducts = unstable_cache(
   // v11: added price_override / stock_override. Bumped for the same reason v10
   // was — a cached v10 row lacks the new keys, so Analytics would read every
   // override as unset for up to the revalidate window after a deploy.
-  ['products-v11'],
+  ['products-v12'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
@@ -590,6 +592,7 @@ const _fetchProductsPaginated = unstable_cache(
         is_archived: products.is_archived,
         variant_group_key: products.variant_group_key,
         variant_color: products.variant_color,
+        image_url: products.image_url,
         updated_at: products.updated_at,
       }).from(products)
         .where(viewWhere)
@@ -690,6 +693,7 @@ const _fetchProductsPaginated = unstable_cache(
         in_transit: dbInTransit + surplus,
         cancelled: cancelledMap.get(p.id) ?? 0,
         is_shared: isShared,
+        image_url: p.image_url,
         is_archived: p.is_archived,
         variant_group_key: p.variant_group_key,
         variant_color: p.variant_color,
@@ -699,7 +703,7 @@ const _fetchProductsPaginated = unstable_cache(
 
     return { rows, total, archivedTotal }
   },
-  ['products-paginated-rpc-v5'],
+  ['products-paginated-rpc-v6'],
   { revalidate: 30, tags: ['product-data'] },
 )
 

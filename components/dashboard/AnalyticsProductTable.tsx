@@ -353,11 +353,22 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
     return (
       <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
         {col('product', <td className="px-5 py-3.5" style={isChild ? { paddingLeft: '2.75rem', borderLeft: '2px solid var(--border)' } : undefined}>
-          <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
-          <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
-            {isChild && <VariantColorChip colorKey={p.variant_color} lang={lang} />}
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
-            {badges(p)}
+          <div className="flex items-center gap-2">
+            {p.image_url ? (
+              <img src={p.image_url} alt="" className="w-9 h-9 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+            ) : (
+              <div className="w-9 h-9 rounded shrink-0 flex items-center justify-center text-xs"
+                style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
+            )}
+            <div>
+              <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
+              <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
+                {isChild && <VariantColorChip colorKey={p.variant_color} lang={lang} />}
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
+                {badges(p)}
+              </div>
+            </div>
           </div>
         </td>)}
         {salesCells(salesFor(p.id))}
@@ -445,6 +456,13 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
             <span className="shrink-0" style={{ color: 'var(--text-muted)' }}>
               {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </span>
+            {item.representative.row.image_url ? (
+              <img src={item.representative.row.image_url} alt="" className="w-9 h-9 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+            ) : (
+              <div className="w-9 h-9 rounded shrink-0 flex items-center justify-center text-xs"
+                style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
+            )}
             <p className="font-semibold line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={item.representative.row.title}>{item.representative.row.title}</p>
             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
               style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>

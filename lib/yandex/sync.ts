@@ -238,6 +238,7 @@ async function syncFromYandexLocked(
       fulfillment_type: 'fbs' | 'fby'
       variant_group_key: string | null
       variant_color: string | null
+      image_url: string | null
     }[] = []
     // Heavy-only: the paginated product-catalog fetch (offer-mappings + SKU
     // stats) is the expensive, throttled part. An orders-only tick skips it;
@@ -373,6 +374,7 @@ async function syncFromYandexLocked(
           fulfillment_type: campaignFulfillmentType,
           variant_group_key: modelName ? `yandex:${modelName}` : null,
           variant_color: variantColor,
+          image_url: e.offer.pictures?.[0] ?? null,
         }
       })
       if (productRows.length > 0) {
@@ -398,6 +400,7 @@ async function syncFromYandexLocked(
             fulfillment_type: r.fulfillment_type,
             variant_group_key: r.variant_group_key,
             variant_color: r.variant_color,
+            image_url: r.image_url,
           })))
         }
         if (toUpd.length > 0) {
@@ -422,6 +425,7 @@ async function syncFromYandexLocked(
             // Same "don't clobber with null" rule — keep a resolved colour if a
             // later sync can't derive one (e.g. marketSkuName intermittently absent).
             if (r.variant_color != null) patch.variant_color = r.variant_color
+            if (r.image_url != null) patch.image_url = r.image_url
             await db.update(products).set(patch).where(eq(products.id, r.id))
           }
         }
@@ -892,6 +896,7 @@ async function syncFromYandexLocked(
                 // and a mislink an audit cannot see — the colour is on both sides
                 // or on neither.
                 variant_color: yandexItemSnapshot(it).variant_color,
+                image_url: null,
               })
             }
           }
@@ -964,6 +969,7 @@ async function syncFromYandexLocked(
                   // Colour from the order line — see the sibling path above.
                   variant_group_key: null,
                   variant_color: yandexItemSnapshot(it).variant_color,
+                  image_url: null,
                 })
               }
             }

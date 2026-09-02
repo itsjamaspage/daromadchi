@@ -430,10 +430,17 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           onClick={() => setEditingId(isEditing ? null : p.id)}>
           <td className="px-5 py-4" style={isChild ? { paddingLeft: '2.75rem', borderLeft: '2px solid var(--border)' } : undefined}>
             <div className="flex items-center gap-2">
+              {(() => {
+                const imgUrl = (p as Product & { _members?: Product[] })._members?.[0]?.image_url ?? p.image_url
+                return imgUrl ? (
+                  <img src={imgUrl} alt="" className="w-10 h-10 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                ) : (
+                  <div className="w-10 h-10 rounded shrink-0 flex items-center justify-center text-xs"
+                    style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
+                )
+              })()}
               <div>
-                {/* A child repeats its group's title verbatim on Uzum (one title
-                    across every colour) but names the colour on Yandex. Print it
-                    only when it actually says something the parent didn't. */}
                 {(!isChild || (groupTitle !== undefined && p.title !== groupTitle)) && (
                   <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
                 )}
@@ -561,6 +568,13 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             <span className="shrink-0 mt-0.5" style={{ color: 'var(--text-muted)' }}>
               {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </span>
+            {head.image_url ? (
+              <img src={head.image_url} alt="" className="w-10 h-10 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+            ) : (
+              <div className="w-10 h-10 rounded shrink-0 flex items-center justify-center text-xs"
+                style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
+            )}
             <div>
               <p className="font-semibold line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={head.title}>{head.title}</p>
               <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
