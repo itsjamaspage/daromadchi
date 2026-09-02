@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Search, ShoppingCart } from 'lucide-react'
+import { ShoppingCart } from 'lucide-react'
 import ExportButton from './ExportButton'
+import FilterBar from './FilterBar'
 import FulfillmentBadge from './FulfillmentBadge'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
@@ -129,21 +130,15 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
         ))}
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-          <input
-            type="text"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder={d.searchOrderPlaceholder}
-            className="w-full bg-[var(--bg-card2)] border border-[var(--border2)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--c1)]/60 focus:ring-1 focus:ring-[var(--c1)]/30 transition-all"
-          />
-        </div>
-        <ExportButton data={exportData} filename="buyurtmalar" />
-      </div>
-
-      <p className="text-[var(--text-muted)] text-xs">{filtered.length} {d.orderCount}</p>
+      <FilterBar
+        query={query}
+        onQueryChange={setQuery}
+        searchPlaceholder={d.searchOrderPlaceholder}
+        lang={lang}
+        actions={<ExportButton data={exportData} filename="buyurtmalar" />}
+        resultCount={filtered.length}
+        countLabel={d.orderCount}
+      />
 
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">

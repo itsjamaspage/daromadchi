@@ -259,6 +259,7 @@ export const products = pgTable('products', {
   // revert; cost_price needs no twin because both syncs already omit it from
   // their UPDATE patches. LOCAL ONLY — never read to build a marketplace
   // request.
+  image_url:              text('image_url'),
   price_override:         numeric('price_override'),
   stock_override:         integer('stock_override'),
 }, (t) => [

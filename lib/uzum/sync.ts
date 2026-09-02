@@ -303,6 +303,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
       category: string | null; selling_price: number | null; cost_price: number | null
       stock_quantity: number; quantity_sold: number | null; is_archived: boolean
       variant_group_key: string | null; variant_color: string | null
+      image_url: string | null
     }[] = []
 
     // Product sync is best-effort: shops with 0 active listings return 403.
@@ -329,6 +330,9 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
             // fails to flip a known-archived product (the field paths are the
             // first suspect). See migration 045 / the products "Архивные" tab.
             const cardArchived = card.status?.value === 'ARCHIVED'
+            const cardImageUrl = card.photos?.[0]?.link?.high
+              ?? card.photos?.[0]?.link?.low
+              ?? (card.photos?.[0]?.photoKey ? `https://images.uzum.uz/${card.photos[0].photoKey}/t_product_240_high.jpg` : null)
             for (const sku of card.skuList ?? []) {
               const isArchived = cardArchived || sku.archived === true || sku.status?.value === 'ARCHIVED'
               productRows.push({
@@ -358,6 +362,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
                 // then the structured «Цвет» characteristic. Null when neither
                 // yields a recognised colour.
                 variant_color: uzumSkuColor(sku),
+                image_url: cardImageUrl,
               })
             }
           }
@@ -388,6 +393,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
             is_archived: r.is_archived,
             variant_group_key: r.variant_group_key,
             variant_color: r.variant_color,
+            image_url: r.image_url,
             // Uzbekistan's dominant model is FBS (seller ships from home).
             // Uzum's product API doesn't expose per-SKU fulfillment reliably,
             // so mark all Uzum products FBS by default. Users on FBO can
@@ -412,6 +418,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
               // Re-stamped so a card's variant grouping stays current.
               variant_group_key: r.variant_group_key,
               variant_color: r.variant_color,
+              image_url: r.image_url,
               fulfillment_type: 'fbs',
             }).where(eq(products.id, r.id))
           }
@@ -860,6 +867,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
                 // sibling, and a mislink the audit cannot see — the colour is on
                 // both sides or on neither.
                 variant_color: uzumItemSnapshot(it).variant_color,
+                image_url: null,
               })
             }
           }
@@ -945,6 +953,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
                   is_archived: false,
                   variant_group_key: null,
                   variant_color: uzumItemSnapshot(it).variant_color,
+                  image_url: null,
                 })
               }
             }

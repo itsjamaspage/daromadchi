@@ -53,7 +53,7 @@ Restructure Analytics into three sub-sections: **Аналитика товаро
 In Аналитика товаров: show product photos (like Uzum), names, sold count, cancelled count, editable filters. Reuse existing product/photo data. Delivered-only rule stays consistent with the money layer.
 
 > **CC note (what shipped):** Product names, sold/cancelled/returned counts, return rate, revenue, sales share, avg price, ABC classification **already existed** in `AnalyticsProductTable` from earlier work — no changes needed there. Added: (1) **Text search** — filters by product title, SKU, or category name (canonicalized via Task 2 taxonomy); (2) **Category filter chips** — one chip per canonical category present in the catalogue, using `resolveCanonical` / `lookupTaxonomy` from `lib/categories/resolve.ts`; both filters compose with each other and with the existing column-visibility settings and marketplace/date filters on the page. Stabilised `salesByProduct` and `orphanSales` into `useMemo` to satisfy React Compiler. Filter bar matches the ProductsTable pattern (same layout, styling, search icon). TypeScript + ESLint clean (0 errors).
-> **⚠️ Photos not added:** Products carry **no photo data** — the `products` table has no image column (the only `image` field is on `unit_economics_items`). Adding photos requires a photo-sync feature (see Task 1 CC notes). Not faked.
+> **✅ Photos added (Task 7.5):** Product thumbnails now render in AnalyticsProductTable — photo sync implemented separately as Task 7.5.
 
 ### Task 7 — 🛑 STOP-REVIEW — Ad spend in analytics — status: DONE (not feasible)
 Show ad spend IF the marketplace API provides it. **Investigation first** — the marketplaces likely do NOT expose ad metrics via API (same wall as DRR). Report feasibility to owner; do NOT build a manual-entry or estimated version without approval.
@@ -68,8 +68,16 @@ Show ad spend IF the marketplace API provides it. **Investigation first** — th
 
 ## Phase 3 — Filters, notifications, sharing
 
-### Task 8 — [SAFE] Universal filters + export — status: TODO
+### Task 7.5 — [SAFE] Product photo sync — status: DONE
+Sync the first product photo URL from each marketplace API during the existing sync cycle. Store in `products.image_url`. Render thumbnails in Товары and Аналитика товаров tables. Read-only — no marketplace writes.
+
+> **CC note (what shipped):** Added `image_url text` column to `products` table (migration `091_products_image_url.sql`). Uzum sync: extracts first photo from `card.photos[]` — tries `link.high`, falls back to `link.low`, then CDN URL `https://images.uzum.uz/${photoKey}/t_product_240_high.jpg`. Yandex sync: extracts first URL from `offer.pictures[]`. Both use don't-clobber-with-null pattern (won't overwrite existing URL with null on re-sync). Order-derived fallback paths set `image_url: null`. Updated `lib/db/products.ts` to select+return `image_url`; bumped cache versions (`products-v11→v12`, `products-paginated-rpc-v5→v6`). ProductsTable: 40×40px thumbnails in both single-row and group-header views, with `onError` hide fallback. AnalyticsProductTable: 36×36px thumbnails in child and parent rows. No `next/image` (external CDN domains would need `remotePatterns` config for every marketplace CDN). TypeScript 0 errors, ESLint 0 errors (4 `<img>` warnings — acceptable).
+> **⚠️ Photos appear after next sync:** The column exists but is empty until a sync run populates it from the APIs.
+
+### Task 8 — [SAFE] Universal filters + export — status: DONE
 Add filtering by category / revenue / commission / status across Товары, Заказы, and Аналитика товаров. Export (download) must respect the active filter. Requires Task 2 (categories) done first. One shared filter mechanism reused across sections, not per-page copies.
+
+> **CC note (what shipped):** Extracted duplicated category helpers (`catKey`, `catDisplay`, `catKeyLabel`, `buildCategoryList`) into `lib/filters/category-helpers.ts`. Created shared `FilterBar` component (`components/dashboard/FilterBar.tsx`) with search input, category chips, action slot, and result count — replaces the duplicated filter bar code in all three sections. Refactored `ProductsTable`, `AnalyticsProductTable`, and `OrdersTable` to use FilterBar. Added `ExportButton` to `AnalyticsProductTable` (was the only section missing export) — exports product name, SKU, sold/cancelled/returned counts, return rate, revenue, share, price, cost, profit, margin, and ABC class, respecting the active search + category filter. All three exports (Товары, Заказы, Аналитика товаров) now respect their active filters. Orders don't have a category field in the schema, so their FilterBar omits category chips (search + status tabs + export remain). TypeScript 0 errors, ESLint 0 errors.
 
 ### Task 9 — [SAFE] Simplify notifications page — status: TODO
 Delete «Состояние склада». Replace with a simple alerts feed: order received, order cancelled, stock remaining, weekly summary, etc. Add a "connect Telegram notifications" button. Make it maximally simple. Reuse the existing notif registry/plumbing.

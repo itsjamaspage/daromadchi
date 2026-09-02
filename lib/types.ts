@@ -180,6 +180,7 @@ export interface Product {
   in_transit: number             // units on open orders (pending/confirmed) + counter surplus
   cancelled: number              // units on cancelled orders
   is_shared: boolean             // true when physical_stock links across marketplaces
+  image_url?: string | null       // first product photo from the marketplace API
   is_archived?: boolean          // Uzum-archived listing; only true rows appear in the "Архивные" tab
   variant_group_key?: string | null // marketplace-namespaced parent key (Phases 1/3)
   variant_color?: string | null     // resolved colour key for the per-variant label (Phase 1.5)

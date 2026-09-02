@@ -128,6 +128,7 @@ export interface YandexOffer {
   marketSku?: number
   // Stock can appear inline on some offer-mappings responses (FBS sellers).
   stocks?: { type?: string; count?: number; warehouseId?: number }[]
+  pictures?: string[]
   available?: boolean
   campaigns?: { campaignId?: number; status?: string; categoryId?: number }[]
 }

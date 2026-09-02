@@ -30,7 +30,9 @@
 
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import type React from 'react'
-import { ChevronRight, ChevronDown, Search } from 'lucide-react'
+import { ChevronRight, ChevronDown } from 'lucide-react'
+import ExportButton from '@/components/dashboard/ExportButton'
+import FilterBar from '@/components/dashboard/FilterBar'
 import EditableValueCell from '@/components/dashboard/EditableValueCell'
 import FulfillmentBadge from '@/components/dashboard/FulfillmentBadge'
 import { groupByVariant } from '@/lib/variant-grouping'
@@ -40,28 +42,11 @@ import type { Product } from '@/lib/types'
 import type { ProductSalesRow } from '@/lib/db/products'
 import { effective, groupSharedValues } from '@/lib/products/effective-values'
 import { deriveMetrics, abcClassify, type AbcClass } from '@/lib/products/product-analytics'
-import { resolveWithFallback, lookupTaxonomy } from '@/lib/categories/resolve'
+import { ALL_CAT, catKey, catDisplay, buildCategoryList } from '@/lib/filters/category-helpers'
 import AnalyticsTableSettings from '@/components/dashboard/AnalyticsTableSettings'
 import {
   isVisible, normalizeHidden, COLUMN_PREFS_STORAGE_KEY,
 } from '@/lib/products/analytics-columns'
-
-function catKey(raw: string | null, title?: string | null): string {
-  const r = resolveWithFallback(raw, title)
-  return r ? r.canonical_id : (raw || '')
-}
-
-function catDisplay(raw: string | null, lang: 'ru' | 'uz' | 'en', title?: string | null): string {
-  const r = resolveWithFallback(raw, title)
-  if (!r) return raw || '—'
-  return lang === 'uz' ? r.name_uz : lang === 'en' ? r.name_en : r.name_ru
-}
-
-function catKeyLabel(key: string, lang: 'ru' | 'uz' | 'en'): string {
-  const cat = lookupTaxonomy(key)
-  if (cat) return lang === 'uz' ? cat.name.uz : lang === 'en' ? cat.name.en : cat.name.ru
-  return key
-}
 
 const MP_META: Record<string, { short: string; color: string; bg: string }> = {
   uzum:          { short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'  },
@@ -154,17 +139,7 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
   const { lang } = useLang()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [query, setQuery] = useState('')
-  const ALL_CAT = '__all__'
-  const categories = useMemo(() => {
-    const seen = new Set<string>()
-    const cats: string[] = []
-    for (const p of products) {
-      const k = catKey(p.category, p.title)
-      if (!k || seen.has(k)) continue
-      seen.add(k); cats.push(k)
-    }
-    return [ALL_CAT, ...cats]
-  }, [products])
+  const categories = useMemo(() => buildCategoryList(products), [products])
   const [category, setCategory] = useState(ALL_CAT)
 
   // Column visibility. Read on mount rather than during render so the server
@@ -353,11 +328,22 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
     return (
       <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
         {col('product', <td className="px-5 py-3.5" style={isChild ? { paddingLeft: '2.75rem', borderLeft: '2px solid var(--border)' } : undefined}>
-          <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
-          <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
-            {isChild && <VariantColorChip colorKey={p.variant_color} lang={lang} />}
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
-            {badges(p)}
+          <div className="flex items-center gap-2">
+            {p.image_url ? (
+              <img src={p.image_url} alt="" className="w-9 h-9 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+            ) : (
+              <div className="w-9 h-9 rounded shrink-0 flex items-center justify-center text-xs"
+                style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
+            )}
+            <div>
+              <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
+              <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
+                {isChild && <VariantColorChip colorKey={p.variant_color} lang={lang} />}
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
+                {badges(p)}
+              </div>
+            </div>
           </div>
         </td>)}
         {salesCells(salesFor(p.id))}
@@ -445,6 +431,13 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
             <span className="shrink-0" style={{ color: 'var(--text-muted)' }}>
               {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </span>
+            {item.representative.row.image_url ? (
+              <img src={item.representative.row.image_url} alt="" className="w-9 h-9 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+            ) : (
+              <div className="w-9 h-9 rounded shrink-0 flex items-center justify-center text-xs"
+                style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
+            )}
             <p className="font-semibold line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={item.representative.row.title}>{item.representative.row.title}</p>
             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
               style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>
@@ -514,48 +507,57 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
     </tr>
   )
 
+  const exportData: Record<string, string | number>[] = []
+  for (const item of sortedGroups) {
+    const members = item.type === 'parent' ? item.children.map(c => c.row) : [item.row.row]
+    const gk = item.type === 'parent' ? `p:${item.key}` : `f:${item.row.row.id}`
+    const itemAbc = abc.get(gk) ?? 'C'
+    for (const p of members) {
+      const s = salesByProduct.get(p.id) ?? NO_SALES
+      const m = deriveMetrics({ delivered: s.qty_sold, returned: s.qty_returned, revenue: s.revenue }, periodRevenue)
+      const price = Number(p.selling_price ?? 0)
+      const margin = p.profit != null && price > 0 ? (p.profit / price * 100).toFixed(1) : ''
+      exportData.push({
+        [labels.product]: p.title,
+        'SKU': p.sku ?? '',
+        [labels.qty]: s.qty_sold,
+        [labels.cancelled]: s.qty_cancelled,
+        [labels.returned ?? 'Returned']: s.qty_returned,
+        [labels.returnRate ?? 'Return %']: m.returnRate != null ? `${m.returnRate.toFixed(1)}%` : '',
+        [labels.revenue]: s.revenue,
+        [`${labels.revenue} %`]: `${m.salesShare.toFixed(1)}%`,
+        [labels.price]: price || '',
+        [labels.costPrice]: p.cost_price ?? '',
+        [labels.profit]: p.profit ?? '',
+        [`${labels.margin} (%)`]: margin,
+        [labels.abc]: itemAbc,
+      })
+    }
+  }
+
   if (products.length === 0 && orphanSales.length === 0) {
     return <p className="px-5 py-6 text-sm" style={{ color: 'var(--text-muted)' }}>{labels.noSales}</p>
   }
 
   return (
     <>
-      <div className="px-5 py-3 space-y-3" style={{ borderBottom: '1px solid var(--border)' }}>
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          <div className="relative w-full sm:w-64 sm:shrink-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-            <input
-              type="text"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder={labels.searchPlaceholder}
-              className="w-full rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none transition-all"
-              style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: 'var(--text-base)', border: '1px solid var(--border)' }}
-            />
-          </div>
-          <div className="flex items-center gap-2 flex-wrap flex-1">
-            {categories.map(c => (
-              <button key={c} onClick={() => setCategory(c)}
-                className="px-3 py-2 rounded-xl text-xs font-medium transition-all border"
-                style={category === c ? {
-                  background: 'var(--bg-card2)',
-                  color: 'var(--c1)',
-                  borderColor: 'var(--border)',
-                } : {
-                  color: 'var(--text-muted)',
-                  borderColor: 'var(--border)',
-                }}>
-                {c === ALL_CAT ? labels.allCategories : catKeyLabel(c, lang)}
-              </button>
-            ))}
-          </div>
-          <div className="sm:ml-auto shrink-0">
+      <div className="px-5 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+        <FilterBar
+          query={query}
+          onQueryChange={setQuery}
+          searchPlaceholder={labels.searchPlaceholder}
+          categories={categories}
+          selectedCategory={category}
+          onCategoryChange={setCategory}
+          allCategoryLabel={labels.allCategories}
+          lang={lang}
+          actions={<>
+            <ExportButton data={exportData} filename="analitika" />
             <AnalyticsTableSettings hidden={hidden} onChange={changeHidden} labels={labels.settings} />
-          </div>
-        </div>
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-          {filteredProducts.length} {labels.productCount} {query || category !== ALL_CAT ? '(filtr)' : ''}
-        </p>
+          </>}
+          resultCount={filteredProducts.length}
+          countLabel={labels.productCount}
+        />
       </div>
       <div className="overflow-x-auto">
       <table className="w-full text-sm">
