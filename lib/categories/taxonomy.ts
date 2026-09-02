@@ -128,13 +128,13 @@ export const TAXONOMY: CanonicalCategory[] = [
     parent_group: 'electronics',
     name: { ru: 'Компьютерные аксессуары', uz: 'Kompyuter aksessuarlari', en: 'Computer peripherals' },
     terms: {
-      ru: ['клавиатуры','клавиатура','мыши','мышь компьютерная','мониторы','монитор','веб-камеры','usb-хабы','коврики для мыши','компьютерные аксессуары','комплектующие для пк','системные блоки'],
-      uz: ['klaviaturalar','sichqonchalar','monitorlar','veb kameralar','kompyuter aksessuarlari','sichqoncha gilamchalari'],
+      ru: ['клавиатуры','клавиатура','мыши','мышь компьютерная','мониторы','монитор','веб-камеры','usb-хабы','коврики для мыши','компьютерные аксессуары','комплектующие для пк','системные блоки','комплекты клавиатур и мышей','комплекты клавиатур'],
+      uz: ['klaviaturalar','sichqonchalar','monitorlar','veb kameralar','kompyuter aksessuarlari','sichqoncha gilamchalari','klaviatura va sichqoncha to\'plami'],
       en: ['keyboards','mice','computer mouse','monitors','webcams','mousepads','computer peripherals','usb hubs','pc components'],
     },
     raw_examples: {
-      uzum: ['Kompyuter aksessuarlari','Klaviaturalar','Monitorlar'],
-      yandex_market: ['Компьютерная периферия','Мониторы','Клавиатуры','Компьютерные мыши'],
+      uzum: ['Kompyuter aksessuarlari','Klaviaturalar','Monitorlar','Klaviatura va sichqoncha to\'plami'],
+      yandex_market: ['Компьютерная периферия','Мониторы','Клавиатуры','Компьютерные мыши','Комплекты клавиатур и мышей'],
     },
   },
   {
@@ -213,13 +213,13 @@ export const TAXONOMY: CanonicalCategory[] = [
     parent_group: 'electronics',
     name: { ru: 'Повербанки и зарядные устройства', uz: 'Powerbanklar va zaryadlagichlar', en: 'Power banks & Chargers' },
     terms: {
-      ru: ['повербанки','внешние аккумуляторы','портативные зарядки','зарядные устройства','адаптеры питания','блоки питания','беспроводные зарядки','сетевые зарядки','автомобильные зарядки'],
-      uz: ['powerbanklar','portativ zaryadlagichlar','zaryadlash qurilmalari','adapterlar','simsiz zaryadlagichlar'],
+      ru: ['повербанки','внешние аккумуляторы','портативные зарядки','зарядные устройства','адаптеры питания','блоки питания','беспроводные зарядки','сетевые зарядки','автомобильные зарядки','портативные аккумуляторы'],
+      uz: ['powerbanklar','portativ zaryadlagichlar','zaryadlash qurilmalari','adapterlar','simsiz zaryadlagichlar','tashqi akkumulyatorlar'],
       en: ['power banks','portable chargers','chargers','power adapters','wireless chargers','wall chargers','car chargers'],
     },
     raw_examples: {
-      uzum: ['Powerbanklar','Zaryadlagichlar'],
-      yandex_market: ['Внешние аккумуляторы','Зарядные устройства','Повербанки'],
+      uzum: ['Powerbanklar','Zaryadlagichlar','Tashqi akkumulyatorlar'],
+      yandex_market: ['Внешние аккумуляторы','Зарядные устройства','Повербанки','Портативные аккумуляторы'],
     },
     notes: 'Car chargers may also match car_electronics — prefer this canonical unless raw string contains "авто"/"car"/"avto".',
   },
