@@ -1,38 +1,22 @@
 'use client'
 
 import { useState, useMemo, useCallback, Fragment } from 'react'
-import { Search, Check, X, Pencil, ChevronRight, ChevronDown } from 'lucide-react'
+import { Check, X, Pencil, ChevronRight, ChevronDown } from 'lucide-react'
 import ExportButton from './ExportButton'
+import FilterBar from './FilterBar'
 import FulfillmentBadge from './FulfillmentBadge'
 import MpBadge, { MP_META } from './MpBadge'
 import { ColorBadge } from '@/components/ColorBadge'
 import { COLOR_LABELS, colorMetaFor, type ColorKey } from '@/lib/products/resolveColor'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
-import { resolveWithFallback, lookupTaxonomy } from '@/lib/categories/resolve'
+import { ALL_CAT, catKey, catDisplay, buildCategoryList } from '@/lib/filters/category-helpers'
 import { cyrillicToLatin, normalizeText } from '@/lib/shared/text-similarity'
 import type { Product, MarketplaceType } from '@/lib/types'
 import { useRouter } from 'next/navigation'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
-}
-
-function catKey(raw: string | null, title?: string | null): string {
-  const r = resolveWithFallback(raw, title)
-  return r ? r.canonical_id : (raw || '')
-}
-
-function catDisplay(raw: string | null, lang: 'ru' | 'uz' | 'en', title?: string | null): string {
-  const r = resolveWithFallback(raw, title)
-  if (!r) return raw || '—'
-  return lang === 'uz' ? r.name_uz : lang === 'en' ? r.name_en : r.name_ru
-}
-
-function catKeyLabel(key: string, lang: 'ru' | 'uz' | 'en'): string {
-  const cat = lookupTaxonomy(key)
-  if (cat) return lang === 'uz' ? cat.name.uz : lang === 'en' ? cat.name.en : cat.name.ru
-  return key
 }
 
 // Localised "N вариантов".
@@ -158,8 +142,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const d = translations[lang].dashboard
   const router = useRouter()
 
-  const allLabel = d.status.all
-
   // «Остатки FBS» for one listing. FBS (and unknown, which the whole app treats
   // as FBS) shows its free-to-sell figure — the SAME available_stock the low-
   // stock tab, export and the deleted Остатки page all read, so no number moves.
@@ -194,22 +176,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     })
   }, [])
 
-  // Language-independent sentinel for "all categories": the state must never
-  // hold a LOCALIZED label — switching the UI language used to leave the old
-  // language's "All" string in state, which then filtered every row out and
-  // the page looked like the data had disappeared.
-  const ALL_CAT = '__all__'
-  const categories = useMemo(() => {
-    const seen = new Set<string>()
-    const cats: string[] = []
-    for (const p of products) {
-      if (!p.category) continue
-      const k = catKey(p.category, p.title)
-      if (!k || seen.has(k)) continue
-      seen.add(k); cats.push(k)
-    }
-    return [ALL_CAT, ...cats]
-  }, [products])
+  const categories = useMemo(() => buildCategoryList(products), [products])
   const [category, setCategory] = useState(ALL_CAT)
 
   const productsWithOverrides = useMemo(() => products.map(p => {
@@ -669,52 +636,19 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         </div>
       )}
 
-      {/* Two things here are load-bearing, neither is cosmetic.
-          1. items-start/sm:items-center — without it the row stretches every
-             child to the tallest, which is the wrapping category-chip group. The
-             search wrapper grows taller than the input inside it, and the
-             magnifier (positioned at top-1/2 of the WRAPPER) drops below the
-             input. Every other filter row already carries these classes;
-             this one missed them.
-          2. sm:w-64 sm:shrink-0 instead of flex-1 — with enough categories the
-             chip group's natural width is large, and a flex-1 search loses the
-             width fight and collapses to barely wider than its own icon. A fixed
-             basis that cannot shrink keeps the field usable and lets the chips
-             wrap into whatever is left, which is what they already do. */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <div className="relative w-full sm:w-64 sm:shrink-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-          <input
-            type="text"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder={`${d.product}, SKU, ${d.category}...`}
-            className="w-full rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none transition-all"
-            style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: 'var(--text-base)', border: '1px solid var(--border)', '--placeholder-color': 'var(--text-muted)' } as React.CSSProperties}
-          />
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {categories.map(c => (
-            <button key={c} onClick={() => setCategory(c)}
-              className="px-3 py-2 rounded-xl text-xs font-medium transition-all border"
-              style={category === c ? {
-                background: 'var(--bg-card2)',
-                color: 'var(--c1)',
-                 borderColor: 'var(--border)',
-              } : {
-                color: 'var(--text-muted)',
-                borderColor: 'var(--border)',
-              }}>
-              {c === ALL_CAT ? allLabel : catKeyLabel(c, lang)}
-            </button>
-          ))}
-        </div>
-        <div className="sm:ml-auto">
-          <ExportButton data={exportData} filename="mahsulotlar" />
-        </div>
-      </div>
-
-      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{filtered.length} {d.productCount} {query || category !== ALL_CAT ? '(filtr)' : ''}</p>
+      <FilterBar
+        query={query}
+        onQueryChange={setQuery}
+        searchPlaceholder={`${d.product}, SKU, ${d.category}...`}
+        categories={categories}
+        selectedCategory={category}
+        onCategoryChange={setCategory}
+        allCategoryLabel={d.status.all}
+        lang={lang}
+        actions={<ExportButton data={exportData} filename="mahsulotlar" />}
+        resultCount={filtered.length}
+        countLabel={d.productCount}
+      />
 
       <div className="border rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
         <div className="overflow-x-auto">
