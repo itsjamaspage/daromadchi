@@ -78,7 +78,15 @@
     "test:monitoring": "node --test scripts/sync-freshness-lib.test.mjs",
     "test:yandex-stock": "node --import tsx --test lib/yandex/sellable-stock.test.ts",
     "test:stock-split": "node --import tsx --test lib/db/stock-split.test.ts",
-    "test:physical-stock": "node --import tsx --test lib/marketplace/physical-stock.integration.test.ts"
+    "test:physical-stock": "node --import tsx --test lib/marketplace/physical-stock.integration.test.ts",
+    "test:plans": "node --import tsx --test lib/billing/plans.test.ts",
+    "test:help": "node --import tsx --test lib/help-content.test.ts",
+    "test:oversell": "node --conditions=react-server --import tsx --test lib/marketplace/oversell.test.ts",
+    "test:sku-aliases": "node --import tsx --test lib/products/sku-aliases.test.ts",
+    "test:settlement": "node --import tsx --test lib/uzum/settlement-merge.test.ts",
+    "test:ordered-at": "node --import tsx --test lib/uzum/ordered-at.test.ts",
+    "test:sitemap": "node --import tsx --test app/sitemap.test.ts",
+    "test:ext-links": "node --import tsx --test extension/links.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
