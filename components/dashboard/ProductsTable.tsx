@@ -354,9 +354,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       if (allProducts.length === 1) {
         items.push({ type: 'flat', row: allProducts[0] })
       } else {
-        // One child per colour group — merge same-colour products from
-        // different marketplaces into a single representative row with
-        // per-marketplace stock stored in a synthetic field.
         const children: Product[] = matchKeys.map(mk => {
           const members = colorGroups.get(mk)!
           if (members.length === 1) return members[0]
