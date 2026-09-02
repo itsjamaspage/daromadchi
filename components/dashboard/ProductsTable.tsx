@@ -9,7 +9,6 @@ import { ColorBadge } from '@/components/ColorBadge'
 import { COLOR_LABELS, colorMetaFor, type ColorKey } from '@/lib/products/resolveColor'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
-import { groupByVariant } from '@/lib/variant-grouping'
 import { resolveWithFallback, lookupTaxonomy } from '@/lib/categories/resolve'
 import type { Product, MarketplaceType } from '@/lib/types'
 import { useRouter } from 'next/navigation'
@@ -271,7 +270,23 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     return rows
   }, [enriched, query, category, tab, sortBy, sortDir, stockThreshold, lang])
 
-  const displayItems = useMemo(() => groupByVariant(filtered), [filtered])
+  const displayItems = useMemo(() => {
+    const byKey = new Map<string, Product[]>()
+    for (const p of filtered) {
+      const k = p.match_key ?? p.id
+      const list = byKey.get(k)
+      if (list) list.push(p); else byKey.set(k, [p])
+    }
+    const items: ({ type: 'flat'; row: Product } | { type: 'parent'; key: string; representative: Product; children: Product[] })[] = []
+    for (const [k, members] of byKey) {
+      if (members.length === 1) {
+        items.push({ type: 'flat', row: members[0] })
+      } else {
+        items.push({ type: 'parent', key: k, representative: members[0], children: members })
+      }
+    }
+    return items
+  }, [filtered])
 
   function toggleSort(col: typeof sortBy) {
     if (sortBy === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc')

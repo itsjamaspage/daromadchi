@@ -190,6 +190,7 @@ export interface Product {
   // show "per-listing / physical total" side-by-side without hiding the
   // wider inventory picture. See lib/db/products.ts for the derivation.
   total_physical: number
+  match_key?: string
 }
 
 export interface Order {

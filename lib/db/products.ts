@@ -1,8 +1,9 @@
 import { unstable_cache } from 'next/cache'
 import { displayReservedCondition } from '@/lib/marketplace/reserving-orders'
 import { eq, ne, and, or, isNull, inArray, gte, lte, asc, sql, count } from 'drizzle-orm'
-import { db, shops, products, orders, orderItems, categoryAliases, categoriesCanonical } from '@/lib/db'
+import { db, shops, products, orders, orderItems, categoryAliases, categoriesCanonical, productGroupMerges } from '@/lib/db'
 import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
+import { buildKeyResolver, matchKeyForProduct } from '@/lib/db/group-key'
 import type { Product, MarketplaceType } from '@/lib/types'
 import { parseLocalDate, endOfLocalDay } from '@/lib/period-week'
 import { resolveCanonical } from '@/lib/categories/resolve'
@@ -570,7 +571,7 @@ const _fetchProductsPaginated = unstable_cache(
     const viewWhere = and(inArray(products.shop_id, shopIds), eq(products.is_archived, archived))
     const archivedWhere = and(inArray(products.shop_id, shopIds), eq(products.is_archived, true))
 
-    const [productRows, [{ total }], [{ archivedTotal }]] = await Promise.all([
+    const [productRows, [{ total }], [{ archivedTotal }], mergeRows] = await Promise.all([
       db.select({
         id: products.id,
         shop_id: products.shop_id,
@@ -597,6 +598,8 @@ const _fetchProductsPaginated = unstable_cache(
         .offset(offset),
       db.select({ total: count() }).from(products).where(viewWhere),
       db.select({ archivedTotal: count() }).from(products).where(archivedWhere),
+      db.select({ source_key: productGroupMerges.source_key, target_key: productGroupMerges.target_key })
+        .from(productGroupMerges).where(eq(productGroupMerges.user_id, userId)),
     ])
 
     const productIds = productRows.map(p => p.id)
@@ -643,6 +646,8 @@ const _fetchProductsPaginated = unstable_cache(
       }
     }
 
+    const resolveKey = buildKeyResolver(mergeRows)
+
     const rows: Product[] = productRows.map(p => {
       const orderSold = soldMap.get(p.id) ?? 0
       const sold = p.quantity_sold != null ? p.quantity_sold : orderSold
@@ -688,12 +693,13 @@ const _fetchProductsPaginated = unstable_cache(
         is_archived: p.is_archived,
         variant_group_key: p.variant_group_key,
         variant_color: p.variant_color,
+        match_key: matchKeyForProduct(p.sku, p.id, resolveKey),
       } as Product
     })
 
     return { rows, total, archivedTotal }
   },
-  ['products-paginated-rpc-v4'],
+  ['products-paginated-rpc-v5'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
