@@ -10,6 +10,7 @@ import { COLOR_LABELS, colorMetaFor, type ColorKey } from '@/lib/products/resolv
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import { resolveWithFallback, lookupTaxonomy } from '@/lib/categories/resolve'
+import { cyrillicToLatin, normalizeText } from '@/lib/shared/text-similarity'
 import type { Product, MarketplaceType } from '@/lib/types'
 import { useRouter } from 'next/navigation'
 
@@ -287,20 +288,55 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     const find = (x: number): number => { let r = x; while (uf[r] !== r) r = uf[r]; return r }
     const union = (a: number, b: number) => { const ra = find(a), rb = find(b); if (ra !== rb) uf[ra] = rb }
 
-    const bridgeMap = new Map<string, number[]>()
-    const addBridge = (signal: string, i: number) => {
-      const list = bridgeMap.get(signal)
-      if (list) list.push(i); else bridgeMap.set(signal, [i])
-    }
+    // 2a: variant_group_key bridge (within-marketplace colour grouping)
+    const vgkMap = new Map<string, number[]>()
     for (const [mk, members] of colorGroups) {
       const mi = idx.get(mk)!
       for (const p of members) {
-        if (p.variant_group_key) addBridge(`vgk:${p.variant_group_key}`, mi)
-        addBridge(`title:${p.title.trim().toLowerCase()}`, mi)
+        if (!p.variant_group_key) continue
+        const list = vgkMap.get(p.variant_group_key)
+        if (list) list.push(mi); else vgkMap.set(p.variant_group_key, [mi])
       }
     }
-    for (const idxs of bridgeMap.values()) {
+    for (const idxs of vgkMap.values()) {
       for (let j = 1; j < idxs.length; j++) union(idxs[0], idxs[j])
+    }
+
+    // 2b: cross-marketplace bridge via shared product-identifying tokens.
+    // Titles are in different languages (Uzum=Uzbek, Yandex=Russian) so
+    // exact matching fails. After Cyrillic→Latin transliteration, model
+    // codes like "m9", "j16", "gtx350" survive in both and are the
+    // reliable bridge. Score: alphanumeric tokens (letter+digit) = 3,
+    // long words (>= 6 chars, e.g. "magsafe") = 2, others = 1.
+    // Threshold 3 prevents false merges from single shared generic words.
+    const distinctiveFor = new Map<string, Set<string>>()
+    for (const [mk, members] of colorGroups) {
+      const tokens = new Set<string>()
+      for (const p of members) {
+        const catToks = p.category
+          ? new Set(normalizeText(cyrillicToLatin(p.category)).split(' ').filter(Boolean))
+          : new Set<string>()
+        for (const tok of normalizeText(cyrillicToLatin(p.title)).split(' ').filter(Boolean)) {
+          if (tok.length >= 2 && !catToks.has(tok)) tokens.add(tok)
+        }
+      }
+      distinctiveFor.set(mk, tokens)
+    }
+    for (let i = 0; i < keys.length; i++) {
+      for (let j = i + 1; j < keys.length; j++) {
+        if (find(i) === find(j)) continue
+        const gi = colorGroups.get(keys[i])!
+        const gj = colorGroups.get(keys[j])!
+        if (gi[0].marketplace === gj[0].marketplace) continue
+        const ti = distinctiveFor.get(keys[i])!
+        const tj = distinctiveFor.get(keys[j])!
+        let score = 0
+        for (const tok of ti) {
+          if (!tj.has(tok)) continue
+          score += /[a-z]/.test(tok) && /\d/.test(tok) ? 3 : tok.length >= 6 ? 2 : 1
+        }
+        if (score >= 3) union(i, j)
+      }
     }
 
     // Phase 3: collect product groups (each = set of colour groups)
