@@ -80,7 +80,7 @@ export const TAXONOMY: CanonicalCategory[] = [
     name: { ru: 'Смарт-часы и фитнес-браслеты', uz: 'Aqlli soatlar va fitness bilaguzuklar', en: 'Smart watches & Fitness trackers' },
     terms: {
       ru: ['смарт-часы','смарт часы','умные часы','фитнес-браслеты','фитнес браслет','apple watch','носимая электроника','умные браслеты','спортивные часы','детские смарт часы'],
-      uz: ['aqlli soatlar','smart soatlar','fitness bilaguzuk','fitnes braslet','sport soatlar','bolalar aqlli soatlari'],
+      uz: ['aqlli soatlar','smart soatlar','smart soat','smart-soat','fitness bilaguzuk','fitnes braslet','sport soatlar','bolalar aqlli soatlari'],
       en: ['smart watches','smartwatches','fitness trackers','fitness bands','wearables','apple watch','sport watches','kids smart watches'],
     },
     raw_examples: {
@@ -213,9 +213,9 @@ export const TAXONOMY: CanonicalCategory[] = [
     parent_group: 'electronics',
     name: { ru: 'Повербанки и зарядные устройства', uz: 'Powerbanklar va zaryadlagichlar', en: 'Power banks & Chargers' },
     terms: {
-      ru: ['повербанки','внешние аккумуляторы','портативные зарядки','зарядные устройства','адаптеры питания','блоки питания','беспроводные зарядки','сетевые зарядки','автомобильные зарядки','портативные аккумуляторы'],
-      uz: ['powerbanklar','portativ zaryadlagichlar','zaryadlash qurilmalari','adapterlar','simsiz zaryadlagichlar','tashqi akkumulyatorlar'],
-      en: ['power banks','portable chargers','chargers','power adapters','wireless chargers','wall chargers','car chargers'],
+      ru: ['повербанки','повербанк','внешние аккумуляторы','портативные зарядки','зарядные устройства','адаптеры питания','блоки питания','беспроводные зарядки','сетевые зарядки','автомобильные зарядки','портативные аккумуляторы'],
+      uz: ['powerbanklar','powerbank','portativ zaryadlagichlar','zaryadlash qurilmalari','adapterlar','simsiz zaryadlagichlar','tashqi akkumulyatorlar'],
+      en: ['power banks','power bank','powerbank','portable chargers','chargers','power adapters','wireless chargers','wall chargers','car chargers'],
     },
     raw_examples: {
       uzum: ['Powerbanklar','Zaryadlagichlar','Tashqi akkumulyatorlar'],

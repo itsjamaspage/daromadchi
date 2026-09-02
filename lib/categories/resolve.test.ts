@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { resolveCanonical, canonicalName, lookupTaxonomy } from './resolve.js'
+import { resolveCanonical, resolveWithFallback, canonicalName, lookupTaxonomy } from './resolve.js'
 
 describe('resolveCanonical — synonym collapse', () => {
   it('«умные часы» and «смартчасы» both resolve to smart_watches', () => {
@@ -106,5 +106,42 @@ describe('merge-key simulation (what _fetchCategoryRevenue does)', () => {
       `t:${yandex!.canonical_id}`,
       'Uzum and Yandex smartphone categories must merge'
     )
+  })
+})
+
+describe('resolveWithFallback — title-based category inference', () => {
+  it('returns category match when category is provided', () => {
+    const r = resolveWithFallback('Смартфоны')
+    assert.ok(r)
+    assert.equal(r!.canonical_id, 'smartphones')
+  })
+
+  it('falls back to title when category is null', () => {
+    const r = resolveWithFallback(null, 'Смарт-часы M9 умные Smart Watch мужские женские, белые, Bluetooth, IP67')
+    assert.ok(r, 'should infer smart_watches from title')
+    assert.equal(r!.canonical_id, 'smart_watches')
+  })
+
+  it('falls back to title when category is empty string', () => {
+    const r = resolveWithFallback('', 'Беспроводные наушники J16 TWS Bluetooth')
+    assert.ok(r, 'should infer headphones from title')
+    assert.equal(r!.canonical_id, 'headphones')
+  })
+
+  it('does not use title when category resolves', () => {
+    const r = resolveWithFallback('Наушники', 'Смарт-часы M9 Smart Watch')
+    assert.ok(r)
+    assert.equal(r!.canonical_id, 'headphones', 'real category wins over title')
+  })
+
+  it('returns null when neither category nor title matches', () => {
+    const r = resolveWithFallback(null, 'xyz totally unknown product 12345')
+    assert.equal(r, null)
+  })
+
+  it('M9 smart-soat title matches smart_watches', () => {
+    const r = resolveWithFallback(null, 'M9 smart-soat: Bluetooth qo\'ng\'iroq, SpO2, IP67')
+    assert.ok(r, '"smart-soat" in title should match smart_watches')
+    assert.equal(r!.canonical_id, 'smart_watches')
   })
 })
