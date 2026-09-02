@@ -271,18 +271,74 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   }, [enriched, query, category, tab, sortBy, sortDir, stockThreshold, lang])
 
   const displayItems = useMemo(() => {
-    const byKey = new Map<string, Product[]>()
+    // Phase 1: group by match_key (same SKU = same colour across marketplaces)
+    const colorGroups = new Map<string, Product[]>()
     for (const p of filtered) {
       const k = p.match_key ?? p.id
-      const list = byKey.get(k)
-      if (list) list.push(p); else byKey.set(k, [p])
+      const list = colorGroups.get(k)
+      if (list) list.push(p); else colorGroups.set(k, [p])
     }
+
+    // Phase 2: union colour groups that share a variant_group_key
+    // (all colours of the same product card merge under one parent)
+    const keys = [...colorGroups.keys()]
+    const idx = new Map(keys.map((k, i) => [k, i]))
+    const uf = keys.map((_, i) => i)
+    const find = (x: number): number => { let r = x; while (uf[r] !== r) r = uf[r]; return r }
+    const union = (a: number, b: number) => { const ra = find(a), rb = find(b); if (ra !== rb) uf[ra] = rb }
+
+    const vgkToIdx = new Map<string, number[]>()
+    for (const [mk, members] of colorGroups) {
+      const mi = idx.get(mk)!
+      for (const p of members) {
+        if (!p.variant_group_key) continue
+        const list = vgkToIdx.get(p.variant_group_key)
+        if (list) list.push(mi); else vgkToIdx.set(p.variant_group_key, [mi])
+      }
+    }
+    for (const idxs of vgkToIdx.values()) {
+      for (let j = 1; j < idxs.length; j++) union(idxs[0], idxs[j])
+    }
+
+    // Phase 3: collect product groups (each = set of colour groups)
+    const productGroups = new Map<number, string[]>()
+    for (let i = 0; i < keys.length; i++) {
+      const root = find(i)
+      const list = productGroups.get(root)
+      if (list) list.push(keys[i]); else productGroups.set(root, [keys[i]])
+    }
+
+    // Phase 4: build display items
     const items: ({ type: 'flat'; row: Product } | { type: 'parent'; key: string; representative: Product; children: Product[] })[] = []
-    for (const [k, members] of byKey) {
-      if (members.length === 1) {
-        items.push({ type: 'flat', row: members[0] })
+    for (const matchKeys of productGroups.values()) {
+      const allProducts = matchKeys.flatMap(mk => colorGroups.get(mk)!)
+      if (allProducts.length === 1) {
+        items.push({ type: 'flat', row: allProducts[0] })
       } else {
-        items.push({ type: 'parent', key: k, representative: members[0], children: members })
+        // One child per colour group — merge same-colour products from
+        // different marketplaces into a single representative row with
+        // per-marketplace stock stored in a synthetic field.
+        const children: Product[] = matchKeys.map(mk => {
+          const members = colorGroups.get(mk)!
+          if (members.length === 1) return members[0]
+          const rep = members[0]
+          const totalStock = members.reduce((s, m) => s + m.available_stock, 0)
+          const stockLabel = members
+            .map(m => `${(m.marketplace === 'uzum' ? 'UZ' : 'YM')} ${fbsUnits(m) ?? '—'}`)
+            .join(' · ')
+          return {
+            ...rep,
+            available_stock: totalStock,
+            _mpStockLabel: stockLabel,
+            _members: members,
+          } as Product & { _mpStockLabel?: string; _members?: Product[] }
+        })
+        items.push({
+          type: 'parent',
+          key: matchKeys.sort()[0],
+          representative: allProducts[0],
+          children,
+        })
       }
     }
     return items
@@ -324,7 +380,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   // siblings — the colour and the SKU. Store and fulfillment badges live on the
   // parent, where they describe the whole group instead of repeating down the
   // column.
-  const renderRow = (p: Product, isChild = false, groupTitle?: string, showMpInChild = false) => {
+  const renderRow = (p: Product & { _mpStockLabel?: string; _members?: Product[] }, isChild = false, groupTitle?: string) => {
+    const isMergedColor = !!(p as { _members?: Product[] })._members
     const price  = Number(p.selling_price ?? 0)
     const margin = p.profit != null && price > 0
       ? Number(((p.profit / price) * 100).toFixed(1)) : null
@@ -347,7 +404,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
                   {isChild && <VariantColorChip colorKey={p.variant_color} lang={lang} />}
                   <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
-                  {(!isChild || showMpInChild) && p.marketplace && <MpBadge mp={p.marketplace} />}
+                  {isMergedColor
+                    ? p._members!.map(m => m.marketplace && <MpBadge key={m.id} mp={m.marketplace} />)
+                    : p.marketplace && <MpBadge mp={p.marketplace} />}
                   {!isChild && <FulfillmentBadge type={p.fulfillment_type} />}
                   {p.is_shared && (
                     <span
@@ -363,7 +422,15 @@ export default function ProductsTable({ products }: { products: Product[] }) {
               </div>
             </div>
           </td>
-          <FbsCell value={fbsUnits(p)} />
+          {isMergedColor ? (
+            <td className="px-5 py-4 text-right tabular-nums text-xs" style={{ color: 'var(--text-base)' }}>
+              {p._members!.map((m, i) => {
+                const v = fbsUnits(m)
+                const label = MP_META[m.marketplace!]?.short ?? m.marketplace
+                return <span key={m.id}>{i > 0 && ' · '}<span style={{ color: v != null && v > 0 ? 'var(--text-base)' : v === 0 ? '#ef4444' : 'var(--text-muted)' }}>{label} {v ?? '—'}</span></span>
+              })}
+            </td>
+          ) : <FbsCell value={fbsUnits(p)} />}
           <td className="px-5 py-4">
             <span className="text-xs px-2.5 py-1 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>{catDisplay(p.category, lang, p.title)}</span>
           </td>
@@ -436,14 +503,18 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     const marginColor = margin == null ? 'var(--text-muted)'
       : margin > 35 ? '#10b981' : margin > 20 ? '#f59e0b' : '#ef4444'
 
-    const marketplaces = [...new Set(kids.map(k => k.marketplace).filter(Boolean))] as MarketplaceType[]
+    // Flatten children's _members to get all real listings
+    const allListings = kids.flatMap(k =>
+      (k as Product & { _members?: Product[] })._members ?? [k]
+    )
+    const marketplaces = [...new Set(allListings.map(k => k.marketplace).filter(Boolean))] as MarketplaceType[]
     const isCrossMarketplace = marketplaces.length > 1
 
     const fbsByMp = (mp: string) => {
-      const vals = kids.filter(k => k.marketplace === mp).map(fbsUnits).filter((v): v is number => v != null)
+      const vals = allListings.filter(k => k.marketplace === mp).map(fbsUnits).filter((v): v is number => v != null)
       return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) : null
     }
-    const totalFbs = kids.map(fbsUnits).filter((v): v is number => v != null)
+    const totalFbs = allListings.map(fbsUnits).filter((v): v is number => v != null)
     const groupFbs = totalFbs.length > 0 ? totalFbs.reduce((s, v) => s + v, 0) : null
 
     return (
@@ -626,11 +697,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 return (
                   <Fragment key={item.key}>
                     {renderGroup(item, isOpen)}
-                    {isOpen && (() => {
-                      const mps = new Set(item.children.map(c => c.marketplace))
-                      const crossMp = mps.size > 1
-                      return item.children.map(c => renderRow(c, true, item.representative.title, crossMp))
-                    })()}
+                    {isOpen && item.children.map(c => renderRow(c, true, item.representative.title))}
                   </Fragment>
                 )
               })}
