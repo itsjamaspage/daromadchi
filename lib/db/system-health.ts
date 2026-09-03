@@ -1,9 +1,8 @@
-import { sql } from 'drizzle-orm'
+import { sql, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { getShopIds } from '@/lib/db/shop-context'
+import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
+import { userSettings } from '@/lib/db/schema'
 
-// A stock read is expected every ~15 min (STOCK_REFRESH_MS in the sync route);
-// two missed cycles plus slack = stale.
 const STALE_MINUTES = 40
 
 export interface DriftRow {
@@ -28,26 +27,42 @@ export interface ShopStatus {
   productCount: number
 }
 
+export type ServiceStatus = 'operational' | 'degraded' | 'down'
+
+export interface ServiceRow {
+  name: string
+  key: string
+  status: ServiceStatus
+  detail: string | null
+}
+
 export interface SystemHealth {
   noShops: boolean
   shops: ShopStatus[]
+  services: ServiceRow[]
+  overall: ServiceStatus
   syncAgeMinutes: number | null
   syncStale: boolean
   drift: DriftRow[]
   status: 'ok' | 'warn' | 'error'
   checkedAt: string
+  telegramConnected: boolean
 }
 
 export async function getSystemHealth(): Promise<SystemHealth> {
-  const shopIds = await getShopIds()
+  const [shopIds, userId] = await Promise.all([getShopIds(), getCurrentUserId()])
   const checkedAt = new Date().toISOString()
   if (!shopIds || shopIds.length === 0) {
-    return { noShops: true, shops: [], syncAgeMinutes: null, syncStale: false, drift: [], status: 'ok', checkedAt }
+    return {
+      noShops: true, shops: [], services: [], overall: 'operational',
+      syncAgeMinutes: null, syncStale: false, drift: [],
+      status: 'ok', checkedAt, telegramConnected: false,
+    }
   }
 
   const idList = sql.join(shopIds.map(id => sql`${id}`), sql`, `)
 
-  const [shopRes, driftRes] = await Promise.all([
+  const [shopRes, driftRes, tgRes] = await Promise.all([
     db.execute(sql`
       SELECT s.id, s.name, s.marketplace, s.is_active,
              s.api_key_encrypted IS NOT NULL AS has_api_key,
@@ -76,7 +91,13 @@ export async function getSystemHealth(): Promise<SystemHealth> {
                                     AND p2.sku = p.sku)
        ORDER BY p.sku, s.marketplace
     `),
+    userId
+      ? db.select({ telegram_bot_token: userSettings.telegram_bot_token, telegram_chat_id: userSettings.telegram_chat_id })
+          .from(userSettings).where(eq(userSettings.user_id, userId)).limit(1)
+      : Promise.resolve([]),
   ])
+
+  const telegramConnected = tgRes.length > 0 && !!tgRes[0].telegram_bot_token && !!tgRes[0].telegram_chat_id
 
   const shops: ShopStatus[] = shopRes.rows.map(r => {
     const row = r as {
@@ -118,7 +139,66 @@ export async function getSystemHealth(): Promise<SystemHealth> {
     return { marketplace: row.marketplace, sku: row.sku, physicalStock: Number(row.physical_stock), groupMax: Number(row.group_max) }
   })
 
+  const uzumShops = shops.filter(s => s.marketplace === 'uzum')
+  const ymShops = shops.filter(s => s.marketplace === 'yandex_market')
+
+  function mpSyncStatus(mpShops: ShopStatus[]): ServiceRow {
+    const mp = mpShops[0]?.marketplace
+    const label = mp === 'uzum' ? 'Uzum Market' : 'Yandex Market'
+    const key = mp === 'uzum' ? 'sync_uzum' : 'sync_yandex'
+    if (mpShops.length === 0) return { name: label, key, status: 'down', detail: null }
+    const anyStale = mpShops.some(s => s.syncStale)
+    const allNoKey = mpShops.every(s => !s.hasApiKey)
+    if (allNoKey) return { name: label, key, status: 'down', detail: null }
+    if (anyStale) {
+      const worst = mpShops.reduce<number | null>((w, s) => {
+        if (s.stockSyncAgeMinutes == null) return w
+        return w == null ? s.stockSyncAgeMinutes : Math.max(w, s.stockSyncAgeMinutes)
+      }, null)
+      return { name: label, key, status: 'degraded', detail: worst != null ? String(worst) : null }
+    }
+    const best = mpShops.reduce<number | null>((b, s) => {
+      if (s.stockSyncAgeMinutes == null) return b
+      return b == null ? s.stockSyncAgeMinutes : Math.min(b, s.stockSyncAgeMinutes)
+    }, null)
+    return { name: label, key, status: 'operational', detail: best != null ? String(best) : null }
+  }
+
+  function mpApiStatus(mpShops: ShopStatus[]): ServiceRow {
+    const mp = mpShops[0]?.marketplace
+    const label = mp === 'uzum' ? 'Uzum API' : 'Yandex API'
+    const key = mp === 'uzum' ? 'api_uzum' : 'api_yandex'
+    if (mpShops.length === 0) return { name: label, key, status: 'down', detail: null }
+    const allNoKey = mpShops.every(s => !s.hasApiKey)
+    if (allNoKey) return { name: label, key, status: 'down', detail: null }
+    const anyThrottled = mpShops.some(s => s.throttledUntil && new Date(s.throttledUntil) > new Date())
+    const anyInvalid = mpShops.some(s => s.tokenValid === false)
+    if (anyInvalid) return { name: label, key, status: 'down', detail: null }
+    if (anyThrottled) return { name: label, key, status: 'degraded', detail: null }
+    return { name: label, key, status: 'operational', detail: null }
+  }
+
+  const services: ServiceRow[] = []
+  if (uzumShops.length > 0) {
+    services.push(mpSyncStatus(uzumShops))
+    services.push(mpApiStatus(uzumShops))
+  }
+  if (ymShops.length > 0) {
+    services.push(mpSyncStatus(ymShops))
+    services.push(mpApiStatus(ymShops))
+  }
+  services.push({
+    name: 'Telegram',
+    key: 'telegram',
+    status: telegramConnected ? 'operational' : 'down',
+    detail: null,
+  })
+
+  const overall: ServiceStatus = services.some(s => s.status === 'down') ? 'down'
+    : services.some(s => s.status === 'degraded') ? 'degraded'
+    : 'operational'
+
   const anyShopStale = shops.some(s => s.syncStale)
   const status: SystemHealth['status'] = anyShopStale ? 'error' : drift.length > 0 ? 'warn' : 'ok'
-  return { noShops: false, shops, syncAgeMinutes: worstAge, syncStale, drift, status, checkedAt }
+  return { noShops: false, shops, services, overall, syncAgeMinutes: worstAge, syncStale, drift, status, checkedAt, telegramConnected }
 }
