@@ -401,10 +401,10 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 const members = (p as Product & { _members?: Product[] })._members
                 const imgUrl = members?.find(m => m.image_url)?.image_url ?? p.image_url
                 return imgUrl ? (
-                  <img src={imgUrl} alt="" referrerPolicy="no-referrer" className="w-10 h-10 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+                  <img src={imgUrl} alt="" referrerPolicy="no-referrer" className="w-14 h-14 rounded-lg object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                 ) : (
-                  <div className="w-10 h-10 rounded shrink-0 flex items-center justify-center text-xs"
+                  <div className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center text-xs"
                     style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
                 )
               })()}
@@ -521,8 +521,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     const marketplaces = [...new Set(allListings.map(k => k.marketplace).filter(Boolean))] as MarketplaceType[]
     const isCrossMarketplace = marketplaces.length > 1
 
-    const variantStocksByMp = (mp: string): { color: string | null; sku: string | null; stock: number | null }[] =>
-      allListings.filter(k => k.marketplace === mp).map(k => ({ color: k.variant_color ?? null, sku: k.sku ?? null, stock: fbsUnits(k) }))
+    const variantStocksByMp = (mp: string): { color: string | null; sku: string | null; stock: number | null; title: string }[] =>
+      allListings.filter(k => k.marketplace === mp).map(k => ({ color: k.variant_color ?? null, sku: k.sku ?? null, stock: fbsUnits(k), title: k.title }))
 
     return (
       <tr style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg-card2)' }}
@@ -535,10 +535,10 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             {(() => {
               const groupImg = head.image_url ?? allListings.find(l => l.image_url)?.image_url
               return groupImg ? (
-                <img src={groupImg} alt="" referrerPolicy="no-referrer" className="w-10 h-10 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+                <img src={groupImg} alt="" referrerPolicy="no-referrer" className="w-14 h-14 rounded-lg object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
               ) : (
-                <div className="w-10 h-10 rounded shrink-0 flex items-center justify-center text-xs"
+                <div className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center text-xs"
                   style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
               )
             })()}
@@ -556,12 +556,12 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           </div>
         </td>
         {(() => {
-          const allVariants = allListings.map(k => ({ color: k.variant_color ?? null, sku: k.sku ?? null, stock: fbsUnits(k) }))
+          const allVariants = allListings.map(k => ({ color: k.variant_color ?? null, sku: k.sku ?? null, stock: fbsUnits(k), title: k.title }))
           if (allVariants.length === 0) return <FbsCell value={null} />
           if (allVariants.length === 1 && !allVariants[0].color) return <FbsCell value={allVariants[0].stock} />
           return (
             <td className="px-5 py-3 align-top">
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 {marketplaces.map(mp => {
                   const variants = variantStocksByMp(mp)
                   if (variants.length === 0) return null
@@ -574,15 +574,14 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                       )}
                       {variants.map((v, j) => {
                         const meta = v.color ? colorMetaFor(v.color) : null
-                        const colorName = v.color ? (COLOR_LABELS[v.color as ColorKey]?.[lang] ?? v.color) : null
                         return (
-                          <div key={j} className="flex items-center gap-1.5 text-xs min-w-[140px]">
+                          <div key={j} className="flex items-center gap-1.5 text-xs min-w-[180px]">
                             {meta && (
                               <span className="w-2.5 h-2.5 rounded-full shrink-0"
                                 style={{ backgroundColor: meta.hex, boxShadow: meta.ring ? 'inset 0 0 0 1px var(--border)' : undefined }} />
                             )}
-                            {colorName && <span className="truncate" style={{ color: 'var(--text-dim)' }}>{colorName}</span>}
-                            {v.sku && <span className="text-[10px] truncate" style={{ color: 'var(--text-muted)' }}>{v.sku}</span>}
+                            <span className="truncate max-w-[160px]" style={{ color: 'var(--text-dim)' }} title={v.title}>{v.title}</span>
+                            {v.sku && <span className="text-[10px] shrink-0" style={{ color: 'var(--text-muted)' }}>{v.sku}</span>}
                             <span className="ml-auto tabular-nums font-medium shrink-0"
                               style={{ color: v.stock != null && v.stock > 0 ? 'var(--text-base)' : v.stock === 0 ? '#ef4444' : 'var(--text-muted)' }}>
                               {v.stock ?? '—'}
