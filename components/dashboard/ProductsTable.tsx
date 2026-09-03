@@ -321,21 +321,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       if (allProducts.length === 1) {
         items.push({ type: 'flat', row: allProducts[0] })
       } else {
-        const children: Product[] = matchKeys.map(mk => {
-          const members = colorGroups.get(mk)!
-          if (members.length === 1) return members[0]
-          const rep = members[0]
-          const totalStock = members.reduce((s, m) => s + m.available_stock, 0)
-          const stockLabel = members
-            .map(m => `${(m.marketplace === 'uzum' ? 'UZ' : 'YM')} ${fbsUnits(m) ?? '—'}`)
-            .join(' · ')
-          return {
-            ...rep,
-            available_stock: totalStock,
-            _mpStockLabel: stockLabel,
-            _members: members,
-          } as Product & { _mpStockLabel?: string; _members?: Product[] }
-        })
+        const children: Product[] = matchKeys.flatMap(mk => colorGroups.get(mk)!)
         items.push({
           type: 'parent',
           key: matchKeys.sort()[0],
@@ -383,8 +369,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   // siblings — the colour and the SKU. Store and fulfillment badges live on the
   // parent, where they describe the whole group instead of repeating down the
   // column.
-  const renderRow = (p: Product & { _mpStockLabel?: string; _members?: Product[] }, isChild = false, groupTitle?: string) => {
-    const isMergedColor = !!(p as { _members?: Product[] })._members
+  const renderRow = (p: Product, isChild = false, groupTitle?: string) => {
     const price  = Number(p.selling_price ?? 0)
     const margin = p.profit != null && price > 0
       ? Number(((p.profit / price) * 100).toFixed(1)) : null
@@ -397,51 +382,26 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           onClick={() => setEditingId(isEditing ? null : p.id)}>
           <td className="px-5 py-4" style={isChild ? { paddingLeft: '2.75rem', borderLeft: '2px solid var(--border)' } : undefined}>
             <div className="flex items-center gap-2">
-              {(() => {
-                const members = (p as Product & { _members?: Product[] })._members
-                const imgUrl = members?.find(m => m.image_url)?.image_url ?? p.image_url
-                return imgUrl ? (
-                  <img src={imgUrl} alt="" referrerPolicy="no-referrer" className="w-14 h-14 rounded-lg object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                ) : (
-                  <div className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center text-xs"
-                    style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
-                )
-              })()}
+              {p.image_url ? (
+                <img src={p.image_url} alt="" referrerPolicy="no-referrer" className="w-14 h-14 rounded-lg object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+              ) : (
+                <div className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center text-xs"
+                  style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
+              )}
               <div>
-                {(!isChild || (groupTitle !== undefined && p.title !== groupTitle)) && (
-                  <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
-                )}
+                <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
                 <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
                   {isChild && <VariantColorChip colorKey={p.variant_color} lang={lang} />}
                   <span className={isChild ? "text-xs font-medium" : "text-xs"} style={{ color: isChild ? 'var(--text-dim)' : 'var(--text-muted)' }}>{p.sku}</span>
-                  {isMergedColor
-                    ? p._members!.map(m => m.marketplace && <MpBadge key={m.id} mp={m.marketplace} />)
-                    : p.marketplace && <MpBadge mp={p.marketplace} />}
+                  {p.marketplace && <MpBadge mp={p.marketplace} />}
                   {!isChild && <FulfillmentBadge type={p.fulfillment_type} />}
-                  {p.is_shared && (
-                    <span
-                      className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-                      style={{ background: 'rgba(168,85,247,0.12)', color: '#a855f7' }}
-                      title={lang === 'ru' ? 'Этот SKU распределён между несколькими магазинами' : lang === 'en' ? 'This SKU is shared across several stores' : "Bu SKU bir nechta do'kon o'rtasida bo'linadi"}
-                    >
-                      {lang === 'ru' ? 'Общий' : lang === 'en' ? 'Shared' : 'Umumiy'}
-                    </span>
-                  )}
                   {!isChild && <ColorBadge title={p.title} />}
                 </div>
               </div>
             </div>
           </td>
-          {isMergedColor ? (
-            <td className="px-5 py-4 text-right tabular-nums text-xs" style={{ color: 'var(--text-base)' }}>
-              {p._members!.map((m, i) => {
-                const v = fbsUnits(m)
-                const label = MP_META[m.marketplace!]?.short ?? m.marketplace
-                return <span key={m.id}>{i > 0 && ' · '}<span style={{ color: v != null && v > 0 ? 'var(--text-base)' : v === 0 ? '#ef4444' : 'var(--text-muted)' }}>{label} {v ?? '—'}</span></span>
-              })}
-            </td>
-          ) : <FbsCell value={fbsUnits(p)} />}
+          <FbsCell value={fbsUnits(p)} />
           <td className="px-5 py-4">
             <span className="text-xs px-2.5 py-1 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>{catDisplay(p.category, lang, p.title)}</span>
           </td>
@@ -514,10 +474,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     const marginColor = margin == null ? 'var(--text-muted)'
       : margin > 35 ? '#10b981' : margin > 20 ? '#f59e0b' : '#ef4444'
 
-    // Flatten children's _members to get all real listings
-    const allListings = kids.flatMap(k =>
-      (k as Product & { _members?: Product[] })._members ?? [k]
-    )
+    const allListings = kids
     const marketplaces = [...new Set(allListings.map(k => k.marketplace).filter(Boolean))] as MarketplaceType[]
     const isCrossMarketplace = marketplaces.length > 1
 
