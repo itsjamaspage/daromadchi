@@ -383,10 +383,10 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           <td className="px-5 py-4" style={isChild ? { paddingLeft: '2.75rem', borderLeft: '2px solid var(--border)' } : undefined}>
             <div className="flex items-center gap-2">
               {p.image_url ? (
-                <img src={p.image_url} alt="" referrerPolicy="no-referrer" className="w-14 h-14 rounded-lg object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+                <img src={p.image_url} alt="" referrerPolicy="no-referrer" className="w-14 h-20 rounded-lg object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
               ) : (
-                <div className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center text-xs"
+                <div className="w-14 h-20 rounded-lg shrink-0 flex items-center justify-center text-xs"
                   style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
               )}
               <div>
@@ -492,10 +492,10 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             {(() => {
               const groupImg = head.image_url ?? allListings.find(l => l.image_url)?.image_url
               return groupImg ? (
-                <img src={groupImg} alt="" referrerPolicy="no-referrer" className="w-14 h-14 rounded-lg object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+                <img src={groupImg} alt="" referrerPolicy="no-referrer" className="w-14 h-20 rounded-lg object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
               ) : (
-                <div className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center text-xs"
+                <div className="w-14 h-20 rounded-lg shrink-0 flex items-center justify-center text-xs"
                   style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
               )
             })()}
