@@ -7,7 +7,7 @@ import FilterBar from './FilterBar'
 import FulfillmentBadge from './FulfillmentBadge'
 import MpBadge, { MP_META } from './MpBadge'
 import { ColorBadge } from '@/components/ColorBadge'
-import { COLOR_LABELS, COLOR_SHORT, colorMetaFor, type ColorKey } from '@/lib/products/resolveColor'
+import { COLOR_LABELS, colorMetaFor, type ColorKey } from '@/lib/products/resolveColor'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import { ALL_CAT, catKey, catDisplay, buildCategoryList } from '@/lib/filters/category-helpers'
@@ -521,8 +521,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     const marketplaces = [...new Set(allListings.map(k => k.marketplace).filter(Boolean))] as MarketplaceType[]
     const isCrossMarketplace = marketplaces.length > 1
 
-    const variantStocksByMp = (mp: string): { color: string | null; stock: number | null }[] =>
-      allListings.filter(k => k.marketplace === mp).map(k => ({ color: k.variant_color ?? null, stock: fbsUnits(k) }))
+    const variantStocksByMp = (mp: string): { color: string | null; sku: string | null; stock: number | null }[] =>
+      allListings.filter(k => k.marketplace === mp).map(k => ({ color: k.variant_color ?? null, sku: k.sku ?? null, stock: fbsUnits(k) }))
 
     return (
       <tr style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg-card2)' }}
@@ -555,52 +555,45 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             </div>
           </div>
         </td>
-        {isCrossMarketplace ? (
-          <td className="px-5 py-4 text-right tabular-nums text-xs" style={{ color: 'var(--text-base)' }}>
-            {marketplaces.map((mp, i) => {
-              const variants = variantStocksByMp(mp)
-              const label = MP_META[mp]?.short ?? mp
-              return (
-                <span key={mp}>
-                  {i > 0 && ' · '}
-                  <span>{label} </span>
-                  {variants.length === 0
-                    ? <span style={{ color: 'var(--text-muted)' }}>—</span>
-                    : variants.map((v, j) => {
-                        const short = v.color ? (COLOR_SHORT[v.color as ColorKey]?.[lang] ?? v.color) : null
+        {(() => {
+          const allVariants = allListings.map(k => ({ color: k.variant_color ?? null, sku: k.sku ?? null, stock: fbsUnits(k) }))
+          if (allVariants.length === 0) return <FbsCell value={null} />
+          if (allVariants.length === 1 && !allVariants[0].color) return <FbsCell value={allVariants[0].stock} />
+          return (
+            <td className="px-5 py-3 align-top">
+              <div className="flex flex-col gap-1.5">
+                {marketplaces.map(mp => {
+                  const variants = variantStocksByMp(mp)
+                  if (variants.length === 0) return null
+                  return (
+                    <div key={mp} className="flex flex-col gap-1">
+                      {isCrossMarketplace && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+                          {MP_META[mp]?.short ?? mp}
+                        </span>
+                      )}
+                      {variants.map((v, j) => {
+                        const meta = v.color ? colorMetaFor(v.color) : null
+                        const colorName = v.color ? (COLOR_LABELS[v.color as ColorKey]?.[lang] ?? v.color) : null
                         return (
-                          <span key={j}>
-                            {j > 0 && <span style={{ color: 'var(--text-muted)' }}> · </span>}
-                            {short && <span style={{ color: 'var(--text-muted)' }}>{short} </span>}
-                            <span style={{ color: v.stock != null && v.stock > 0 ? 'var(--text-base)' : v.stock === 0 ? '#ef4444' : 'var(--text-muted)' }}>
+                          <div key={j} className="flex items-center gap-1.5 text-xs min-w-[140px]">
+                            {meta && (
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: meta.hex, boxShadow: meta.ring ? 'inset 0 0 0 1px var(--border)' : undefined }} />
+                            )}
+                            {colorName && <span className="truncate" style={{ color: 'var(--text-dim)' }}>{colorName}</span>}
+                            {v.sku && <span className="text-[10px] truncate" style={{ color: 'var(--text-muted)' }}>{v.sku}</span>}
+                            <span className="ml-auto tabular-nums font-medium shrink-0"
+                              style={{ color: v.stock != null && v.stock > 0 ? 'var(--text-base)' : v.stock === 0 ? '#ef4444' : 'var(--text-muted)' }}>
                               {v.stock ?? '—'}
                             </span>
-                          </span>
+                          </div>
                         )
-                      })
-                  }
-                </span>
-              )
-            })}
-          </td>
-        ) : (() => {
-          const variants = allListings.map(k => ({ color: k.variant_color ?? null, stock: fbsUnits(k) }))
-          if (variants.length === 0) return <FbsCell value={null} />
-          if (variants.length === 1) return <FbsCell value={variants[0].stock} />
-          return (
-            <td className="px-5 py-4 text-right tabular-nums text-xs" style={{ color: 'var(--text-base)' }}>
-              {variants.map((v, j) => {
-                const short = v.color ? (COLOR_SHORT[v.color as ColorKey]?.[lang] ?? v.color) : null
-                return (
-                  <span key={j}>
-                    {j > 0 && <span style={{ color: 'var(--text-muted)' }}> · </span>}
-                    {short && <span style={{ color: 'var(--text-muted)' }}>{short} </span>}
-                    <span style={{ color: v.stock != null && v.stock > 0 ? 'var(--text-base)' : v.stock === 0 ? '#ef4444' : 'var(--text-muted)' }}>
-                      {v.stock ?? '—'}
-                    </span>
-                  </span>
-                )
-              })}
+                      })}
+                    </div>
+                  )
+                })}
+              </div>
             </td>
           )
         })()}
