@@ -431,13 +431,16 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
             <span className="shrink-0" style={{ color: 'var(--text-muted)' }}>
               {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </span>
-            {item.representative.row.image_url ? (
-              <img src={item.representative.row.image_url} alt="" referrerPolicy="no-referrer" className="w-9 h-9 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-            ) : (
-              <div className="w-9 h-9 rounded shrink-0 flex items-center justify-center text-xs"
-                style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
-            )}
+            {(() => {
+              const groupImg = item.representative.row.image_url ?? rows.find(r => r.image_url)?.image_url
+              return groupImg ? (
+                <img src={groupImg} alt="" referrerPolicy="no-referrer" className="w-9 h-9 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+              ) : (
+                <div className="w-9 h-9 rounded shrink-0 flex items-center justify-center text-xs"
+                  style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
+              )
+            })()}
             <p className="font-semibold line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={item.representative.row.title}>{item.representative.row.title}</p>
             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
               style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>
