@@ -50,6 +50,25 @@ async function pub<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
+// Fetch the first photo URL for a product by its public productId.
+// The seller API does not return photos; this fills the gap.
+export async function fetchProductPhoto(productId: number): Promise<string | null> {
+  try {
+    const data = await pub<{
+      payload?: { data?: { photos?: Array<{ photo?: { high?: string; low?: string }; photoKey?: string; key?: string }> } }
+    }>(`/api/v2/product/${productId}`)
+    const photos = data?.payload?.data?.photos
+    if (!photos?.length) return null
+    const p = photos[0]
+    const url = p.photo?.high ?? p.photo?.low
+    if (url) return url
+    const key = p.photoKey ?? p.key
+    return key ? `https://images.uzum.uz/${key}/t_product_240_high.jpg` : null
+  } catch {
+    return null
+  }
+}
+
 // ─── API calls ────────────────────────────────────────────────────────────────
 
 export async function getRootCategories(): Promise<UzumPublicCategory[]> {

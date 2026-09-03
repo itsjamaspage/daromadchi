@@ -18,6 +18,7 @@ import {
   type UzumFbsOrderItem,
   type UzumSku,
 } from './client'
+import { fetchProductPhoto } from './public'
 import { resolveColor } from '@/lib/products/resolveColor'
 import { buildVariantIndex, resolveVariant } from '@/lib/uzum/variant-match'
 import { withShopLock } from '@/lib/db/shop-lock'
@@ -368,6 +369,35 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
           }
           const total = res.totalProductsAmount ?? 0
           if (list.length < size || (page + 1) * size >= total) break
+        }
+      }
+
+      // The seller API does not return photos — fill from the public API.
+      const needPhoto = new Map<number, string[]>()
+      for (const r of productRows) {
+        if (r.image_url) continue
+        const m = r.variant_group_key?.match(/^uzum:(\d+)$/)
+        if (m) {
+          const pid = Number(m[1])
+          const list = needPhoto.get(pid)
+          if (list) list.push(r.marketplace_product_id)
+          else needPhoto.set(pid, [r.marketplace_product_id])
+        }
+      }
+      if (needPhoto.size > 0) {
+        const entries = [...needPhoto.entries()]
+        const BATCH = 5
+        for (let i = 0; i < entries.length; i += BATCH) {
+          const batch = entries.slice(i, i + BATCH)
+          const results = await Promise.all(batch.map(([pid]) => fetchProductPhoto(pid)))
+          for (let j = 0; j < batch.length; j++) {
+            const url = results[j]
+            if (!url) continue
+            for (const mpId of batch[j][1]) {
+              const row = productRows.find(r => r.marketplace_product_id === mpId)
+              if (row) row.image_url = url
+            }
+          }
         }
       }
 
