@@ -333,7 +333,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
             const cardArchived = card.status?.value === 'ARCHIVED'
             const cardImageUrl = card.photos?.[0]?.link?.high
               ?? card.photos?.[0]?.link?.low
-              ?? (card.photos?.[0]?.photoKey ? `https://images.uzum.uz/${card.photos[0].photoKey}/t_product_240_high.jpg` : null)
+              ?? (card.photos?.[0]?.photoKey ? `https://images.uzum.uz/${card.photos[0].photoKey}/t_product_540_high.jpg` : null)
             for (const sku of card.skuList ?? []) {
               const isArchived = cardArchived || sku.archived === true || sku.status?.value === 'ARCHIVED'
               productRows.push({
