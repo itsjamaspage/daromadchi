@@ -63,7 +63,7 @@ export async function fetchProductPhoto(productId: number): Promise<string | nul
     const url = p.photo?.high ?? p.photo?.low
     if (url) return url
     const key = p.photoKey ?? p.key
-    return key ? `https://images.uzum.uz/${key}/t_product_240_high.jpg` : null
+    return key ? `https://images.uzum.uz/${key}/t_product_540_high.jpg` : null
   } catch {
     return null
   }

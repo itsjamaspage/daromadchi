@@ -36,8 +36,8 @@ function VariantColorChip({ colorKey, lang }: { colorKey: string | null | undefi
   if (!meta || !colorKey) return null
   const name = COLOR_LABELS[colorKey as ColorKey]?.[lang] ?? colorKey
   return (
-    <span className="inline-flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-      <span className="h-2.5 w-2.5 rounded-full"
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--text-dim)' }}>
+      <span className="h-3 w-3 rounded-full shrink-0"
         style={{ backgroundColor: meta.hex, boxShadow: meta.ring ? 'inset 0 0 0 1px var(--border)' : undefined }} />
       {name}
     </span>
@@ -414,7 +414,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 )}
                 <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
                   {isChild && <VariantColorChip colorKey={p.variant_color} lang={lang} />}
-                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
+                  <span className={isChild ? "text-xs font-medium" : "text-xs"} style={{ color: isChild ? 'var(--text-dim)' : 'var(--text-muted)' }}>{p.sku}</span>
                   {isMergedColor
                     ? p._members!.map(m => m.marketplace && <MpBadge key={m.id} mp={m.marketplace} />)
                     : p.marketplace && <MpBadge mp={p.marketplace} />}
@@ -521,21 +521,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     const marketplaces = [...new Set(allListings.map(k => k.marketplace).filter(Boolean))] as MarketplaceType[]
     const isCrossMarketplace = marketplaces.length > 1
 
-    const fbsStocksByMp = (mp: string): number[] =>
-      allListings.filter(k => k.marketplace === mp).map(fbsUnits).filter((v): v is number => v != null)
-
-    const StockPerVariant = ({ vals, label }: { vals: number[]; label: string }) => {
-      if (vals.length === 0) return <span style={{ color: 'var(--text-muted)' }}>{label} —</span>
-      if (vals.length === 1) {
-        const v = vals[0]
-        return <span style={{ color: v > 0 ? 'var(--text-base)' : '#ef4444' }}>{label} {v}</span>
-      }
-      const allZero = vals.every(v => v === 0)
-      return (
-        <span style={{ color: allZero ? '#ef4444' : 'var(--text-base)' }}>
-          {label} {vals.join('+')}
-        </span>
-      )
+    const fbsTotalByMp = (mp: string): number | null => {
+      const vals = allListings.filter(k => k.marketplace === mp).map(fbsUnits).filter((v): v is number => v != null)
+      return vals.length === 0 ? null : vals.reduce((s, v) => s + v, 0)
     }
 
     return (
@@ -572,21 +560,23 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         {isCrossMarketplace ? (
           <td className="px-5 py-4 text-right tabular-nums text-xs" style={{ color: 'var(--text-base)' }}>
             {marketplaces.map((mp, i) => {
-              const vals = fbsStocksByMp(mp)
+              const v = fbsTotalByMp(mp)
               const label = MP_META[mp]?.short ?? mp
-              return <span key={mp}>{i > 0 && ' · '}<StockPerVariant vals={vals} label={label} /></span>
+              return (
+                <span key={mp}>
+                  {i > 0 && ' · '}
+                  <span style={{ color: v != null && v > 0 ? 'var(--text-base)' : v === 0 ? '#ef4444' : 'var(--text-muted)' }}>
+                    {label} {v ?? '—'}
+                  </span>
+                </span>
+              )
             })}
           </td>
         ) : (() => {
           const vals = allListings.map(fbsUnits).filter((v): v is number => v != null)
-          if (vals.length <= 1) return <FbsCell value={vals[0] ?? null} />
-          const allZero = vals.every(v => v === 0)
-          return (
-            <td className="px-5 py-4 text-right tabular-nums"
-              style={{ color: allZero ? '#ef4444' : 'var(--text-base)' }}>
-              {vals.join('+')}
-            </td>
-          )
+          if (vals.length === 0) return <FbsCell value={null} />
+          const total = vals.reduce((s, v) => s + v, 0)
+          return <FbsCell value={total} />
         })()}
         <td className="px-5 py-4">
           <span className="text-xs px-2.5 py-1 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>{catDisplay(category, lang, head.title)}</span>
