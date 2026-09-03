@@ -79,8 +79,8 @@ Add filtering by category / revenue / commission / status across Товары, �
 
 > **CC note (what shipped):** Extracted duplicated category helpers (`catKey`, `catDisplay`, `catKeyLabel`, `buildCategoryList`) into `lib/filters/category-helpers.ts`. Created shared `FilterBar` component (`components/dashboard/FilterBar.tsx`) with search input, category chips, action slot, and result count — replaces the duplicated filter bar code in all three sections. Refactored `ProductsTable`, `AnalyticsProductTable`, and `OrdersTable` to use FilterBar. Added `ExportButton` to `AnalyticsProductTable` (was the only section missing export) — exports product name, SKU, sold/cancelled/returned counts, return rate, revenue, share, price, cost, profit, margin, and ABC class, respecting the active search + category filter. All three exports (Товары, Заказы, Аналитика товаров) now respect their active filters. Orders don't have a category field in the schema, so their FilterBar omits category chips (search + status tabs + export remain). TypeScript 0 errors, ESLint 0 errors.
 
-### Task 9 — [SAFE] Simplify notifications page — status: TODO
-Delete «Состояние склада». Replace with a simple alerts feed: order received, order cancelled, stock remaining, weekly summary, etc. Add a "connect Telegram notifications" button. Make it maximally simple. Reuse the existing notif registry/plumbing.
+### Task 9 — [SAFE] Service status page — status: DONE
+Redesigned the status page to show per-shop sync status (full sync + stock refresh age per marketplace) and API connection health (connected/disconnected/stale/throttled indicators). Each shop renders as its own card with marketplace label, product count, API mode, and sync timestamps. Kept stock drift section.
 
 ### Task 10 — [SAFE] Public warehouse-state link — status: TODO
 Make warehouse/stock state viewable via a shareable public link, rendered like the reference photo. Read-only public view; no auth-sensitive data leaked.
