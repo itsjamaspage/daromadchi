@@ -7,7 +7,7 @@ import FilterBar from './FilterBar'
 import FulfillmentBadge from './FulfillmentBadge'
 import MpBadge, { MP_META } from './MpBadge'
 import { ColorBadge } from '@/components/ColorBadge'
-import { COLOR_LABELS, colorMetaFor, type ColorKey } from '@/lib/products/resolveColor'
+import { COLOR_LABELS, COLOR_SHORT, colorMetaFor, type ColorKey } from '@/lib/products/resolveColor'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import { ALL_CAT, catKey, catDisplay, buildCategoryList } from '@/lib/filters/category-helpers'
@@ -521,10 +521,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     const marketplaces = [...new Set(allListings.map(k => k.marketplace).filter(Boolean))] as MarketplaceType[]
     const isCrossMarketplace = marketplaces.length > 1
 
-    const fbsTotalByMp = (mp: string): number | null => {
-      const vals = allListings.filter(k => k.marketplace === mp).map(fbsUnits).filter((v): v is number => v != null)
-      return vals.length === 0 ? null : vals.reduce((s, v) => s + v, 0)
-    }
+    const variantStocksByMp = (mp: string): { color: string | null; stock: number | null }[] =>
+      allListings.filter(k => k.marketplace === mp).map(k => ({ color: k.variant_color ?? null, stock: fbsUnits(k) }))
 
     return (
       <tr style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg-card2)' }}
@@ -560,23 +558,51 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         {isCrossMarketplace ? (
           <td className="px-5 py-4 text-right tabular-nums text-xs" style={{ color: 'var(--text-base)' }}>
             {marketplaces.map((mp, i) => {
-              const v = fbsTotalByMp(mp)
+              const variants = variantStocksByMp(mp)
               const label = MP_META[mp]?.short ?? mp
               return (
                 <span key={mp}>
                   {i > 0 && ' · '}
-                  <span style={{ color: v != null && v > 0 ? 'var(--text-base)' : v === 0 ? '#ef4444' : 'var(--text-muted)' }}>
-                    {label} {v ?? '—'}
-                  </span>
+                  <span>{label} </span>
+                  {variants.length === 0
+                    ? <span style={{ color: 'var(--text-muted)' }}>—</span>
+                    : variants.map((v, j) => {
+                        const short = v.color ? (COLOR_SHORT[v.color as ColorKey]?.[lang] ?? v.color) : null
+                        return (
+                          <span key={j}>
+                            {j > 0 && <span style={{ color: 'var(--text-muted)' }}> · </span>}
+                            {short && <span style={{ color: 'var(--text-muted)' }}>{short} </span>}
+                            <span style={{ color: v.stock != null && v.stock > 0 ? 'var(--text-base)' : v.stock === 0 ? '#ef4444' : 'var(--text-muted)' }}>
+                              {v.stock ?? '—'}
+                            </span>
+                          </span>
+                        )
+                      })
+                  }
                 </span>
               )
             })}
           </td>
         ) : (() => {
-          const vals = allListings.map(fbsUnits).filter((v): v is number => v != null)
-          if (vals.length === 0) return <FbsCell value={null} />
-          const total = vals.reduce((s, v) => s + v, 0)
-          return <FbsCell value={total} />
+          const variants = allListings.map(k => ({ color: k.variant_color ?? null, stock: fbsUnits(k) }))
+          if (variants.length === 0) return <FbsCell value={null} />
+          if (variants.length === 1) return <FbsCell value={variants[0].stock} />
+          return (
+            <td className="px-5 py-4 text-right tabular-nums text-xs" style={{ color: 'var(--text-base)' }}>
+              {variants.map((v, j) => {
+                const short = v.color ? (COLOR_SHORT[v.color as ColorKey]?.[lang] ?? v.color) : null
+                return (
+                  <span key={j}>
+                    {j > 0 && <span style={{ color: 'var(--text-muted)' }}> · </span>}
+                    {short && <span style={{ color: 'var(--text-muted)' }}>{short} </span>}
+                    <span style={{ color: v.stock != null && v.stock > 0 ? 'var(--text-base)' : v.stock === 0 ? '#ef4444' : 'var(--text-muted)' }}>
+                      {v.stock ?? '—'}
+                    </span>
+                  </span>
+                )
+              })}
+            </td>
+          )
         })()}
         <td className="px-5 py-4">
           <span className="text-xs px-2.5 py-1 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>{catDisplay(category, lang, head.title)}</span>

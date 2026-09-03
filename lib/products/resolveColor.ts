@@ -47,6 +47,21 @@ export const COLOR_LABELS: Record<ColorKey, Record<BadgeLang, string>> = {
   beige:  { uz: 'Bej',      ru: 'Бежевый',     en: 'Beige'  },
 }
 
+export const COLOR_SHORT: Record<ColorKey, Record<BadgeLang, string>> = {
+  black:  { uz: 'qor',  ru: 'чер', en: 'blk' },
+  white:  { uz: 'oq',   ru: 'бел', en: 'wht' },
+  blue:   { uz: "ko'k", ru: 'син', en: 'blu' },
+  red:    { uz: 'qiz',  ru: 'кра', en: 'red' },
+  green:  { uz: 'yash', ru: 'зел', en: 'grn' },
+  gray:   { uz: 'kul',  ru: 'сер', en: 'gry' },
+  gold:   { uz: 'til',  ru: 'зол', en: 'gld' },
+  pink:   { uz: 'psh',  ru: 'роз', en: 'pnk' },
+  purple: { uz: 'bin',  ru: 'фио', en: 'pur' },
+  yellow: { uz: 'sar',  ru: 'жел', en: 'yel' },
+  brown:  { uz: 'jig',  ru: 'кор', en: 'brn' },
+  beige:  { uz: 'bej',  ru: 'беж', en: 'bei' },
+}
+
 // Swatch metadata by resolved colour key — the companion to COLOR_LABELS, so a
 // consumer holding a stored colour KEY (e.g. products.variant_color) can render
 // the same swatch as ColorBadge without re-parsing a title. Null for unknown keys.
