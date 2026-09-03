@@ -118,16 +118,13 @@ type PoolMember = { fulfillment_type: string | null; stock: number; physical_sto
 const isFbo = (m: PoolMember) => m.fulfillment_type === 'fbo' || m.fulfillment_type === 'fby'
 
 /**
- * Real on-hand pool for a cross-marketplace group, from physical_stock — the SAME
- * source the sync engine reads (rawGroupAvailable uses `physicalStock ?? listedStock`).
+ * On-hand pool for display: uses the marketplace API's own reported stock
+ * (stock_quantity) — the authoritative number the seller sees in their cabinet.
  *   FBO/FBY → SUM  (each marketplace holds independent warehouse inventory)
  *   FBS/unknown → MAX (one physical pool listed on every marketplace)
- * Falls back to the listing number only to SEED a member whose physical_stock is
- * still NULL, exactly as the engine does. NEVER subtract pending from this and then
- * from the listing too — that is the double-count this exists to prevent.
  */
 export function poolOnHand(members: readonly PoolMember[]): number {
-  const pool = (m: PoolMember) => Math.max(0, m.physical_stock ?? m.stock)
+  const pool = (m: PoolMember) => Math.max(0, m.stock)
   const fbo = members.filter(isFbo).reduce((s, m) => s + pool(m), 0)
   const fbsMembers = members.filter(m => !isFbo(m))
   const fbs = fbsMembers.length > 0 ? Math.max(0, ...fbsMembers.map(pool)) : 0
@@ -355,8 +352,7 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
     const stockSplit = groupListedStockSplit(members)
     const totalStock = stockSplit.fbo + stockSplit.fbs
 
-    // The real on-hand pool: physical_stock (the SAME source the sync engine reads
-    // — poolOnHand mirrors rawGroupAvailable's `physicalStock ?? listedStock`).
+    // On-hand from the marketplace API's own reported stock.
     const physicalOnHand = poolOnHand(members)
 
     const hasBaseline = link?.total_physical_stock != null && link.baseline_at != null
