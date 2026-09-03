@@ -95,10 +95,10 @@ const _fetchProducts = unstable_cache(
       groupMaxStock.set(key, Math.max(groupMaxStock.get(key) ?? 0, p.stock_quantity))
       const isFbs = p.fulfillment_type === 'fbs' || p.fulfillment_type === null
       if (isFbs) {
-        groupFbsMax.set(key, Math.max(groupFbsMax.get(key) ?? 0, p.physical_stock ?? p.stock_quantity))
+        groupFbsMax.set(key, Math.max(groupFbsMax.get(key) ?? 0, p.stock_quantity))
         groupTotalPending.set(key, (groupTotalPending.get(key) ?? 0) + (inTransitByProductId.get(p.id) ?? 0))
       } else {
-        groupFboSum.set(key, (groupFboSum.get(key) ?? 0) + (p.physical_stock ?? p.stock_quantity))
+        groupFboSum.set(key, (groupFboSum.get(key) ?? 0) + p.stock_quantity)
       }
     }
 
@@ -110,10 +110,9 @@ const _fetchProducts = unstable_cache(
       const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
       const key = p.sku ? p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
-      // Pool = physical_stock (real on-hand), NOT stock_quantity (the listing mirror
-      // the marketplace already decremented for this order). Reading the mirror here
-      // subtracted the order twice → 0 shown with a sellable unit on hand.
-      const availableStock = Math.max(0, (p.physical_stock ?? p.stock_quantity) - dbInTransit)
+      // Display the marketplace API's own reported stock — the authoritative
+      // number the seller sees in their cabinet.
+      const availableStock = p.stock_quantity
       const totalPhysical = key
         ? (groupFbsMax.get(key) ?? 0) + (groupFboSum.get(key) ?? 0)
         : p.stock_quantity
@@ -156,7 +155,7 @@ const _fetchProducts = unstable_cache(
   // v11: added price_override / stock_override. Bumped for the same reason v10
   // was — a cached v10 row lacks the new keys, so Analytics would read every
   // override as unset for up to the revalidate window after a deploy.
-  ['products-v12'],
+  ['products-v13'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
@@ -642,10 +641,10 @@ const _fetchProductsPaginated = unstable_cache(
       groupMaxStock.set(key, Math.max(groupMaxStock.get(key) ?? 0, p.stock_quantity))
       const isFbs = p.fulfillment_type === 'fbs' || p.fulfillment_type === null
       if (isFbs) {
-        groupFbsMax.set(key, Math.max(groupFbsMax.get(key) ?? 0, p.physical_stock ?? p.stock_quantity))
+        groupFbsMax.set(key, Math.max(groupFbsMax.get(key) ?? 0, p.stock_quantity))
         groupTotalPending.set(key, (groupTotalPending.get(key) ?? 0) + (inTransitMap.get(p.id) ?? 0))
       } else {
-        groupFboSum.set(key, (groupFboSum.get(key) ?? 0) + (p.physical_stock ?? p.stock_quantity))
+        groupFboSum.set(key, (groupFboSum.get(key) ?? 0) + p.stock_quantity)
       }
     }
 
@@ -659,10 +658,9 @@ const _fetchProductsPaginated = unstable_cache(
       const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
       const key = p.sku ? p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
-      // Pool = physical_stock (real on-hand), NOT stock_quantity (the listing mirror
-      // the marketplace already decremented for this order). Reading the mirror here
-      // subtracted the order twice → 0 shown with a sellable unit on hand.
-      const availableStock = Math.max(0, (p.physical_stock ?? p.stock_quantity) - dbInTransit)
+      // Display the marketplace API's own reported stock — the authoritative
+      // number the seller sees in their cabinet.
+      const availableStock = p.stock_quantity
       const totalPhysical = key
         ? (groupFbsMax.get(key) ?? 0) + (groupFboSum.get(key) ?? 0)
         : p.stock_quantity
@@ -703,7 +701,7 @@ const _fetchProductsPaginated = unstable_cache(
 
     return { rows, total, archivedTotal }
   },
-  ['products-paginated-rpc-v6'],
+  ['products-paginated-rpc-v7'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
