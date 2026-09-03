@@ -330,7 +330,7 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
         {col('product', <td className="px-5 py-3.5" style={isChild ? { paddingLeft: '2.75rem', borderLeft: '2px solid var(--border)' } : undefined}>
           <div className="flex items-center gap-2">
             {p.image_url ? (
-              <img src={p.image_url} alt="" className="w-9 h-9 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+              <img src={p.image_url} alt="" referrerPolicy="no-referrer" className="w-9 h-9 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
             ) : (
               <div className="w-9 h-9 rounded shrink-0 flex items-center justify-center text-xs"
@@ -432,7 +432,7 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
               {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </span>
             {item.representative.row.image_url ? (
-              <img src={item.representative.row.image_url} alt="" className="w-9 h-9 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+              <img src={item.representative.row.image_url} alt="" referrerPolicy="no-referrer" className="w-9 h-9 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
             ) : (
               <div className="w-9 h-9 rounded shrink-0 flex items-center justify-center text-xs"

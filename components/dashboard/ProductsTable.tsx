@@ -400,7 +400,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
               {(() => {
                 const imgUrl = (p as Product & { _members?: Product[] })._members?.[0]?.image_url ?? p.image_url
                 return imgUrl ? (
-                  <img src={imgUrl} alt="" className="w-10 h-10 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+                  <img src={imgUrl} alt="" referrerPolicy="no-referrer" className="w-10 h-10 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                 ) : (
                   <div className="w-10 h-10 rounded shrink-0 flex items-center justify-center text-xs"
@@ -536,7 +536,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
               {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </span>
             {head.image_url ? (
-              <img src={head.image_url} alt="" className="w-10 h-10 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+              <img src={head.image_url} alt="" referrerPolicy="no-referrer" className="w-10 h-10 rounded object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
             ) : (
               <div className="w-10 h-10 rounded shrink-0 flex items-center justify-center text-xs"
