@@ -521,8 +521,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     const marketplaces = [...new Set(allListings.map(k => k.marketplace).filter(Boolean))] as MarketplaceType[]
     const isCrossMarketplace = marketplaces.length > 1
 
-    const variantStocksByMp = (mp: string): { color: string | null; sku: string | null; stock: number | null; title: string }[] =>
-      allListings.filter(k => k.marketplace === mp).map(k => ({ color: k.variant_color ?? null, sku: k.sku ?? null, stock: fbsUnits(k), title: k.title }))
+    const variantStocksByMp = (mp: string): { color: string | null; sku: string | null; stock: number | null }[] =>
+      allListings.filter(k => k.marketplace === mp).map(k => ({ color: k.variant_color ?? null, sku: k.sku ?? null, stock: fbsUnits(k) }))
 
     return (
       <tr style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg-card2)' }}
@@ -556,7 +556,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           </div>
         </td>
         {(() => {
-          const allVariants = allListings.map(k => ({ color: k.variant_color ?? null, sku: k.sku ?? null, stock: fbsUnits(k), title: k.title }))
+          const allVariants = allListings.map(k => ({ color: k.variant_color ?? null, sku: k.sku ?? null, stock: fbsUnits(k) }))
           if (allVariants.length === 0) return <FbsCell value={null} />
           if (allVariants.length === 1 && !allVariants[0].color) return <FbsCell value={allVariants[0].stock} />
           return (
@@ -575,13 +575,12 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                       {variants.map((v, j) => {
                         const meta = v.color ? colorMetaFor(v.color) : null
                         return (
-                          <div key={j} className="flex items-center gap-1.5 text-xs min-w-[180px]">
+                          <div key={j} className="flex items-center gap-1.5 text-xs">
                             {meta && (
                               <span className="w-2.5 h-2.5 rounded-full shrink-0"
                                 style={{ backgroundColor: meta.hex, boxShadow: meta.ring ? 'inset 0 0 0 1px var(--border)' : undefined }} />
                             )}
-                            <span className="truncate max-w-[160px]" style={{ color: 'var(--text-dim)' }} title={v.title}>{v.title}</span>
-                            {v.sku && <span className="text-[10px] shrink-0" style={{ color: 'var(--text-muted)' }}>{v.sku}</span>}
+                            {v.sku && <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>{v.sku}</span>}
                             <span className="ml-auto tabular-nums font-medium shrink-0"
                               style={{ color: v.stock != null && v.stock > 0 ? 'var(--text-base)' : v.stock === 0 ? '#ef4444' : 'var(--text-muted)' }}>
                               {v.stock ?? '—'}
