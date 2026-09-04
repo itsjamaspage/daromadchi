@@ -385,6 +385,8 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
         }
       }
       if (needPhoto.size > 0) {
+        console.log(`[uzum-sync] Fetching photos for ${needPhoto.size} products (${productRows.filter(r => !r.image_url).length} SKUs without images)`)
+        let filled = 0
         const entries = [...needPhoto.entries()]
         const BATCH = 5
         for (let i = 0; i < entries.length; i += BATCH) {
@@ -393,12 +395,14 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
           for (let j = 0; j < batch.length; j++) {
             const url = results[j]
             if (!url) continue
+            filled++
             for (const mpId of batch[j][1]) {
               const row = productRows.find(r => r.marketplace_product_id === mpId)
               if (row) row.image_url = url
             }
           }
         }
+        console.log(`[uzum-sync] Photo fetch complete: ${filled}/${needPhoto.size} products got photos`)
       }
 
       if (productRows.length > 0) {

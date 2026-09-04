@@ -148,6 +148,7 @@ export default function SharedStockView({ products }: { products: SharedProduct[
                     <img
                       src={p.image_url}
                       alt=""
+                      referrerPolicy="no-referrer"
                       className="w-10 h-14 rounded-lg object-cover shrink-0"
                       style={{ background: 'var(--share-input-bg)' }}
                       onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
