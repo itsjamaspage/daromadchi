@@ -44,16 +44,20 @@ export function matchCategory(rawCategory: string): MatchResult | null {
       }
     }
 
-    // Tier 2: substring match (score 0.85)
+    // Tier 2: substring match (base 0.85, longer term = higher score)
     for (let i = 0; i < normalizedTerms.length; i++) {
       const term = normalizedTerms[i]
       const termLat = latinTerms[i]
-      if (
-        (term.length >= 4 && (input.includes(term) || term.includes(input))) ||
-        (termLat.length >= 4 && (inputLatin.includes(termLat) || termLat.includes(inputLatin)))
-      ) {
-        if (!best || 0.85 > best.score) {
-          best = { canonical_id: cat.id, score: 0.85, tier: 'substring' }
+      let matchLen = 0
+      if (term.length >= 4 && (input.includes(term) || term.includes(input))) {
+        matchLen = term.length
+      } else if (termLat.length >= 4 && (inputLatin.includes(termLat) || termLat.includes(inputLatin))) {
+        matchLen = termLat.length
+      }
+      if (matchLen > 0) {
+        const score = 0.85 + matchLen / 10000
+        if (!best || score > best.score) {
+          best = { canonical_id: cat.id, score, tier: 'substring' }
         }
       }
     }
