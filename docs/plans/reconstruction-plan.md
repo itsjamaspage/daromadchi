@@ -82,8 +82,10 @@ Add filtering by category / revenue / commission / status across Товары, �
 ### Task 9 — [SAFE] Service status page (GitHub-style) — status: DONE
 Rebuilt as a global service health page showing whether Daromadchi is working, GitHub-status style. Overall banner at top ("Все системы работают" green / "Обнаружены проблемы" red). Service rows with status dots: Uzum sync (with last sync time), Uzum API, Yandex sync, Yandex API, Telegram bot (connected/not connected). Each row shows operational/degraded/down badge. Stock drift section preserved. Full i18n (uz/ru/en).
 
-### Task 10 — [SAFE] Public warehouse-state link — status: TODO
+### Task 10 — [SAFE] Public warehouse-state link — status: DONE
 Make warehouse/stock state viewable via a shareable public link, rendered like the reference photo. Read-only public view; no auth-sensitive data leaked.
+
+> **CC note (what shipped):** Added `share_token` column to `user_settings` (migration `092_share_token.sql`, unique + indexed). API route `app/api/share/route.ts` (POST = generate random UUID token, GET = read current, DELETE = revoke) — all auth-gated via `requireAuth()`. Public page at `app/share/[token]/page.tsx` — outside `app/dashboard/` so no auth gate. Data layer: `lib/db/share.ts` → `getSharedProducts(token)` looks up the token, gets the user's active shops, and returns ONLY safe fields: product name, SKU, image_url, marketplace, fulfillment_type, and raw stock_quantity. No cost price, margin, revenue, orders, API keys, email, or computed values are ever queried or exposed. Share card added to Settings page (`SettingsForm.tsx`) with generate/copy/revoke UI. Token is `crypto.randomUUID()` — unguessable, not sequential. Full i18n (uz/ru/en). Theme-aware public page (dark/light).
 
 ---
 
