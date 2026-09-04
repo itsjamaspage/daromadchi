@@ -437,7 +437,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
         }
         if (toUpd.length > 0) {
           for (const r of toUpd) {
-            await db.update(products).set({
+            const patch: Record<string, unknown> = {
               title: r.title,
               sku: r.sku,
               category: r.category,
@@ -452,9 +452,10 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
               // Re-stamped so a card's variant grouping stays current.
               variant_group_key: r.variant_group_key,
               variant_color: r.variant_color,
-              image_url: r.image_url,
               fulfillment_type: 'fbs',
-            }).where(eq(products.id, r.id))
+            }
+            if (r.image_url != null) patch.image_url = r.image_url
+            await db.update(products).set(patch).where(eq(products.id, r.id))
           }
         }
 
