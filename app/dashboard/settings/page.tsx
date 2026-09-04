@@ -47,13 +47,22 @@ export default async function SettingsPage() {
   let telegramUsername: string | null = null
   let shareToken:       string | null = null
   if (user) {
-    const settings = await db.query.userSettings.findFirst({
-      where: eq(userSettings.user_id, user.id),
-      columns: { telegram_chat_id: true, telegram_username: true, share_token: true },
-    })
-    telegramChatId  = settings?.telegram_chat_id  ?? null
-    telegramUsername = settings?.telegram_username ?? null
-    shareToken      = settings?.share_token       ?? null
+    try {
+      const settings = await db.query.userSettings.findFirst({
+        where: eq(userSettings.user_id, user.id),
+        columns: { telegram_chat_id: true, telegram_username: true, share_token: true },
+      })
+      telegramChatId  = settings?.telegram_chat_id  ?? null
+      telegramUsername = settings?.telegram_username ?? null
+      shareToken      = settings?.share_token       ?? null
+    } catch {
+      const settings = await db.query.userSettings.findFirst({
+        where: eq(userSettings.user_id, user.id),
+        columns: { telegram_chat_id: true, telegram_username: true },
+      })
+      telegramChatId  = settings?.telegram_chat_id  ?? null
+      telegramUsername = settings?.telegram_username ?? null
+    }
   }
 
   return (
