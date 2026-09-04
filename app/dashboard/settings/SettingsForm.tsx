@@ -819,9 +819,10 @@ interface Props {
   userId:            string
   telegramChatId?:   string | null
   telegramUsername?: string | null
+  shareToken?:       string | null
 }
 
-export default function SettingsForm({ uzumShop, yandexShop, shopCounts, userId, telegramChatId, telegramUsername }: Props) {
+export default function SettingsForm({ uzumShop, yandexShop, shopCounts, userId, telegramChatId, telegramUsername, shareToken }: Props) {
   const { lang } = useLang()
   const t = translations[lang].dashboard.settingsPage
   const mpCards = [
@@ -856,7 +857,121 @@ export default function SettingsForm({ uzumShop, yandexShop, shopCounts, userId,
         ))}
       </div>
       <TelegramCard chatId={telegramChatId ?? null} username={telegramUsername ?? null} />
+      <ShareCard initialToken={shareToken ?? null} />
       <WarehousesCard />
+    </div>
+  )
+}
+
+// ─── Share link section ──────────────────────────────────────────────────────
+
+function ShareCard({ initialToken }: { initialToken: string | null }) {
+  const { lang } = useLang()
+  const t = translations[lang].dashboard.settingsPage
+  const [token, setToken]     = useState(initialToken)
+  const [loading, setLoading] = useState(false)
+  const [copied, setCopied]   = useState(false)
+  const [msg, setMsg]         = useState<{ ok: boolean; text: string } | null>(null)
+
+  const shareUrl = token ? `${typeof window !== 'undefined' ? window.location.origin : ''}/share/${token}` : null
+
+  async function handleGenerate() {
+    setLoading(true); setMsg(null)
+    try {
+      const res = await fetch('/api/share', { method: 'POST' })
+      const data = await res.json()
+      if (data.ok) setToken(data.token)
+      else setMsg({ ok: false, text: data.error ?? t.error })
+    } catch { setMsg({ ok: false, text: t.networkErr }) }
+    setLoading(false)
+  }
+
+  async function handleRevoke() {
+    setLoading(true); setMsg(null)
+    try {
+      const res = await fetch('/api/share', { method: 'DELETE' })
+      const data = await res.json()
+      if (data.ok) { setToken(null); setMsg({ ok: true, text: t.shareRevoked }) }
+      else setMsg({ ok: false, text: data.error ?? t.error })
+    } catch { setMsg({ ok: false, text: t.networkErr }) }
+    setLoading(false)
+  }
+
+  async function handleCopy() {
+    if (!shareUrl) return
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {}
+  }
+
+  return (
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+      <div className="p-5 flex items-center gap-3 border-b border-[var(--border)]">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.25)' }}>
+          <LinkIcon className="w-4 h-4 text-purple-400" />
+        </div>
+        <div className="flex-1">
+          <p className="text-[var(--text-base)] font-semibold text-sm">{t.shareTitle}</p>
+          <p className="text-[var(--text-muted)] text-xs">{t.shareSub}</p>
+        </div>
+        {token && (
+          <span className="text-[10px] font-semibold px-2 py-1 rounded-full border" style={{ background: 'var(--badge-ok-bg)', borderColor: 'var(--badge-ok-bdr)', color: 'var(--badge-ok-text)' }}>
+            {t.connected} ✓
+          </span>
+        )}
+      </div>
+      <div className="p-5 space-y-3">
+        {token && shareUrl ? (
+          <>
+            <div className="flex items-center gap-2">
+              <input
+                readOnly
+                value={shareUrl}
+                className="flex-1 bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-3 py-2 text-xs text-[var(--text-dim)] font-mono focus:outline-none truncate"
+              />
+              <button
+                onClick={handleCopy}
+                disabled={loading}
+                className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl transition-colors"
+                style={{ background: 'rgba(168,85,247,0.12)', color: '#a855f7', border: '1px solid rgba(168,85,247,0.2)' }}
+              >
+                {copied ? <CheckCircle className="w-4 h-4" /> : <ExternalLink className="w-4 h-4" />}
+                {copied ? t.shareCopied : t.shareCopy}
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleGenerate}
+                disabled={loading}
+                className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl border border-[var(--border2)] text-[var(--text-dim)] hover:text-[var(--text-base)] transition-all disabled:opacity-60"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                {t.shareGenerate}
+              </button>
+              <button
+                onClick={handleRevoke}
+                disabled={loading}
+                className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl border border-[var(--border2)] text-[var(--text-muted)] hover:text-red-400 hover:border-red-500/40 transition-all disabled:opacity-60"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {t.shareRevoke}
+              </button>
+            </div>
+          </>
+        ) : (
+          <button
+            onClick={handleGenerate}
+            disabled={loading}
+            className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-4 py-2.5 rounded-xl disabled:opacity-60"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LinkIcon className="w-4 h-4" />}
+            {t.shareGenerate}
+          </button>
+        )}
+        <StatusMsg msg={msg} />
+      </div>
     </div>
   )
 }

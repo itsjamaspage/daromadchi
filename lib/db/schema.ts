@@ -428,6 +428,7 @@ export const userSettings = pgTable('user_settings', {
   telegram_token_expires_at: timestamp('telegram_token_expires_at', { withTimezone: true }),
   telegram_link_token:       text('telegram_link_token'),
   telegram_link_expires_at:  timestamp('telegram_link_expires_at', { withTimezone: true }),
+  share_token:               text('share_token'),
   referral_code:             text('referral_code'),
   ue_acquiring_pct:          numeric('ue_acquiring_pct').default('1.5'),
   ue_last_mile_pct:          numeric('ue_last_mile_pct').default('0'),
