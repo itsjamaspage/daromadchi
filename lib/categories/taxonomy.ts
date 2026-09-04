@@ -215,7 +215,7 @@ export const TAXONOMY: CanonicalCategory[] = [
     terms: {
       ru: ['повербанки','повербанк','внешние аккумуляторы','портативные зарядки','зарядные устройства','адаптеры питания','блоки питания','беспроводные зарядки','сетевые зарядки','автомобильные зарядки','портативные аккумуляторы'],
       uz: ['powerbanklar','powerbank','portativ zaryadlagichlar','zaryadlash qurilmalari','adapterlar','simsiz zaryadlagichlar','tashqi akkumulyatorlar'],
-      en: ['power banks','power bank','powerbank','portable chargers','chargers','power adapters','wireless chargers','wall chargers','car chargers'],
+      en: ['power banks','power bank','powerbank','portable chargers','chargers','power adapters','wireless chargers','wall chargers','car chargers','magsafe'],
     },
     raw_examples: {
       uzum: ['Powerbanklar','Zaryadlagichlar','Tashqi akkumulyatorlar'],

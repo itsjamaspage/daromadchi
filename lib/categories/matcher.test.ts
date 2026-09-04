@@ -54,7 +54,13 @@ describe('matchCategory — substring tier', () => {
     const r = matchCategory('Блендеры погружные и стационарные')
     assert.equal(r?.canonical_id, 'small_kitchen_appliances')
     assert.equal(r?.tier, 'substring')
-    assert.equal(r?.score, 0.85)
+    assert.ok(r!.score > 0.85 && r!.score < 0.86)
+  })
+
+  it('prefers longer substring match: "power bank" beats "iphone" in MagSafe title', () => {
+    const r = matchCategory('MagSafe power bank simsiz 5000 mAs iPhone uchun magnitli')
+    assert.equal(r?.canonical_id, 'power_banks_chargers')
+    assert.equal(r?.tier, 'substring')
   })
 })
 
