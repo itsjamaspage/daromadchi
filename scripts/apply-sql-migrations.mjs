@@ -156,6 +156,7 @@ const MIGRATIONS = [
   // idempotent (ADD COLUMN IF NOT EXISTS).
   'migrations/migrations/090_users_ledger_kill_switch.sql',
   'migrations/migrations/091_products_image_url.sql',
+  'migrations/migrations/092_share_token.sql',
 ]
 
 function loadDatabaseUrl() {
