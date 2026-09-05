@@ -7,6 +7,7 @@
 export type ColorKey =
   | 'black' | 'white' | 'blue' | 'red' | 'green' | 'gray'
   | 'gold' | 'pink' | 'purple' | 'yellow' | 'brown' | 'beige'
+  | 'orange'
 
 // Same set the UI language switcher uses (app/providers → useLang).
 export type BadgeLang = 'uz' | 'ru' | 'en'
@@ -29,6 +30,7 @@ const RULES: Rule[] = [
   { key: 'yellow', hex: '#eab308',              stems: ['жёлт', 'желт'],       words: ['sariq', 'yellow'] },
   { key: 'brown',  hex: '#78350f',              stems: ['коричн'],             words: ['jigarrang', 'brown'] },
   { key: 'beige',  hex: '#d2b48c', ring: true,  stems: ['беж'],                words: ['bej', 'beige'] },
+  { key: 'orange', hex: '#ea580c',              stems: ['оранж', 'toq sariq'],  words: ['orange'] },
 ]
 
 // Localized color names — the badge shows the name in the current UI language.
@@ -45,6 +47,7 @@ export const COLOR_LABELS: Record<ColorKey, Record<BadgeLang, string>> = {
   yellow: { uz: 'Sariq',    ru: 'Жёлтый',      en: 'Yellow' },
   brown:  { uz: 'Jigar',    ru: 'Коричневый',  en: 'Brown'  },
   beige:  { uz: 'Bej',      ru: 'Бежевый',     en: 'Beige'  },
+  orange: { uz: 'Toq sariq', ru: 'Оранжевый',  en: 'Orange' },
 }
 
 export const COLOR_SHORT: Record<ColorKey, Record<BadgeLang, string>> = {
@@ -60,6 +63,7 @@ export const COLOR_SHORT: Record<ColorKey, Record<BadgeLang, string>> = {
   yellow: { uz: 'sar',  ru: 'жел', en: 'yel' },
   brown:  { uz: 'jig',  ru: 'кор', en: 'brn' },
   beige:  { uz: 'bej',  ru: 'беж', en: 'bei' },
+  orange: { uz: 'toq',  ru: 'ора', en: 'org' },
 }
 
 // Swatch metadata by resolved colour key — the companion to COLOR_LABELS, so a
@@ -71,9 +75,13 @@ export function colorMetaFor(key: string | null | undefined): { hex: string; rin
   return r ? { hex: r.hex, ring: r.ring } : null
 }
 
+function norm(s: string) {
+  return s.toLowerCase().replace(/[ʻ‘’`]/g, "'")
+}
+
 export function resolveColor(title?: string | null): ProductColor | null {
   if (!title) return null
-  const t = title.toLowerCase()
+  const t = norm(title)
   const tokens = new Set(t.split(/[^a-zа-яё']+/i).filter(Boolean))
   for (const r of RULES) {
     if (r.stems.some((s) => t.includes(s))) return { key: r.key, hex: r.hex, ring: r.ring }
