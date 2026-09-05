@@ -331,9 +331,11 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
             // fails to flip a known-archived product (the field paths are the
             // first suspect). See migration 045 / the products "Архивные" tab.
             const cardArchived = card.status?.value === 'ARCHIVED'
-            const cardImageUrl = card.photos?.[0]?.link?.high
-              ?? card.photos?.[0]?.link?.low
-              ?? (card.photos?.[0]?.photoKey ? `https://images.uzum.uz/${card.photos[0].photoKey}/t_product_540_high.jpg` : null)
+            const cardImageUrl = card.image || card.previewImg
+              || card.photos?.[0]?.link?.high
+              || card.photos?.[0]?.link?.low
+              || (card.photos?.[0]?.photoKey ? `https://images.uzum.uz/${card.photos[0].photoKey}/t_product_540_high.jpg` : null)
+              || null
             for (const sku of card.skuList ?? []) {
               const isArchived = cardArchived || sku.archived === true || sku.status?.value === 'ARCHIVED'
               productRows.push({
@@ -372,7 +374,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
         }
       }
 
-      // The seller API does not return photos — fill from the public API.
+      // Fallback: fill any remaining gaps from the public API.
       const needPhoto = new Map<number, string[]>()
       for (const r of productRows) {
         if (r.image_url) continue

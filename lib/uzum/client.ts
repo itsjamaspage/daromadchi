@@ -167,6 +167,8 @@ export interface UzumProductCard {
   title?: string
   skuList: UzumSku[]
   photos?: { photoKey: string; link?: { high?: string; low?: string } }[]
+  image?: string
+  previewImg?: string
   // Authoritative product-level lifecycle status from Uzum. When
   // status.value === 'RUN_OUT' the seller cabinet shows "Закончился" /
   // "Tugadi" and the listing is not sellable — regardless of what the
