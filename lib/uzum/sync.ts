@@ -19,7 +19,7 @@ import {
   type UzumSku,
 } from './client'
 import { fetchProductPhoto } from './public'
-import { resolveColor } from '@/lib/products/resolveColor'
+import { resolveColor, COLOR_LABELS, type ColorKey } from '@/lib/products/resolveColor'
 import { buildVariantIndex, resolveVariant } from '@/lib/uzum/variant-match'
 import { withShopLock } from '@/lib/db/shop-lock'
 
@@ -50,6 +50,28 @@ function uzumSkuColor(sku: UzumSku): string | null {
     resolveColor(sku.characteristics)?.key ??
     null
   )
+}
+
+// When the Uzum card title contains a trailing colour word (e.g. "…, qora") that
+// doesn't match THIS SKU's variant colour, replace it with the correct one so
+// the white keyboard isn't labelled "…, qora" (black).
+function fixTitleColor(title: string, variantColor: string | null): string {
+  if (!variantColor) return title
+  const titleColor = resolveColor(title)
+  if (!titleColor || titleColor.key === variantColor) return title
+  const isCyrillic = /[а-яё]/i.test(title)
+  const lang: 'ru' | 'uz' = isCyrillic ? 'ru' : 'uz'
+  const correctName = COLOR_LABELS[variantColor as ColorKey]?.[lang]?.toLowerCase()
+  if (!correctName) return title
+  const lastComma = title.lastIndexOf(',')
+  if (lastComma > 0 && resolveColor(title.substring(lastComma + 1).trim())) {
+    return `${title.substring(0, lastComma)}, ${correctName}`
+  }
+  const lastSpace = title.lastIndexOf(' ')
+  if (lastSpace > 0 && resolveColor(title.substring(lastSpace + 1).trim())) {
+    return `${title.substring(0, lastSpace)} ${correctName}`
+  }
+  return title
 }
 
 // Four user-facing statuses (internal keys in parens):
@@ -338,15 +360,12 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
               || null
             for (const sku of card.skuList ?? []) {
               const isArchived = cardArchived || sku.archived === true || sku.status?.value === 'ARCHIVED'
+              const variantColor = uzumSkuColor(sku)
+              const rawTitle = sku.productTitle || card.title || sku.skuTitle || 'Mahsulot'
               productRows.push({
                 shop_id: shopId,
                 marketplace_product_id: String(sku.skuId),
-                // Prefer the descriptive product name. sku.skuTitle is often
-                // just the colour/variant ("Белый", "Бежевый"), so it's the
-                // last resort — otherwise many products get named by colour and
-                // become indistinguishable. The colour still shows as the chip
-                // beside the SKU code.
-                title: sku.productTitle || card.title || sku.skuTitle || 'Mahsulot',
+                title: fixTitleColor(rawTitle, variantColor),
                 sku: sku.sellerItemCode || sku.article || String(sku.skuId),
                 category: card.category ?? null,
                 selling_price: sku.price ?? null,
@@ -361,10 +380,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
                 // same parent product (card.productId). Namespaced so it can
                 // never collide with a Yandex group key.
                 variant_group_key: `uzum:${card.productId}`,
-                // Colour for the per-colour child label: skuTitle suffix first,
-                // then the structured «Цвет» characteristic. Null when neither
-                // yields a recognised colour.
-                variant_color: uzumSkuColor(sku),
+                variant_color: variantColor,
                 image_url: cardImageUrl,
               })
             }
