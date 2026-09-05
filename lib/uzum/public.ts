@@ -172,6 +172,100 @@ export async function fetchProductPhoto(productId: number): Promise<string | nul
   return null
 }
 
+// Fetch per-SKU photo URLs for a product (keyed by SKU id string).
+// The seller API gives only card-level photos shared across all SKUs.
+// The public API exposes per-SKU photos when variants exist.
+export async function fetchProductVariantPhotos(
+  productId: number,
+): Promise<Map<string, string>> {
+  const result = new Map<string, string>()
+
+  // REST: /api/v2/product/{id}
+  try {
+    const data = await pub<Record<string, unknown>>(
+      `/api/v2/product/${productId}`,
+      undefined,
+      0,
+    )
+    const payload = data?.payload as Record<string, unknown> | undefined
+    const inner = (payload?.data ?? data?.data ?? data) as
+      | Record<string, unknown>
+      | undefined
+    if (inner) extractSkuPhotos(inner, result)
+    if (result.size > 0) return result
+  } catch {
+    /* fall through to GraphQL */
+  }
+
+  // GraphQL: makeProductPage with skuList
+  try {
+    const gql = `query ProductPage($id:Int!){makeProductPage(id:$id){skuList{id photos{key link{high low}}}}}`
+    const res = await marketplaceFetch('https://graphql.uzum.uz', {
+      method: 'POST',
+      headers: GRAPHQL_HEADERS,
+      body: JSON.stringify({
+        operationName: 'ProductPage',
+        query: gql,
+        variables: { id: productId },
+      }),
+      cache: 'no-store',
+    })
+    if (res.ok) {
+      const json = (await res.json()) as {
+        errors?: unknown
+        data?: {
+          makeProductPage?: {
+            skuList?: Array<{
+              id?: number
+              photos?: Array<{
+                key?: string
+                link?: { high?: string; low?: string }
+              }>
+            }>
+          }
+        }
+      }
+      if (!json?.errors) {
+        const skuList = json?.data?.makeProductPage?.skuList
+        if (skuList) {
+          for (const sku of skuList) {
+            const id = sku.id
+            if (id == null) continue
+            const url = photoArrayToUrl(sku.photos as unknown)
+            if (url) result.set(String(id), url)
+          }
+        }
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+
+  return result
+}
+
+function extractSkuPhotos(
+  obj: Record<string, unknown>,
+  result: Map<string, string>,
+) {
+  const list = (obj.skuList ?? obj.variants ?? obj.skus) as
+    | Array<Record<string, unknown>>
+    | undefined
+  if (!Array.isArray(list)) return
+  for (const sku of list) {
+    if (!sku || typeof sku !== 'object') continue
+    const id = sku.id ?? sku.skuId
+    if (id == null) continue
+    const url =
+      photoArrayToUrl(sku.photos as unknown) ??
+      photoArrayToUrl(sku.gallery as unknown) ??
+      (typeof sku.photo === 'string' ? sku.photo : null) ??
+      (typeof sku.image === 'string' ? sku.image : null) ??
+      (typeof sku.previewImage === 'string' ? sku.previewImage : null)
+    if (url) result.set(String(id), url)
+  }
+}
+
 // ─── API calls ────────────────────────────────────────────────────────────────
 
 export async function getRootCategories(): Promise<UzumPublicCategory[]> {
