@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { eq, and, isNotNull, count, sql } from 'drizzle-orm'
+import { eq, and, isNull, isNotNull, count, sql } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, products } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
@@ -9,12 +9,13 @@ import { UZUM_PUBLIC_BASE, fetchProductPhoto } from '@/lib/uzum/public'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const runtime = 'nodejs'
+export const maxDuration = 120
 
+// GET — diagnostic probe (unchanged from before)
 export const GET = withErrorHandler(async () => {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
 
-  // ── 0. Marketplace split: per-marketplace product counts with/without photos ──
   const mpSplit = await db.select({
     marketplace: shops.marketplace,
     total: count(),
@@ -36,7 +37,6 @@ export const GET = withErrorHandler(async () => {
     without_photo: r.total - r.with_photo,
   }))
 
-  // ── 1. Uzum shop setup ──
   const [shop] = await db.select({
     id: shops.id,
     api_key_encrypted: shops.api_key_encrypted,
@@ -53,7 +53,6 @@ export const GET = withErrorHandler(async () => {
 
   const token = decrypt(shop.api_key_encrypted)
 
-  // ── 2. Fetch raw product cards from the seller API — dump the photos field ──
   let sellerPhotos: unknown = null
   let sellerShopId: number | null = null
   try {
@@ -97,7 +96,6 @@ export const GET = withErrorHandler(async () => {
     }
   }
 
-  // ── 3. Test public API photo fetch for one real product ──
   const [dbProductWithGroup] = await db.select({
     variant_group_key: products.variant_group_key,
     title: products.title,
@@ -169,7 +167,6 @@ export const GET = withErrorHandler(async () => {
       publicApiProbe = { error: String(e).slice(0, 300), testProductId }
     }
 
-    // Test fetchProductPhoto (the fixed version)
     let fetchResult: unknown = null
     try {
       const url = await fetchProductPhoto(testProductId)
@@ -179,7 +176,6 @@ export const GET = withErrorHandler(async () => {
     }
     publicApiProbe = { ...publicApiProbe as Record<string, unknown>, fetchProductPhotoResult: fetchResult }
 
-    // CDN URL reachability check — does a constructed photoKey URL actually return an image?
     if (fetchResult && typeof (fetchResult as Record<string, unknown>).returned === 'string') {
       const cdnUrl = (fetchResult as Record<string, unknown>).returned as string
       try {
@@ -207,5 +203,88 @@ export const GET = withErrorHandler(async () => {
     marketplaceSplit,
     sellerApiPhotos: sellerPhotos,
     publicApiPhotos: publicApiProbe,
+  })
+})
+
+// POST — backfill photos for all Uzum products missing them.
+// Fetches one product at a time with 1s delays to avoid rate limiting.
+// Writes each photo to the DB immediately so partial progress is kept.
+export const POST = withErrorHandler(async () => {
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+
+  const [shop] = await db.select({ id: shops.id })
+    .from(shops)
+    .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'uzum'), eq(shops.is_active, true)))
+
+  if (!shop) {
+    return NextResponse.json({ ok: false, error: 'Uzum shop topilmadi' }, { status: 400 })
+  }
+
+  const missing = await db.select({
+    id: products.id,
+    variant_group_key: products.variant_group_key,
+    title: products.title,
+  })
+    .from(products)
+    .where(and(
+      eq(products.shop_id, shop.id),
+      eq(products.is_archived, false),
+      isNull(products.image_url),
+      isNotNull(products.variant_group_key),
+    ))
+
+  // Group by productId (one photo per card, shared across SKU variants)
+  const byProductId = new Map<number, string[]>()
+  for (const p of missing) {
+    const m = p.variant_group_key?.match(/^uzum:(\d+)$/)
+    if (!m) continue
+    const pid = Number(m[1])
+    const list = byProductId.get(pid)
+    if (list) list.push(p.id)
+    else byProductId.set(pid, [p.id])
+  }
+
+  if (byProductId.size === 0) {
+    return NextResponse.json({ ok: true, message: 'All Uzum products already have photos', filled: 0, total: 0 })
+  }
+
+  const results: { productId: number; url: string | null; error?: string; dbIds: string[] }[] = []
+  let filled = 0
+
+  for (const [productId, dbIds] of byProductId) {
+    if (results.length > 0) {
+      await new Promise(r => setTimeout(r, 1000))
+    }
+    let url: string | null = null
+    let error: string | undefined
+    try {
+      url = await fetchProductPhoto(productId)
+    } catch (e) {
+      error = String(e).slice(0, 200)
+    }
+
+    if (url) {
+      filled++
+      await db.update(products)
+        .set({ image_url: url })
+        .where(
+          and(
+            eq(products.shop_id, shop.id),
+            isNull(products.image_url),
+            sql`${products.id} = ANY(${sql`string_to_array(${dbIds.join(',')}, ',')::uuid[]`})`,
+          ),
+        )
+    }
+
+    results.push({ productId, url, error, dbIds })
+  }
+
+  return NextResponse.json({
+    ok: true,
+    message: `Backfilled ${filled}/${byProductId.size} products`,
+    filled,
+    total: byProductId.size,
+    details: results,
   })
 })
