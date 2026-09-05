@@ -19,7 +19,7 @@ import {
   type UzumSku,
 } from './client'
 import { fetchProductPhoto } from './public'
-import { resolveColor, COLOR_LABELS, type ColorKey } from '@/lib/products/resolveColor'
+import { resolveColor } from '@/lib/products/resolveColor'
 import { buildVariantIndex, resolveVariant } from '@/lib/uzum/variant-match'
 import { withShopLock } from '@/lib/db/shop-lock'
 
@@ -52,24 +52,20 @@ function uzumSkuColor(sku: UzumSku): string | null {
   )
 }
 
-// When the Uzum card title contains a trailing colour word (e.g. "…, qora") that
-// doesn't match THIS SKU's variant colour, replace it with the correct one so
-// the white keyboard isn't labelled "…, qora" (black).
-function fixTitleColor(title: string, variantColor: string | null): string {
-  if (!variantColor) return title
-  const titleColor = resolveColor(title)
-  if (!titleColor || titleColor.key === variantColor) return title
-  const isCyrillic = /[а-яё]/i.test(title)
-  const lang: 'ru' | 'uz' = isCyrillic ? 'ru' : 'uz'
-  const correctName = COLOR_LABELS[variantColor as ColorKey]?.[lang]?.toLowerCase()
-  if (!correctName) return title
+// Strip a trailing colour word from the Uzum card title (e.g. "…, qora" → "…").
+// The colour is redundant — it's already stored in variant_color and shown via the
+// VariantColorChip. Keeping it in the title is misleading: the card-level title is
+// shared across all SKUs, so the group header would say "white" even when the group
+// contains a black variant.
+function stripTitleColor(title: string): string {
+  if (!resolveColor(title)) return title
   const lastComma = title.lastIndexOf(',')
   if (lastComma > 0 && resolveColor(title.substring(lastComma + 1).trim())) {
-    return `${title.substring(0, lastComma)}, ${correctName}`
+    return title.substring(0, lastComma).trim()
   }
   const lastSpace = title.lastIndexOf(' ')
   if (lastSpace > 0 && resolveColor(title.substring(lastSpace + 1).trim())) {
-    return `${title.substring(0, lastSpace)} ${correctName}`
+    return title.substring(0, lastSpace).trim()
   }
   return title
 }
@@ -365,7 +361,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
               productRows.push({
                 shop_id: shopId,
                 marketplace_product_id: String(sku.skuId),
-                title: fixTitleColor(rawTitle, variantColor),
+                title: stripTitleColor(rawTitle),
                 sku: sku.sellerItemCode || sku.article || String(sku.skuId),
                 category: card.category ?? null,
                 selling_price: sku.price ?? null,
