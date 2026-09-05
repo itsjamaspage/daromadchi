@@ -207,19 +207,91 @@ export const GET = withErrorHandler(async () => {
 })
 
 // POST — backfill photos for all Uzum products missing them.
-// Does the API calls directly (not through fetchProductPhoto) so every
-// step is visible in the response for debugging.
+// Tries three sources: seller API (auth token), REST public API, GraphQL.
+// Returns full diagnostics for each attempt.
 export const POST = withErrorHandler(async () => {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
 
-  const [shop] = await db.select({ id: shops.id })
-    .from(shops)
+  const [shop] = await db.select({
+    id: shops.id,
+    api_key_encrypted: shops.api_key_encrypted,
+  }).from(shops)
     .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'uzum'), eq(shops.is_active, true)))
 
-  if (!shop) {
-    return NextResponse.json({ ok: false, error: 'Uzum shop topilmadi' }, { status: 400 })
+  if (!shop?.api_key_encrypted) {
+    return NextResponse.json({ ok: false, error: 'Uzum shop/token topilmadi' }, { status: 400 })
   }
+
+  const token = decrypt(shop.api_key_encrypted)
+
+  // ── Discover seller shopId ──
+  let sellerShopId: number | null = null
+  try {
+    const shopsRes = await marketplaceFetch(`${UZUM_API_BASE}/v1/shops`, {
+      headers: { Authorization: token.trim(), Accept: 'application/json' },
+      next: { revalidate: 0 },
+    })
+    const shopsData = await shopsRes.json().catch(() => null)
+    const arr = Array.isArray(shopsData) ? shopsData : (shopsData?.shops ?? shopsData?.data ?? [])
+    sellerShopId = (arr as { id: number }[])[0]?.id ?? null
+  } catch { /* ignore */ }
+
+  // ── Fetch ALL seller products to check their photos field ──
+  let sellerPhotosProbe: Record<string, unknown> = {}
+  const sellerPhotoMap = new Map<number, string>()
+  if (sellerShopId) {
+    try {
+      const res = await marketplaceFetch(
+        `${UZUM_API_BASE}/v1/product/shop/${sellerShopId}?page=0&size=100&filter=ALL&sortBy=DEFAULT&order=ASC`,
+        { headers: { Authorization: token.trim(), Accept: 'application/json' }, next: { revalidate: 0 } },
+      )
+      const text = await res.text()
+      const data = JSON.parse(text)
+      const cards = data?.productList ?? []
+      sellerPhotosProbe = { status: res.status, cardCount: cards.length }
+
+      const sample: Record<string, unknown>[] = []
+      for (const card of cards as Record<string, unknown>[]) {
+        const pid = card.productId as number
+        const photos = card.photos as { photoKey?: string; link?: { high?: string; low?: string } }[] | undefined
+        if (sample.length < 3) {
+          sample.push({
+            productId: pid,
+            hasPhotos: 'photos' in card,
+            photosType: photos === undefined ? 'undefined' : photos === null ? 'null'
+              : Array.isArray(photos) ? `array[${photos.length}]` : typeof photos,
+            photosRaw: photos,
+            allKeys: Object.keys(card),
+          })
+        }
+        if (Array.isArray(photos) && photos.length > 0) {
+          const p = photos[0]
+          const url = p.link?.high ?? p.link?.low
+            ?? (p.photoKey ? `https://images.uzum.uz/${p.photoKey}/t_product_540_high.jpg` : null)
+          if (url) sellerPhotoMap.set(pid, url)
+        }
+      }
+      sellerPhotosProbe.sampleCards = sample
+      sellerPhotosProbe.cardsWithPhotos = sellerPhotoMap.size
+    } catch (e) {
+      sellerPhotosProbe = { error: String(e).slice(0, 300) }
+    }
+  }
+
+  // ── Probe swagger for product/photo endpoints ──
+  let swaggerProbe: unknown = null
+  try {
+    const specRes = await marketplaceFetch(`${UZUM_API_BASE}/swagger/api-docs`, {
+      headers: { Authorization: token.trim(), Accept: 'application/json' },
+      next: { revalidate: 0 },
+    })
+    if (specRes.ok) {
+      const spec = await specRes.json() as { paths?: Record<string, unknown> }
+      const productPaths = Object.keys(spec.paths ?? {}).filter(p => /product|photo|image|media/i.test(p))
+      swaggerProbe = { productRelatedEndpoints: productPaths }
+    }
+  } catch { /* ignore */ }
 
   const missing = await db.select({
     id: products.id,
@@ -245,7 +317,10 @@ export const POST = withErrorHandler(async () => {
   }
 
   if (byProductId.size === 0) {
-    return NextResponse.json({ ok: true, message: 'All Uzum products already have photos', filled: 0, total: 0 })
+    return NextResponse.json({
+      ok: true, message: 'All Uzum products already have photos', filled: 0, total: 0,
+      sellerPhotosProbe, swaggerProbe,
+    })
   }
 
   const results: Record<string, unknown>[] = []
@@ -256,50 +331,95 @@ export const POST = withErrorHandler(async () => {
 
     const entry: Record<string, unknown> = { productId, title: title.slice(0, 60), dbIds }
 
-    // ── Step 1: REST public API ──
-    try {
-      const restUrl = `${UZUM_PUBLIC_BASE}/api/v2/product/${productId}`
-      const restRes = await marketplaceFetch(restUrl, {
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Origin': 'https://uzum.uz',
-          'Referer': 'https://uzum.uz/',
-        },
-        cache: 'no-store',
-      })
-      const restText = await restRes.text()
-      entry.rest = { status: restRes.status, bodyLength: restText.length, snippet: restText.slice(0, 300) }
-
-      if (restRes.ok) {
-        try {
-          const json = JSON.parse(restText) as Record<string, unknown>
-          const payload = json.payload as Record<string, unknown> | undefined
-          const dataObj = payload?.data as Record<string, unknown> | undefined
-          const photos = dataObj?.photos ?? (payload as Record<string, unknown> | undefined)?.photos ?? json.photos
-          entry.rest = { ...entry.rest as Record<string, unknown>, photosFound: photos !== undefined, photosType: photos === undefined ? 'undefined' : photos === null ? 'null' : Array.isArray(photos) ? `array[${photos.length}]` : typeof photos }
-
-          if (Array.isArray(photos) && photos.length > 0) {
-            const p = photos[0] as Record<string, unknown>
-            const link = p.link as Record<string, string> | undefined
-            const photoUrl = link?.high ?? link?.low
-              ?? (p.photoKey ? `https://images.uzum.uz/${p.photoKey}/t_product_540_high.jpg` : null)
-              ?? (p.key ? `https://images.uzum.uz/${p.key}/t_product_540_high.jpg` : null)
-            if (photoUrl) {
-              entry.url = photoUrl
-              entry.source = 'rest'
-            }
-            entry.firstPhoto = p
-          }
-        } catch (parseErr) {
-          entry.rest = { ...entry.rest as Record<string, unknown>, parseError: String(parseErr).slice(0, 200) }
-        }
-      }
-    } catch (restErr) {
-      entry.rest = { error: String(restErr).slice(0, 300) }
+    // ── Step 1: Seller API (from pre-fetched map) ──
+    const sellerUrl = sellerPhotoMap.get(productId)
+    if (sellerUrl) {
+      entry.url = sellerUrl
+      entry.source = 'seller-api'
     }
 
-    // ── Step 2: GraphQL fallback ──
+    // ── Step 2: Try seller API product detail endpoint ──
+    if (!entry.url) {
+      try {
+        const detailRes = await marketplaceFetch(
+          `${UZUM_API_BASE}/v1/product/${productId}`,
+          { headers: { Authorization: token.trim(), Accept: 'application/json' }, next: { revalidate: 0 } },
+        )
+        const detailText = await detailRes.text()
+        entry.sellerDetail = { status: detailRes.status, bodyLength: detailText.length, snippet: detailText.slice(0, 400) }
+
+        if (detailRes.ok) {
+          try {
+            const json = JSON.parse(detailText) as Record<string, unknown>
+            const photos = json.photos as { photoKey?: string; link?: { high?: string; low?: string } }[] | undefined
+              ?? (json.payload as Record<string, unknown>)?.photos as { photoKey?: string; link?: { high?: string; low?: string } }[] | undefined
+            entry.sellerDetail = {
+              ...entry.sellerDetail as Record<string, unknown>,
+              topKeys: Object.keys(json),
+              photosType: photos === undefined ? 'undefined' : photos === null ? 'null'
+                : Array.isArray(photos) ? `array[${photos.length}]` : typeof photos,
+            }
+            if (Array.isArray(photos) && photos.length > 0) {
+              const p = photos[0]
+              const url = p.link?.high ?? p.link?.low
+                ?? (p.photoKey ? `https://images.uzum.uz/${p.photoKey}/t_product_540_high.jpg` : null)
+              if (url) {
+                entry.url = url
+                entry.source = 'seller-detail'
+              }
+            }
+          } catch { /* not json */ }
+        }
+      } catch (e) {
+        entry.sellerDetail = { error: String(e).slice(0, 200) }
+      }
+    }
+
+    // ── Step 3: REST public API (likely CAPTCHA) ──
+    if (!entry.url) {
+      try {
+        const restUrl = `${UZUM_PUBLIC_BASE}/api/v2/product/${productId}`
+        const restRes = await marketplaceFetch(restUrl, {
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Origin': 'https://uzum.uz',
+            'Referer': 'https://uzum.uz/',
+          },
+          cache: 'no-store',
+        })
+        const restText = await restRes.text()
+        entry.rest = { status: restRes.status, bodyLength: restText.length, snippet: restText.slice(0, 300) }
+
+        if (restRes.ok) {
+          try {
+            const json = JSON.parse(restText) as Record<string, unknown>
+            const payload = json.payload as Record<string, unknown> | undefined
+            const dataObj = payload?.data as Record<string, unknown> | undefined
+            const photos = dataObj?.photos ?? payload?.photos ?? json.photos
+            entry.rest = { ...entry.rest as Record<string, unknown>, photosFound: photos !== undefined }
+
+            if (Array.isArray(photos) && photos.length > 0) {
+              const p = photos[0] as Record<string, unknown>
+              const link = p.link as Record<string, string> | undefined
+              const photoUrl = link?.high ?? link?.low
+                ?? (p.photoKey ? `https://images.uzum.uz/${p.photoKey}/t_product_540_high.jpg` : null)
+                ?? (p.key ? `https://images.uzum.uz/${p.key}/t_product_540_high.jpg` : null)
+              if (photoUrl) {
+                entry.url = photoUrl
+                entry.source = 'rest'
+              }
+            }
+          } catch (parseErr) {
+            entry.rest = { ...entry.rest as Record<string, unknown>, parseError: String(parseErr).slice(0, 200) }
+          }
+        }
+      } catch (restErr) {
+        entry.rest = { error: String(restErr).slice(0, 300) }
+      }
+    }
+
+    // ── Step 4: GraphQL fallback (likely 401) ──
     if (!entry.url) {
       try {
         const gql = `query ProductPage($id:Int!){makeProductPage(id:$id){photos{key link{high low}}}}`
@@ -324,8 +444,6 @@ export const POST = withErrorHandler(async () => {
           try {
             const data = JSON.parse(gqlText) as { data?: { makeProductPage?: { photos?: Array<{ key?: string; link?: { high?: string; low?: string } }> } }; errors?: unknown }
             const photos = data?.data?.makeProductPage?.photos
-            entry.graphql = { ...entry.graphql as Record<string, unknown>, photosCount: photos?.length ?? 0, errors: data.errors }
-
             if (photos && photos.length > 0) {
               const p = photos[0]
               const photoUrl = p.link?.high ?? p.link?.low
@@ -334,18 +452,15 @@ export const POST = withErrorHandler(async () => {
                 entry.url = photoUrl
                 entry.source = 'graphql'
               }
-              entry.firstGqlPhoto = p
             }
-          } catch (parseErr) {
-            entry.graphql = { ...entry.graphql as Record<string, unknown>, parseError: String(parseErr).slice(0, 200) }
-          }
+          } catch { /* parse error */ }
         }
       } catch (gqlErr) {
         entry.graphql = { error: String(gqlErr).slice(0, 300) }
       }
     }
 
-    // ── Step 3: Write to DB if we got a URL ──
+    // ── Step 5: Write to DB if we got a URL ──
     if (typeof entry.url === 'string' && entry.url) {
       filled++
       await db.update(products)
@@ -368,6 +483,8 @@ export const POST = withErrorHandler(async () => {
     message: `Backfilled ${filled}/${byProductId.size} products`,
     filled,
     total: byProductId.size,
+    sellerPhotosProbe,
+    swaggerProbe,
     details: results,
   })
 })
