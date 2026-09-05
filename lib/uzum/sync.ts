@@ -387,14 +387,16 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
       if (needPhoto.size > 0) {
         console.log(`[uzum-sync] Fetching photos for ${needPhoto.size} products (${productRows.filter(r => !r.image_url).length} SKUs without images)`)
         let filled = 0
+        const missed: number[] = []
         const entries = [...needPhoto.entries()]
-        const BATCH = 5
+        const BATCH = 3
         for (let i = 0; i < entries.length; i += BATCH) {
+          if (i > 0) await new Promise(r => setTimeout(r, 500))
           const batch = entries.slice(i, i + BATCH)
           const results = await Promise.all(batch.map(([pid]) => fetchProductPhoto(pid)))
           for (let j = 0; j < batch.length; j++) {
             const url = results[j]
-            if (!url) continue
+            if (!url) { missed.push(batch[j][0]); continue }
             filled++
             for (const mpId of batch[j][1]) {
               const row = productRows.find(r => r.marketplace_product_id === mpId)
@@ -402,7 +404,8 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
             }
           }
         }
-        console.log(`[uzum-sync] Photo fetch complete: ${filled}/${needPhoto.size} products got photos`)
+        console.log(`[uzum-sync] Photo fetch complete: ${filled}/${needPhoto.size} products got photos` +
+          (missed.length > 0 ? ` (missed: ${missed.slice(0, 10).join(', ')}${missed.length > 10 ? '...' : ''})` : ''))
       }
 
       if (productRows.length > 0) {
