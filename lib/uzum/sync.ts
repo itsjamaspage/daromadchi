@@ -18,7 +18,7 @@ import {
   type UzumFbsOrderItem,
   type UzumSku,
 } from './client'
-import { fetchProductPhoto, fetchProductVariantPhotos } from './public'
+import { fetchProductPhoto } from './public'
 import { resolveColor } from '@/lib/products/resolveColor'
 import { buildVariantIndex, resolveVariant } from '@/lib/uzum/variant-match'
 import { withShopLock } from '@/lib/db/shop-lock'
@@ -358,6 +358,9 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
               const isArchived = cardArchived || sku.archived === true || sku.status?.value === 'ARCHIVED'
               const variantColor = uzumSkuColor(sku)
               const rawTitle = sku.productTitle || card.title || sku.skuTitle || 'Mahsulot'
+              const skuImageUrl = sku.previewImage
+                ? `${sku.previewImage}/t_product_540_high.jpg`
+                : cardImageUrl
               productRows.push({
                 shop_id: shopId,
                 marketplace_product_id: String(sku.skuId),
@@ -377,7 +380,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
                 // never collide with a Yandex group key.
                 variant_group_key: `uzum:${card.productId}`,
                 variant_color: variantColor,
-                image_url: cardImageUrl,
+                image_url: skuImageUrl,
               })
             }
           }
@@ -420,62 +423,6 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
         }
         console.log(`[uzum-sync] Photo fetch complete: ${filled}/${needPhoto.size} products got photos` +
           (missed.length > 0 ? ` (missed: ${missed.slice(0, 10).join(', ')}${missed.length > 10 ? '...' : ''})` : ''))
-      }
-
-      // Per-variant photo enrichment: cards with multiple colour variants
-      // share the same card-level photo, so a white keyboard shows the black
-      // keyboard's image. Fetch per-SKU photos from the public API.
-      const multiColourPids = new Map<number, string[]>()
-      for (const r of productRows) {
-        if (!r.variant_color) continue
-        const m = r.variant_group_key?.match(/^uzum:(\d+)$/)
-        if (!m) continue
-        const pid = Number(m[1])
-        const list = multiColourPids.get(pid)
-        if (list) list.push(r.marketplace_product_id)
-        else multiColourPids.set(pid, [r.marketplace_product_id])
-      }
-      const enrichTargets = [...multiColourPids.entries()].filter(([, ids]) => {
-        const colours = new Set(
-          ids.map(
-            (id) =>
-              productRows.find((r) => r.marketplace_product_id === id)
-                ?.variant_color,
-          ),
-        )
-        return colours.size > 1
-      })
-      if (enrichTargets.length > 0) {
-        console.log(
-          `[uzum-sync] Fetching per-variant photos for ${enrichTargets.length} multi-colour cards`,
-        )
-        let enriched = 0
-        const BATCH = 3
-        for (let i = 0; i < enrichTargets.length; i += BATCH) {
-          if (i > 0) await new Promise((r) => setTimeout(r, 500))
-          const batch = enrichTargets.slice(i, i + BATCH)
-          const maps = await Promise.all(
-            batch.map(([pid]) => fetchProductVariantPhotos(pid)),
-          )
-          for (let j = 0; j < batch.length; j++) {
-            const photoMap = maps[j]
-            if (photoMap.size === 0) continue
-            for (const mpId of batch[j][1]) {
-              const row = productRows.find(
-                (r) => r.marketplace_product_id === mpId,
-              )
-              if (!row) continue
-              const skuPhoto = photoMap.get(mpId)
-              if (skuPhoto) {
-                row.image_url = skuPhoto
-                enriched++
-              }
-            }
-          }
-        }
-        console.log(
-          `[uzum-sync] Per-variant photo enrichment: ${enriched} SKUs updated across ${enrichTargets.length} cards`,
-        )
       }
 
       if (productRows.length > 0) {

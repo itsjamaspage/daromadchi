@@ -159,6 +159,11 @@ export interface UzumSku {
     characteristicTitle?: { uz?: string; ru?: string }
     characteristicValue?: { uz?: string; ru?: string }
   }>
+  // Per-SKU preview image from the seller API — a base CDN URL without size
+  // suffix, e.g. "https://images.uzum.uz/d0gedbxv8vsdeu5chpg". Different
+  // colour variants get different images. Append "/t_product_540_high.jpg"
+  // for the full-size URL.
+  previewImage?: string
 }
 
 export interface UzumProductCard {
