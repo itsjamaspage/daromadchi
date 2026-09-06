@@ -358,8 +358,9 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
               const isArchived = cardArchived || sku.archived === true || sku.status?.value === 'ARCHIVED'
               const variantColor = uzumSkuColor(sku)
               const rawTitle = sku.productTitle || card.title || sku.skuTitle || 'Mahsulot'
-              const skuImageUrl = sku.previewImage
-                ? `${sku.previewImage}/t_product_540_high.jpg`
+              const skuPreview = sku.previewImage || sku.previewImg
+              const skuImageUrl = skuPreview
+                ? `${skuPreview}/t_product_540_high.jpg`
                 : cardImageUrl
               productRows.push({
                 shop_id: shopId,
