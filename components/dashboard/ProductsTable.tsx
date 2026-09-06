@@ -378,16 +378,17 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     const isEditing = editingId === p.id
     return (
       <Fragment key={p.id}>
-        <tr style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', opacity: p.is_archived ? 0.55 : undefined }}
+        <tr className="transition-colors hover:bg-[rgba(128,128,128,0.04)]"
+          style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', opacity: p.is_archived ? 0.55 : undefined }}
           onClick={() => setEditingId(isEditing ? null : p.id)}>
           <td className="px-5 py-4" style={isChild ? { paddingLeft: '2.75rem', borderLeft: '2px solid var(--border)' } : undefined}>
             <div className="flex items-center gap-2">
               {p.image_url ? (
-                <img src={p.image_url} alt="" referrerPolicy="no-referrer" className="w-14 h-20 rounded-lg object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+                <img src={p.image_url} alt="" referrerPolicy="no-referrer" className="w-14 h-20 rounded-lg object-cover shrink-0 border" style={{ background: 'var(--bg-input)', borderColor: 'var(--border)' }}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
               ) : (
-                <div className="w-14 h-20 rounded-lg shrink-0 flex items-center justify-center text-xs"
-                  style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
+                <div className="w-14 h-20 rounded-lg shrink-0 flex items-center justify-center text-xs border"
+                  style={{ background: 'var(--bg-input)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>—</div>
               )}
               <div>
                 <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
@@ -403,7 +404,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           </td>
           <FbsCell value={fbsUnits(p)} />
           <td className="px-5 py-4">
-            <span className="text-xs px-2.5 py-1 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>{catDisplay(p.category, lang, p.title)}</span>
+            <span className="text-[11px] px-2.5 py-1 rounded-full border font-medium" style={{ color: 'var(--text-muted)', background: 'rgba(128, 128, 128, 0.06)', borderColor: 'var(--border)' }}>{catDisplay(p.category, lang, p.title)}</span>
           </td>
           <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(price)}</td>
           <td className="px-5 py-4 text-right" style={{ color: p.cost_price ? 'var(--text-dim)' : 'var(--text-muted)' }}>
@@ -482,7 +483,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       allListings.filter(k => k.marketplace === mp).map(k => ({ color: k.variant_color ?? null, sku: k.sku ?? null, stock: fbsUnits(k) }))
 
     return (
-      <tr style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg-card2)' }}
+      <tr className="transition-colors hover:bg-[rgba(128,128,128,0.04)]"
+        style={{ borderBottom: '1px solid var(--border)', borderLeft: '3px solid var(--c1)', cursor: 'pointer', background: 'var(--bg-card2)' }}
         onClick={() => toggleGroup(item.key)}>
         <td className="px-5 py-4">
           <div className="flex items-start gap-2">
@@ -492,11 +494,11 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             {(() => {
               const groupImg = head.image_url ?? allListings.find(l => l.image_url)?.image_url
               return groupImg ? (
-                <img src={groupImg} alt="" referrerPolicy="no-referrer" className="w-14 h-20 rounded-lg object-cover shrink-0" style={{ background: 'var(--bg-input)' }}
+                <img src={groupImg} alt="" referrerPolicy="no-referrer" className="w-14 h-20 rounded-lg object-cover shrink-0 border" style={{ background: 'var(--bg-input)', borderColor: 'var(--border)' }}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
               ) : (
-                <div className="w-14 h-20 rounded-lg shrink-0 flex items-center justify-center text-xs"
-                  style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>—</div>
+                <div className="w-14 h-20 rounded-lg shrink-0 flex items-center justify-center text-xs border"
+                  style={{ background: 'var(--bg-input)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>—</div>
               )
             })()}
             <div>
@@ -553,7 +555,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           )
         })()}
         <td className="px-5 py-4">
-          <span className="text-xs px-2.5 py-1 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>{catDisplay(category, lang, head.title)}</span>
+          <span className="text-[11px] px-2.5 py-1 rounded-full border font-medium" style={{ color: 'var(--text-muted)', background: 'rgba(128, 128, 128, 0.06)', borderColor: 'var(--border)' }}>{catDisplay(category, lang, head.title)}</span>
         </td>
         <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>{price != null ? fmt(price) : '—'}</td>
         <td className="px-5 py-4 text-right" style={{ color: cost ? 'var(--text-dim)' : 'var(--text-muted)' }}>{cost ? fmt(cost) : '—'}</td>
@@ -585,26 +587,19 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           them. Hide the scrollbar itself so it doesn't sit on top of
           the chips on macOS/iOS. */}
       <div className="w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex items-center gap-1 p-1 rounded-xl w-fit border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
+        <div className="flex items-center gap-6 border-b pb-0" style={{ borderColor: 'var(--border)' }}>
           {TABS.map(({ key, label }) => (
             <button key={key} onClick={() => setTab(key)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border whitespace-nowrap flex-shrink-0"
-              style={tab === key ? {
-                background: 'var(--bg-card2)',
-                color: 'var(--c1)',
-                 borderColor: 'var(--border)',
-              } : {
-                color: 'var(--text-muted)',
-                borderColor: 'transparent',
-              }}>
+              className="relative flex items-center gap-1.5 pb-3 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0"
+              style={{ color: tab === key ? 'var(--c1)' : 'var(--text-muted)' }}>
               {label}
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={tab === key ? {
-                background: 'var(--bg-card2)',
-                color: 'var(--c1)',
-              } : {
-                background: 'rgba(255, 255, 255, 0.04)',
-                color: 'var(--text-muted)',
-              }}>{tabCounts[key]}</span>
+              <span className="text-xs tabular-nums px-1.5 py-0.5 rounded-md"
+                style={{ background: tab === key ? 'rgba(73,79,223,0.08)' : 'transparent', color: tab === key ? 'var(--c1)' : 'var(--text-muted)' }}>
+                {tabCounts[key]}
+              </span>
+              {tab === key && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ background: 'var(--c1)' }} />
+              )}
             </button>
           ))}
         </div>
@@ -642,7 +637,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-xs" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', background: 'rgba(255, 255, 255, 0.01)' }}>
+              <tr className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', background: 'rgba(255, 255, 255, 0.02)' }}>
                 <th className="text-left font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('title')}>
                   {d.product} <SortIcon col="title" sortBy={sortBy} sortDir={sortDir} />
                 </th>
