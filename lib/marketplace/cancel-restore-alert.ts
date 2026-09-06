@@ -57,7 +57,6 @@ export async function notifyCancelRestore(userId: string): Promise<void> {
       .innerJoin(products, eq(products.id, orderItems.product_id))
       .where(and(
         eq(shops.user_id, userId),
-        eq(shops.api_mode, 'read_only'),
         eq(orders.status, 'cancelled'),
         isNotNull(orders.reserved_stock_snapshot),
         isNull(orders.restore_alert_sent_at),

@@ -2,11 +2,9 @@
 // Run: node --import tsx --test lib/marketplace/cancel-restore-pure.test.ts
 //
 // The DB-gated cases from the spec's matrix are enforced by the SQL predicate in
-// cancel-restore-alert.ts, not here: edit-capable connection silent
-// (api_mode='read_only'), never-reserved / NULL snapshot silent
+// cancel-restore-alert.ts, not here: never-reserved / NULL snapshot silent
 // (reserved_stock_snapshot IS NOT NULL), duplicate sync pass one alert
-// (restore_alert_sent_at IS NULL + stamp), and Uzum-read-only+Yandex-edit only
-// the Uzum one (the gate is per shop row). This file covers the pure logic.
+// (restore_alert_sent_at IS NULL + stamp). This file covers the pure logic.
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {

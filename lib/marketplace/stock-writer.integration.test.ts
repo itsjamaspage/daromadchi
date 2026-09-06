@@ -76,8 +76,8 @@ before(() => {
 
 after(() => { globalThis.fetch = realFetch })
 
-const uzumShop = { id: 'uz-shop', marketplace: 'uzum' as const, api_key_encrypted: 'PLAINTEXT_TOKEN', shop_id_external: null, api_mode: 'stock_sync' as const }
-const ymShop = { id: 'ym-shop', marketplace: 'yandex_market' as const, api_key_encrypted: 'PLAINTEXT_TOKEN', shop_id_external: '149137909', api_mode: 'stock_sync' as const }
+const uzumShop = { id: 'uz-shop', marketplace: 'uzum' as const, api_key_encrypted: 'PLAINTEXT_TOKEN', shop_id_external: null }
+const ymShop = { id: 'ym-shop', marketplace: 'yandex_market' as const, api_key_encrypted: 'PLAINTEXT_TOKEN', shop_id_external: '149137909' }
 const BARCODE = '4780012345678'
 const SKU_ID = '987654321'          // Uzum FBS skuId (persisted in products.market_sku)
 const SHOP_SKU = 'JMJ16BEG'

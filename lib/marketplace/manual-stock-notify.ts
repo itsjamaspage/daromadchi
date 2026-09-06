@@ -38,16 +38,15 @@ import {
   type ManualReminder, type GroupIdentity,
 } from '@/lib/marketplace/manual-stock-pure'
 
-// Load this user's SKU groups (all active shops, every api_mode). Mirrors the
-// read side of the edit-mode loader but stays independent of it, so this feature
-// can never reach a write path. Returns members bucketed by normalized SKU.
+// Load this user's SKU groups (all active shops). Mirrors the read side of the
+// stock-sync loader but stays independent of it, so this feature can never
+// reach a write path. Returns members bucketed by normalized SKU.
 interface LoadedGroup { members: SyncMember[]; identity: GroupIdentity }
 
 async function loadUserGroups(userId: string): Promise<Map<string, LoadedGroup>> {
   const shopRows = await db.select({
     id: shops.id,
     marketplace: shops.marketplace,
-    api_mode: shops.api_mode,
     priority: shops.primary_channel_priority,
   }).from(shops).where(and(eq(shops.user_id, userId), eq(shops.is_active, true)))
 
@@ -121,7 +120,7 @@ async function loadUserGroups(userId: string): Promise<Map<string, LoadedGroup>>
       productId: p.id,
       shopId: p.shop_id,
       marketplace: shop.marketplace,
-      apiMode: shop.api_mode,
+      apiMode: 'stock_sync' as const,
       priority: shop.priority,
       listedStock: p.stock_quantity,
       physicalStock: p.physical_stock,

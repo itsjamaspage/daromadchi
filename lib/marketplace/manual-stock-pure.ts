@@ -84,7 +84,7 @@ export function computeManualReminders(members: SyncMember[], identity: GroupIde
   const target = computeAvailable(members)
   const out: ManualReminder[] = []
   for (const m of members) {
-    if (m.apiMode !== 'read_only') continue     // only read-only listings get a manual reminder
+    if (m.apiMode === 'stock_sync') continue     // auto-synced listings don't need a manual reminder
     if (!m.sku) continue                        // no human SKU to name → skip (unidentifiable)
     // The marketplace the sale came from maintains its own stock — see
     // GroupIdentity.orderMarketplace. Telling the seller to set it by hand is

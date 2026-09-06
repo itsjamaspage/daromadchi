@@ -3,7 +3,7 @@
  *
  * The rules in features.ts already have unit tests; what those cannot prove is
  * that the DATABASE-facing half agrees with them — that the right columns are
- * read, that a shop's api_mode decides the Stocks page the way the spec says,
+ * read, that plan gating decides feature access the way the spec says,
  * and that a gated account cannot start a marketplace write-back run. Every
  * assertion below runs the real code against real rows.
  *
@@ -14,7 +14,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { db, pool, users, shops } from '@/lib/db'
-import { loadEntitlement, userHasFeature, everyActiveShopIsReadOnly } from './entitlement'
+import { loadEntitlement, userHasFeature } from './entitlement'
 import { lockedNavKeys } from './nav-gating'
 import { syncStockSyncGroups } from '@/lib/marketplace/stock-sync'
 
@@ -43,12 +43,11 @@ async function seedUser(fields: {
   return id
 }
 
-async function seedShop(userId: string, apiMode: 'read_only' | 'stock_sync', active = true) {
+async function seedShop(userId: string, active = true) {
   await db.insert(shops).values({
     user_id: userId,
     marketplace: 'uzum',
-    name: `shop-${apiMode}`,
-    api_mode: apiMode,
+    name: 'shop-stock_sync',
     is_active: active,
   })
 }
@@ -141,43 +140,24 @@ describe('entitlement — what the database says a seller may use', () => {
   })
 })
 
-describe('the Stocks page rule — gated only when nothing is left to show', () => {
-  it('one active stock_sync shop keeps the page', async () => {
-    const id = await seedUser({ trialEndsAt: ago(1) })
-    await seedShop(id, 'read_only')
-    await seedShop(id, 'stock_sync')
-    assert.equal(await everyActiveShopIsReadOnly(id), false)
-    assert.equal((await lockedNavKeys(id)).includes('stocks'), false,
-      'a seller with live write-back still has something real to look at')
-  })
-
-  it('all read_only shops locks the page', async () => {
-    const id = await seedUser({ trialEndsAt: ago(1) })
-    await seedShop(id, 'read_only')
-    await seedShop(id, 'read_only')
-    assert.equal(await everyActiveShopIsReadOnly(id), true)
-    assert.equal((await lockedNavKeys(id)).includes('stocks'), true)
-  })
-
-  it('an INACTIVE stock_sync shop does not hold the page open', async () => {
-    const id = await seedUser({ trialEndsAt: ago(1) })
-    await seedShop(id, 'read_only')
-    await seedShop(id, 'stock_sync', false)
-    assert.equal(await everyActiveShopIsReadOnly(id), true,
-      'a disabled shop syncs nothing, so it cannot justify keeping the page')
-  })
-
-  it('a paid seller with only read_only shops keeps the page', async () => {
+describe('the Stocks page rule — gated by plan, not by api_mode', () => {
+  it('a paid seller keeps the stocks page', async () => {
     const id = await seedUser({ plan: 'pro', planExpiresAt: ahead(20), trialEndsAt: ago(30) })
-    await seedShop(id, 'read_only')
+    await seedShop(id)
     assert.equal((await lockedNavKeys(id)).includes('stocks'), false)
+  })
+
+  it('a free seller past trial loses the stocks page', async () => {
+    const id = await seedUser({ trialEndsAt: ago(1) })
+    await seedShop(id)
+    assert.equal((await lockedNavKeys(id)).includes('stocks'), true)
   })
 })
 
 describe('write-back is refused for a gated account', () => {
   it('syncStockSyncGroups plans zero writes and never reaches a marketplace', async () => {
     const id = await seedUser({ trialEndsAt: ago(1) })
-    await seedShop(id, 'stock_sync')
+    await seedShop(id)
 
     // Any outbound call at all is a failure: the gate must return before the
     // pipeline gets as far as talking to a store.
@@ -200,7 +180,7 @@ describe('write-back is refused for a gated account', () => {
 
   it('a paid account is NOT short-circuited by the gate', async () => {
     const id = await seedUser({ plan: 'pro', planExpiresAt: ahead(20), trialEndsAt: ago(30) })
-    await seedShop(id, 'stock_sync')
+    await seedShop(id)
     // No products seeded, so there is nothing to write — the point is that the
     // run proceeds to planning instead of returning at the plan check.
     const result = await syncStockSyncGroups({ userId: id })

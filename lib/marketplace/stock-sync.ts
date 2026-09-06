@@ -45,7 +45,6 @@ const ACTIONABLE_SKIP_REASONS = new Set([
 interface ShopRow {
   id: string
   marketplace: MarketplaceType
-  api_mode: 'read_only' | 'stock_sync'
   oversell_mode: OversellMode
   primary_channel_priority: number
   shop_id_external: string | null
@@ -131,7 +130,6 @@ async function loadGroups(userId: string): Promise<{
   const shopRows = (await db.select({
     id: shops.id,
     marketplace: shops.marketplace,
-    api_mode: shops.api_mode,
     oversell_mode: shops.oversell_mode,
     primary_channel_priority: shops.primary_channel_priority,
     shop_id_external: shops.shop_id_external,
@@ -267,7 +265,7 @@ async function loadGroups(userId: string): Promise<{
       productId: p.id,
       shopId: p.shop_id,
       marketplace: shop.marketplace,
-      apiMode: shop.api_mode,
+      apiMode: 'stock_sync' as const,
       priority: shop.primary_channel_priority,
       listedStock: p.stock_quantity,
       physicalStock: p.physical_stock,
@@ -393,7 +391,6 @@ async function ensureWriteIdentifiers(userId: string): Promise<void> {
   }).from(shops).where(and(
     eq(shops.user_id, userId),
     eq(shops.is_active, true),
-    eq(shops.api_mode, 'stock_sync'),
     inArray(shops.marketplace, IN_SCOPE),
   ))
 
@@ -575,8 +572,8 @@ async function syncStockSyncGroupsLocked(opts: RunOptions): Promise<StockSyncRun
 
   for (const [matchKey, group] of groups) {
     if (opts.onlyMatchKey && matchKey !== opts.onlyMatchKey) continue
-    const writableMembers = group.members.filter(m => m.apiMode === 'stock_sync')
-    if (writableMembers.length === 0) continue // Step A only (display), no writes
+    const writableMembers = group.members
+    if (writableMembers.length === 0) continue
     groupsConsidered++
 
     // New-order NOTIFICATION gate. A digest fires ONLY when a genuinely new
@@ -727,7 +724,6 @@ async function syncStockSyncGroupsLocked(opts: RunOptions): Promise<StockSyncRun
           marketplace: shop.marketplace,
           api_key_encrypted: shop.api_key_encrypted,
           shop_id_external: shop.shop_id_external,
-          api_mode: shop.api_mode,
         },
         sku: marketSku,
         barcode,
@@ -891,10 +887,6 @@ export async function verifiedLivePush(userId: string, productId: string, quanti
 
   const shop = shopsById.get(found.product.shop_id)
   if (!shop) return fail('shop_not_found', target)
-  if (shop.api_mode !== 'stock_sync') return fail('shop_read_only', target)
-  // Same additional condition as the batch run: a gated account cannot fire a
-  // live write from the first-live button either. The api_mode check above stays
-  // exactly where it is — this is layered on top of it, not instead of it.
   if (!await userHasFeature(userId, 'stock_sync')) return fail('plan_gated', target)
 
   const barcode = shop.marketplace === 'uzum' ? found.product.market_barcode : null
@@ -911,7 +903,7 @@ export async function verifiedLivePush(userId: string, productId: string, quanti
   const result = await pushStock({
     shop: {
       id: shop.id, marketplace: shop.marketplace, api_key_encrypted: shop.api_key_encrypted,
-      shop_id_external: shop.shop_id_external, api_mode: shop.api_mode,
+      shop_id_external: shop.shop_id_external,
     },
     sku: marketSku, barcode, quantity: target, version, warehouseId,
     productId: found.product.id, updatedAt: new Date().toISOString(), freshnessKey: found.matchKey,

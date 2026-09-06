@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   RefreshCw, Save, Key, CheckCircle, XCircle, ExternalLink,
-  Loader2, Hash, Trash2, Send, LinkIcon, Building2, Plus, AlertTriangle,
+  Loader2, Hash, Trash2, Send, LinkIcon, Building2, Plus,
 } from 'lucide-react'
 import type { Shop } from '@/lib/types'
 import { useLang } from '@/app/providers'
@@ -30,135 +30,6 @@ function StatusMsg({ msg }: { msg: { ok: boolean; text: string } | null }) {
   )
 }
 
-// ─── Stock-sync (edit) mode panel ─────────────────────────────────────────────
-// Opt-in, off by default. Lets a connected Uzum / Yandex Market shop switch from
-// read-only into the audited stock-quantity-only writer. This panel only writes
-// to Daromadchi's own shop row (/api/shops/stock-sync); the marketplace write
-// itself lives exclusively in lib/marketplace/stock-writer.ts (Phase 2).
-function StockSyncPanel({ shop, marketplace }: { shop: Shop | null; marketplace: 'uzum' | 'yandex_market' }) {
-  const router = useRouter()
-  const { lang } = useLang()
-  const t = translations[lang].dashboard.settingsPage
-
-  const alreadyConsented = !!shop?.stock_sync_consent_at
-  const [mode,     setMode]     = useState<'read_only' | 'stock_sync'>(shop?.api_mode ?? 'read_only')
-  const [oversell, setOversell] = useState<'lock_last_unit' | 'partition' | 'off'>(shop?.oversell_mode ?? 'lock_last_unit')
-  const [consentChecked, setConsentChecked] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [msg,    setMsg]    = useState<{ ok: boolean; text: string } | null>(null)
-
-  const hasKey = !!shop?.api_key_encrypted
-  // Only offer edit mode to a connected shop.
-  if (!shop || !hasKey) return null
-
-  const needsConsent = mode === 'stock_sync' && !alreadyConsented && !consentChecked
-  const savedMode = shop.api_mode ?? 'read_only'
-  // stock_sync now always means live writes (no dry-run), so the badge is a
-  // two-state read-only vs live indicator.
-  const badge = savedMode === 'read_only' ? t.ssBadgeReadOnly : t.ssBadgeLive
-  const badgeCls = savedMode === 'read_only'
-    ? 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'
-    : 'bg-[var(--status-err-bg)] border-[var(--status-err-bdr)] text-[var(--status-err-text)]'
-
-  const cardCls = (active: boolean) =>
-    `text-left flex flex-col gap-1 p-3 rounded-xl border transition-colors ${
-      active
-        ? 'border-[var(--c1)] bg-[var(--bg-card2)]'
-        : 'border-[var(--border2)] bg-[var(--bg-input)] hover:border-[var(--border)]'
-    }`
-
-  async function handleSave() {
-    setSaving(true); setMsg(null)
-    try {
-      const res = await fetch('/api/shops/stock-sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          marketplace,
-          api_mode: mode,
-          oversell_mode: oversell,
-          consent: consentChecked || alreadyConsented,
-        }),
-      })
-      const data = await res.json()
-      if (data.ok) {
-        setMsg({ ok: true, text: t.ssModeSaved })
-        setConsentChecked(false)
-        router.refresh()
-      } else {
-        setMsg({ ok: false, text: data.error === 'consent_required' ? t.ssConsentRequiredMsg : (data.error ?? t.error) })
-      }
-    } catch {
-      setMsg({ ok: false, text: t.networkErr })
-    }
-    setSaving(false)
-  }
-
-  return (
-    <div className="px-6 pb-6 border-t border-[var(--border)] pt-4 space-y-4">
-      <div className="flex items-center gap-2">
-        <p className="text-[var(--text-base)] font-semibold text-sm">{t.ssTitle}</p>
-        <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${badgeCls}`}>{badge}</span>
-      </div>
-      <p className="text-[var(--text-muted)] text-xs">{t.ssSubtitle}</p>
-
-      <div className="grid gap-2 sm:grid-cols-2">
-        <button type="button" onClick={() => setMode('read_only')} className={cardCls(mode === 'read_only')}>
-          <span className="text-sm font-semibold text-[var(--text-base)]">{t.ssReadOnlyLabel}</span>
-          <span className="text-xs text-[var(--text-muted)]">{t.ssReadOnlyDesc}</span>
-        </button>
-        <button type="button" onClick={() => setMode('stock_sync')} className={cardCls(mode === 'stock_sync')}>
-          <span className="text-sm font-semibold text-[var(--text-base)]">{t.ssEditLabel}</span>
-          <span className="text-xs text-[var(--text-muted)]">{t.ssEditDesc}</span>
-        </button>
-      </div>
-
-      {mode === 'stock_sync' && (
-        <div className="space-y-4">
-          {marketplace === 'uzum' && (
-            <div className="flex items-start gap-2 text-xs px-3 py-2 rounded-xl border border-[var(--border)] bg-[var(--bg-card2)] text-[var(--text-muted)]">
-              <Key className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: 'var(--c1)' }} />
-              <span>{t.ssTokenScopeNote}</span>
-            </div>
-          )}
-
-          {!alreadyConsented && (
-            <div className="space-y-2 px-3 py-3 rounded-xl border border-[var(--border2)] bg-[var(--bg-input)]">
-              <p className="text-sm font-semibold text-[var(--text-base)] flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5" style={{ color: 'var(--c1)' }} /> {t.ssConsentHeading}
-              </p>
-              <p className="text-xs text-[var(--text-muted)] whitespace-pre-line">{t.ssConsentBody}</p>
-              <label className="flex items-start gap-2 cursor-pointer">
-                <input type="checkbox" checked={consentChecked} onChange={e => setConsentChecked(e.target.checked)} className="mt-0.5" />
-                <span className="text-xs text-[var(--text-dim)]">{t.ssConsentAgree}</span>
-              </label>
-            </div>
-          )}
-
-          <div>
-            <p className="text-xs font-medium text-[var(--text-muted)] mb-1.5">{t.ssOversellLabel}</p>
-            <select
-              value={oversell}
-              onChange={e => setOversell(e.target.value as 'lock_last_unit' | 'partition' | 'off')}
-              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-3 py-2 text-sm text-[var(--text-base)] focus:outline-none"
-            >
-              <option value="lock_last_unit">{t.ssOversellLockLast}</option>
-              <option value="partition">{t.ssOversellPartition}</option>
-              <option value="off">{t.ssOversellOff}</option>
-            </select>
-          </div>
-        </div>
-      )}
-
-      <StatusMsg msg={msg} />
-      <button onClick={handleSave} disabled={saving || needsConsent}
-        className="flex items-center gap-2 btn-primary disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-xl transition-colors">
-        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-        {t.ssSaveMode}
-      </button>
-    </div>
-  )
-}
 
 // ─── Uzum section ─────────────────────────────────────────────────────────────
 
@@ -199,7 +70,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
   const [syncStep, setSyncStep] = useState<string | null>(null)
   const [saveMsg,  setSaveMsg]  = useState<{ ok: boolean; text: string } | null>(null)
   const [syncMsg,  setSyncMsg]  = useState<{ ok: boolean; text: string } | null>(null)
-  const [diagnosing, setDiagnosing] = useState(false)
+
 
   const hasKey  = !!shop?.api_key_encrypted
   const lastSync = shop?.last_synced_at
@@ -242,40 +113,6 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
     setTesting(false)
   }
 
-  // Read-only diagnostic: shows exactly what Uzum's order API returns so we can
-  // see why orders aren't landing (HTTP status + count per FBS/FBO endpoint).
-  async function handleDiagnose() {
-    setDiagnosing(true); setSyncMsg(null)
-    try {
-      const res  = await fetch('/api/uzum/diagnose')
-      const data = await res.json()
-      if (!data.ok) {
-        setSyncMsg({ ok: false, text: `${t.diagnose}: ${data.error ?? t.error}` })
-      } else {
-        const probes = (data.orderProbes ?? []) as { label: string; status: number; count: number | null; sample?: unknown; bodySnippet?: string }[]
-        const summary = probes.length === 0
-          ? `do'kon topilmadi (shops HTTP ${data.shopsProbe?.status})`
-          : probes.map(p => {
-              const base = `${p.label}: HTTP ${p.status}${p.count !== null ? ` (${p.count})` : ''}`
-              if (p.status >= 400 && p.bodySnippet) return `${base} → ${p.bodySnippet}`
-              // Show the first record / raw body of every 200 that carried
-              // data — the field names ARE the diagnosis (e.g. what an
-              // /v1/invoice record actually looks like).
-              if (p.status === 200 && p.sample) {
-                return `${base} → ${typeof p.sample === 'string' ? p.sample.slice(0, 250) : JSON.stringify(p.sample).slice(0, 250)}`
-              }
-              return base
-            }).join('\n')
-        const spec = `OpenAPI: ${data.specPath ?? 'topilmadi'}${(data.discoveredStatuses?.length ? ` → [${data.discoveredStatuses.join(', ')}]` : '')}`
-        const valid = `valid(200): [${(data.validStatuses ?? []).join(', ')}]`
-        setSyncMsg({ ok: true, text: `shopIds [${(data.uzumShopIds ?? []).join(', ')}]\n${spec}\n${valid}\n${summary}` })
-        console.log('[uzum diagnose]', data)
-      }
-    } catch {
-      setSyncMsg({ ok: false, text: `${t.diagnose}: ${t.networkErr}` })
-    }
-    setDiagnosing(false)
-  }
 
   function triggerSync() {
     setSyncing(true); setSyncMsg(null)
@@ -391,17 +228,10 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
             className="flex items-center gap-2 btn-primary border border-transparent disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-xl transition-colors">
             {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.syncing}</> : <><RefreshCw className="w-4 h-4" /> {t.sync}</>}
           </button>
-          <button onClick={handleDiagnose} disabled={diagnosing || syncing || !hasKey}
-            title="Buyurtmalar API javobini tekshirish (read-only)"
-            className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-muted)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
-            {diagnosing ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
-            {t.diagnose}
-          </button>
           </div>
         </div>
       )}
 
-      <StockSyncPanel shop={shop} marketplace="uzum" />
     </div>
   )
 }
@@ -628,7 +458,6 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
         </div>
       )}
 
-      <StockSyncPanel shop={shop} marketplace="yandex_market" />
     </div>
   )
 }
