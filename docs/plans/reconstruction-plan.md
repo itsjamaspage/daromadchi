@@ -91,8 +91,10 @@ Make warehouse/stock state viewable via a shareable public link, rendered like t
 
 ## Phase 4 — UI redesign
 
-### Task 11 — [SAFE] Products/Orders Uzum-style UI — status: TODO
+### Task 11 — [SAFE] Products/Orders Uzum-style UI — status: DONE
 Redesign the Товары and Заказы sections to match the Uzum seller UI (photo references): product photos, layout, structure. Display/UX only — no data-layer or write changes.
+
+> **CC note (what shipped):** Restyled both ProductsTable and OrdersTable to match Uzum seller cabinet aesthetic. Tabs: pill-button → underline-indicator style with active bottom bar. Table headers: uppercase with wider letter-spacing. Row hover: subtle gray highlight on both tables. Product images: added borders. Variant group headers: left accent border in brand color (--c1). Category badges: rounded-full pill shape. Orders status tabs: colored dots per status (gray/amber/green/red) with underline indicator. Orders dates: relative format (Bugun/Kecha/N kun oldin) with full date tooltip. Orders rows: compact padding, lighter font weights (font-medium vs font-bold), tabular-nums for number alignment. Status badges: rounded-full pills. All display/UX only — no data-layer, API, or logic changes. PR #465.
 
 ---
 
