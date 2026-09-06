@@ -26,7 +26,6 @@ export const GET = withErrorHandler(async () => {
 
   const token = decrypt(shop.api_key_encrypted)
 
-  // Discover seller shopId
   let sellerShopId: number | null = null
   try {
     const shopsRes = await marketplaceFetch(`${UZUM_API_BASE}/v1/shops`, {
@@ -44,7 +43,6 @@ export const GET = withErrorHandler(async () => {
     return NextResponse.json({ ok: false, error: 'No seller shopId found' })
   }
 
-  // Fetch first page of seller products — raw data
   const res = await marketplaceFetch(
     `${UZUM_API_BASE}/v1/product/shop/${sellerShopId}?page=0&size=20&filter=ALL&sortBy=DEFAULT&order=ASC`,
     { headers: { Authorization: token.trim(), Accept: 'application/json' }, next: { revalidate: 0 } },
@@ -53,112 +51,53 @@ export const GET = withErrorHandler(async () => {
   const data = JSON.parse(text)
   const cards = (data?.productList ?? []) as Record<string, unknown>[]
 
-  // Find a card with multiple SKUs (colour variants)
   const multiSkuCards = cards.filter(c => Array.isArray(c.skuList) && (c.skuList as unknown[]).length > 1)
-  const targetCard = multiSkuCards[0] ?? cards[0]
 
-  if (!targetCard) {
-    return NextResponse.json({ ok: true, message: 'No product cards found', sellerShopId })
-  }
+  const cardSummaries = multiSkuCards.slice(0, 5).map(card => {
+    const skuList = card.skuList as Record<string, unknown>[]
 
-  const cardKeys = Object.keys(targetCard)
-  const skuList = targetCard.skuList as Record<string, unknown>[] | undefined
+    const cardImageUrl = (card.image ?? card.previewImg
+      ?? (card.photos as Array<Record<string, unknown>> | undefined)?.[0]) as string | null
 
-  // For each SKU, dump ALL keys and any photo/image related values
-  const skuDump = (skuList ?? []).map(sku => {
-    const allKeys = Object.keys(sku)
-    const photoRelated: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(sku)) {
-      if (/photo|image|picture|gallery|media|preview|thumb|icon|avatar|cover/i.test(k)) {
-        photoRelated[k] = v
-      }
-    }
     return {
-      skuId: sku.skuId,
-      skuTitle: sku.skuTitle,
-      allKeys,
-      photoRelatedFields: Object.keys(photoRelated).length > 0 ? photoRelated : 'NONE',
-      characteristics: sku.characteristics,
+      productId: card.productId,
+      title: card.title,
+      cardLevelImage: cardImageUrl,
+      cardPhotoFields: Object.fromEntries(
+        Object.entries(card).filter(([k]) =>
+          /photo|image|picture|gallery|media|preview|thumb|icon|avatar|cover/i.test(k)
+        ).map(([k, v]) => [k, Array.isArray(v) ? { array: true, length: v.length, first: v[0] } : v])
+      ),
+      skus: skuList.map(sku => {
+        const photoFields = Object.fromEntries(
+          Object.entries(sku).filter(([k]) =>
+            /photo|image|picture|gallery|media|preview|thumb|icon|avatar|cover/i.test(k)
+          )
+        )
+        const previewImage = sku.previewImage as string | undefined
+        const previewImg = sku.previewImg as string | undefined
+        const syncWouldUse = previewImage
+          ? `${previewImage}/t_product_540_high.jpg`
+          : previewImg
+            ? `${previewImg}/t_product_540_high.jpg`
+            : cardImageUrl
+
+        return {
+          skuId: sku.skuId,
+          skuTitle: sku.skuTitle,
+          allKeys: Object.keys(sku),
+          photoFields: Object.keys(photoFields).length > 0 ? photoFields : 'NONE',
+          syncWouldUse,
+        }
+      }),
     }
   })
-
-  // Also dump card-level photo fields
-  const cardPhotoFields: Record<string, unknown> = {}
-  for (const [k, v] of Object.entries(targetCard)) {
-    if (/photo|image|picture|gallery|media|preview|thumb|icon|avatar|cover/i.test(k)) {
-      if (Array.isArray(v)) {
-        cardPhotoFields[k] = { type: 'array', length: v.length, first: v[0] }
-      } else {
-        cardPhotoFields[k] = v
-      }
-    }
-  }
-
-  // Check if there's a per-product detail endpoint
-  const productId = targetCard.productId as number
-  let productDetailProbe: unknown = null
-  try {
-    const detailRes = await marketplaceFetch(
-      `${UZUM_API_BASE}/v1/product/${productId}`,
-      { headers: { Authorization: token.trim(), Accept: 'application/json' }, next: { revalidate: 0 } },
-    )
-    const detailText = await detailRes.text()
-    if (detailRes.ok) {
-      const detail = JSON.parse(detailText)
-      const detailKeys = detail && typeof detail === 'object' ? Object.keys(detail) : null
-      const detailSkuList = (detail?.skuList ?? detail?.variants ?? detail?.skus) as Record<string, unknown>[] | undefined
-      productDetailProbe = {
-        status: detailRes.status,
-        topKeys: detailKeys,
-        hasSkuList: !!detailSkuList,
-        skuCount: detailSkuList?.length,
-        skuSample: detailSkuList?.slice(0, 2).map(s => ({
-          keys: Object.keys(s),
-          photoFields: Object.fromEntries(
-            Object.entries(s).filter(([k]) => /photo|image|preview|thumb|gallery|media|cover/i.test(k))
-          ),
-        })),
-      }
-    } else {
-      productDetailProbe = { status: detailRes.status, body: detailText.slice(0, 300) }
-    }
-  } catch (e) {
-    productDetailProbe = { error: String(e).slice(0, 200) }
-  }
-
-  // Check swagger for any photo-related endpoints
-  let swaggerPhotoEndpoints: unknown = null
-  try {
-    const specRes = await marketplaceFetch(`${UZUM_API_BASE}/swagger/api-docs`, {
-      headers: { Authorization: token.trim(), Accept: 'application/json' },
-      next: { revalidate: 0 },
-    })
-    if (specRes.ok) {
-      const spec = await specRes.json() as { paths?: Record<string, unknown> }
-      const photoPaths = Object.keys(spec.paths ?? {}).filter(p =>
-        /photo|image|media|gallery|picture/i.test(p)
-      )
-      const productPaths = Object.keys(spec.paths ?? {}).filter(p =>
-        /product/i.test(p)
-      )
-      swaggerPhotoEndpoints = { photoPaths, productPaths }
-    }
-  } catch { /* ignore */ }
 
   return NextResponse.json({
     ok: true,
     sellerShopId,
-    cardCount: cards.length,
+    totalCards: cards.length,
     multiSkuCardCount: multiSkuCards.length,
-    targetCard: {
-      productId: targetCard.productId,
-      title: targetCard.title,
-      allCardKeys: cardKeys,
-      cardPhotoFields,
-      skuCount: skuList?.length ?? 0,
-      skus: skuDump,
-    },
-    productDetailEndpoint: productDetailProbe,
-    swaggerEndpoints: swaggerPhotoEndpoints,
+    cards: cardSummaries,
   })
 })
