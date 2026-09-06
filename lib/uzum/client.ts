@@ -159,6 +159,7 @@ export interface UzumSku {
     characteristicTitle?: { uz?: string; ru?: string }
     characteristicValue?: { uz?: string; ru?: string }
   }>
+  previewImage?: string
 }
 
 export interface UzumProductCard {
