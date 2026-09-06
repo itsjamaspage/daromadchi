@@ -23,7 +23,6 @@ export interface ShopStatus {
   stockSyncAgeMinutes: number | null
   syncStale: boolean
   throttledUntil: string | null
-  apiMode: 'read_only' | 'stock_sync'
   productCount: number
 }
 
@@ -66,7 +65,7 @@ export async function getSystemHealth(): Promise<SystemHealth> {
     db.execute(sql`
       SELECT s.id, s.name, s.marketplace, s.is_active,
              s.api_key_encrypted IS NOT NULL AS has_api_key,
-             s.token_valid, s.api_mode,
+             s.token_valid,
              s.throttled_until,
              extract(epoch FROM (now() - s.last_synced_at)) / 60 AS sync_age,
              extract(epoch FROM (now() - s.stock_synced_at)) / 60 AS stock_sync_age,
@@ -103,7 +102,6 @@ export async function getSystemHealth(): Promise<SystemHealth> {
     const row = r as {
       id: string; name: string; marketplace: 'uzum' | 'yandex_market'
       is_active: boolean; has_api_key: boolean; token_valid: boolean | null
-      api_mode: 'read_only' | 'stock_sync'
       throttled_until: string | null
       sync_age: number | null; stock_sync_age: number | null
       product_count: string | number
@@ -121,7 +119,6 @@ export async function getSystemHealth(): Promise<SystemHealth> {
       stockSyncAgeMinutes: stockSyncAge,
       syncStale: row.is_active && row.has_api_key && (stockSyncAge == null || stockSyncAge >= STALE_MINUTES),
       throttledUntil: row.throttled_until,
-      apiMode: row.api_mode,
       productCount: Number(row.product_count),
     }
   })

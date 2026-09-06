@@ -72,8 +72,9 @@ export const taxTypeEnum = pgEnum('tax_type', ['income', 'income_minus_expense']
 
 export const planTypeEnum = pgEnum('plan_type', ['free', 'pro', 'pro_plus', 'biznes'])
 
-// Per-shop API posture. read_only (default) never writes to the marketplace;
-// stock_sync opts a single shop into the audited stock-quantity-only writer.
+// Per-shop API posture. All shops are stock_sync (edit) by default — the
+// read_only value is kept in the enum for backward compatibility with existing
+// rows but no longer appears in the UI.
 export const apiModeEnum = pgEnum('api_mode', ['read_only', 'stock_sync'])
 
 // How stock-sync splits a shared physical unit across marketplaces (Phase 3).
@@ -165,12 +166,10 @@ export const shops = pgTable('shops', {
   // still self-heals if the seller later grants access. Cleared on a success.
   yandex_boost_disabled_at: timestamp('yandex_boost_disabled_at', { withTimezone: true }),
   warehouse_id:      uuid('warehouse_id').references(() => warehouses.id, { onDelete: 'set null' }),
-  // ── Stock-sync (edit) mode — opt-in, OFF by default ─────────────────────
-  // read_only (default): the app only reads marketplace data and NEVER
-  // writes. stock_sync: the single audited writer (lib/marketplace/stock-
-  // writer.ts) may push ostatok — stock QUANTITY only — to this shop's live
-  // listing. Nothing else (price/title/order/invoice/…) is ever written.
-  api_mode:                 apiModeEnum('api_mode').default('read_only').notNull(),
+  // All shops default to stock_sync (edit mode). The audited writer
+  // (lib/marketplace/stock-writer.ts) may push ostatok — stock QUANTITY
+  // only. Nothing else (price/title/order/invoice/…) is ever written.
+  api_mode:                 apiModeEnum('api_mode').default('stock_sync').notNull(),
   // Dry-run: when true the writer LOGS the intended store write and sends
   // nothing. First enable + this toggle are dry-run; live writes happen only
   // after it's turned off.

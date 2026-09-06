@@ -6,7 +6,7 @@
  * shop's live listing. Never price, title, order status, invoices, or anything
  * else. Every attempt is:
  *   • kill-switch checked  (STOCK_SYNC_KILL_SWITCH disables all writes instantly)
- *   • restricted to stock_sync shops on Uzum / Yandex Market only
+ *   • restricted to Uzum / Yandex Market only
  *   • hard-skipped when the write identifier is missing/blank (never guess)
  *   • clamped to Math.max(0, quantity)
  *   • routed through the shared marketplaceFetch guard with intent 'stock-write',
@@ -35,8 +35,6 @@ export interface StockWriteShop {
   api_key_encrypted: string | null
   // Yandex Market: the campaignId the stock-update PUT is scoped to.
   shop_id_external?: string | null
-  // read_only shops are NEVER written to. Undefined is treated as read_only.
-  api_mode?: 'read_only' | 'stock_sync' | null
 }
 
 export interface PushStockParams {
@@ -227,13 +225,7 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
     return { status: 'killed', reason: 'kill_switch', quantity: clamped, logId }
   }
 
-  // 2. Read-only shops are NEVER written to (HARD RULE #9).
-  if (shop.api_mode !== 'stock_sync') {
-    const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'not_stock_sync' })
-    return { status: 'skipped', reason: 'not_stock_sync', quantity: clamped, logId }
-  }
-
-  // 3. Scope: Uzum + Yandex Market only (no Wildberries).
+  // 2. Scope: Uzum + Yandex Market only (no Wildberries).
   if (marketplace !== 'uzum' && marketplace !== 'yandex_market') {
     const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'marketplace_out_of_scope' })
     return { status: 'skipped', reason: 'marketplace_out_of_scope', quantity: clamped, logId }

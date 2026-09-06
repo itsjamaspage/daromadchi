@@ -158,19 +158,19 @@ describe('RESERVING_RAW_STATUSES — reserve at PAYMENT, not at unpaid draft', (
     assert.equal(computeAvailable(group), 1)   // still 1 — the sibling stays sellable
   })
 
-  it("a paid order pushes the sibling's target DOWN, and a read-only sibling is never written", () => {
-    // Last unit; a paid Uzum order reserves it. The Yandex stock_sync sibling's
-    // target must drop to 0 (willWrite), closing the oversell window at order time.
+  it("a paid order pushes the sibling's target DOWN, closing the oversell window", () => {
+    // Last unit; a paid Uzum order reserves it. Both siblings' targets must drop to
+    // 0 (willWrite), closing the oversell window at order time.
     const paid = ['PACKING'].filter(reserving).length          // = 1
     const { available, plans } = planStockWrites(
-      [uzum({ physicalStock: 1, listedStock: 1, pending: paid, apiMode: 'read_only' }),
-       ym({ physicalStock: 1, listedStock: 1, pending: 0, apiMode: 'stock_sync' })],
+      [uzum({ physicalStock: 1, listedStock: 1, pending: paid }),
+       ym({ physicalStock: 1, listedStock: 1, pending: 0 })],
       'off',
     )
     assert.equal(available, 0)
-    // Read-only Uzum is never planned for a write.
-    assert.ok(!plans.some(p => p.member.marketplace === 'uzum'))
-    // The writable Yandex sibling is targeted to 0 and will actually be written.
+    // Both members are planned — all shops are edit-mode now.
+    assert.equal(plans.length, 2)
+    // The Yandex sibling is targeted to 0 and will actually be written.
     const ymPlan = plans.find(p => p.member.marketplace === 'yandex_market')
     assert.ok(ymPlan && ymPlan.target === 0 && ymPlan.willWrite)
   })
@@ -435,21 +435,20 @@ describe('detectNewOrders — notify on a NEW order, stay silent on reconcile', 
   })
 })
 
-describe('real-diff-only + read-only members', () => {
+describe('real-diff-only', () => {
   it('no write when the listed number already equals the target', () => {
     // available 2, both already listing 2 → no writes
     const { plans } = planStockWrites([uzum({ listedStock: 2, pending: 0 }), ym({ listedStock: 2 })], 'lock_last_unit')
     for (const p of plans) assert.equal(p.willWrite, false)
   })
 
-  it('read-only members feed available but are never planned for a write', () => {
+  it('all members are planned for writes (no read-only distinction)', () => {
     const { available, plans } = planStockWrites(
-      [uzum({ apiMode: 'stock_sync', listedStock: 3, pending: 1 }), ym({ apiMode: 'read_only', listedStock: 3 })],
+      [uzum({ listedStock: 3, pending: 1 }), ym({ listedStock: 3 })],
       'off',
     )
     assert.equal(available, 2)
-    assert.equal(plans.length, 1)              // only the stock_sync Uzum member
-    assert.equal(plans[0].member.shopId, 'uzum-shop')
+    assert.equal(plans.length, 2)              // both members planned
   })
 })
 

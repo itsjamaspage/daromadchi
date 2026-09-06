@@ -80,7 +80,7 @@ export interface SyncMember {
   productId: string
   shopId: string
   marketplace: MarketplaceType
-  apiMode: 'read_only' | 'stock_sync'
+  apiMode?: 'read_only' | 'stock_sync'
   /** Lower = higher priority. The primary (lowest) keeps the last unit. */
   priority: number
   /** What the marketplace currently lists as available (products.stock_quantity)
@@ -249,13 +249,12 @@ function allocateTargets(available: number, sorted: SyncMember[], mode: Oversell
 }
 
 /**
- * Plan the writes for one SKU group. Read-only members are never written (they
- * only feed the shared `available`); only stock_sync members get a target, and
- * only a real diff (target !== listed) becomes an actual write.
+ * Plan the writes for one SKU group. All members are writable (edit-mode).
+ * Only a real diff (target !== listed) becomes an actual write.
  */
 export function planStockWrites(members: SyncMember[], mode: OversellMode, onHand?: number | null): StockPlan {
   const available = computeAvailable(members, onHand)
-  const writable = members.filter(m => m.apiMode === 'stock_sync').sort(byPriority)
+  const writable = [...members].sort(byPriority)
   const targets = allocateTargets(available, writable, mode)
   const plans: PlannedWrite[] = writable.map(m => {
     let target = targets.get(m.shopId) ?? available

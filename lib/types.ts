@@ -134,9 +134,7 @@ export interface Shop {
   // Wildberries writes to this; the settings card surfaces it as a
   // "throttled until X" chip with a manual reset button.
   throttled_until?: string | null
-  // ── Stock-sync (edit) mode — opt-in, OFF by default ─────────────────────
-  // 'read_only' never writes to the marketplace; 'stock_sync' opts this shop
-  // into the audited stock-quantity-only writer.
+  // All shops are in stock_sync (edit) mode by default.
   api_mode?: 'read_only' | 'stock_sync'
   // Dry-run ("Test mode"): logs the intended store write, sends nothing.
   stock_sync_dry_run?: boolean

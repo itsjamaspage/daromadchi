@@ -23,7 +23,7 @@ export const GET = withErrorHandler(async (req: Request) => {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
   }
 
-  // Uzum stock_sync shops only (YM is driven by its webhook).
+  // Active Uzum shops with a token (YM is driven by its webhook).
   const shopRows = await db.select({
     id: shops.id,
     user_id: shops.user_id,
@@ -33,7 +33,6 @@ export const GET = withErrorHandler(async (req: Request) => {
     stock_poll_at: shops.stock_poll_at,
   }).from(shops).where(and(
     eq(shops.marketplace, 'uzum'),
-    eq(shops.api_mode, 'stock_sync'),
     eq(shops.is_active, true),
     isNotNull(shops.api_key_encrypted),
   ))

@@ -185,7 +185,7 @@ export async function runLedgerShadow(userId: string, shopIds: string[]): Promis
 
       const onHand = ledgerOnHand([...existing, ...writes.map(w => ({ delta: w.delta, reason: w.reason, orderIdExternal: w.orderIdExternal }))])
       const syncMembers: SyncMember[] = members.map(m => ({
-        productId: m.productId, shopId: '', marketplace: m.marketplace, apiMode: 'read_only',
+        productId: m.productId, shopId: '', marketplace: m.marketplace, apiMode: 'stock_sync',
         priority: 0, listedStock: m.listedStock, physicalStock: m.physicalStock, pending: m.pending, sku: m.sku,
       }))
       const legacyAvailable = computeAvailable(syncMembers)   // legacy pool — NOT fed onHand

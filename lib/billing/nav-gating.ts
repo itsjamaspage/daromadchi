@@ -9,7 +9,7 @@
  * Keys are the sidebar's own nav keys, not Feature names, because two entries
  * (P&L and payouts) map to the single 'finances' capability.
  */
-import { loadEntitlement, everyActiveShopIsReadOnly } from './entitlement'
+import { loadEntitlement } from './entitlement'
 import { hasFeature } from './features'
 
 export async function lockedNavKeys(userId: string | null): Promise<string[]> {
@@ -20,11 +20,7 @@ export async function lockedNavKeys(userId: string | null): Promise<string[]> {
 
   if (!hasFeature(entitlement, 'analytics')) locked.push('analytics')
   if (!hasFeature(entitlement, 'unit_economics')) locked.push('unitEconomics')
-  // Stocks follows the page's own rule: it survives the gate while one active
-  // shop is still in stock_sync mode, so the lock icon must not appear then.
-  if (!hasFeature(entitlement, 'stock_sync') && await everyActiveShopIsReadOnly(userId)) {
-    locked.push('stocks')
-  }
+  if (!hasFeature(entitlement, 'stock_sync')) locked.push('stocks')
 
   return locked
 }

@@ -100,7 +100,7 @@ Redesign the Товары and Заказы sections to match the Uzum seller UI 
 
 ## Phase 5 — Settings / edit-only (GATED on oversell fix)
 
-### Task 12 — 🛑 STOP-REVIEW — Remove read-only, token-only settings — status: TODO
+### Task 12 — 🛑 STOP-REVIEW — Remove read-only, token-only settings — status: DONE
 Remove read-only mode; Daromadchi works edit-API only. Strip settings to just entering a token (remove diagnostics, "save mode", mode toggles). **DO NOT START until the owner confirms the oversell fix (#421) is verified stable in prod (a seller-set 0 stays 0 through a sync).** Removing read-only puts every shop permanently on the write path — unsafe until #421 is proven. Owner approval required.
 
 ---
