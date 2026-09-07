@@ -39,6 +39,7 @@ export default function IkpuTable({ products: initialProducts }: Props) {
   const [searchResults, setSearchResults] = useState<IkpuResult[]>([])
   const [searchTotal, setSearchTotal] = useState(0)
   const [searching, setSearching] = useState(false)
+  const [searchError, setSearchError] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
@@ -58,9 +59,10 @@ export default function IkpuTable({ products: initialProducts }: Props) {
 
   // ─── Search logic (tasnif.soliq.uz style) ──────────────────────
   const doSearch = useCallback(async (q: string) => {
-    if (q.length < 2) { setSearchResults([]); setSearchTotal(0); setHasSearched(false); return }
+    if (q.length < 2) { setSearchResults([]); setSearchTotal(0); setHasSearched(false); setSearchError(false); return }
     setSearching(true)
     setHasSearched(true)
+    setSearchError(false)
     try {
       const isBarcode = /^\d{8,14}$/.test(q.trim())
       const param = isBarcode ? `barcode=${encodeURIComponent(q.trim())}` : `q=${encodeURIComponent(q.trim())}`
@@ -68,6 +70,7 @@ export default function IkpuTable({ products: initialProducts }: Props) {
         signal: AbortSignal.timeout(15_000),
       })
       if (!res.ok) {
+        setSearchError(true)
         setSearchResults([])
         setSearchTotal(0)
         return
@@ -76,6 +79,7 @@ export default function IkpuTable({ products: initialProducts }: Props) {
       setSearchResults(data.results ?? [])
       setSearchTotal(data.total ?? 0)
     } catch {
+      setSearchError(true)
       setSearchResults([])
       setSearchTotal(0)
     } finally {
@@ -290,7 +294,13 @@ export default function IkpuTable({ products: initialProducts }: Props) {
               </div>
             )}
 
-            {!searching && hasSearched && searchResults.length === 0 && (
+            {!searching && hasSearched && searchError && (
+              <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                {p.searchError}
+              </div>
+            )}
+
+            {!searching && hasSearched && !searchError && searchResults.length === 0 && (
               <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
                 {p.noResults}
               </div>
