@@ -64,11 +64,20 @@ export default function IkpuTable({ products: initialProducts }: Props) {
     try {
       const isBarcode = /^\d{8,14}$/.test(q.trim())
       const param = isBarcode ? `barcode=${encodeURIComponent(q.trim())}` : `q=${encodeURIComponent(q.trim())}`
-      const res = await fetch(`/api/ikpu/search?${param}&lang=${lang === 'en' ? 'ru' : lang}`)
-      if (!res.ok) return
+      const res = await fetch(`/api/ikpu/search?${param}&lang=${lang === 'en' ? 'ru' : lang}`, {
+        signal: AbortSignal.timeout(15_000),
+      })
+      if (!res.ok) {
+        setSearchResults([])
+        setSearchTotal(0)
+        return
+      }
       const data = await res.json()
       setSearchResults(data.results ?? [])
       setSearchTotal(data.total ?? 0)
+    } catch {
+      setSearchResults([])
+      setSearchTotal(0)
     } finally {
       setSearching(false)
     }
