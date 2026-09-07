@@ -503,6 +503,24 @@ export async function discoverUzumFinancePaths(token: string): Promise<Discovere
   }
 }
 
+export async function discoverUzumFboPaths(token: string): Promise<DiscoveredEndpoint[]> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const spec = await request<any>('/swagger/api-docs', token)
+    if (!spec?.paths) return []
+    const keywords = /fbo|warehouse|fulfil|stock|inventory/i
+    const results: DiscoveredEndpoint[] = []
+    for (const [path, ops] of Object.entries(spec.paths)) {
+      if (!keywords.test(path)) continue
+      const methods = Object.keys(ops as object).filter(m => ['get', 'post'].includes(m))
+      results.push({ path, methods: methods.length > 0 ? methods : ['get'] })
+    }
+    return results
+  } catch {
+    return []
+  }
+}
+
 export async function fetchUzumFinanceData(
   token: string,
   shopIds: number[],
