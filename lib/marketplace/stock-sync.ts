@@ -662,16 +662,6 @@ async function syncStockSyncGroupsLocked(opts: RunOptions): Promise<StockSyncRun
       const shop = shopsById.get(plan.member.shopId)!
       const product = group.products.get(plan.member.productId)!
 
-      // FBY stock is managed by Yandex's warehouse — never push to it.
-      if (product.fulfillment_type === 'fby') {
-        entries.push({
-          matchKey, marketplace: shop.marketplace, shopId: shop.id, productId: product.id,
-          available, listed: plan.member.listedStock, target: plan.target, version: 0,
-          status: 'skipped', reason: 'fby_warehouse_managed',
-        })
-        continue
-      }
-
       // Have we already sent this exact value to this listing? A member that
       // agrees with a target we already pushed is being reasserted on another
       // member's behalf and has nothing to say; a value we have pushed
