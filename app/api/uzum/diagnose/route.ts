@@ -4,7 +4,7 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, orders } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
 import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
-import { UZUM_API_BASE, fetchAllUzumSkuStocks } from '@/lib/uzum/client'
+import { UZUM_API_BASE, fetchAllUzumSkuStocks, discoverUzumFboPaths } from '@/lib/uzum/client'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const runtime = 'nodejs'
@@ -358,6 +358,8 @@ export const GET = withErrorHandler(async (req: Request) => {
     skuStocksSample = { error: String(err).slice(0, 300) }
   }
 
+  const fboPaths = await discoverUzumFboPaths(token)
+
   const validStatuses = orderProbes.filter(p => p.status === 200).map(p => `${p.label}${p.count ? `(${p.count})` : '(0)'}`)
 
   return NextResponse.json({
@@ -371,6 +373,7 @@ export const GET = withErrorHandler(async (req: Request) => {
     // the exact field names / required flags the write must match to stop
     // returning validation-failed-001. Empty [] means the spec wasn't reachable.
     stockWriteDto,
+    fboPaths,
     // Raw v3 /fbs/sku/stocks records the barcode backfill matches on — compare
     // each record's seller-article field + barcode against products.sku to see
     // which SKUs were cross-wired to the wrong barcode.

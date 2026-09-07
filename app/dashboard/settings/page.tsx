@@ -2,7 +2,7 @@ import { getT } from '@/lib/server-i18n'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { shops, userSettings, products, orders } from '@/lib/db/schema'
-import { eq, count } from 'drizzle-orm'
+import { eq, and, count, sql } from 'drizzle-orm'
 import SettingsForm from './SettingsForm'
 import type { Shop } from '@/lib/types'
 
@@ -41,6 +41,16 @@ export default async function SettingsPage() {
       ])
       shopCounts[s.marketplace] = { products: pc ?? 0, orders: oc ?? 0 }
     }))
+  }
+
+  let yandexFulfillmentType: string | null = null
+  if (yandexShop) {
+    const ftRows = await db.selectDistinct({ ft: products.fulfillment_type })
+      .from(products)
+      .where(and(eq(products.shop_id, yandexShop.id), sql`${products.fulfillment_type} IS NOT NULL`))
+    const types = ftRows.map(r => r.ft).filter(Boolean) as string[]
+    if (types.length === 1) yandexFulfillmentType = types[0]
+    else if (types.length > 1) yandexFulfillmentType = types.join('+')
   }
 
   let telegramChatId:   string | null = null
@@ -84,6 +94,7 @@ export default async function SettingsPage() {
         telegramChatId={telegramChatId}
         telegramUsername={telegramUsername}
         shareToken={shareToken}
+        yandexFulfillmentType={yandexFulfillmentType}
       />
     </div>
   )

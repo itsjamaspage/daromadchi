@@ -238,7 +238,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
 
 // ─── Yandex section ───────────────────────────────────────────────────────────
 
-function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
+function YandexCard({ shop, fulfillmentType }: { shop: Shop | null; userId: string; fulfillmentType?: string | null }) {
   const router = useRouter()
   const { lang } = useLang()
   const t = translations[lang].dashboard.settingsPage
@@ -369,9 +369,16 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
           <p className="text-[var(--text-base)] font-semibold text-sm">Yandex Market</p>
           <p className="text-[var(--text-muted)] text-xs">partner.market.yandex.ru</p>
         </div>
-        <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${connected ? 'bg-[var(--badge-ok-bg)] border-[var(--badge-ok-bdr)] text-[var(--badge-ok-text)]' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
-          {connected ? t.connected : t.notConnected}
-        </span>
+        <div className="ml-auto flex items-center gap-2">
+          {connected && fulfillmentType && (
+            <span className="text-[10px] font-semibold px-2 py-1 rounded-full border bg-[var(--bg-input)] border-[var(--border)] text-[var(--text-dim)]">
+              {fulfillmentType.toUpperCase()}
+            </span>
+          )}
+          <span className={`text-[10px] font-semibold px-2 py-1 rounded-full border ${connected ? 'bg-[var(--badge-ok-bg)] border-[var(--badge-ok-bdr)] text-[var(--badge-ok-text)]' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
+            {connected ? t.connected : t.notConnected}
+          </span>
+        </div>
       </div>
 
       {/* Form */}
@@ -649,14 +656,15 @@ interface Props {
   telegramChatId?:   string | null
   telegramUsername?: string | null
   shareToken?:       string | null
+  yandexFulfillmentType?: string | null
 }
 
-export default function SettingsForm({ uzumShop, yandexShop, shopCounts, userId, telegramChatId, telegramUsername, shareToken }: Props) {
+export default function SettingsForm({ uzumShop, yandexShop, shopCounts, userId, telegramChatId, telegramUsername, shareToken, yandexFulfillmentType }: Props) {
   const { lang } = useLang()
   const t = translations[lang].dashboard.settingsPage
   const mpCards = [
-    { shop: uzumShop, mp: 'uzum', Component: UzumCard },
-    { shop: yandexShop, mp: 'yandex_market', Component: YandexCard },
+    { shop: uzumShop, mp: 'uzum', Component: UzumCard, extra: {} },
+    { shop: yandexShop, mp: 'yandex_market', Component: YandexCard, extra: { fulfillmentType: yandexFulfillmentType } },
   ]
   const connected = mpCards.filter(c => c.shop?.api_key_encrypted)
   const cardCols    = mpCards.length >= 3   ? 'md:grid-cols-3' : 'md:grid-cols-2'
@@ -681,8 +689,8 @@ export default function SettingsForm({ uzumShop, yandexShop, shopCounts, userId,
       )}
 
       <div className={`grid grid-cols-1 ${cardCols} gap-4`}>
-        {mpCards.map(({ shop, Component }) => (
-          <Component key={shop?.id ?? Component.name} shop={shop} userId={userId} />
+        {mpCards.map(({ shop, Component, extra }) => (
+          <Component key={shop?.id ?? Component.name} shop={shop} userId={userId} {...extra} />
         ))}
       </div>
       <TelegramCard chatId={telegramChatId ?? null} username={telegramUsername ?? null} />
