@@ -91,12 +91,12 @@ export async function getSystemHealth(): Promise<SystemHealth> {
        ORDER BY p.sku, s.marketplace
     `),
     userId
-      ? db.select({ telegram_bot_token: userSettings.telegram_bot_token, telegram_chat_id: userSettings.telegram_chat_id })
+      ? db.select({ telegram_chat_id: userSettings.telegram_chat_id })
           .from(userSettings).where(eq(userSettings.user_id, userId)).limit(1)
       : Promise.resolve([]),
   ])
 
-  const telegramConnected = tgRes.length > 0 && !!tgRes[0].telegram_bot_token && !!tgRes[0].telegram_chat_id
+  const telegramConnected = tgRes.length > 0 && !!tgRes[0].telegram_chat_id
 
   const shops: ShopStatus[] = shopRes.rows.map(r => {
     const row = r as {
