@@ -107,8 +107,11 @@ Remove read-only mode; Daromadchi works edit-API only. Strip settings to just en
 
 ## Phase 6 — Big API-dependent features (investigation-first, highest risk)
 
-### Task 13 — 🛑 STOP-REVIEW — ИКПУ / tasnif.soliq.uz lookup — status: TODO
+### Task 13 — 🛑 STOP-REVIEW — ИКПУ / tasnif.soliq.uz lookup — status: DONE
 Add ИКПУ (МХИК) code lookup by name / photo / barcode, sourced from tasnif.soliq.uz. **Investigation first:** does tasnif expose a usable API? If not, report options to owner — do not build a scraper or fake without approval. Prerequisite for Task 15.
+
+> **CC note (what shipped):** Investigation confirmed tasnif.soliq.uz exposes a public REST API at `https://tasnif.soliq.uz/api/cls-api` — no auth required. Three lookup methods: (1) keyword search via `/elasticsearch/search?search=...&lang=ru`, (2) barcode/GTIN via `/mxik/search/by-params?gtin=...`, (3) code details via `/integration-mxik/get/history/{code}`. Returns 17-digit МХИК codes with full hierarchy (group → class → position → sub-position → brand → attribute), unit names, and multilingual labels (uz/ru). Implementation: `lib/ikpu/client.ts` — typed API client with `searchByKeyword` and `searchByBarcode` functions. `app/api/ikpu/search/route.ts` — auth-gated search endpoint for the frontend (auto-detects barcode vs keyword). `app/api/ikpu/assign/route.ts` — auth-gated POST to save/clear a product's IKPU code (validates 17-digit format, ownership check). Migration `094_products_ikpu_code.sql` — adds `ikpu_code text` to products. `components/dashboard/IkpuLookupDialog.tsx` — modal with debounced search, result list with assign buttons, current-code display with remove. Wired into ProductsTable: each product row shows an IKPU badge (green with code if assigned, muted "+ ИКПУ" if not); clicking opens the lookup dialog. Full i18n (uz/ru/en). 6 tests (mock-fetch, keyword search, barcode search, URL params). TypeScript 0 errors.
+> **Note:** Photo-based lookup is not supported by the tasnif API — only text search and barcode. This is sufficient for Task 15's needs.
 
 ### Task 14 — 🛑 STOP-REVIEW — Real FBO/FBY stock sync — status: TODO
 Sync real FBO (Uzum) / FBY (Yandex) warehouse stock as distinct data. Today: Uzum FBO stock is NOT synced (no endpoint, no field, Uzum products hard-typed FBS); Yandex FBY partially blends into shared stock. Requires: Uzum FBO fulfillment detection + FBO warehouse-stock fetch + a schema field. **Touches the stock model — owner review required.** Unblocks a real FBO column in Task 1's view.

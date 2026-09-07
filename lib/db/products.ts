@@ -41,6 +41,7 @@ const _fetchProducts = unstable_cache(
         variant_group_key: products.variant_group_key,
         variant_color: products.variant_color,
         image_url: products.image_url,
+        ikpu_code: products.ikpu_code,
         updated_at: products.updated_at,
       }).from(products)
         // Active metrics (dashboard home, analytics, ABC-XYZ) exclude archived.
@@ -144,18 +145,13 @@ const _fetchProducts = unstable_cache(
         cancelled: cancelledByProductId.get(p.id) ?? 0,
         is_shared: isShared,
         image_url: p.image_url,
+        ikpu_code: p.ikpu_code,
         variant_group_key: p.variant_group_key,
         variant_color: p.variant_color,
       } as Product
     })
   },
-  // v10: added variant_group_key/variant_color so the Analytics margin table can
-  // group (it was starved of the keys → every row fell to a flat row). Bumped so
-  // stale v9 rows (missing the fields) aren't served during the revalidate window.
-  // v11: added price_override / stock_override. Bumped for the same reason v10
-  // was — a cached v10 row lacks the new keys, so Analytics would read every
-  // override as unset for up to the revalidate window after a deploy.
-  ['products-v13'],
+  ['products-v14'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
@@ -592,6 +588,7 @@ const _fetchProductsPaginated = unstable_cache(
         variant_group_key: products.variant_group_key,
         variant_color: products.variant_color,
         image_url: products.image_url,
+        ikpu_code: products.ikpu_code,
         updated_at: products.updated_at,
       }).from(products)
         .where(viewWhere)
@@ -692,6 +689,7 @@ const _fetchProductsPaginated = unstable_cache(
         cancelled: cancelledMap.get(p.id) ?? 0,
         is_shared: isShared,
         image_url: p.image_url,
+        ikpu_code: p.ikpu_code,
         is_archived: p.is_archived,
         variant_group_key: p.variant_group_key,
         variant_color: p.variant_color,
@@ -701,7 +699,7 @@ const _fetchProductsPaginated = unstable_cache(
 
     return { rows, total, archivedTotal }
   },
-  ['products-paginated-rpc-v7'],
+  ['products-paginated-rpc-v8'],
   { revalidate: 30, tags: ['product-data'] },
 )
 

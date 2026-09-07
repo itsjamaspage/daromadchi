@@ -259,6 +259,9 @@ export const products = pgTable('products', {
   // their UPDATE patches. LOCAL ONLY — never read to build a marketplace
   // request.
   image_url:              text('image_url'),
+  // 17-digit ИКПУ (МХИК) tax classification code from tasnif.soliq.uz.
+  // Set via the IKPU lookup UI, never by marketplace sync.
+  ikpu_code:              text('ikpu_code'),
   price_override:         numeric('price_override'),
   stock_override:         integer('stock_override'),
 }, (t) => [
