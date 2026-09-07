@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Package, ShoppingCart,
   ChevronRight, X, BarChart2,
   Layers, AlertTriangle,
-  CalendarDays, Users, Lock, Activity,
+  CalendarDays, Users, Lock, Activity, FileText,
 } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
 import { translations } from '@/lib/i18n'
@@ -26,6 +26,7 @@ const storeNavItems: NavItem[] = [
   { href: '/dashboard/orders',         key: 'orders',        icon: ShoppingCart    },
   { href: '/dashboard/analytics',      key: 'analytics',     icon: BarChart2       },
   { href: '/dashboard/unit-economics', key: 'unitEconomics', icon: Layers          },
+  { href: '/dashboard/ikpu',           key: 'ikpu',          icon: FileText        },
   { href: '/dashboard/alerts',         key: 'alerts',        icon: AlertTriangle   },
   { href: '/dashboard/status',         key: 'status',        icon: Activity        },
   { href: '/dashboard/team',           key: 'team',          icon: Users           },
