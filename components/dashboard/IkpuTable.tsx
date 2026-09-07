@@ -132,24 +132,35 @@ export default function IkpuTable({ products: initialProducts }: Props) {
   }, [products, filter, productSearch, suggestions, p.noCategory])
 
   // Auto-suggest: search tasnif for each category that has no IKPU code
-  useEffect(() => {
-    const cats = categoryGroups
+  const catsToFetch = useMemo(() =>
+    categoryGroups
       .filter(g => !g.ikpuCode && g.category !== p.noCategory && !suggestions[g.category])
-    if (cats.length === 0) return
+      .map(g => g.category),
+    [categoryGroups, suggestions, p.noCategory],
+  )
 
-    for (const g of cats) {
-      setSuggestions(prev => ({ ...prev, [g.category]: { result: null, loading: true } }))
-      fetch(`/api/ikpu/search?q=${encodeURIComponent(g.category)}&lang=${lang === 'en' ? 'ru' : lang}`)
+  useEffect(() => {
+    if (catsToFetch.length === 0) return
+
+    for (const cat of catsToFetch) {
+      fetch(`/api/ikpu/search?q=${encodeURIComponent(cat)}&lang=${lang === 'en' ? 'ru' : lang}`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           const first = data?.results?.[0] ?? null
-          setSuggestions(prev => ({ ...prev, [g.category]: { result: first, loading: false } }))
+          setSuggestions(prev => ({ ...prev, [cat]: { result: first, loading: false } }))
         })
         .catch(() => {
-          setSuggestions(prev => ({ ...prev, [g.category]: { result: null, loading: false } }))
+          setSuggestions(prev => ({ ...prev, [cat]: { result: null, loading: false } }))
         })
     }
-  }, [categoryGroups, suggestions, lang, p.noCategory])
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSuggestions(prev => {
+      const next = { ...prev }
+      for (const cat of catsToFetch) next[cat] = { result: null, loading: true }
+      return next
+    })
+  }, [catsToFetch, lang])
 
   // ─── Assign actions ────────────────────────────────────────────
   async function assignSingle(productId: string, code: string) {
