@@ -1,4 +1,5 @@
 const BASE = 'https://tasnif.soliq.uz/api/cls-api'
+const TIMEOUT_MS = 10_000
 
 export interface IkpuSearchItem {
   mxikCode: string
@@ -106,7 +107,10 @@ export async function searchByKeyword(
   const size = opts.size ?? 20
   const page = opts.page ?? 0
   const qs = new URLSearchParams({ search: keyword, lang, size: String(size), page: String(page) })
-  const res = await fetch(`${BASE}/elasticsearch/search?${qs}`)
+  const res = await fetch(`${BASE}/elasticsearch/search?${qs}`, {
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+    cache: 'no-store',
+  })
   if (!res.ok) throw new Error(`tasnif search failed: ${res.status}`)
   const body: SearchResponse = await res.json()
   if (!body.success || !body.data) return { results: [], total: 0 }
@@ -120,7 +124,10 @@ export async function searchByBarcode(
   const lang = opts.lang ?? 'ru'
   const size = opts.size ?? 20
   const qs = new URLSearchParams({ gtin: barcode, lang, size: String(size), page: '0' })
-  const res = await fetch(`${BASE}/mxik/search/by-params?${qs}`)
+  const res = await fetch(`${BASE}/mxik/search/by-params?${qs}`, {
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+    cache: 'no-store',
+  })
   if (!res.ok) throw new Error(`tasnif barcode search failed: ${res.status}`)
   const body: ByParamsResponse = await res.json()
   if (!body.success || !body.data?.content) return { results: [], total: 0 }
