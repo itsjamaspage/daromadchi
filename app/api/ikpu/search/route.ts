@@ -18,11 +18,16 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: 'q or barcode required' }, { status: 400 })
   }
 
-  const result = barcode
-    ? await searchByBarcode(barcode, { lang })
-    : await searchByKeyword(q!, { lang })
+  try {
+    const result = barcode
+      ? await searchByBarcode(barcode, { lang })
+      : await searchByKeyword(q!, { lang })
 
-  return NextResponse.json(result, {
-    headers: { 'Cache-Control': 'private, max-age=60' },
-  })
+    return NextResponse.json(result, {
+      headers: { 'Cache-Control': 'private, max-age=60' },
+    })
+  } catch (err) {
+    console.error('[IKPU Search] tasnif API error:', err instanceof Error ? err.message : err)
+    return NextResponse.json({ results: [], total: 0, error: 'tasnif_unavailable' }, { status: 502 })
+  }
 })

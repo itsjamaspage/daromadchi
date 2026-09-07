@@ -110,6 +110,10 @@ export async function searchByKeyword(
   const res = await fetch(`${BASE}/elasticsearch/search?${qs}`, {
     signal: AbortSignal.timeout(TIMEOUT_MS),
     cache: 'no-store',
+    headers: {
+      'Accept': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (compatible; Daromadchi/1.0)',
+    },
   })
   if (!res.ok) throw new Error(`tasnif search failed: ${res.status}`)
   const body: SearchResponse = await res.json()
@@ -127,6 +131,10 @@ export async function searchByBarcode(
   const res = await fetch(`${BASE}/mxik/search/by-params?${qs}`, {
     signal: AbortSignal.timeout(TIMEOUT_MS),
     cache: 'no-store',
+    headers: {
+      'Accept': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (compatible; Daromadchi/1.0)',
+    },
   })
   if (!res.ok) throw new Error(`tasnif barcode search failed: ${res.status}`)
   const body: ByParamsResponse = await res.json()
