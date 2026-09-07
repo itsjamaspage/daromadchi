@@ -14,6 +14,7 @@ import { ALL_CAT, catKey, catDisplay, buildCategoryList } from '@/lib/filters/ca
 import { cyrillicToLatin, normalizeText } from '@/lib/shared/text-similarity'
 import type { Product, MarketplaceType } from '@/lib/types'
 import { useRouter } from 'next/navigation'
+import IkpuLookupDialog from './IkpuLookupDialog'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
@@ -168,6 +169,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   // Which store-variant groups are open. Collapsed by default: the point of the
   // grouping is a shorter list, so opening one is a deliberate act.
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
+  const [ikpuProduct, setIkpuProduct] = useState<Product | null>(null)
+  const [ikpuUpdates, setIkpuUpdates] = useState<Map<string, string | null>>(new Map())
+  const tp = translations[lang]?.dashboard ?? translations.ru.dashboard
   const toggleGroup = useCallback((key: string) => {
     setOpenGroups(prev => {
       const next = new Set(prev)
@@ -398,6 +402,22 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                   {p.marketplace && <MpBadge mp={p.marketplace} />}
                   {!isChild && <FulfillmentBadge type={p.fulfillment_type} />}
                   {!isChild && <ColorBadge title={p.title} />}
+                  {!isChild && (() => {
+                    const code = ikpuUpdates.has(p.id) ? ikpuUpdates.get(p.id) : p.ikpu_code
+                    return (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setIkpuProduct(p) }}
+                        className="text-[10px] px-1.5 py-0.5 rounded border font-mono"
+                        style={{
+                          color: code ? 'var(--text-dim)' : 'var(--text-muted)',
+                          background: code ? 'rgba(16,185,129,0.08)' : 'rgba(128,128,128,0.06)',
+                          borderColor: code ? 'rgba(16,185,129,0.2)' : 'var(--border)',
+                        }}
+                        title={code ?? tp.ikpuSearch}>
+                        {code ? `ИКПУ ${code}` : '+ ИКПУ'}
+                      </button>
+                    )
+                  })()}
                 </div>
               </div>
             </div>
@@ -673,6 +693,15 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         </div>
       </div>
 
+      {ikpuProduct && (
+        <IkpuLookupDialog
+          productId={ikpuProduct.id}
+          productTitle={ikpuProduct.title}
+          currentCode={ikpuUpdates.has(ikpuProduct.id) ? ikpuUpdates.get(ikpuProduct.id)! : (ikpuProduct.ikpu_code ?? null)}
+          onAssigned={(pid, code) => setIkpuUpdates(prev => new Map(prev).set(pid, code))}
+          onClose={() => setIkpuProduct(null)}
+        />
+      )}
     </div>
   )
 }

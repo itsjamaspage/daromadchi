@@ -190,6 +190,7 @@ export interface Product {
   // wider inventory picture. See lib/db/products.ts for the derivation.
   total_physical: number
   match_key?: string
+  ikpu_code?: string | null
 }
 
 export interface Order {
