@@ -27,7 +27,7 @@ import 'server-only'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db, products } from '@/lib/db'
 import { fetchUzumShopProducts, fetchUzumShops, getUzumRateLimit, UzumApiError } from '@/lib/uzum/client'
-import { fetchAllYandexStocks } from '@/lib/yandex/client'
+import { fetchAllYandexStocks, fetchAllYandexCampaignOffers } from '@/lib/yandex/client'
 import { uzumStockQuantity } from '@/lib/uzum/stock-reading'
 import { stockKeysFor, trimmedIndex, resolveStock } from '@/lib/marketplace/stock-key-match'
 import { logger } from '@/lib/logger'
@@ -214,8 +214,19 @@ export async function refreshYandexStock(
   } catch (e) {
     return { ok: false, seen: 0, updated: 0, error: String(e).slice(0, 200) }
   }
-  // Nothing readable at all is a failed refresh, not an empty catalogue — the
-  // stock clock must stay due so the next tick retries.
+  // FBY sellers: /offers/stocks returns empty because FBY warehouses don't
+  // report through that endpoint. Fall back to the campaign-offers endpoint
+  // (same fallback the heavy sync uses in lib/yandex/sync.ts).
+  if (stockMap.size === 0) {
+    try {
+      const fallback = await fetchAllYandexCampaignOffers(token, campaignId)
+      if (fallback.size > 0) {
+        stockMap = fallback; complete = true; lastError = null
+      }
+    } catch (e) {
+      lastError = lastError ?? String(e).slice(0, 200)
+    }
+  }
   if (stockMap.size === 0) {
     return { ok: false, seen: 0, updated: 0, error: lastError ?? 'stocks response empty' }
   }
