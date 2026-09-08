@@ -86,7 +86,7 @@ export const GET = withErrorHandler(async () => {
 
   // ── 1. ALL OpenAPI spec paths (UNFILTERED) ──────────────────────────────────
   let allPaths: string[] = []
-  let fboRelatedPaths: { path: string; methods: string[] }[] = []
+  const fboRelatedPaths: { path: string; methods: string[] }[] = []
   try {
     const res = await marketplaceFetch(`${UZUM_API_BASE}/swagger/api-docs`, {
       headers: { Authorization: token.trim(), Accept: 'application/json' },
