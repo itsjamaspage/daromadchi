@@ -1,7 +1,7 @@
 # Task 15 & 16 — Product Creation + Returns Investigation
 
 **Date:** 2026-09-09
-**Status:** Investigation complete (revised after full spec review)
+**Status:** Investigation complete (revised — product creation CONFIRMED via internal API)
 
 ---
 
@@ -59,18 +59,74 @@ This is a **WRITE endpoint** that modifies live listing prices on Uzum.
 | `POST /v1/fbs/invoice/{invoiceId}/cancel` | Cancel invoice | Invoices |
 | `POST /v1/fbs/invoice/dop/time-slot` | Update drop-off point/timeslot | Invoices |
 
-#### Uzum Verdict (Revised)
+#### Uzum Internal API — Product Creation (CONFIRMED)
 
-**Product CREATION (new listing from scratch): NOT FEASIBLE.** The spec has no endpoint
-to create a new product card, upload photos, set titles/descriptions, or assign categories.
-New products must still be created in the Uzum seller cabinet (seller.uzum.uz).
+**Source:** Network traffic captured from Uzum seller cabinet (seller.uzum.uz) during
+live product creation on 2026-09-09.
 
-**Product PRICE MANAGEMENT: FEASIBLE.** The `sendPriceData` endpoint can update
-`fullPrice` and `sellPrice` for any SKU on existing products. This would require:
+The seller cabinet uses a **different API surface** from the documented seller-openapi:
 
-1. Adding `POST /v1/product/{shopId}/sendPriceData` to the guard's write allowlist
-   (new intent, e.g. `'price-write'`)
-2. Owner approval for the new write path (MANDATORY)
+- **Documented API:** `https://api-seller.uzum.uz/api/seller-openapi/...`
+- **Internal API:** `https://api-seller.uzum.uz/api/seller/shop/{shopId}/product/...`
+
+The internal API has full product CRUD. Confirmed endpoints:
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `.../childCategories?parentId={id}` | GET | Category tree navigation |
+| `.../active?categoryId={id}` | GET | Check if category accepts new products |
+| `.../getDefinedCharacteristics?...` | GET | Characteristics/attributes for category |
+| `.../required-characteristics?categoryId={id}` | GET | Required fields per category |
+| `.../fields` | GET | Product field definitions |
+| `.../field-descriptions?categoryId={id}` | GET | Field descriptions/help text |
+| `.../values?filterId={id}&page=0` | GET | Filter/attribute value options |
+| `.../check-words` | POST | Content moderation/validation |
+| `.../upload` | POST | Photo/file upload |
+| **`.../createProduct?testVariant=B`** | **POST** | **Create product — returned 201!** |
+| `.../product?productId={id}` | GET | Fetch created product by ID |
+
+All endpoints are under `https://api-seller.uzum.uz/api/seller/shop/{shopId}/product/`.
+
+**Request payload shape** (from captured createProduct call):
+
+```json
+{
+  "categoryId": 13983,
+  "title": { "ru": "...", "uz": "..." },
+  "shortDescription": { "ru": "..." },
+  "description": { "ru": "<p>...</p>" },
+  "productImages": [{ "deletable": true, "url": "https://..." }],
+  "definedCharacteristics": [{ "orderingNumber": 0, ... }],
+  "filterValues": [{ "filterId": 6, "filterValueId": 139... }],
+  "productFields": { "WARRANTY": 6 },
+  "skuList": [],
+  "productCertificates": [],
+  "video": null
+}
+```
+
+**Response** (201 Created): returns the created product with `id: 3319347`,
+`shopSkuTitle`, full characteristics, filters, and commission info.
+
+**Auth:** The cabinet uses `Authorization: Bearer {token}` — same header format as the
+seller-openapi. **NEEDS VERIFICATION:** whether the same API token works on both surfaces,
+or whether the internal API requires a session-derived token (the cabinet also sends a JWT
+in cookies). This is the single remaining unknown before implementation.
+
+#### Uzum Verdict (Final)
+
+**Product CREATION: FEASIBLE** via the internal seller API. The endpoint
+`POST /api/seller/shop/{shopId}/product/createProduct` exists and returns 201.
+Supporting endpoints for categories, characteristics, photo upload, and content
+validation are all present. Pending: auth token compatibility verification.
+
+**Product PRICE MANAGEMENT: FEASIBLE** via the documented seller-openapi.
+The `sendPriceData` endpoint can update `fullPrice` and `sellPrice` for any SKU.
+
+**Both write paths require:**
+
+1. New intents in the marketplace-readonly-guard (`'product-create'`, `'price-write'`)
+2. Owner approval (MANDATORY — these are new marketplace writes)
 3. Audit logging similar to stock writes
 
 **Order management: FEASIBLE but separate scope.** Confirm, identifier binding, DBS
@@ -111,14 +167,16 @@ Partner API has full product CRUD. Implementation would require:
 
 | Capability | Uzum | Yandex |
 |---|---|---|
-| Create new product from scratch | NOT FEASIBLE | FEASIBLE |
+| Create new product from scratch | **FEASIBLE** (internal API) | FEASIBLE |
 | Update prices on existing products | **FEASIBLE** (`sendPriceData`) | FEASIBLE |
 | Update stock quantities | Already implemented | FEASIBLE |
+| Upload product photos | **FEASIBLE** (internal API) | FEASIBLE |
 | Archive/unarchive listings | NOT FEASIBLE | FEASIBLE |
 
 **Realistic scope for Task 15:**
+- **Uzum:** Full product creation via internal API + price management via seller-openapi
+  (pending auth token verification)
 - **Yandex:** Full product creation + price management
-- **Uzum:** Price management on existing products (new write path needed)
 - **Both:** Require owner approval for new write intents in the readonly guard
 
 ---
@@ -230,21 +288,23 @@ These complement the return invoice data but are not needed as the primary sourc
 
 ## Recommendations
 
-1. **Task 15 (Product management):**
-   - **Yandex:** Full product creation is feasible. Requires new `'product-write'` intent
-     in the guard + owner approval.
-   - **Uzum:** Price management on existing products is feasible via `sendPriceData`.
-     Requires new `'price-write'` intent in the guard + owner approval.
-     New product creation from scratch is not possible via API.
+1. **Task 15 (Product creation) — FEASIBLE on BOTH marketplaces:**
+   - **Uzum:** Product creation confirmed via internal API at
+     `/api/seller/shop/{shopId}/product/createProduct`. Full flow: category selection →
+     characteristics → photo upload → create. **Blocker:** verify that the existing
+     seller API token authenticates against the internal API surface (quick test needed).
+   - **Yandex:** Full product creation via `/v2/businesses/{businessId}/offer-mappings/update`.
+   - **Both:** Require new write intents in the guard + owner approval.
 
-2. **Task 16 (Returns tracking):**
-   - **FULLY FEASIBLE.** Build a returns dashboard using the return invoice endpoints.
+2. **Task 16 (Returns tracking) — FULLY FEASIBLE:**
+   - Build a returns dashboard using the return invoice endpoints.
      The API provides warehouse location (Sergeli identification), pickup readiness
      status, time slot scheduling, storage fees, and item-level detail.
    - All endpoints are read-only GET — no guard changes needed.
    - Implementation: add `fetchReturnInvoices` and `fetchReturnDetail` to the Uzum
      client, then build the dashboard UI.
 
-3. **Owner approval required** for Task 15 write paths before implementation begins
-   (per the reconstruction plan's STOP-REVIEW gates). Task 16 is read-only and can
-   proceed without additional approval.
+3. **Next step:** Verify auth token compatibility between seller-openapi and the internal
+   seller API. If the same token works, product creation can proceed immediately after
+   owner approval. If not, investigate the internal API's auth flow (JWT-based session
+   tokens from the seller cabinet login).
