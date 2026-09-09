@@ -1,30 +1,81 @@
 # Task 15 & 16 — Product Creation + Returns Investigation
 
 **Date:** 2026-09-09
-**Status:** Investigation complete
+**Status:** Investigation complete (revised after full spec review)
 
 ---
 
 ## Task 15 — Create products → push to Uzum + Yandex
 
-### Uzum Product Creation API
+### Uzum Product Management API
 
 **Source:** Uzum OpenAPI spec (`GET /swagger/api-docs`, 35 paths, 8 tags)
 
-The "Product" tag in Uzum's spec contains:
+The "Product" tag description reads: "Получение остатков SKU/информации о товарах и
+**изменение цен**, работа с этикетками" — explicitly mentions **price changes**.
 
-- `GET /v1/product/shop/{shopId}` — list products (already used by Daromadchi)
+Product tag endpoints:
 
-The spec has **no POST/PUT product creation endpoint**. The only write endpoints in the
-entire 35-path spec are:
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `GET /v1/product/shop/{shopId}` | GET | List products (already used by Daromadchi) |
+| `POST /v1/product/{shopId}/sendPriceData` | POST | **Change SKU prices** |
+| `POST /v1/product/shop/{shopId}/barcodes/print` | POST | Print barcode labels (returns PDF) |
 
-- `POST /v2/fbs/sku/stocks` — stock quantity update (already used by stock-writer)
-- `POST /v1/fbs/order/{id}/cancel` — order cancellation (already used by order-cancel)
+#### Price management via `sendPriceData`
 
-**Verdict: NOT FEASIBLE for Uzum.** The seller API does not expose product creation.
-Uzum sellers create products exclusively through the seller cabinet UI
-(seller.uzum.uz). There is no API path to create, update title/price/photos, or
-manage product listings programmatically.
+The `POST /v1/product/{shopId}/sendPriceData` endpoint accepts `SendPriceData`:
+
+```
+SendPriceData {
+  productId: integer (required)
+  skuList: SendPriceSkuData[] (required)
+}
+
+SendPriceSkuData {
+  fullPrice: number  — full price (до скидки)
+  sellPrice: number  — sell price (после скидки)
+  skuId: integer (required)
+}
+```
+
+This is a **WRITE endpoint** that modifies live listing prices on Uzum.
+
+#### Full list of Uzum write endpoints (POST)
+
+| Endpoint | Purpose | Category |
+|---|---|---|
+| `POST /v1/product/{shopId}/sendPriceData` | Change SKU prices | **Product** |
+| `POST /v1/product/shop/{shopId}/barcodes/print` | Print barcode labels | Product |
+| `POST /v2/fbs/sku/stocks` | Update stock quantities | Stocks (already used) |
+| `POST /v1/fbs/order/{orderId}/cancel` | Cancel FBS order | Orders (already used) |
+| `POST /v1/fbs/order/{orderId}/confirm` | Confirm FBS order | Orders |
+| `POST /v1/fbs/order/{orderId}/identifier` | Bind identifiers to order items | Orders |
+| `POST /v1/dbs/order/{orderId}/delivering` | DBS order → delivering | Orders |
+| `POST /v1/dbs/order/{orderId}/completed` | DBS order → completed | Orders |
+| `POST /v1/dbs/order/{orderId}/refund` | DBS order refund | Orders |
+| `POST /v1/fbs/invoice` | Create FBS invoice | Invoices |
+| `POST /v1/fbs/invoice/{invoiceId}/update-content` | Update invoice content | Invoices |
+| `POST /v1/fbs/invoice/{invoiceId}/cancel` | Cancel invoice | Invoices |
+| `POST /v1/fbs/invoice/dop/time-slot` | Update drop-off point/timeslot | Invoices |
+
+#### Uzum Verdict (Revised)
+
+**Product CREATION (new listing from scratch): NOT FEASIBLE.** The spec has no endpoint
+to create a new product card, upload photos, set titles/descriptions, or assign categories.
+New products must still be created in the Uzum seller cabinet (seller.uzum.uz).
+
+**Product PRICE MANAGEMENT: FEASIBLE.** The `sendPriceData` endpoint can update
+`fullPrice` and `sellPrice` for any SKU on existing products. This would require:
+
+1. Adding `POST /v1/product/{shopId}/sendPriceData` to the guard's write allowlist
+   (new intent, e.g. `'price-write'`)
+2. Owner approval for the new write path (MANDATORY)
+3. Audit logging similar to stock writes
+
+**Order management: FEASIBLE but separate scope.** Confirm, identifier binding, DBS
+delivery/completion/refund endpoints exist. These are order-lifecycle operations, not
+product creation — they belong in a separate task if needed.
 
 ### Yandex Product Creation API
 
@@ -52,62 +103,148 @@ Partner API has full product CRUD. Implementation would require:
 1. Adding `POST /v2/businesses/{businessId}/offer-mappings/update` to the guard's
    write allowlist (new intent, e.g. `'product-write'`)
 2. Building the product creation form (category selection, required fields per category,
-   photo upload, ИКПУ code from Task 13)
+   photo upload, IKPU code from Task 13)
 3. Mapping Daromadchi's product model to Yandex's offer-mappings schema
 4. Owner approval for the new write path (MANDATORY — this is a new marketplace write)
 
 ### Combined Verdict for Task 15
 
-**Partial feasibility:**
-- **Uzum: NOT FEASIBLE** — no product creation API exists
-- **Yandex: FEASIBLE** with owner approval for a new write path
+| Capability | Uzum | Yandex |
+|---|---|---|
+| Create new product from scratch | NOT FEASIBLE | FEASIBLE |
+| Update prices on existing products | **FEASIBLE** (`sendPriceData`) | FEASIBLE |
+| Update stock quantities | Already implemented | FEASIBLE |
+| Archive/unarchive listings | NOT FEASIBLE | FEASIBLE |
 
-A realistic scope: let sellers create products in Daromadchi and push to Yandex only.
-Uzum products would still need to be created in the Uzum seller cabinet manually, then
-synced into Daromadchi via the existing read path.
+**Realistic scope for Task 15:**
+- **Yandex:** Full product creation + price management
+- **Uzum:** Price management on existing products (new write path needed)
+- **Both:** Require owner approval for new write intents in the readonly guard
 
 ---
 
 ## Task 16 — Returns-from-warehouse (Sergeli) tracking
 
-### Uzum Returns API
+### Uzum Returns API (Revised — significantly more data available than initially assessed)
 
 **Source:** Uzum OpenAPI spec — "Return Invoice" tag
 
-The spec has a "Return Invoice" tag. The paths under it handle return/delivery paperwork.
-These are **read-only GET endpoints** — no guard changes needed.
+The spec has a "Return Invoice" tag with dedicated return invoice endpoints. These are
+**read-only GET endpoints** — no guard changes needed.
 
-The existing order feed (`GET /v2/fbs/orders`) already returns orders with statuses
-including `RETURNED` and `CANCELLED`. The `GET /v1/finance/orders` endpoint includes
-`returnCause` and `amountReturns` fields on each finance line item.
+#### Return Invoice Endpoints
 
-**What's available:**
-- Order status tracking already captures RETURNED status
-- Finance orders endpoint has return cause and return amounts
-- Return Invoice endpoints (if accessible) may have warehouse-specific data
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `GET /v1/shop/{shopId}/return` | GET | List return invoices for a shop |
+| `GET /v1/shop/{shopId}/return/{returnId}` | GET | Detailed return invoice |
+| `GET /v1/return` | GET | Global seller returns list |
+| `GET /v1/fbs/order/return-reasons` | GET | Return reasons enum |
 
-**What's NOT available:**
-- No specific "warehouse pickup" or "Sergeli location" endpoint
-- No API field that says "this item is waiting at Sergeli warehouse for pickup"
+#### Data available in return invoices
 
-**Verdict: PARTIALLY FEASIBLE.** We can show which orders were returned and their
-return causes (already partially in the data). We cannot show warehouse-specific
-pickup status (Sergeli queue) — that data likely lives only in Uzum's internal
-logistics system, not in the seller API.
+**`GET /v1/shop/{shopId}/return`** returns `SellerReturnLite[]`:
 
-A realistic scope: surface returned orders with return reasons and amounts, highlighting
-items the seller needs to collect. The exact warehouse pickup status would need to be
-tracked manually by the seller.
+```
+SellerReturnLite {
+  id: integer
+  dateCreated: string (date-time)
+  status: enum [CREATED, IN_TRANSIT, READY_TO_PICK, PICKED, EXPIRED, CANCELLED]
+  stock: {                        ← WAREHOUSE INFO
+    title: string                 ← warehouse name
+    address: string               ← full address (e.g. "г. Ташкент, Сергелийский район...")
+  }
+  timeSlotReservation: {          ← PICKUP SCHEDULING
+    timeSlotId: integer
+    startTime: string (date-time)
+    endTime: string (date-time)
+    status: enum [PENDING, ACTIVE, COMPLETED, EXPIRED]
+  }
+  paidStorage: {                  ← STORAGE FEES
+    startDate: string (date-time)
+    endDate: string (date-time)
+    dailyRate: number
+  }
+  type: enum [DEFECTED, RETURN, FBS]   ← return reason category
+}
+```
+
+**`GET /v1/shop/{shopId}/return/{returnId}`** returns `SellerReturnDto` with additional
+`returnItems` array:
+
+```
+SellerReturnDto extends SellerReturnLite {
+  returnItems: [{
+    skuId: integer
+    amount: integer               ← quantity returned
+    packedAmount: integer         ← quantity packed for pickup
+    skuTitle: string
+    productTitle: string
+    purchasePrice: number
+  }]
+}
+```
+
+#### Key finding: Warehouse-specific data IS available
+
+The `stock.address` field contains the physical warehouse address (e.g. Sergeli). The
+`status` enum tracks the return lifecycle:
+
+1. `CREATED` — return initiated
+2. `IN_TRANSIT` — items being moved to warehouse
+3. **`READY_TO_PICK`** — items at warehouse, waiting for seller pickup
+4. `PICKED` — seller collected the items
+5. `EXPIRED` — pickup window expired
+6. `CANCELLED` — return cancelled
+
+The `timeSlotReservation` provides the exact pickup window (start/end time) and its
+status (PENDING → ACTIVE → COMPLETED/EXPIRED).
+
+The `paidStorage` data shows when storage fees begin, the daily rate, and the end date —
+giving sellers urgency to pick up before fees accumulate.
+
+#### Uzum Verdict (Revised)
+
+**FULLY FEASIBLE.** The return invoice endpoints provide:
+- Which items are returned and why (type: DEFECTED/RETURN/FBS)
+- Which warehouse they're at (stock.title + stock.address — identifies Sergeli)
+- Whether items are ready for pickup (status: READY_TO_PICK)
+- The pickup time window (timeSlotReservation)
+- Storage fee information (paidStorage)
+- Item-level detail (SKU, quantity, title, purchase price)
+
+This is significantly more data than initially assessed. A returns dashboard can show
+everything a seller needs: what's waiting, where, when to pick it up, and how much
+storage costs if they don't.
+
+### Existing data (supplementary)
+
+The order feed (`GET /v2/fbs/orders`) and finance endpoint (`GET /v1/finance/orders`)
+provide additional context:
+- Order-level RETURNED status
+- `returnCause` and `amountReturns` on finance line items
+
+These complement the return invoice data but are not needed as the primary source.
 
 ---
 
 ## Recommendations
 
-1. **Task 15:** Scope down to Yandex-only product creation. Requires owner approval for
-   the new write intent. Uzum product creation is not possible via API.
+1. **Task 15 (Product management):**
+   - **Yandex:** Full product creation is feasible. Requires new `'product-write'` intent
+     in the guard + owner approval.
+   - **Uzum:** Price management on existing products is feasible via `sendPriceData`.
+     Requires new `'price-write'` intent in the guard + owner approval.
+     New product creation from scratch is not possible via API.
 
-2. **Task 16:** Build a returns dashboard using existing order status + finance data.
-   Don't promise warehouse-specific tracking — the API doesn't support it.
+2. **Task 16 (Returns tracking):**
+   - **FULLY FEASIBLE.** Build a returns dashboard using the return invoice endpoints.
+     The API provides warehouse location (Sergeli identification), pickup readiness
+     status, time slot scheduling, storage fees, and item-level detail.
+   - All endpoints are read-only GET — no guard changes needed.
+   - Implementation: add `fetchReturnInvoices` and `fetchReturnDetail` to the Uzum
+     client, then build the dashboard UI.
 
-3. **Both tasks depend on owner approval** before any implementation begins (per the
-   reconstruction plan's STOP-REVIEW gates).
+3. **Owner approval required** for Task 15 write paths before implementation begins
+   (per the reconstruction plan's STOP-REVIEW gates). Task 16 is read-only and can
+   proceed without additional approval.
