@@ -55,13 +55,12 @@ export const GET = withErrorHandler(async () => {
     marketplace: shops.marketplace,
     api_key_encrypted: shops.api_key_encrypted,
     shop_id_external: shops.shop_id_external,
-    yandex_campaign_id: shops.yandex_campaign_id,
-    yandex_business_id: shops.yandex_business_id,
+    business_id: shops.business_id,
   }).from(shops)
     .where(and(eq(shops.user_id, user.id), eq(shops.is_active, true)))
 
   const uzumShop = allShops.find(s => s.marketplace === 'uzum')
-  const yandexShop = allShops.find(s => s.marketplace === 'yandex')
+  const yandexShop = allShops.find(s => s.marketplace === 'yandex_market')
 
   // ══════════════════════════════════════════════════════════════════════════
   // PART 1: UZUM — Mine OpenAPI spec for product creation + returns endpoints
@@ -151,8 +150,8 @@ export const GET = withErrorHandler(async () => {
 
   if (yandexShop?.api_key_encrypted) {
     const yandexToken = decrypt(yandexShop.api_key_encrypted)
-    yandexBusinessId = yandexShop.yandex_business_id ?? null
-    yandexCampaignId = yandexShop.yandex_campaign_id ?? null
+    yandexBusinessId = yandexShop.business_id ? Number(yandexShop.business_id) : null
+    yandexCampaignId = yandexShop.shop_id_external ?? null
     const headers = { 'Api-Key': yandexToken, 'Content-Type': 'application/json' }
 
     // Yandex product creation docs say:
