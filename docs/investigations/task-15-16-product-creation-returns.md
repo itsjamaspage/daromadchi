@@ -304,7 +304,279 @@ These complement the return invoice data but are not needed as the primary sourc
    - Implementation: add `fetchReturnInvoices` and `fetchReturnDetail` to the Uzum
      client, then build the dashboard UI.
 
-3. **Next step:** Verify auth token compatibility between seller-openapi and the internal
-   seller API. If the same token works, product creation can proceed immediately after
-   owner approval. If not, investigate the internal API's auth flow (JWT-based session
-   tokens from the seller cabinet login).
+3. **REVISED approach — Excel file generation (no API writes needed):** See Section 3 below.
+
+---
+
+## Section 3 — Excel-Based Product Creation (Revised approach)
+
+**Date:** 2026-09-11
+**Status:** Deep research complete — FULLY FEASIBLE
+
+### Background
+
+Direct API product creation was rejected: the internal Uzum API requires session-based
+auth (seller cabinet login), and sellers won't share their credentials. The Yandex
+`updateOfferMappings` endpoint exists but requires WRITE authorization that violates
+the read-only-by-default rule.
+
+**Alternative discovered:** Both Uzum and Yandex support bulk product creation via Excel
+file upload through their seller cabinets. Daromadchi can generate these marketplace-specific
+Excel files programmatically — sellers fill product info once on Daromadchi, download the
+files, and upload them to each marketplace manually.
+
+### Uzum Template Analysis (XLSM)
+
+**File:** `template_210826.xlsm` (downloaded from Uzum seller cabinet)
+**Format:** XLSM (Excel with macros, but the `xlsx` library reports NO VBA macros present
+— the macro content is embedded in the sheet structure as formulas/data-validation, not VBA)
+
+**Structure — 6 sheets:**
+
+| Sheet | Purpose | Size |
+|-------|---------|------|
+| Лист1 | Main data entry (product rows) | 789 rows × 37 cols (A-AK) |
+| Лист2 | Category catalog + filters | 5,330 rows (5,317 unique categories) |
+| Лист3 | Reference data (sizes, colors, brands, countries) | 72,343 rows |
+| Инструкция_RU | Instructions in Russian | 27 rows |
+| Ko'rsatmalar_UZ | Instructions in Uzbek | 25 rows |
+| _cache | Empty (internal use) | — |
+
+**Лист1 — Main data columns (row 2 = headers, row 3 = descriptions):**
+
+| Col | Header | Required | Description |
+|-----|--------|----------|-------------|
+| A | Название товара RU* | ✅ | Product name in Russian |
+| B | Идентификатор от продавца | 🔘 | Seller's internal SKU ID |
+| C | Название товара UZ* | ✅ | Product name in Uzbek |
+| D | Группировка SKU* | ✅ | SKU grouping key (up to 100 chars) |
+| E | Название категории* | ✅ auto | Category name (auto-filled from selection) |
+| F | id категории* | ✅ auto | Category ID (auto-filled) |
+| G | Бренд* | ✅ | Brand (from dropdown reference) |
+| H | Модель | 🔘 | Model name |
+| I | Страна производства* | ✅ | Country of manufacture (from dropdown) |
+| J | Описание товара RU* | ✅ | Product description in Russian |
+| K | Описание товара UZ* | ✅ | Product description in Uzbek |
+| L | Краткое описание RU* | ✅ | Short description RU |
+| M | Краткое описание UZ* | ✅ | Short description UZ |
+| N | Состав RU | 🔘 | Composition in Russian |
+| O | Состав UZ | 🔘 | Composition in Uzbek |
+| P | Инструкция по уходу RU | 🔘 | Care instructions RU |
+| Q | Инструкция по уходу UZ | 🔘 | Care instructions UZ |
+| R | Размерная сетка RU | 🔘 | Size chart RU |
+| S | Размерная сетка UZ | 🔘 | Size chart UZ |
+| T | Ссылки на фото* | ✅ | Photo URLs (JPEG/JPG/WebP/PNG, 1080×1440, ≤5MB) |
+| U | Штрихкод | 🔘 | Barcode (EAN-13/UPC-A, auto-generated if empty) |
+| V | ИКПУ* | ✅ | Tax classification code (16 digits) |
+| W | Цвет | 🔘 | Color (for SKU grouping) |
+| X | Размер | 🔘 | Size (for SKU grouping) |
+| Y | Цена продажи (som)* | ✅ | Selling price in UZS |
+| Z | Цена до скидки (som)* | ✅ | Price before discount in UZS |
+| AA | Вес (г)* | ✅ | Weight in grams |
+| AB | Высота (мм)* | ✅ | Height in mm |
+| AC | Ширина (мм)* | ✅ | Width in mm |
+| AD | Длина (мм)* | ✅ | Length in mm |
+| AE+ | Dynamic filters | varies | Category-specific required filters |
+
+**Key constraints:**
+- One file = one category (critical: changing category after filling breaks all filters)
+- Each row = one SKU (variant); rows with same col D value group into one product
+- Brands, colors, sizes, countries must come from reference lists (Лист3)
+- Photos must be URLs (not embedded), JPEG/PNG/WebP
+- Prices are numbers only (no currency symbols)
+- Dimensions in mm, weight in grams
+- ИКПУ is a 16-digit Uzbek tax code
+
+**Reference data counts:** 72,341 brands, 1,699 sizes, 83 colors, 262 countries
+
+### Yandex Template Analysis (XLSX)
+
+**File:** `_______________.xlsx` (downloaded from Yandex Market partner cabinet)
+**Format:** XLSX (no macros)
+
+**Structure — 4 sheets:**
+
+| Sheet | Purpose | Size |
+|-------|---------|------|
+| Инструкция | Instructions | 22 rows |
+| Enums | Category catalog (enumerations) | 8,805 rows (8,795 categories) |
+| Список товаров | Main data entry | 4 rows × 52 cols (row 4 = example) |
+| Настройки | Column-to-API-field mappings | 61 rows |
+
+**Список товаров — Main data columns (row 2 = headers):**
+
+| Col | Header | API field | Dir | Required | Group |
+|-----|--------|-----------|-----|----------|-------|
+| A | Критичные ошибки | log-message | out | — | message |
+| B | Некритичные ошибки | info-message | out | — | message |
+| C | Качество карточки | contentQuality | out | — | message |
+| D | Ваш SKU * | id | in | ✅ | base |
+| E | Название товара * | name | in | ✅ | base |
+| F | Ссылка на изображение * | picture | in | ✅ | base |
+| G | Описание товара * | description | in | ✅ | base |
+| H | Категория на Маркете * | category,market_category_id | in | ✅ | base |
+| I | Бренд * | vendor | in | ✅ | base |
+| J | Штрихкод * | barcode | in | ✅ | base |
+| K | Теги | set-ids | in | 🔘 | base |
+| L | Ссылка на видео | video | in | 🔘 | base |
+| M | Инструкции | manual | in | 🔘 | base |
+| N | Страна производства | country_of_origin | in | 🔘 | base |
+| O | Артикул производителя | vendorCode | in | 🔘 | base |
+| P | Название на узбекском * | uz_name | in | ✅ | base |
+| Q | Описание на узбекском * | uz_description | in | ✅ | base |
+| R | Вес, кг * | weight | in | ✅ | weight_and_dimension |
+| S | Длина, см * | length | in | ✅ | weight_and_dimension |
+| T | Ширина, см * | width | in | ✅ | weight_and_dimension |
+| U | Высота, см * | height | in | ✅ | weight_and_dimension |
+| V | Кол-во упаковок | box_count | in | 🔘 | weight_and_dimension |
+| W | Объём, л | volume | out | — | weight_and_dimension |
+| X | Цена * | price | in | ✅ | default_price |
+| Y | Зачёркнутая цена | oldprice | in | 🔘 | default_price |
+| Z | Валюта * | currencyId | in | ✅ | default_price |
+| AA | Себестоимость | purchase_price | in | 🔘 | default_price |
+| AB | Доп. расходы | additional_expenses | in | 🔘 | default_price |
+| AC-AF | Сроки годности/службы | period_of_validity_days, etc. | in | 🔘 | expiry |
+| AG-AH | Гарантийный срок | warranty_days, comment_warranty | in | 🔘 | warranty |
+| AI | Маркировка | cargo_types | in | 🔘 | mark_and_docs |
+| AJ | Номер документа | certificate | in | 🔘 | mark_and_docs |
+| AK | ТН ВЭД | tn_ved_code | in | 🔘 | mark_and_docs |
+| AL | ИКПУ * | ikpu | in | ✅ | mark_and_docs |
+| AM | Код упаковки * | ikpu_pack_code | in | ✅ | mark_and_docs |
+| AN-AO | Уценка | condition-type/quality | in | 🔘 | resale |
+| AP | Описание состояния | condition-reason | in | 🔘 | resale |
+| AQ-AT | Доп. параметры | type, age, adult, downloadable | in | 🔘 | optional |
+| AU | Характеристики товара | param | in | 🔘 | optional |
+| AV-AZ | Служебные поля | archived, market-sku, etc. | out/inout | — | — |
+
+**Key differences from Uzum:**
+- Yandex uses kg for weight (not grams), cm for dimensions (not mm)
+- Yandex requires barcode (Uzum auto-generates if empty)
+- Yandex has `currencyId` field (UZS)
+- Yandex tracks IKPU + packaging code separately (AL + AM)
+- No multi-variant grouping in the file — each row is one independent offer
+- Column A-C are output-only (errors/quality score filled by Yandex on re-export)
+- Настройки sheet maps every column to its API field name (documented `in`/`out`/`inout`)
+
+### Field Mapping: Daromadchi → Uzum + Yandex
+
+| Daromadchi field | Uzum column | Yandex column |
+|-----------------|-------------|---------------|
+| Product name (RU) | A: Название товара RU | E: Название товара |
+| Product name (UZ) | C: Название товара UZ | P: Название на узбекском |
+| SKU / identifier | B: Идентификатор от продавца | D: Ваш SKU |
+| Category | E+F: Название/id категории | H: Категория на Маркете |
+| Brand | G: Бренд | I: Бренд |
+| Description (RU) | J: Описание товара RU | G: Описание товара |
+| Description (UZ) | K: Описание товара UZ | Q: Описание на узбекском |
+| Country | I: Страна производства | N: Страна производства |
+| Photo URLs | T: Ссылки на фото | F: Ссылка на изображение |
+| Barcode | U: Штрихкод | J: Штрихкод |
+| IKPU | V: ИКПУ (16 digits) | AL: ИКПУ (17 digits) |
+| Color | W: Цвет | (in AU: Характеристики) |
+| Size | X: Размер | (in AU: Характеристики) |
+| Selling price | Y: Цена продажи (som) | X: Цена |
+| Old price | Z: Цена до скидки (som) | Y: Зачёркнутая цена |
+| Weight | AA: Вес (г) → grams | R: Вес (кг) → kilograms |
+| Height | AB: Высота (мм) → mm | U: Высота (см) → cm |
+| Width | AC: Ширина (мм) → mm | T: Ширина (см) → cm |
+| Length | AD: Длина (мм) → mm | S: Длина (см) → cm |
+| Currency | (implicit: UZS) | Z: Валюта (UZS) |
+| Packaging code | — | AM: Код упаковки |
+
+**Unit conversion needed:** weight (g↔kg, ×1000), dimensions (mm↔cm, ×10)
+
+### Technical Feasibility — Excel Generation
+
+**Can Daromadchi generate these files programmatically?** YES.
+
+**Library:** `xlsx` (SheetJS) is already installed (`^0.18.5`). It can:
+- Create XLSX files with multiple sheets ✅
+- Set cell values, types, and formulas ✅
+- Add data validation (dropdowns) ✅
+- Create merged cells ✅
+- Set column widths and row heights ✅
+
+**Limitation:** `xlsx` (free version) cannot write XLSM with VBA macros. However:
+- The Uzum template's macros handle **UI interactions** in the desktop Excel app
+  (category selection → auto-populate filters). Since Daromadchi pre-fills everything
+  server-side, no macros are needed.
+- Uzum's file upload endpoint accepts XLSX too (the template instructions say "save
+  the file" — the upload parser reads the data, not the macros).
+- Alternative: `exceljs` (MIT, not yet installed) has better style support if needed.
+
+### Recommended Architecture
+
+**Approach: "Excel Generator" — generate downloadable marketplace-specific files**
+
+```
+User fills product form on Daromadchi
+        ↓
+Daromadchi generates TWO files:
+  1. uzum-products.xlsx (Uzum format)
+  2. yandex-products.xlsx (Yandex format)
+        ↓
+User downloads and uploads to each marketplace's seller cabinet
+```
+
+**Why not direct upload to marketplace?**
+- Uzum file upload is via internal API (requires session auth — same blocker as before).
+  No documented API endpoint for Excel upload exists in the public seller-openapi.
+- Yandex file upload is via partner cabinet web UI only (no file upload API endpoint).
+  However, Yandex DOES have a JSON API for product creation:
+  `POST /v2/businesses/{businessId}/offer-mappings/update` (100 products/request,
+  10K/minute). This could be a Phase 2 option for Yandex-only direct push.
+- Excel generation approach is 100% read-only, zero marketplace writes, no guard changes
+
+**Phase 2 option (Yandex only):** Direct product push via `offer-mappings/update` JSON API
+using the seller's existing API key. Would require WRITE authorization (owner approval)
+and a new allowlisted endpoint in `marketplace-readonly-guard.ts`. Uzum has no equivalent
+public API — Excel is the only non-UI path.
+
+### Implementation Plan (high-level)
+
+1. **Product form UI** — page where sellers enter product data once:
+   - Name (RU + UZ), description (RU + UZ), brand, category, country
+   - Photos (URLs), IKPU code, barcode
+   - Price (selling + old), weight, dimensions
+   - Color/size variants (SKU grouping for Uzum)
+
+2. **Category mapping** — map Daromadchi's internal taxonomy to both:
+   - Uzum's 5,317 categories (from Лист2 reference data)
+   - Yandex's 8,795 categories (from Enums sheet)
+   - Use existing `lib/categories/taxonomy.ts` as the bridge
+
+3. **Reference data** — embed or lazy-load from template data:
+   - Brands: 72,341 (Uzum) — searchable dropdown
+   - Colors: 83 (Uzum) — fixed dropdown
+   - Sizes: 1,699 (Uzum) — grouped by type (clothing RU, shoes EU, etc.)
+   - Countries: 262 — fixed dropdown
+
+4. **Excel generator service** (`lib/excel/product-export.ts`):
+   - `generateUzumExcel(products, categoryId)` → Buffer (XLSX)
+   - `generateYandexExcel(products)` → Buffer (XLSX)
+   - Handles unit conversion (g↔kg, mm↔cm)
+   - Includes reference sheets (Лист2, Лист3 for Uzum; Enums, Настройки for Yandex)
+
+5. **API route** (`/api/products/export`):
+   - `POST /api/products/export?marketplace=uzum` → download XLSX
+   - `POST /api/products/export?marketplace=yandex` → download XLSX
+   - `POST /api/products/export?marketplace=both` → download ZIP with both
+
+### Advantages
+
+- **Zero marketplace writes** — fully compliant with read-only rule
+- **No seller credentials needed** — sellers upload files themselves
+- **Uses official marketplace format** — guaranteed compatibility
+- **Saves sellers 50%+ time** — fill once, get files for both marketplaces
+- **Already have the library** — `xlsx` installed, no new dependencies
+- **Reference data embedded** — categories, brands, colors from the template
+
+### Risks & Mitigations
+
+| Risk | Mitigation |
+|------|------------|
+| Template format changes | Pin template version; re-analyze when Uzum/Yandex update |
+| Category mismatch | Build mapping layer with fuzzy-match fallback |
+| IKPU differences (16 vs 17 digits) | Validate per-marketplace, prompt user |
+| Large reference data (72K brands) | Server-side search endpoint, not embedded in page |
+| Missing dynamic filters (Uzum col AE+) | Start without category-specific filters; add later |
