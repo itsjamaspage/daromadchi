@@ -579,4 +579,250 @@ public API — Excel is the only non-UI path.
 | Category mismatch | Build mapping layer with fuzzy-match fallback |
 | IKPU differences (16 vs 17 digits) | Validate per-marketplace, prompt user |
 | Large reference data (72K brands) | Server-side search endpoint, not embedded in page |
-| Missing dynamic filters (Uzum col AE+) | Start without category-specific filters; add later |
+| Missing dynamic filters (Uzum col AE+) | See Section 4 — detailed analysis and solutions |
+
+---
+
+## Section 4 — Category-Specific Required Attributes (Critical Gap)
+
+**Date:** 2026-09-11
+**Status:** Investigation complete
+
+### The Problem
+
+Different product categories require different attributes on each marketplace. A smartphone
+needs processor/RAM/storage; a t-shirt needs fabric type/sleeve length; pet supplies need
+animal type. These are not optional — the marketplace rejects uploads missing required
+category attributes.
+
+The initial investigation (Section 3) documented the fixed columns (name, price, dimensions,
+photos, etc.) but deferred the dynamic, category-specific fields. This section addresses
+that gap.
+
+### Uzum: Category-Specific Filters
+
+**How Uzum handles it in the template:**
+
+The Uzum XLSM template (columns AE-BI on Лист1) has 31 dynamic filter columns. When a
+seller selects a category in cell C1, Excel VBA macros:
+1. Query the `required-characteristics` for that category
+2. Populate column headers AE-BI with filter names
+3. Add data validation dropdowns with allowed values from `FilterList_XXXX` named ranges
+4. The `_cache` sheet receives filter value lists at runtime
+
+**Static data in the template:**
+
+| Metric | Value |
+|--------|-------|
+| Total categories in Лист2 | 5,317 |
+| Categories WITH embedded filter data | **7** (0.1%) |
+| Categories WITHOUT filter data | 5,310 (99.9%) |
+| Named ranges (FilterList_*) | 87 (all point to empty `_cache` sheet) |
+
+The 7 categories with embedded data are niche (pet flea remedies, orthopedic braces,
+sinks) — not the high-volume categories sellers use most.
+
+**Available API endpoints for category attributes:**
+
+| Endpoint | API surface | Auth required | Purpose |
+|----------|------------|---------------|---------|
+| `GET .../required-characteristics?categoryId={id}` | Internal seller API | Session Bearer + JWT cookie | **Required** attributes per category |
+| `GET .../getDefinedCharacteristics?...` | Internal seller API | Session Bearer + JWT cookie | All defined characteristics |
+| `GET .../values?filterId={id}&page=0` | Internal seller API | Session Bearer + JWT cookie | Allowed values for a filter |
+| `GET .../field-descriptions?categoryId={id}` | Internal seller API | Session Bearer + JWT cookie | Field help text |
+| (none) | Documented seller-openapi | API token | — No category attribute endpoints |
+| `makeSearch(categoryId: ...)` → `filters[]` | Public GraphQL (read-only) | None | Consumer-facing category filters |
+
+**Key finding:** The **documented seller-openapi** (35 paths, API token auth) has **zero**
+category attribute endpoints. All category attribute queries are on the **internal API**
+which requires session auth — the same auth sellers refuse to share.
+
+**However:** The public consumer GraphQL API at `graphql.uzum.uz` returns `filters[]` when
+searching within a category. These consumer-facing filters likely overlap significantly with
+seller-required attributes (if buyers can filter by "RAM", sellers must provide "RAM"). This
+is a read-only, no-auth data source.
+
+**Existing product data insight:**
+
+Products already synced via the seller-openapi include `characteristicsList[]`:
+```
+characteristicsList: [
+  { characteristicTitle: { ru: 'Цвет', uz: 'Rang' },
+    characteristicValue: { ru: 'Бежевый', uz: 'Sargʻish' } },
+  { characteristicTitle: { ru: 'Процессор', uz: '...' },
+    characteristicValue: { ru: 'Snapdragon 888', uz: '...' } }
+]
+```
+By analyzing existing products per category, Daromadchi can reverse-engineer which
+characteristics are common/required for each category.
+
+### Yandex: Category-Specific Parameters
+
+**How Yandex handles it in the template:**
+
+Column AU uses free-text pipe-delimited format: `Цвет|Красный;Длина|100|см`
+
+The template provides NO guidance on which characteristics are required per category —
+no validation, no dropdowns, no embedded per-category requirement data. The seller
+enters any key-value pairs they want.
+
+**Available API endpoints for category parameters:**
+
+Yandex Market Partner API has a documented category parameters endpoint (confirmed from
+the official OpenAPI spec at `github.com/yandex-market/yandex-market-partner-api`):
+
+**`POST /v2/category/{categoryId}/parameters`** (`getCategoryContentParameters`)
+
+| Field | Type | Notes |
+|-------|------|-------|
+| Path: `categoryId` | int64 | Leaf category ID from `/v2/categories/tree` |
+| Query: `businessId` | int64 (optional) | For variant-specific characteristics |
+| Rate limit | | 100 req/min |
+
+Response returns `CategoryParameterDTO[]`:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | int64 | Parameter identifier (category-specific) |
+| `name` | string | Human-readable name (e.g. "Цвет товара", "Объём памяти") |
+| `type` | enum | `TEXT`, `ENUM`, `BOOLEAN`, `NUMERIC` |
+| `required` | boolean | **Whether the parameter is mandatory for this category** |
+| `filtering` | boolean | Used in search filters |
+| `distinctive` | boolean | Differentiates product variants |
+| `multivalue` | boolean | Accepts multiple values |
+| `allowCustomValues` | boolean | Custom values allowed (ENUM only) |
+| `values[]` | array | Allowed enum options: `[{ id, value, description }]` |
+| `unit` | object | `{ defaultUnitId, units[{ id, name, fullName }] }` |
+| `constraints` | object | `{ minValue, maxValue }` for NUMERIC; `{ maxLength }` for TEXT |
+| `valueRestrictions` | array | Cross-parameter constraints on allowed ENUM values |
+
+**Two product creation/update endpoints accept `parameterValues[]`:**
+
+1. `POST /v2/businesses/{businessId}/offer-mappings/update` — full product create/update
+   (up to 500 offers/request). Pass `marketCategoryId` + `parameterValues[]`.
+2. `POST /v2/businesses/{businessId}/offer-cards/update` — category characteristics only
+   (lighter, 5000 items/min). For editing just the params on existing products.
+
+**`ParameterValueDTO`** structure (items in `parameterValues[]`):
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `parameterId` | int64 (required) | From `getCategoryContentParameters` response |
+| `valueId` | int64 (optional) | For ENUM: ID from the allowed values list |
+| `value` | string (optional) | The actual value (free text or enum label) |
+| `unitId` | int64 (optional) | Override default unit for NUMERIC params |
+
+This is the same structure as the existing `YandexOfferCardParam` interface in
+`lib/yandex/client.ts`. The read endpoint (`getOfferCards`) returns `parameterId` +
+`valueId` + `value` but **no parameter name** — you must join against
+`getCategoryContentParameters` to get names.
+
+**API auth:** Uses the seller's existing Yandex API key (`Api-Key` header) — same auth
+Daromadchi already has. **No additional auth needed.**
+
+### Solutions by Marketplace
+
+#### Uzum — Tiered approach
+
+**Tier 1 (MVP — no extra auth):**
+Generate Excel with all fixed columns filled. Leave dynamic filter columns (AE+) blank.
+Include a note in the generated file: "Open this file in Excel and select your category
+to auto-populate required filters." The template's built-in macros handle the rest.
+
+Tradeoff: Seller still needs to fill category-specific fields manually in Excel.
+Value: Still saves significant time on the 30 fixed columns.
+
+**Tier 2 (Read-only intelligence):**
+Use two read-only data sources to SUGGEST category-specific fields in Daromadchi's form:
+1. **Existing product analysis**: Scan `characteristicsList` of all synced products in the
+   same category. Group by `characteristicTitle.ru` → get the common characteristics.
+2. **Consumer GraphQL filters**: Query `makeSearch(categoryId)` → `filters[]` to get
+   filter names and values for the category.
+
+Present these as "suggested attributes" in Daromadchi's product form. Pre-fill them in
+the generated Excel. Some may not match exactly what Uzum's upload validator expects,
+but it provides a strong starting point.
+
+**Tier 3 (Crowdsourced accuracy):**
+When a seller successfully uploads a product to Uzum, let them mark which attributes
+were required/accepted. Store this in a `category_attributes` table. Over time, build
+a comprehensive mapping database from real upload successes.
+
+#### Yandex — Programmatic (API-driven, fully solvable)
+
+**Phase 1 (Excel with pre-filled characteristics):**
+1. Query `POST /v2/category/{categoryId}/parameters` (100 req/min) to get required params
+   — returns parameter names, types, `required` flag, allowed values for ENUMs
+2. Present required params in Daromadchi's product form with correct input types
+   (dropdown for ENUM, text for TEXT, number for NUMERIC with unit)
+3. In the generated Yandex Excel, populate column AU with the filled parameters
+   in the correct pipe-delimited format: `Цвет|Красный;Длина|100|см`
+
+**Phase 2 (Direct API push — requires owner approval):**
+1. Use `POST /v2/businesses/{businessId}/offer-mappings/update` to push products directly
+2. Include `parameterValues: [{ parameterId, valueId, value }]` array
+3. Pass `marketCategoryId` alongside `parameterValues`
+4. Rate limit: 500 offers/request, 10K offers/minute
+5. This bypasses Excel entirely for Yandex — but requires WRITE authorization
+
+### Data Model Addition
+
+To support category-specific attributes, add a table:
+
+```sql
+CREATE TABLE category_attributes (
+  id SERIAL PRIMARY KEY,
+  marketplace TEXT NOT NULL,           -- 'uzum' | 'yandex'
+  marketplace_category_id TEXT NOT NULL,
+  attribute_name TEXT NOT NULL,
+  attribute_name_uz TEXT,
+  attribute_type TEXT,                 -- 'enum' | 'text' | 'numeric'
+  is_required BOOLEAN DEFAULT false,
+  allowed_values JSONB,               -- array of allowed values (for enum type)
+  unit TEXT,                           -- measurement unit (for numeric type)
+  source TEXT,                         -- 'api' | 'template' | 'crowdsourced' | 'product_analysis'
+  confidence REAL DEFAULT 1.0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(marketplace, marketplace_category_id, attribute_name)
+);
+```
+
+### Revised Architecture
+
+```
+Seller selects category in Daromadchi
+        ↓
+Daromadchi fetches category-specific attributes:
+  - Yandex: GET /v2/categories/{catId}/parameters (API, authoritative)
+  - Uzum: product analysis + consumer GraphQL + crowdsourced data (best-effort)
+        ↓
+Product form shows BOTH fixed fields AND category-specific fields
+        ↓
+Generate Excel files:
+  - Uzum: fixed cols pre-filled, dynamic filter cols pre-filled (best-effort)
+  - Yandex: all cols pre-filled including AU characteristics
+        ↓
+Seller downloads and uploads to marketplace
+  - If Uzum rejects some filter values → seller corrects in Excel
+  - Yandex: parameters are authoritative, fewer errors expected
+```
+
+### Conclusion
+
+Category-specific attributes are a real and significant gap. The situation differs by
+marketplace:
+
+- **Yandex**: Fully solvable via the existing API (`/v2/categories/{id}/parameters`).
+  Daromadchi can fetch required params using the seller's existing API key and generate
+  accurate Excel files or push directly via the JSON API.
+
+- **Uzum**: Partially solvable. The authoritative source (internal API) requires session
+  auth we can't get. But combining existing product analysis + consumer GraphQL + template
+  data (7 categories) + crowdsourced feedback provides 80-90% coverage for common
+  categories. The generated Excel still includes the dynamic columns, and the seller can
+  fine-tune them in desktop Excel before uploading.
+
+The MVP (Tier 1 Uzum + Phase 1 Yandex) still provides massive value: filling 30+ fixed
+columns for Uzum and 45+ columns for Yandex programmatically, even if some category-specific
+fields need manual completion.
