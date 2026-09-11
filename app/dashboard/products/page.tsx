@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { Package, Settings } from 'lucide-react'
+import { Package, Settings, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { getProductsPaginated } from '@/lib/db/products'
 import ProductsTable from '@/components/dashboard/ProductsTable'
@@ -46,9 +46,15 @@ export default async function ProductsPage({ searchParams }: Props) {
           </Suspense>
           <ArchivedTabs archived={archived} archivedTotal={archivedTotal} mp={mp} />
         </div>
-        <Suspense>
-          <LastSyncedServer />
-        </Suspense>
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/products/new"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl transition-colors btn-primary">
+            <Plus className="w-4 h-4" /> {d.createProduct}
+          </Link>
+          <Suspense>
+            <LastSyncedServer />
+          </Suspense>
+        </div>
       </div>
 
       {total === 0 ? (
