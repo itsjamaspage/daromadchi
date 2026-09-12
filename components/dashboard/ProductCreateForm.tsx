@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from 'react'
 import {
-  Plus, Trash2, Download, FileSpreadsheet,
-  ChevronDown, ChevronUp, ArrowLeft,
+  Plus, Trash2, Download, FileSpreadsheet, Send,
+  ChevronDown, ChevronUp, ArrowLeft, Check, AlertCircle,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useLang } from '@/app/providers'
@@ -193,6 +193,9 @@ export default function ProductCreateForm() {
 
   // Export state
   const [downloading, setDownloading] = useState<'uzum' | 'yandex' | 'both' | null>(null)
+  // Yandex push state
+  const [pushing, setPushing] = useState(false)
+  const [pushResult, setPushResult] = useState<{ ok: boolean; message: string } | null>(null)
 
   const addVariant = () => setVariants(prev => [...prev, EMPTY_VARIANT()])
   const removeVariant = (id: string) => setVariants(prev => prev.filter(v => v.id !== id))
@@ -300,6 +303,65 @@ export default function ProductCreateForm() {
       // silently handled
     } finally {
       setDownloading(null)
+    }
+  }
+
+  const handleYandexPush = async () => {
+    setPushing(true)
+    setPushResult(null)
+    try {
+      const products = buildProducts()
+      const offers = products.map(p => ({
+        offerId: p.sku || `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: p.nameRu,
+        category: yandexCatName || undefined,
+        vendor: p.brand || undefined,
+        description: p.descriptionRu || undefined,
+        pictures: p.photoUrls ? p.photoUrls.split(/[\n,]+/).map(u => u.trim()).filter(Boolean) : undefined,
+        barcodes: p.barcode ? [p.barcode] : undefined,
+        weightDimensions: {
+          weight: p.weightGrams ? p.weightGrams / 1000 : undefined,
+          length: p.lengthMm ? p.lengthMm / 10 : undefined,
+          width: p.widthMm ? p.widthMm / 10 : undefined,
+          height: p.heightMm ? p.heightMm / 10 : undefined,
+        },
+        basicPrice: p.sellingPrice ? {
+          value: p.sellingPrice,
+          currencyId: 'RUR',
+          discountBase: p.oldPrice || undefined,
+        } : undefined,
+        customsCommodityCodes: p.ikpu ? [p.ikpu] : undefined,
+      }))
+
+      const res = await fetch('/api/products/yandex-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offers }),
+      })
+
+      if (res.ok) {
+        setPushResult({
+          ok: true,
+          message: lang === 'ru'
+            ? `${offers.length} товар(ов) отправлено в Yandex Market`
+            : lang === 'uz'
+            ? `${offers.length} ta mahsulot Yandex Market ga yuborildi`
+            : `${offers.length} product(s) pushed to Yandex Market`,
+        })
+      } else {
+        const data = await res.json().catch(() => ({ error: res.statusText }))
+        setPushResult({
+          ok: false,
+          message: data.error || `HTTP ${res.status}`,
+        })
+      }
+    } catch (err) {
+      setPushResult({
+        ok: false,
+        message: err instanceof Error ? err.message : 'Unknown error',
+      })
+    } finally {
+      setPushing(false)
     }
   }
 
@@ -481,14 +543,21 @@ export default function ProductCreateForm() {
         </button>
       </SectionCard>
 
-      {/* Export */}
+      {/* Yandex Direct Push */}
       <div
         className="rounded-2xl border p-5"
         style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
       >
-        <h3 className="font-semibold text-[15px] mb-4" style={{ color: 'var(--text-base)' }}>
-          {d.exportSection}
+        <h3 className="font-semibold text-[15px] mb-3" style={{ color: 'var(--text-base)' }}>
+          {d.addToYandex ?? 'Yandex Market'}
         </h3>
+        <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+          {d.addToYandexHint ?? (lang === 'ru'
+            ? 'Товар будет создан напрямую в Yandex Market через API'
+            : lang === 'uz'
+            ? 'Mahsulot Yandex Market ga API orqali to\'g\'ridan-to\'g\'ri qo\'shiladi'
+            : 'Product will be created directly on Yandex Market via API')}
+        </p>
 
         {!canExport && (
           <p className="text-sm mb-4 px-3 py-2 rounded-xl border"
@@ -497,50 +566,90 @@ export default function ProductCreateForm() {
           </p>
         )}
 
+        {pushResult && (
+          <div
+            className="flex items-center gap-2 text-sm mb-4 px-3 py-2 rounded-xl border"
+            style={{
+              borderColor: pushResult.ok ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)',
+              background: pushResult.ok ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+              color: pushResult.ok ? 'rgb(34,197,94)' : 'rgb(239,68,68)',
+            }}
+          >
+            {pushResult.ok ? <Check className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+            {pushResult.message}
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
-            disabled={!canExport || downloading !== null}
-            onClick={() => handleExport('uzum')}
+            disabled={!canExport || pushing}
+            onClick={handleYandexPush}
             className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-40"
             style={{
-              background: canExport ? '#7B68EE' : 'var(--bg-card2)',
-              color: canExport ? '#fff' : 'var(--text-muted)',
+              background: canExport && !pushing ? '#FC3F1D' : 'var(--bg-card2)',
+              color: canExport && !pushing ? '#fff' : 'var(--text-muted)',
             }}
           >
-            <FileSpreadsheet className="w-4 h-4" />
-            {downloading === 'uzum' ? d.downloading : d.exportUzum}
+            <Send className="w-4 h-4" />
+            {pushing
+              ? (d.pushing ?? (lang === 'ru' ? 'Отправка...' : lang === 'uz' ? 'Yuborilmoqda...' : 'Pushing...'))
+              : (d.pushToYandex ?? (lang === 'ru' ? 'Добавить в Yandex' : lang === 'uz' ? 'Yandex ga qo\'shish' : 'Add to Yandex'))}
           </button>
 
           <button
             type="button"
             disabled={!canExport || downloading !== null}
             onClick={() => handleExport('yandex')}
-            className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-40"
-            style={{
-              background: canExport ? '#FC3F1D' : 'var(--bg-card2)',
-              color: canExport ? '#fff' : 'var(--text-muted)',
-            }}
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            {downloading === 'yandex' ? d.downloading : d.exportYandex}
-          </button>
-
-          <button
-            type="button"
-            disabled={!canExport || downloading !== null}
-            onClick={() => handleExport('both')}
-            className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl border transition-colors disabled:opacity-40"
+            className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl border transition-colors disabled:opacity-40"
             style={{
               borderColor: 'var(--border)',
               color: canExport ? 'var(--text-base)' : 'var(--text-muted)',
               background: 'var(--bg-card2)',
             }}
           >
-            <Download className="w-4 h-4" />
-            {downloading === 'both' ? d.downloading : d.exportBoth}
+            <FileSpreadsheet className="w-4 h-4" />
+            {downloading === 'yandex' ? d.downloading : (d.exportYandexAlt ?? (lang === 'ru' ? 'Скачать Excel' : lang === 'uz' ? 'Excel yuklab olish' : 'Download Excel'))}
           </button>
         </div>
+      </div>
+
+      {/* Uzum Excel Export */}
+      <div
+        className="rounded-2xl border p-5"
+        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+      >
+        <h3 className="font-semibold text-[15px] mb-3" style={{ color: 'var(--text-base)' }}>
+          {d.uzumExport ?? 'Uzum Market'}
+        </h3>
+        <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+          {d.uzumExportHint ?? (lang === 'ru'
+            ? 'Скачайте Excel-файл и загрузите его в кабинет продавца Uzum'
+            : lang === 'uz'
+            ? 'Excel faylni yuklab oling va Uzum sotuvchi kabinetiga yuklang'
+            : 'Download Excel file and upload it to Uzum seller cabinet')}
+        </p>
+
+        {!canExport && (
+          <p className="text-sm mb-4 px-3 py-2 rounded-xl border"
+            style={{ color: 'var(--text-muted)', borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
+            {d.fillRequired}
+          </p>
+        )}
+
+        <button
+          type="button"
+          disabled={!canExport || downloading !== null}
+          onClick={() => handleExport('uzum')}
+          className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-40"
+          style={{
+            background: canExport ? '#7B68EE' : 'var(--bg-card2)',
+            color: canExport ? '#fff' : 'var(--text-muted)',
+          }}
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          {downloading === 'uzum' ? d.downloading : d.exportUzum}
+        </button>
       </div>
     </div>
   )
