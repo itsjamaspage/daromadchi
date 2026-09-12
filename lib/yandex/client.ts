@@ -545,20 +545,23 @@ export async function fetchCategoryParameters(
 export interface YandexOfferUpdate {
   offerId: string
   name: string
+  /** @deprecated Yandex shuts down string category on 2026-10-12. Use marketCategoryId. */
   category?: string
+  marketCategoryId?: number
   vendor?: string
   description?: string
   pictures?: string[]
   barcodes?: string[]
+  manufacturerCountries?: string[]
   weightDimensions?: {
-    weight?: number
-    length?: number
-    width?: number
-    height?: number
+    weight: number
+    length: number
+    width: number
+    height: number
   }
   basicPrice?: { value: number; currencyId?: string; discountBase?: number }
   parameterValues?: { parameterId: number; valueId?: number; value?: string; unitId?: number }[]
-  customsCommodityCodes?: string[]
+  customsCommodityCodes?: { code: string; type?: string }[]
 }
 
 // Market research APIs — errors propagate so callers can surface them to the UI
