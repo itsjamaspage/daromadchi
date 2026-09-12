@@ -14,19 +14,21 @@ interface PushBody {
     offerId: string
     name: string
     category?: string
+    marketCategoryId?: number
     vendor?: string
     description?: string
     pictures?: string[]
     barcodes?: string[]
+    manufacturerCountries?: string[]
     weightDimensions?: {
-      weight?: number
-      length?: number
-      width?: number
-      height?: number
+      weight: number
+      length: number
+      width: number
+      height: number
     }
     basicPrice?: { value: number; currencyId?: string; discountBase?: number }
     parameterValues?: { parameterId: number; valueId?: number; value?: string; unitId?: number }[]
-    customsCommodityCodes?: string[]
+    customsCommodityCodes?: { code: string; type?: string }[]
   }[]
 }
 
@@ -68,10 +70,12 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     offerId: o.offerId,
     name: o.name,
     category: o.category,
+    marketCategoryId: o.marketCategoryId,
     vendor: o.vendor,
     description: o.description,
     pictures: o.pictures,
     barcodes: o.barcodes,
+    manufacturerCountries: o.manufacturerCountries,
     weightDimensions: o.weightDimensions,
     basicPrice: o.basicPrice,
     parameterValues: o.parameterValues,

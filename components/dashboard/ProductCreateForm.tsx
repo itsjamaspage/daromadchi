@@ -319,18 +319,19 @@ export default function ProductCreateForm() {
         description: p.descriptionRu || undefined,
         pictures: p.photoUrls ? p.photoUrls.split(/[\n,]+/).map(u => u.trim()).filter(Boolean) : undefined,
         barcodes: p.barcode ? [p.barcode] : undefined,
-        weightDimensions: {
-          weight: p.weightGrams ? p.weightGrams / 1000 : undefined,
-          length: p.lengthMm ? p.lengthMm / 10 : undefined,
-          width: p.widthMm ? p.widthMm / 10 : undefined,
-          height: p.heightMm ? p.heightMm / 10 : undefined,
-        },
+        manufacturerCountries: p.country ? [p.country] : undefined,
+        weightDimensions: (p.weightGrams && p.lengthMm && p.widthMm && p.heightMm) ? {
+          weight: p.weightGrams / 1000,
+          length: p.lengthMm / 10,
+          width: p.widthMm / 10,
+          height: p.heightMm / 10,
+        } : undefined,
         basicPrice: p.sellingPrice ? {
           value: p.sellingPrice,
           currencyId: 'RUR',
           discountBase: p.oldPrice || undefined,
         } : undefined,
-        customsCommodityCodes: p.ikpu ? [p.ikpu] : undefined,
+        customsCommodityCodes: p.ikpu ? [{ code: p.ikpu }] : undefined,
       }))
 
       const res = await fetch('/api/products/yandex-push', {
@@ -383,11 +384,11 @@ export default function ProductCreateForm() {
           <InputField label={d.nameRu} required value={nameRu} onChange={setNameRu} />
           <InputField label={d.nameUz} required value={nameUz} onChange={setNameUz} />
           <InputField label={d.skuId} value={sku} onChange={setSku} />
-          <InputField label={d.skuGroupLabel} value={skuGroup} onChange={setSkuGroup}
+          <InputField label={d.skuGroupLabel} required value={skuGroup} onChange={setSkuGroup}
             placeholder={nameRu || undefined} />
           <InputField label={d.brandLabel} required value={brand} onChange={setBrand} />
           <InputField label={d.modelLabel} value={model} onChange={setModel} />
-          <InputField label={d.countryLabel} value={country} onChange={setCountry} />
+          <InputField label={d.countryLabel} required value={country} onChange={setCountry} />
         </div>
       </SectionCard>
 
@@ -431,9 +432,9 @@ export default function ProductCreateForm() {
       <SectionCard title={d.pricingSection}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <InputField label={d.sellingPrice} required type="number" value={sellingPrice} onChange={setSellingPrice} />
-          <InputField label={d.oldPriceLabel} type="number" value={oldPrice} onChange={setOldPrice} />
+          <InputField label={d.oldPriceLabel} required type="number" value={oldPrice} onChange={setOldPrice} />
           <InputField label={d.ikpuLabel} required value={ikpu} onChange={setIkpu} />
-          <InputField label={d.barcodeLabel} value={barcode} onChange={setBarcode} />
+          <InputField label={d.barcodeLabel} required value={barcode} onChange={setBarcode} />
           <InputField label={d.weightG} required type="number" value={weightG} onChange={setWeightG} />
           <InputField label={d.heightMm} required type="number" value={heightMm} onChange={setHeightMm} />
           <InputField label={d.widthMm} required type="number" value={widthMm} onChange={setWidthMm} />
