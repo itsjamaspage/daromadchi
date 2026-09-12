@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import {
-  Plus, Trash2, Download, FileSpreadsheet, Send,
+  Plus, Trash2, Download, FileSpreadsheet, Send, Upload,
   ChevronDown, ChevronUp, ArrowLeft, Check, AlertCircle,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -197,6 +197,161 @@ export default function ProductCreateForm() {
   const [pushing, setPushing] = useState(false)
   const [pushResult, setPushResult] = useState<{ ok: boolean; message: string } | null>(null)
 
+  // Import state
+  const [importResult, setImportResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  const handleFileImport = async (file: File) => {
+    setImportResult(null)
+    try {
+      const XLSX = await import('xlsx')
+      const data = await file.arrayBuffer()
+      const wb = XLSX.read(data, { type: 'array' })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      if (!ws) throw new Error('Empty file')
+
+      const rows: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+      if (rows.length < 2) throw new Error('No data rows')
+
+      const headers = rows[0].map(h => String(h).trim())
+      const isUzum = headers.some(h => /Название товара RU/i.test(h))
+      const isYandex = headers.some(h => /Ваш SKU/i.test(h))
+
+      if (!isUzum && !isYandex) {
+        throw new Error(lang === 'ru' ? 'Неизвестный формат файла' : lang === 'uz' ? "Noma'lum fayl formati" : 'Unknown file format')
+      }
+
+      const col = (name: RegExp) => headers.findIndex(h => name.test(h))
+      const str = (row: string[], idx: number) => (idx >= 0 ? String(row[idx] ?? '').trim() : '')
+      const num = (row: string[], idx: number) => {
+        const v = idx >= 0 ? Number(row[idx]) : 0
+        return isNaN(v) ? 0 : v
+      }
+
+      const startRow = isUzum ? 2 : 1
+      const dataRows = rows.slice(startRow).filter(r => r.some(c => String(c).trim()))
+      if (dataRows.length === 0) throw new Error(lang === 'ru' ? 'Нет данных в файле' : 'No data in file')
+
+      const first = dataRows[0]
+
+      if (isUzum) {
+        const ci = {
+          nameRu: col(/^Название товара RU/), sku: col(/^Идентификатор от продавца/),
+          nameUz: col(/^Название товара UZ/), skuGroup: col(/^Группировка SKU/),
+          catName: col(/^Название категории/), catId: col(/^id категории/),
+          brand: col(/^Бренд/), model: col(/^Модель$/), country: col(/^Страна производства/),
+          descRu: col(/^Описание товара RU/), descUz: col(/^Описание товара UZ/),
+          shortRu: col(/^Краткое описание RU/), shortUz: col(/^Краткое описание UZ/),
+          photos: col(/^Ссылки на фото/), barcode: col(/^Штрихкод/), ikpu: col(/^ИКПУ/),
+          color: col(/^Цвет/), size: col(/^Размер/),
+          price: col(/^Цена продажи/), oldPrice: col(/^Цена до скидки/),
+          weight: col(/^Вес/), height: col(/^Высота/), width: col(/^Ширина/), length: col(/^Длина/),
+        }
+        setNameRu(str(first, ci.nameRu))
+        setNameUz(str(first, ci.nameUz))
+        setSku(str(first, ci.sku))
+        setSkuGroup(str(first, ci.skuGroup))
+        setBrand(str(first, ci.brand))
+        setModel(str(first, ci.model))
+        setCountry(str(first, ci.country))
+        setUzumCatName(str(first, ci.catName))
+        setUzumCatId(str(first, ci.catId))
+        setDescRu(str(first, ci.descRu))
+        setDescUz(str(first, ci.descUz))
+        setShortDescRu(str(first, ci.shortRu))
+        setShortDescUz(str(first, ci.shortUz))
+        setPhotoUrls(str(first, ci.photos))
+        setBarcode(str(first, ci.barcode))
+        setIkpu(str(first, ci.ikpu))
+        setSellingPrice(String(num(first, ci.price) || ''))
+        setOldPrice(String(num(first, ci.oldPrice) || ''))
+        setWeightG(String(num(first, ci.weight) || ''))
+        setHeightMm(String(num(first, ci.height) || ''))
+        setWidthMm(String(num(first, ci.width) || ''))
+        setLengthMm(String(num(first, ci.length) || ''))
+
+        if (dataRows.length > 1) {
+          setVariants(dataRows.slice(1).map(r => ({
+            id: uid(),
+            color: str(r, ci.color),
+            size: str(r, ci.size),
+            sku: str(r, ci.sku),
+            barcode: str(r, ci.barcode),
+            sellingPrice: String(num(r, ci.price) || ''),
+            oldPrice: String(num(r, ci.oldPrice) || ''),
+          })))
+        }
+      } else {
+        const ci = {
+          sku: col(/^Ваш SKU/), name: col(/^Название товара/), photos: col(/^Ссылка на изображение/),
+          desc: col(/^Описание товара/), cat: col(/^Категория на Маркете/), brand: col(/^Бренд/),
+          barcode: col(/^Штрихкод/), country: col(/^Страна производства/),
+          nameUz: col(/^Название на узбекском/), descUz: col(/^Описание на узбекском/),
+          weight: col(/^Вес/), length: col(/^Длина/), width: col(/^Ширина/), height: col(/^Высота/),
+          price: col(/^Цена\b/), oldPrice: col(/^Зачёркнутая цена/),
+          ikpu: col(/^ИКПУ/), chars: col(/^Характеристики/),
+        }
+        setNameRu(str(first, ci.name))
+        setSku(str(first, ci.sku))
+        setPhotoUrls(str(first, ci.photos))
+        setDescRu(str(first, ci.desc))
+        setYandexCatName(str(first, ci.cat))
+        setBrand(str(first, ci.brand))
+        setBarcode(str(first, ci.barcode))
+        setCountry(str(first, ci.country))
+        setNameUz(str(first, ci.nameUz))
+        setDescUz(str(first, ci.descUz))
+        setIkpu(str(first, ci.ikpu))
+        setSellingPrice(String(num(first, ci.price) || ''))
+        setOldPrice(String(num(first, ci.oldPrice) || ''))
+
+        const wKg = num(first, ci.weight)
+        if (wKg) setWeightG(String(Math.round(wKg * 1000)))
+        const lCm = num(first, ci.length)
+        if (lCm) setLengthMm(String(Math.round(lCm * 10)))
+        const wCm = num(first, ci.width)
+        if (wCm) setWidthMm(String(Math.round(wCm * 10)))
+        const hCm = num(first, ci.height)
+        if (hCm) setHeightMm(String(Math.round(hCm * 10)))
+
+        const charStr = str(first, ci.chars)
+        if (charStr) {
+          setChars(charStr.split(';').filter(Boolean).map(pair => {
+            const [name, value] = pair.split('|')
+            return { id: uid(), name: name?.trim() || '', value: value?.trim() || '' }
+          }))
+        }
+
+        if (dataRows.length > 1) {
+          setVariants(dataRows.slice(1).map(r => ({
+            id: uid(),
+            color: '',
+            size: '',
+            sku: str(r, ci.sku),
+            barcode: str(r, ci.barcode),
+            sellingPrice: String(num(r, ci.price) || ''),
+            oldPrice: String(num(r, ci.oldPrice) || ''),
+          })))
+        }
+      }
+
+      const format = isUzum ? 'Uzum' : 'Yandex'
+      const count = dataRows.length
+      setImportResult({
+        ok: true,
+        message: lang === 'ru'
+          ? `${format}: загружено ${count} строк(и)`
+          : lang === 'uz'
+          ? `${format}: ${count} qator yuklandi`
+          : `${format}: imported ${count} row(s)`,
+      })
+    } catch (err) {
+      setImportResult({
+        ok: false,
+        message: err instanceof Error ? err.message : 'Import failed',
+      })
+    }
+  }
+
   const addVariant = () => setVariants(prev => [...prev, EMPTY_VARIANT()])
   const removeVariant = (id: string) => setVariants(prev => prev.filter(v => v.id !== id))
   const updateVariant = (id: string, field: keyof Variant, val: string) =>
@@ -377,6 +532,57 @@ export default function ProductCreateForm() {
         <ArrowLeft className="w-4 h-4" />
         {d.productsTitle}
       </Link>
+
+      {/* Import from Excel */}
+      <div
+        className="rounded-2xl border p-5"
+        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+      >
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 className="font-semibold text-[15px]" style={{ color: 'var(--text-base)' }}>
+              {d.importExcel ?? (lang === 'ru' ? 'Импорт из Excel' : lang === 'uz' ? 'Excel dan import' : 'Import from Excel')}
+            </h3>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              {d.importExcelHint ?? (lang === 'ru'
+                ? 'Загрузите файл Uzum или Yandex (.xlsx / .xlsm)'
+                : lang === 'uz'
+                ? 'Uzum yoki Yandex faylni yuklang (.xlsx / .xlsm)'
+                : 'Upload an Uzum or Yandex file (.xlsx / .xlsm)')}
+            </p>
+          </div>
+          <label
+            className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors cursor-pointer"
+            style={{ background: 'var(--bg-card2)', color: 'var(--text-base)', borderColor: 'var(--border)' }}
+          >
+            <Upload className="w-4 h-4" />
+            {d.chooseFile ?? (lang === 'ru' ? 'Выбрать файл' : lang === 'uz' ? 'Faylni tanlash' : 'Choose file')}
+            <input
+              type="file"
+              accept=".xlsx,.xlsm"
+              className="hidden"
+              onChange={e => {
+                const f = e.target.files?.[0]
+                if (f) handleFileImport(f)
+                e.target.value = ''
+              }}
+            />
+          </label>
+        </div>
+        {importResult && (
+          <div
+            className="flex items-center gap-2 text-sm mt-3 px-3 py-2 rounded-xl border"
+            style={{
+              borderColor: importResult.ok ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)',
+              background: importResult.ok ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+              color: importResult.ok ? 'rgb(34,197,94)' : 'rgb(239,68,68)',
+            }}
+          >
+            {importResult.ok ? <Check className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+            {importResult.message}
+          </div>
+        )}
+      </div>
 
       {/* Basic Info */}
       <SectionCard title={d.basicInfo}>
