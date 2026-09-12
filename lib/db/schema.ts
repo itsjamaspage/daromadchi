@@ -1090,6 +1090,34 @@ export const orderCancelLog = pgTable('order_cancel_log', {
   index('order_cancel_log_auto_idx').on(t.auto),
 ])
 
+/* ── 31b. product_write_log ──────────────────────────────────────────────────── */
+// Audit trail for Yandex product creation/update attempts via
+// lib/marketplace/product-writer.ts. One row per attempt. Follows the same
+// pattern as stock_write_log. Approved by owner for Yandex product creation.
+export const productWriteLog = pgTable('product_write_log', {
+  id:            uuid('id').primaryKey().defaultRandom(),
+  shop_id:       uuid('shop_id').notNull().references(() => shops.id, { onDelete: 'cascade' }),
+  user_id:       uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  marketplace:   marketplaceTypeEnum('marketplace').notNull(),
+  offer_id:      text('offer_id'),
+  offer_name:    text('offer_name'),
+  offer_count:   integer('offer_count'),
+  endpoint:      text('endpoint'),
+  method:        text('method'),
+  status:        text('status').notNull(),
+  reason:        text('reason'),
+  http_status:   integer('http_status'),
+  request_body:  text('request_body'),
+  response_body: text('response_body'),
+  error:         text('error'),
+  created_at:    timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index('product_write_log_shop_id_idx').on(t.shop_id),
+  index('product_write_log_user_id_idx').on(t.user_id),
+  index('product_write_log_created_at_idx').on(t.created_at),
+  index('product_write_log_status_idx').on(t.status),
+])
+
 /* ── 32. suggested_product_groups ────────────────────────────────────────────── */
 // Read-only "product group" suggestions: cross-marketplace pairs that look like
 // the same physical product, proposed by scripts/suggest-product-groups.ts for a

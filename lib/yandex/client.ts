@@ -509,6 +509,58 @@ export async function fetchYandexSkuStats(
   })
 }
 
+// ─── Category parameters (POST is the read verb) ────────────────────────────
+// Returns the required/optional fields for a given Yandex category. Used when
+// building the product creation form so the seller knows what to fill in.
+export interface YandexCategoryParameter {
+  id: number
+  name: string
+  type: string // ENUM, NUMERIC, BOOLEAN, TEXT
+  required?: boolean
+  description?: string
+  unit?: { id: number; name: string; fullName?: string }
+  values?: { id: number; value: string }[]
+  constraints?: { minValue?: number; maxValue?: number }
+}
+
+export async function fetchCategoryParameters(
+  token: string,
+  categoryId: number,
+): Promise<YandexCategoryParameter[]> {
+  return withRetry(async () => {
+    const data = await request<{ result?: { parameters?: YandexCategoryParameter[] } }>(
+      `/v2/category/${categoryId}/parameters`,
+      token,
+      { method: 'POST', body: '{}' },
+    )
+    return data.result?.parameters ?? []
+  })
+}
+
+// ─── Product creation (offer-mappings/update — WRITE) ────────────────────────
+// Creates or updates offers on Yandex Market. This is a SANCTIONED WRITE —
+// guarded by 'product-write' intent and audited in product_write_log.
+// NOTE: This function does NOT call marketplaceFetch directly — the product-writer
+// module does that with the intent.
+export interface YandexOfferUpdate {
+  offerId: string
+  name: string
+  category?: string
+  vendor?: string
+  description?: string
+  pictures?: string[]
+  barcodes?: string[]
+  weightDimensions?: {
+    weight?: number
+    length?: number
+    width?: number
+    height?: number
+  }
+  basicPrice?: { value: number; currencyId?: string; discountBase?: number }
+  parameterValues?: { parameterId: number; valueId?: number; value?: string; unitId?: number }[]
+  customsCommodityCodes?: string[]
+}
+
 // Market research APIs — errors propagate so callers can surface them to the UI
 export async function fetchYandexCategories(token: string): Promise<YandexCategory[]> {
   const data = await request<{ categories: YandexCategory[] }>('/v2/categories/tree', token)
