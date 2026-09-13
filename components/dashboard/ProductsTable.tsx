@@ -152,12 +152,58 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const fbsUnits = (p: Product): number | null =>
     (p.fulfillment_type === 'fbs' || p.fulfillment_type == null) ? p.available_stock : null
 
-  const FbsCell = ({ value }: { value: number | null }) => (
-    <td className="px-5 py-4 text-right tabular-nums"
-      style={{ color: value == null ? 'var(--text-muted)' : value > 0 ? 'var(--text-base)' : '#ef4444' }}>
-      {value == null ? '—' : value}
-    </td>
-  )
+  const FbsCell = ({ value, productId }: { value: number | null; productId?: string }) => {
+    const isEditingThis = productId != null && editingStockId === productId
+    if (isEditingThis) {
+      return (
+        <td className="px-5 py-4" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-end gap-1">
+            <input
+              type="number"
+              min={0}
+              value={stockValue}
+              onChange={e => setStockValue(e.target.value)}
+              className="w-16 px-2 py-1 rounded text-sm text-right tabular-nums border focus:outline-none"
+              style={{ background: 'var(--bg-card)', borderColor: 'var(--c1)', color: 'var(--text-base)' }}
+              autoFocus
+              onKeyDown={e => {
+                if (e.key === 'Enter' && productId) handleStockSave(productId, Number(stockValue) || 0)
+                if (e.key === 'Escape') setEditingStockId(null)
+              }}
+            />
+            <button
+              onClick={() => productId && handleStockSave(productId, Number(stockValue) || 0)}
+              disabled={stockSaving}
+              className="w-6 h-6 rounded flex items-center justify-center"
+              style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981' }}>
+              <Check className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setEditingStockId(null)}
+              className="w-6 h-6 rounded flex items-center justify-center"
+              style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </td>
+      )
+    }
+    return (
+      <td className="px-5 py-4 text-right tabular-nums group/fbscell"
+        style={{ color: value == null ? 'var(--text-muted)' : value > 0 ? 'var(--text-base)' : '#ef4444' }}>
+        <span className="inline-flex items-center gap-1 cursor-pointer" onClick={e => {
+          if (productId == null) return
+          e.stopPropagation()
+          setEditingStockId(productId)
+          setStockValue(String(value ?? 0))
+          setStockError(null)
+        }}>
+          {value == null ? '—' : value}
+          {productId != null && <Pencil className="w-3 h-3 opacity-0 group-hover/fbscell:opacity-40 transition-opacity" style={{ color: 'var(--text-muted)' }} />}
+        </span>
+      </td>
+    )
+  }
 
   const [query,          setQuery]          = useState('')
   const [sortBy,         setSortBy]         = useState<SortKey>('profit')
@@ -171,6 +217,11 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
   const [ikpuProduct, setIkpuProduct] = useState<Product | null>(null)
   const [ikpuUpdates, setIkpuUpdates] = useState<Map<string, string | null>>(new Map())
+  const [editingStockId, setEditingStockId] = useState<string | null>(null)
+  const [stockValue, setStockValue] = useState('')
+  const [stockSaving, setStockSaving] = useState(false)
+  const [stockOptimistic, setStockOptimistic] = useState<Map<string, number>>(new Map())
+  const [stockError, setStockError] = useState<string | null>(null)
   const tp = translations[lang]?.dashboard ?? translations.ru.dashboard
   const toggleGroup = useCallback((key: string) => {
     setOpenGroups(prev => {
@@ -184,12 +235,19 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const [category, setCategory] = useState(ALL_CAT)
 
   const productsWithOverrides = useMemo(() => products.map(p => {
-    if (!optimisticUpdates.has(p.id)) return p
-    const newCost = optimisticUpdates.get(p.id) ?? null
-    const selling = Number(p.selling_price ?? 0)
-    const profit = selling - (newCost ?? 0)
-    return { ...p, cost_price: newCost, profit }
-  }), [products, optimisticUpdates])
+    let updated = p
+    if (optimisticUpdates.has(p.id)) {
+      const newCost = optimisticUpdates.get(p.id) ?? null
+      const selling = Number(p.selling_price ?? 0)
+      const profit = selling - (newCost ?? 0)
+      updated = { ...updated, cost_price: newCost, profit }
+    }
+    if (stockOptimistic.has(p.id)) {
+      const newStock = stockOptimistic.get(p.id)!
+      updated = { ...updated, available_stock: newStock, stock_quantity: newStock }
+    }
+    return updated
+  }), [products, optimisticUpdates, stockOptimistic])
 
   // Marketplace filtering happens via the page-level tabs (?mp= URL param) —
   // the second in-table marketplace row was a duplicate and is gone.
@@ -347,6 +405,30 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     fetchDone.then(() => router.refresh())
   }, [router])
 
+  const handleStockSave = useCallback(async (productId: string, qty: number) => {
+    setStockSaving(true)
+    setStockError(null)
+    try {
+      const res = await fetch('/api/products/stock-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, quantity: qty }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setStockOptimistic(prev => new Map(prev).set(productId, qty))
+        setEditingStockId(null)
+        router.refresh()
+      } else {
+        setStockError(data.reason ?? data.error ?? 'Error')
+      }
+    } catch {
+      setStockError('Network error')
+    } finally {
+      setStockSaving(false)
+    }
+  }, [router])
+
   const exportData = filtered.map(p => ({
     [d.product]:          p.title,
     'SKU':                p.sku ?? '',
@@ -422,7 +504,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
               </div>
             </div>
           </td>
-          <FbsCell value={fbsUnits(p)} />
+          <FbsCell value={fbsUnits(p)} productId={p.id} />
           <td className="px-5 py-4">
             <span className="text-[11px] px-2.5 py-1 rounded-full border font-medium" style={{ color: 'var(--text-muted)', background: 'rgba(128, 128, 128, 0.06)', borderColor: 'var(--border)' }}>{catDisplay(p.category, lang, p.title)}</span>
           </td>
@@ -499,8 +581,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     const marketplaces = [...new Set(allListings.map(k => k.marketplace).filter(Boolean))] as MarketplaceType[]
     const isCrossMarketplace = marketplaces.length > 1
 
-    const variantStocksByMp = (mp: string): { color: string | null; sku: string | null; stock: number | null }[] =>
-      allListings.filter(k => k.marketplace === mp).map(k => ({ color: k.variant_color ?? null, sku: k.sku ?? null, stock: fbsUnits(k) }))
+    const variantStocksByMp = (mp: string): { id: string; color: string | null; sku: string | null; stock: number | null }[] =>
+      allListings.filter(k => k.marketplace === mp).map(k => ({ id: k.id, color: k.variant_color ?? null, sku: k.sku ?? null, stock: fbsUnits(k) }))
 
     return (
       <tr className="transition-colors hover:bg-[rgba(128,128,128,0.04)]"
@@ -535,9 +617,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           </div>
         </td>
         {(() => {
-          const allVariants = allListings.map(k => ({ color: k.variant_color ?? null, sku: k.sku ?? null, stock: fbsUnits(k) }))
+          const allVariants = allListings.map(k => ({ id: k.id, color: k.variant_color ?? null, sku: k.sku ?? null, stock: fbsUnits(k) }))
           if (allVariants.length === 0) return <FbsCell value={null} />
-          if (allVariants.length === 1 && !allVariants[0].color) return <FbsCell value={allVariants[0].stock} />
+          if (allVariants.length === 1 && !allVariants[0].color) return <FbsCell value={allVariants[0].stock} productId={allVariants[0].id} />
           return (
             <td className="px-5 py-3 align-top">
               <div className="flex flex-col gap-2">
@@ -553,17 +635,57 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                       )}
                       {variants.map((v, j) => {
                         const meta = v.color ? colorMetaFor(v.color) : null
+                        const isEditingThis = editingStockId === v.id
                         return (
-                          <div key={j} className="flex items-center gap-1.5 text-xs">
+                          <div key={j} className="flex items-center gap-1.5 text-xs group/stock">
                             {meta && (
                               <span className="w-2.5 h-2.5 rounded-full shrink-0"
                                 style={{ backgroundColor: meta.hex, boxShadow: meta.ring ? 'inset 0 0 0 1px var(--border)' : undefined }} />
                             )}
                             {v.sku && <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>{v.sku}</span>}
-                            <span className="ml-auto tabular-nums font-medium shrink-0"
-                              style={{ color: v.stock != null && v.stock > 0 ? 'var(--text-base)' : v.stock === 0 ? '#ef4444' : 'var(--text-muted)' }}>
-                              {v.stock ?? '—'}
-                            </span>
+                            {isEditingThis ? (
+                              <div className="ml-auto flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={stockValue}
+                                  onChange={e => setStockValue(e.target.value)}
+                                  className="w-14 px-1.5 py-0.5 rounded text-xs text-right tabular-nums border focus:outline-none"
+                                  style={{ background: 'var(--bg-card)', borderColor: 'var(--c1)', color: 'var(--text-base)' }}
+                                  autoFocus
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') handleStockSave(v.id, Number(stockValue) || 0)
+                                    if (e.key === 'Escape') setEditingStockId(null)
+                                  }}
+                                />
+                                <button
+                                  onClick={() => handleStockSave(v.id, Number(stockValue) || 0)}
+                                  disabled={stockSaving}
+                                  className="w-5 h-5 rounded flex items-center justify-center"
+                                  style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981' }}>
+                                  <Check className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => setEditingStockId(null)}
+                                  className="w-5 h-5 rounded flex items-center justify-center"
+                                  style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="ml-auto flex items-center gap-1 shrink-0" onClick={e => {
+                                e.stopPropagation()
+                                setEditingStockId(v.id)
+                                setStockValue(String(v.stock ?? 0))
+                                setStockError(null)
+                              }}>
+                                <span className="tabular-nums font-medium"
+                                  style={{ color: v.stock != null && v.stock > 0 ? 'var(--text-base)' : v.stock === 0 ? '#ef4444' : 'var(--text-muted)' }}>
+                                  {v.stock ?? '—'}
+                                </span>
+                                <Pencil className="w-3 h-3 opacity-0 group-hover/stock:opacity-40 transition-opacity cursor-pointer" style={{ color: 'var(--text-muted)' }} />
+                              </span>
+                            )}
                           </div>
                         )
                       })}
@@ -652,6 +774,14 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         resultCount={filtered.length}
         countLabel={d.productCount}
       />
+
+      {stockError && (
+        <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl border"
+          style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#ef4444' }}>
+          <X className="w-4 h-4 shrink-0 cursor-pointer" onClick={() => setStockError(null)} />
+          {lang === 'ru' ? 'Ошибка обновления остатка' : lang === 'uz' ? 'Zaxirani yangilashda xatolik' : 'Stock update error'}: {stockError}
+        </div>
+      )}
 
       <div className="border rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
         <div className="overflow-x-auto">
