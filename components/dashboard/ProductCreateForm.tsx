@@ -533,6 +533,57 @@ export default function ProductCreateForm() {
         {d.productsTitle}
       </Link>
 
+      {/* Import from Excel */}
+      <div
+        className="rounded-2xl border p-5"
+        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+      >
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 className="font-semibold text-[15px]" style={{ color: 'var(--text-base)' }}>
+              {d.importExcel ?? (lang === 'ru' ? 'Импорт из Excel' : lang === 'uz' ? 'Excel dan import' : 'Import from Excel')}
+            </h3>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              {d.importExcelHint ?? (lang === 'ru'
+                ? 'Загрузите файл Uzum или Yandex (.xlsx / .xlsm)'
+                : lang === 'uz'
+                ? 'Uzum yoki Yandex faylni yuklang (.xlsx / .xlsm)'
+                : 'Upload an Uzum or Yandex file (.xlsx / .xlsm)')}
+            </p>
+          </div>
+          <label
+            className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors cursor-pointer"
+            style={{ background: 'var(--bg-card2)', color: 'var(--text-base)', borderColor: 'var(--border)' }}
+          >
+            <Upload className="w-4 h-4" />
+            {d.chooseFile ?? (lang === 'ru' ? 'Выбрать файл' : lang === 'uz' ? 'Faylni tanlash' : 'Choose file')}
+            <input
+              type="file"
+              accept=".xlsx,.xlsm"
+              className="hidden"
+              onChange={e => {
+                const f = e.target.files?.[0]
+                if (f) handleFileImport(f)
+                e.target.value = ''
+              }}
+            />
+          </label>
+        </div>
+        {importResult && (
+          <div
+            className="flex items-center gap-2 text-sm mt-3 px-3 py-2 rounded-xl border"
+            style={{
+              borderColor: importResult.ok ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)',
+              background: importResult.ok ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+              color: importResult.ok ? 'rgb(34,197,94)' : 'rgb(239,68,68)',
+            }}
+          >
+            {importResult.ok ? <Check className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+            {importResult.message}
+          </div>
+        )}
+      </div>
+
       {/* Basic Info */}
       <SectionCard title={d.basicInfo}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
