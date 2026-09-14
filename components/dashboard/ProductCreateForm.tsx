@@ -1066,9 +1066,9 @@ export default function ProductCreateForm() {
                   </button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <InputField label={d.colorLabel} badges={<MpBadges uz />}
+                  <InputField label={d.colorLabel} badges={<MpBadges uz ym />}
                     value={v.color} onChange={val => updateVariant(v.id, 'color', val)} />
-                  <InputField label={d.sizeLabel} badges={<MpBadges uz />}
+                  <InputField label={d.sizeLabel} badges={<MpBadges uz ym />}
                     value={v.size} onChange={val => updateVariant(v.id, 'size', val)} />
                   <InputField label={d.skuId} badges={<MpBadges uz ym />}
                     value={v.sku} onChange={val => updateVariant(v.id, 'sku', val)} />
