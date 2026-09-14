@@ -465,19 +465,31 @@ export default function ProductCreateForm() {
       const XLSX = await import('xlsx')
       const data = await file.arrayBuffer()
       const wb = XLSX.read(data, { type: 'array' })
-      const ws = wb.Sheets[wb.SheetNames[0]]
+
+      // Find the right sheet — real Yandex template uses "Список товаров", others use first sheet
+      const productSheetName = wb.SheetNames.find(n => n === 'Список товаров') || wb.SheetNames[0]
+      const ws = wb.Sheets[productSheetName]
       if (!ws) throw new Error('Empty file')
 
-      const rows: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
-      if (rows.length < 2) throw new Error('No data rows')
+      const allRows: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+      if (allRows.length < 2) throw new Error('No data rows')
 
-      const headers = rows[0].map(h => String(h).trim())
-      const isUzum = headers.some(h => /Название товара RU/i.test(h))
-      const isYandex = headers.some(h => /Ваш SKU/i.test(h))
+      // Detect format: real Yandex template has headers in row 2 (section groups in row 1)
+      let headerRowIdx = 0
+      let isUzum = false
+      let isYandex = false
+      for (let i = 0; i < Math.min(allRows.length, 4); i++) {
+        const rowStrs = allRows[i].map(h => String(h).trim())
+        if (rowStrs.some(h => /Название товара RU/i.test(h))) { headerRowIdx = i; isUzum = true; break }
+        if (rowStrs.some(h => /Ваш SKU/i.test(h))) { headerRowIdx = i; isYandex = true; break }
+      }
 
       if (!isUzum && !isYandex) {
         throw new Error(lang === 'ru' ? 'Неизвестный формат файла' : lang === 'uz' ? "Noma'lum fayl formati" : 'Unknown file format')
       }
+
+      const headers = allRows[headerRowIdx].map(h => String(h).trim())
+      const rows = allRows
 
       const col = (name: RegExp) => headers.findIndex(h => name.test(h))
       const str = (row: string[], idx: number) => (idx >= 0 ? String(row[idx] ?? '').trim() : '')
@@ -486,7 +498,8 @@ export default function ProductCreateForm() {
         return isNaN(v) ? 0 : v
       }
 
-      const startRow = 2
+      // Skip header row + description row (both formats have one desc row after headers)
+      const startRow = headerRowIdx + 2
       const dataRows = rows.slice(startRow).filter(r => r.some(c => String(c).trim()))
       if (dataRows.length === 0) throw new Error(lang === 'ru' ? 'Нет данных в файле' : 'No data in file')
 

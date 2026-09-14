@@ -192,27 +192,80 @@ export function generateUzumExcel(
 
 // ── Yandex Excel ─────────────────────────────────────────────────────────────
 
-const YANDEX_HEADERS = [
-  'Ваш SKU *',
-  'Название товара *',
-  'Ссылка на изображение *',
-  'Описание товара *',
-  'Категория на Маркете *',
-  'Бренд *',
-  'Штрихкод *',
-  'Страна производства',
-  'Название на узбекском *',
-  'Описание на узбекском *',
-  'Вес, кг *',
-  'Длина, см *',
-  'Ширина, см *',
-  'Высота, см *',
-  'Цена *',
-  'Зачёркнутая цена',
-  'Валюта *',
-  'ИКПУ *',
-  'Код упаковки *',
-  'Характеристики товара',
+// Matches the real Yandex Market seller cabinet template structure.
+// Row 1 = section group headers, Row 2 = column headers, Row 3 = descriptions, Row 4+ = data.
+// Columns 1-3 are output-only (errors/quality), columns 4-49 are input fields.
+
+const YANDEX_SECTION_GROUPS: { col: number; label: string }[] = [
+  { col: 4, label: 'Основные параметры' },
+  { col: 18, label: 'Вес и габариты с упаковкой' },
+  { col: 24, label: 'Цена' },
+  { col: 29, label: 'Срок годности и службы' },
+  { col: 33, label: 'Гарантийный срок' },
+  { col: 35, label: 'Маркировка и документы' },
+  { col: 40, label: 'Уценка' },
+  { col: 43, label: 'Дополнительно' },
+]
+
+interface YandexCol {
+  header: string
+  key: string
+  direction: 'in' | 'out' | 'inout'
+  group: string
+  frontKey: string
+  desc: string
+}
+
+const YANDEX_COLUMNS: YandexCol[] = [
+  { header: 'Критичные ошибки', key: 'log-message', direction: 'out', group: 'message', frontKey: 'log-message', desc: '' },
+  { header: 'Некритичные ошибки', key: 'info-message', direction: 'out', group: 'message', frontKey: 'info-message', desc: '' },
+  { header: 'Качество карточки', key: 'contentQuality', direction: 'out', group: 'message', frontKey: 'contentQuality', desc: '' },
+  { header: 'Ваш SKU *', key: 'id', direction: 'in', group: 'base', frontKey: 'id', desc: 'Уникальный идентификатор товара, для которого будет передана цена' },
+  { header: 'Название товара *', key: 'name', direction: 'in', group: 'base', frontKey: 'name', desc: 'По схеме: тип товара + бренд или производитель + модель + отличительные характеристики' },
+  { header: 'Ссылка на изображение *', key: 'picture', direction: 'in', group: 'base', frontKey: 'picture', desc: 'Cсылка на изображение товара. Можно указать до 30 ссылок через запятую.' },
+  { header: 'Описание товара *', key: 'description', direction: 'in', group: 'base', frontKey: 'description', desc: 'Не более 6000 символов (включая знаки препинания)' },
+  { header: 'Категория на Маркете *', key: 'category,market_category_id', direction: 'in', group: 'base', frontKey: 'category', desc: 'Она помогает точнее определить категорию в каталоге Маркета.' },
+  { header: 'Бренд *', key: 'vendor', direction: 'in', group: 'base', frontKey: 'vendor', desc: 'Название торговой марки, бренд или производитель товара.' },
+  { header: 'Штрихкод *', key: 'barcode', direction: 'in', group: 'base', frontKey: 'barcode', desc: 'Если штрихкодов несколько, перечислите через запятую' },
+  { header: 'Теги', key: 'set-ids', direction: 'in', group: 'base', frontKey: 'tags', desc: 'Можно указать до 10 тегов через запятую.' },
+  { header: 'Ссылка на видео', key: 'video', direction: 'in', group: 'base', frontKey: 'video', desc: 'Прямые ссылки на видео (MP4, WebM, MOV, QT, FLV, AVI)' },
+  { header: 'Инструкции', key: 'manual', direction: 'in', group: 'base', frontKey: 'manual', desc: 'Прямая ссылка на инструкцию (PDF, JPG, PNG)' },
+  { header: 'Страна производства', key: 'country_of_origin', direction: 'in', group: 'base', frontKey: 'country_of_origin', desc: 'Название на русском языке.' },
+  { header: 'Артикул производителя', key: 'vendorCode', direction: 'in', group: 'base', frontKey: 'vendorCode', desc: 'Код товара, который ему присваивает производитель.' },
+  { header: 'Название на узбекском языке латиницей *', key: 'uz_name', direction: 'in', group: 'base', frontKey: 'uz_name', desc: '' },
+  { header: 'Описание на узбекском языке латиницей *', key: 'uz_description', direction: 'in', group: 'base', frontKey: 'uz_description', desc: '' },
+  { header: 'Вес, кг *', key: 'weight', direction: 'in', group: 'weight_and_dimension', frontKey: 'weight_and_dimensions', desc: 'Вес товара в транспортной упаковке, можно с точностью до тысячных.' },
+  { header: 'Длина, см *', key: 'length', direction: 'in', group: 'weight_and_dimension', frontKey: 'weight_and_dimensions', desc: 'Длина упаковки в сантиметрах.' },
+  { header: 'Ширина, см *', key: 'width', direction: 'in', group: 'weight_and_dimension', frontKey: 'weight_and_dimensions', desc: 'Ширина упаковки в сантиметрах.' },
+  { header: 'Высота, см *', key: 'height', direction: 'in', group: 'weight_and_dimension', frontKey: 'weight_and_dimensions', desc: 'Высота упаковки в сантиметрах.' },
+  { header: 'Товар доставляется в нескольких упаковках', key: 'box_count', direction: 'in', group: 'weight_and_dimension', frontKey: 'box-count', desc: '' },
+  { header: 'Объём, л', key: 'volume', direction: 'out', group: 'weight_and_dimension', frontKey: 'volume', desc: 'Заполняется автоматически.' },
+  { header: 'Цена *', key: 'price', direction: 'in', group: 'default_price', frontKey: 'default_price', desc: 'Цена в валюте кабинета, по которой вы хотите продавать товар.' },
+  { header: 'Зачёркнутая цена', key: 'oldprice', direction: 'in', group: 'default_price', frontKey: 'default_price', desc: 'Цена до скидки в валюте кабинета.' },
+  { header: 'Валюта *', key: 'currencyId', direction: 'in', group: 'default_price', frontKey: 'currencyId', desc: 'Валюта, в которой указаны цены' },
+  { header: 'Себестоимость', key: 'purchase_price', direction: 'in', group: 'default_price', frontKey: 'purchase_price', desc: '' },
+  { header: 'Дополнительные расходы', key: 'additional_expenses', direction: 'in', group: 'default_price', frontKey: 'additional_expenses', desc: '' },
+  { header: 'Срок годности', key: 'period_of_validity_days', direction: 'in', group: 'expiry', frontKey: 'period_of_validity_days', desc: 'В годах, месяцах, днях, неделях или часах' },
+  { header: 'Комментарий к сроку годности', key: 'comment_validity_days', direction: 'in', group: 'expiry', frontKey: 'comment_validity_days', desc: '' },
+  { header: 'Срок службы', key: 'service_life_days', direction: 'in', group: 'expiry', frontKey: 'service_life_days', desc: '' },
+  { header: 'Комментарий к сроку службы', key: 'comment_life_days', direction: 'in', group: 'expiry', frontKey: 'comment_life_days', desc: '' },
+  { header: 'Гарантийный срок', key: 'warranty_days', direction: 'in', group: 'warranty', frontKey: 'warranty_days', desc: '' },
+  { header: 'Комментарий к гарантийному сроку', key: 'comment_warranty', direction: 'in', group: 'warranty', frontKey: 'comment_warranty', desc: '' },
+  { header: 'Маркировка', key: 'cargo_types', direction: 'in', group: 'mark_and_docs', frontKey: 'cargo_types', desc: '' },
+  { header: 'Номер документа на товар', key: 'certificate', direction: 'in', group: 'mark_and_docs', frontKey: 'certificate', desc: '' },
+  { header: 'ТН ВЭД', key: 'tn_ved_code', direction: 'in', group: 'mark_and_docs', frontKey: 'tn_ved_code', desc: '' },
+  { header: 'ИКПУ *', key: 'ikpu', direction: 'in', group: 'mark_and_docs', frontKey: 'ikpu', desc: 'Идентификационный код продукции и услуг для Узбекистана. 17 цифр.' },
+  { header: 'Код упаковки *', key: 'ikpu_pack_code', direction: 'in', group: 'mark_and_docs', frontKey: 'ikpu_pack_code', desc: 'Обычно привязан к ИКПУ, состоит из цифр.' },
+  { header: 'Тип уценки', key: 'condition-type', direction: 'in', group: 'resale', frontKey: 'condition', desc: '' },
+  { header: 'Внешний вид товара', key: 'condition-quality', direction: 'in', group: 'resale', frontKey: 'condition', desc: '' },
+  { header: 'Описание состояния товара', key: 'condition-reason', direction: 'in', group: 'resale', frontKey: 'condition', desc: '' },
+  { header: 'Особый тип товара', key: 'type', direction: 'in', group: 'optional', frontKey: 'type', desc: '' },
+  { header: 'С какого возраста пользоваться', key: 'age,age_unit', direction: 'in', group: 'optional', frontKey: 'age', desc: '' },
+  { header: 'Товар для взрослых', key: 'adult', direction: 'in', group: 'optional', frontKey: 'adult', desc: '' },
+  { header: 'Цифровой товар', key: 'downloadable', direction: 'in', group: 'optional', frontKey: 'downloadable', desc: '' },
+  { header: 'Характеристики товара', key: 'param', direction: 'in', group: 'optional', frontKey: 'param', desc: 'Все важные характеристики товара — цвет, размер, объем, материал, возраст, пол, и т. д.' },
+  { header: 'В архиве', key: 'archived', direction: 'in', group: 'optional', frontKey: 'archived', desc: '' },
+  { header: 'Артикул товара (SKU)', key: 'market-sku', direction: 'inout', group: 'optional', frontKey: 'market_sku', desc: '' },
 ]
 
 export interface YandexCategoryParam {
@@ -245,109 +298,96 @@ export function generateYandexExcel(
 ): Buffer {
   const wb = XLSX.utils.book_new()
 
-  const headerRow = YANDEX_HEADERS
-  const descRow = [
-    'Обязательное. Ваш уникальный код товара',
-    'Обязательное. Название товара',
-    'Обязательное. URL изображения',
-    'Обязательное. Описание товара',
-    'Обязательное. Категория на Яндекс Маркете',
-    'Обязательное. Бренд/производитель',
-    'Обязательное. Штрихкод (EAN-13)',
-    'Страна производства',
-    'Обязательное. Название на узбекском',
-    'Обязательное. Описание на узбекском',
-    'Обязательное. Вес в килограммах',
-    'Обязательное. Длина в сантиметрах',
-    'Обязательное. Ширина в сантиметрах',
-    'Обязательное. Высота в сантиметрах',
-    'Обязательное. Цена в UZS',
-    'Зачёркнутая цена (до скидки)',
-    'Обязательное. Валюта (UZS)',
-    'Обязательное. 17-значный код ИКПУ',
-    'Обязательное. Код упаковки',
-    'Характеристики: Ключ|Значение;Ключ2|Значение2|Единица',
+  // ── Инструкция sheet (first, matches real template order) ──
+  const instrData = [
+    ['', ''],
+    ['Инструкция\t', ''],
+    ['Шаг 1. Заполните шаблон\t', ''],
+    ['Перейдите на лист Список товаров, изучите пример заполненного товара, но не забудьте удалить его перед загрузкой каталога.', ''],
+    ['Добавьте ваши товары. Обязательные для заполнения поля помечены звездочкой (*).', ''],
+    ['Наведите на название поля, чтобы узнать, как его правильно заполнить.', ''],
+    ['', ''],
+    ['Шаг 2. Загрузите шаблон в систему\t', ''],
+    ['Перейдите в раздел Товары → Каталог.', ''],
+    ['Выберите Загрузить товары и загрузите этот шаблон в появившемся окне.', ''],
+    ['', ''],
+    [`Категория: ${yandexCategoryName}`, ''],
+    ['Файл создан с помощью Daromadchi — daromadchi.uz', ''],
   ]
+  const wsInstr = XLSX.utils.aoa_to_sheet(instrData)
+  wsInstr['!cols'] = [{ wch: 80 }, { wch: 20 }]
+  XLSX.utils.book_append_sheet(wb, wsInstr, 'Инструкция')
 
-  const dataRows = products.map(p => [
-    p.sku || '',
-    p.nameRu,
-    p.photoUrls.split(',')[0]?.trim() || '',
-    p.descriptionRu,
-    yandexCategoryName,
-    p.brand,
-    p.barcode || '',
-    p.country,
-    p.nameUz,
-    p.descriptionUz,
-    Math.round(p.weightGrams / 10) / 100,
-    Math.round(p.lengthMm / 10) / 10,
-    Math.round(p.widthMm / 10) / 10,
-    Math.round(p.heightMm / 10) / 10,
-    p.sellingPrice,
-    p.oldPrice || '',
-    'UZS',
-    p.ikpu,
-    '',
-    formatCharacteristics(p.characteristics, params),
-  ])
+  // ── Enums sheet (minimal — required for template recognition) ──
+  const wsEnums = XLSX.utils.aoa_to_sheet([['createMap', '', 'market_category_id', 'category']])
+  XLSX.utils.book_append_sheet(wb, wsEnums, 'Enums')
 
-  const wsData = [headerRow, descRow, ...dataRows]
+  // ── Список товаров sheet ──
+  const totalCols = YANDEX_COLUMNS.length
+
+  // Row 1: section group headers (sparse)
+  const groupRow: (string | null)[] = new Array(totalCols).fill(null)
+  for (const g of YANDEX_SECTION_GROUPS) {
+    groupRow[g.col - 1] = g.label
+  }
+
+  // Row 2: column headers
+  const headerRow = YANDEX_COLUMNS.map(c => c.header)
+
+  // Row 3: descriptions
+  const descRow = YANDEX_COLUMNS.map(c => c.desc)
+
+  // Data rows (columns 1-3 empty for error/quality, then data from col 4)
+  const colIndex = (key: string) => YANDEX_COLUMNS.findIndex(c => c.header === key)
+  const dataRows = products.map(p => {
+    const row: (string | number | null)[] = new Array(totalCols).fill('')
+    row[colIndex('Ваш SKU *')] = p.sku || ''
+    row[colIndex('Название товара *')] = p.nameRu
+    row[colIndex('Ссылка на изображение *')] = p.photoUrls
+    row[colIndex('Описание товара *')] = p.descriptionRu
+    row[colIndex('Категория на Маркете *')] = yandexCategoryName
+    row[colIndex('Бренд *')] = p.brand
+    row[colIndex('Штрихкод *')] = p.barcode || ''
+    row[colIndex('Страна производства')] = p.country
+    row[colIndex('Название на узбекском языке латиницей *')] = p.nameUz
+    row[colIndex('Описание на узбекском языке латиницей *')] = p.descriptionUz
+    row[colIndex('Вес, кг *')] = Math.round(p.weightGrams / 10) / 100
+    row[colIndex('Длина, см *')] = Math.round(p.lengthMm / 10) / 10
+    row[colIndex('Ширина, см *')] = Math.round(p.widthMm / 10) / 10
+    row[colIndex('Высота, см *')] = Math.round(p.heightMm / 10) / 10
+    row[colIndex('Цена *')] = p.sellingPrice
+    row[colIndex('Зачёркнутая цена')] = p.oldPrice || ''
+    row[colIndex('Валюта *')] = 'UZS'
+    row[colIndex('ИКПУ *')] = p.ikpu
+    row[colIndex('Код упаковки *')] = ''
+    row[colIndex('Характеристики товара')] = formatCharacteristics(p.characteristics, params)
+    return row
+  })
+
+  const wsData = [groupRow, headerRow, descRow, ...dataRows]
   const ws = XLSX.utils.aoa_to_sheet(wsData)
 
-  ws['!cols'] = YANDEX_HEADERS.map((h, i) => {
-    const maxData = Math.max(h.length, ...dataRows.map(r => String(r[i] ?? '').length))
+  ws['!cols'] = YANDEX_COLUMNS.map((c, i) => {
+    if (i < 3) return { wch: 20 }
+    const maxData = Math.max(c.header.length, ...dataRows.map(r => String(r[i] ?? '').length))
     return { wch: Math.min(Math.max(maxData + 2, 12), 50) }
   })
 
   XLSX.utils.book_append_sheet(wb, ws, 'Список товаров')
 
-  // ── Required parameters reference ──
-  if (params && params.length > 0) {
-    const paramRows: (string | number | boolean)[][] = [
-      ['Параметр', 'Тип', 'Обязательный', 'Допустимые значения'],
-    ]
-    for (const p of params) {
-      const valuesPreview = p.values
-        ? p.values.slice(0, 20).map(v => v.value).join(', ')
-          + (p.values.length > 20 ? `... (+${p.values.length - 20})` : '')
-        : ''
-      paramRows.push([
-        p.name,
-        p.type,
-        p.required ? 'Да' : 'Нет',
-        valuesPreview,
-      ])
-    }
-    const wsParams = XLSX.utils.aoa_to_sheet(paramRows)
-    wsParams['!cols'] = [
-      { wch: 30 }, { wch: 10 }, { wch: 14 }, { wch: 80 },
-    ]
-    XLSX.utils.book_append_sheet(wb, wsParams, 'Параметры категории')
-  }
-
-  // ── Instructions ──
-  const instrData = [
-    ['Инструкция по заполнению файла для Яндекс Маркет'],
-    [''],
-    ['1. Каждая строка = один товар (SKU)'],
-    [`2. Категория: ${yandexCategoryName}`],
-    ['3. Вес указывается в килограммах, размеры в сантиметрах'],
-    ['4. ИКПУ — 17-значный код из tasnif.soliq.uz'],
-    ['5. Характеристики: формат Ключ|Значение;Ключ2|Значение2|Единица'],
-    [''],
-    ...(params
-      ? [
-          ['Обязательные характеристики для выбранной категории:'],
-          ...params.filter(p => p.required).map(p => [`  • ${p.name} (${p.type})`]),
-        ]
-      : [['Характеристики зависят от категории. Проверьте в личном кабинете Яндекс Маркет.']]),
-    [''],
-    ['Файл создан с помощью Daromadchi — daromadchi.uz'],
+  // ── Настройки sheet (column mappings — critical for Yandex import) ──
+  const settingsRows: (string | number | boolean)[][] = [
+    ['sheetName', 'Список товаров', '', '', '', ''],
+    ['headerAddress', 'A2', '', '', '', ''],
+    ['skipRows', '1', '', '', '', ''],
   ]
-  const wsInstr = XLSX.utils.aoa_to_sheet(instrData)
-  wsInstr['!cols'] = [{ wch: 80 }]
-  XLSX.utils.book_append_sheet(wb, wsInstr, 'Инструкция')
+  for (const c of YANDEX_COLUMNS) {
+    settingsRows.push(['columnMapping', c.header, c.key, c.direction, '', c.group, c.frontKey])
+  }
+  settingsRows.push(['errorFormatting', 'FALSE'])
+  const wsSettings = XLSX.utils.aoa_to_sheet(settingsRows)
+  wsSettings['!cols'] = [{ wch: 16 }, { wch: 45 }, { wch: 30 }, { wch: 6 }, { wch: 4 }, { wch: 22 }, { wch: 30 }]
+  XLSX.utils.book_append_sheet(wb, wsSettings, 'Настройки')
 
   return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }))
 }
