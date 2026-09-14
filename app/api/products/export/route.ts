@@ -29,10 +29,8 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
 
   if (marketplace === 'uzum') {
-    if (!body.uzumCategory?.id || !body.uzumCategory?.name) {
-      return NextResponse.json({ error: 'Uzum category required' }, { status: 400 })
-    }
-    const buf = generateUzumExcel(products, body.uzumCategory)
+    const cat = body.uzumCategory ?? { id: '', name: '', fullPath: '' }
+    const buf = generateUzumExcel(products, cat)
     return new Response(new Uint8Array(buf), {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
