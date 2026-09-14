@@ -77,6 +77,7 @@ export interface ProductRow {
   heightMm: number
   widthMm: number
   lengthMm: number
+  ikpuPackCode?: string
   characteristics?: Record<string, string>
 }
 
@@ -374,6 +375,7 @@ export function generateYandexExcel(
       ...(p.oldPrice ? [numCell('X', r, p.oldPrice)] : []),
       inlineCell('Y', r, 'UZS'),
       inlineCell('AK', r, p.ikpu),
+      ...(p.ikpuPackCode ? [inlineCell('AL', r, p.ikpuPackCode)] : []),
       ...(chars ? [inlineCell('AT', r, chars)] : []),
     ]
     return `<row r="${r}" ht="37.5" customHeight="1" s="38">${cells.join('')}</row>`
