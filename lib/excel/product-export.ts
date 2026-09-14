@@ -325,16 +325,10 @@ export function generateYandexExcel(
   // ── Список товаров sheet ──
   const totalCols = YANDEX_COLUMNS.length
 
-  // Row 1: section group headers (sparse)
-  const groupRow: (string | null)[] = new Array(totalCols).fill(null)
-  for (const g of YANDEX_SECTION_GROUPS) {
-    groupRow[g.col - 1] = g.label
-  }
-
-  // Row 2: column headers
+  // Row 1: column headers (Yandex validates row 1 names before reading Настройки)
   const headerRow = YANDEX_COLUMNS.map(c => c.header)
 
-  // Row 3: descriptions
+  // Row 2: descriptions
   const descRow = YANDEX_COLUMNS.map(c => c.desc)
 
   // Data rows (columns 1-3 empty for error/quality, then data from col 4)
@@ -364,7 +358,7 @@ export function generateYandexExcel(
     return row
   })
 
-  const wsData = [groupRow, headerRow, descRow, ...dataRows]
+  const wsData = [headerRow, descRow, ...dataRows]
   const ws = XLSX.utils.aoa_to_sheet(wsData)
 
   ws['!cols'] = YANDEX_COLUMNS.map((c, i) => {
@@ -378,7 +372,7 @@ export function generateYandexExcel(
   // ── Настройки sheet (column mappings — critical for Yandex import) ──
   const settingsRows: (string | number | boolean)[][] = [
     ['sheetName', 'Список товаров', '', '', '', ''],
-    ['headerAddress', 'A2', '', '', '', ''],
+    ['headerAddress', 'A1', '', '', '', ''],
     ['skipRows', '1', '', '', '', ''],
   ]
   for (const c of YANDEX_COLUMNS) {
