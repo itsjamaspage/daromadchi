@@ -192,19 +192,18 @@ export function generateUzumExcel(
 
 // ── Yandex Excel ─────────────────────────────────────────────────────────────
 
-// Matches the real Yandex Market seller cabinet template structure.
-// Row 1 = section group headers, Row 2 = column headers, Row 3 = descriptions, Row 4+ = data.
-// Columns 1-3 are output-only (errors/quality), columns 4-49 are input fields.
+// Matches the real Yandex Market seller cabinet template structure exactly.
+// Row 1 = section group headers (sparse), Row 2 = column headers, Row 3 = descriptions, Row 4+ = data.
 
 const YANDEX_SECTION_GROUPS: { col: number; label: string }[] = [
   { col: 4, label: 'Основные параметры' },
   { col: 18, label: 'Вес и габариты с упаковкой' },
-  { col: 24, label: 'Цена' },
-  { col: 29, label: 'Срок годности и службы' },
-  { col: 33, label: 'Гарантийный срок' },
-  { col: 35, label: 'Маркировка и документы' },
-  { col: 40, label: 'Уценка' },
-  { col: 43, label: 'Дополнительно' },
+  { col: 23, label: 'Цена' },
+  { col: 28, label: 'Срок годности и службы' },
+  { col: 32, label: 'Гарантийный срок' },
+  { col: 34, label: 'Маркировка и документы' },
+  { col: 39, label: 'Уценка' },
+  { col: 42, label: 'Дополнительно' },
 ]
 
 interface YandexCol {
@@ -239,7 +238,6 @@ const YANDEX_COLUMNS: YandexCol[] = [
   { header: 'Ширина, см *', key: 'width', direction: 'in', group: 'weight_and_dimension', frontKey: 'weight_and_dimensions', desc: 'Ширина упаковки в сантиметрах.' },
   { header: 'Высота, см *', key: 'height', direction: 'in', group: 'weight_and_dimension', frontKey: 'weight_and_dimensions', desc: 'Высота упаковки в сантиметрах.' },
   { header: 'Товар доставляется в нескольких упаковках', key: 'box_count', direction: 'in', group: 'weight_and_dimension', frontKey: 'box-count', desc: '' },
-  { header: 'Объём, л', key: 'volume', direction: 'out', group: 'weight_and_dimension', frontKey: 'volume', desc: 'Заполняется автоматически.' },
   { header: 'Цена *', key: 'price', direction: 'in', group: 'default_price', frontKey: 'default_price', desc: 'Цена в валюте кабинета, по которой вы хотите продавать товар.' },
   { header: 'Зачёркнутая цена', key: 'oldprice', direction: 'in', group: 'default_price', frontKey: 'default_price', desc: 'Цена до скидки в валюте кабинета.' },
   { header: 'Валюта *', key: 'currencyId', direction: 'in', group: 'default_price', frontKey: 'currencyId', desc: 'Валюта, в которой указаны цены' },
@@ -251,9 +249,9 @@ const YANDEX_COLUMNS: YandexCol[] = [
   { header: 'Комментарий к сроку службы', key: 'comment_life_days', direction: 'in', group: 'expiry', frontKey: 'comment_life_days', desc: '' },
   { header: 'Гарантийный срок', key: 'warranty_days', direction: 'in', group: 'warranty', frontKey: 'warranty_days', desc: '' },
   { header: 'Комментарий к гарантийному сроку', key: 'comment_warranty', direction: 'in', group: 'warranty', frontKey: 'comment_warranty', desc: '' },
-  { header: 'Маркировка', key: 'cargo_types', direction: 'in', group: 'mark_and_docs', frontKey: 'cargo_types', desc: '' },
+  { header: 'Буду маркировать', key: 'cargo_types', direction: 'in', group: 'mark_and_docs', frontKey: 'cargo_types', desc: '' },
   { header: 'Номер документа на товар', key: 'certificate', direction: 'in', group: 'mark_and_docs', frontKey: 'certificate', desc: '' },
-  { header: 'ТН ВЭД', key: 'tn_ved_code', direction: 'in', group: 'mark_and_docs', frontKey: 'tn_ved_code', desc: '' },
+  { header: 'Код ТН ВЭД', key: 'tn_ved_code', direction: 'in', group: 'mark_and_docs', frontKey: 'tn_ved_code', desc: '' },
   { header: 'ИКПУ *', key: 'ikpu', direction: 'in', group: 'mark_and_docs', frontKey: 'ikpu', desc: 'Идентификационный код продукции и услуг для Узбекистана. 17 цифр.' },
   { header: 'Код упаковки *', key: 'ikpu_pack_code', direction: 'in', group: 'mark_and_docs', frontKey: 'ikpu_pack_code', desc: 'Обычно привязан к ИКПУ, состоит из цифр.' },
   { header: 'Тип уценки', key: 'condition-type', direction: 'in', group: 'resale', frontKey: 'condition', desc: '' },
@@ -266,6 +264,9 @@ const YANDEX_COLUMNS: YandexCol[] = [
   { header: 'Характеристики товара', key: 'param', direction: 'in', group: 'optional', frontKey: 'param', desc: 'Все важные характеристики товара — цвет, размер, объем, материал, возраст, пол, и т. д.' },
   { header: 'В архиве', key: 'archived', direction: 'in', group: 'optional', frontKey: 'archived', desc: '' },
   { header: 'Артикул товара (SKU)', key: 'market-sku', direction: 'inout', group: 'optional', frontKey: 'market_sku', desc: '' },
+  { header: 'Артикул Маркета', key: 'suggested-sku', direction: 'out', group: 'optional', frontKey: 'suggested_sku', desc: '' },
+  { header: 'Категория на Маркете', key: 'market_category', direction: 'out', group: 'out', frontKey: 'market_category', desc: '' },
+  { header: 'Дата дополнения карточки', key: 'max_replicator_timestamp', direction: 'in', group: 'tech', frontKey: 'max_replicator_timestamp', desc: '' },
 ]
 
 export interface YandexCategoryParam {
@@ -325,10 +326,16 @@ export function generateYandexExcel(
   // ── Список товаров sheet ──
   const totalCols = YANDEX_COLUMNS.length
 
-  // Row 1: column headers (Yandex validates row 1 names before reading Настройки)
+  // Row 1: section group headers (sparse, matching real template)
+  const groupRow: (string | null)[] = new Array(totalCols).fill(null)
+  for (const g of YANDEX_SECTION_GROUPS) {
+    groupRow[g.col - 1] = g.label
+  }
+
+  // Row 2: column headers
   const headerRow = YANDEX_COLUMNS.map(c => c.header)
 
-  // Row 2: descriptions
+  // Row 3: descriptions
   const descRow = YANDEX_COLUMNS.map(c => c.desc)
 
   // Data rows (columns 1-3 empty for error/quality, then data from col 4)
@@ -358,7 +365,7 @@ export function generateYandexExcel(
     return row
   })
 
-  const wsData = [headerRow, descRow, ...dataRows]
+  const wsData = [groupRow, headerRow, descRow, ...dataRows]
   const ws = XLSX.utils.aoa_to_sheet(wsData)
 
   ws['!cols'] = YANDEX_COLUMNS.map((c, i) => {
@@ -372,7 +379,7 @@ export function generateYandexExcel(
   // ── Настройки sheet (column mappings — critical for Yandex import) ──
   const settingsRows: (string | number | boolean)[][] = [
     ['sheetName', 'Список товаров', '', '', '', ''],
-    ['headerAddress', 'A1', '', '', '', ''],
+    ['headerAddress', 'A2', '', '', '', ''],
     ['skipRows', '1', '', '', '', ''],
   ]
   for (const c of YANDEX_COLUMNS) {
