@@ -445,8 +445,7 @@ export default function ProductCreateForm() {
   // ── Yandex category search ────────────────────────────────────────────
   useEffect(() => {
     if (!yandexCatSearch.trim() || yandexCatSearch.length < 2) {
-      setYandexCatResults([])
-      return
+      return () => { setYandexCatResults([]) }
     }
     const timer = setTimeout(async () => {
       setYandexCatLoading(true)
@@ -478,19 +477,21 @@ export default function ProductCreateForm() {
 
   // Fetch category parameters when category is selected
   useEffect(() => {
-    if (!yandexCatId) { setCategoryParams([]); return }
+    if (!yandexCatId) {
+      return () => { setCategoryParams([]) }
+    }
     let cancelled = false
-    setCategoryParamsLoading(true)
-    fetch('/api/products/yandex-category-params', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ categoryId: yandexCatId }),
-    })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
+    const load = async () => {
+      setCategoryParamsLoading(true)
+      try {
+        const res = await fetch('/api/products/yandex-category-params', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ categoryId: yandexCatId }),
+        })
+        const data = res.ok ? await res.json() : null
         if (!cancelled && data?.parameters) {
           setCategoryParams(data.parameters)
-          // Auto-add required params as characteristics if not already present
           const required = data.parameters.filter((p: { required?: boolean }) => p.required)
           setChars(prev => {
             const existing = new Set(prev.map(c => c.name.trim().toLowerCase()))
@@ -500,9 +501,10 @@ export default function ProductCreateForm() {
             return toAdd.length > 0 ? [...prev, ...toAdd] : prev
           })
         }
-      })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setCategoryParamsLoading(false) })
+      } catch { /* ignore */ }
+      finally { if (!cancelled) setCategoryParamsLoading(false) }
+    }
+    load()
     return () => { cancelled = true }
   }, [yandexCatId])
 
