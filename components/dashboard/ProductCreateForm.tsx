@@ -88,7 +88,7 @@ function SectionCard({
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left"
+        className="w-full flex items-center justify-between px-4 sm:px-5 py-4 text-left"
         style={{ color: 'var(--text-base)' }}
       >
         <span className="font-semibold text-[15px] flex items-center gap-2">
@@ -98,7 +98,7 @@ function SectionCard({
         {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
       </button>
       {open && (
-        <div className="px-5 pb-5 space-y-4 border-t" style={{ borderColor: 'var(--border)' }}>
+        <div className="px-4 sm:px-5 pb-5 space-y-4 border-t" style={{ borderColor: 'var(--border)' }}>
           <div className="pt-4">{children}</div>
         </div>
       )}
@@ -821,10 +821,10 @@ export default function ProductCreateForm() {
 
       {/* ── Import from Excel ── */}
       <div
-        className="rounded-2xl border p-5"
+        className="rounded-2xl border p-4 sm:p-5"
         style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
       >
-        <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h3 className="font-semibold text-[15px]" style={{ color: 'var(--text-base)' }}>
               {d.importExcel ?? (lang === 'ru' ? 'Импорт из Excel' : lang === 'uz' ? 'Excel dan import' : 'Import from Excel')}
@@ -838,7 +838,7 @@ export default function ProductCreateForm() {
             </p>
           </div>
           <label
-            className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl border transition-colors cursor-pointer hover:opacity-80"
+            className="inline-flex items-center justify-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl border transition-colors cursor-pointer hover:opacity-80 shrink-0"
             style={{ background: 'var(--bg-card2)', color: 'var(--text-base)', borderColor: 'var(--border)' }}
           >
             <Upload className="w-4 h-4" />
@@ -976,7 +976,7 @@ export default function ProductCreateForm() {
 
       {/* ── Pricing & Dimensions ── */}
       <SectionCard title={d.pricingSection}>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <InputField
             label={d.sellingPrice}
             badges={<MpBadges uz ym reqUz reqYm />}
@@ -1070,7 +1070,7 @@ export default function ProductCreateForm() {
             {variants.map((v, i) => (
               <div
                 key={v.id}
-                className="rounded-xl border p-4 space-y-3"
+                className="rounded-xl border p-3 sm:p-4 space-y-3"
                 style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}
               >
                 <div className="flex items-center justify-between">
@@ -1087,7 +1087,7 @@ export default function ProductCreateForm() {
                     {d.removeVariant}
                   </button>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <InputField label={d.colorLabel} badges={<MpBadges uz ym />}
                     value={v.color} onChange={val => updateVariant(v.id, 'color', val)} />
                   <InputField label={d.sizeLabel} badges={<MpBadges uz ym />}
@@ -1138,7 +1138,7 @@ export default function ProductCreateForm() {
         ) : (
           <div className="space-y-2">
             {chars.map(c => (
-              <div key={c.id} className="flex items-end gap-2">
+              <div key={c.id} className="flex flex-col sm:flex-row sm:items-end gap-2">
                 <div className="flex-1">
                   <InputField label={d.charName} value={c.name}
                     onChange={val => updateChar(c.id, 'name', val)} />
@@ -1150,7 +1150,7 @@ export default function ProductCreateForm() {
                 <button
                   type="button"
                   onClick={() => removeChar(c.id)}
-                  className="p-2 rounded-lg transition-colors hover:bg-red-500/10 mb-0.5"
+                  className="p-2 rounded-lg transition-colors hover:bg-red-500/10 mb-0.5 self-end"
                   style={{ color: 'var(--text-muted)' }}
                 >
                   <Trash2 className="w-4 h-4" />
@@ -1172,7 +1172,7 @@ export default function ProductCreateForm() {
 
       {/* ── Yandex Market Export / Push ── */}
       <div
-        className="rounded-2xl border p-5"
+        className="rounded-2xl border p-4 sm:p-5"
         style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
       >
         <div className="flex items-center gap-2 mb-3">
@@ -1232,12 +1232,12 @@ export default function ProductCreateForm() {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3">
           <button
             type="button"
             disabled={!canExportYandex || pushing}
             onClick={handleYandexPush}
-            className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-40"
+            className="inline-flex items-center justify-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-40"
             style={{
               background: canExportYandex && !pushing ? '#FC3F1D' : 'var(--bg-card2)',
               color: canExportYandex && !pushing ? '#fff' : 'var(--text-muted)',
@@ -1253,7 +1253,7 @@ export default function ProductCreateForm() {
             type="button"
             disabled={!canExportYandex || downloading !== null}
             onClick={() => handleExport('yandex')}
-            className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl border transition-colors disabled:opacity-40"
+            className="inline-flex items-center justify-center gap-2 text-sm font-medium px-4 py-2 rounded-xl border transition-colors disabled:opacity-40"
             style={{
               borderColor: 'var(--border)',
               color: canExportYandex ? 'var(--text-base)' : 'var(--text-muted)',
@@ -1268,7 +1268,7 @@ export default function ProductCreateForm() {
 
       {/* ── Uzum Market Export ── */}
       <div
-        className="rounded-2xl border p-5"
+        className="rounded-2xl border p-4 sm:p-5"
         style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
       >
         <div className="flex items-center gap-2 mb-3">
