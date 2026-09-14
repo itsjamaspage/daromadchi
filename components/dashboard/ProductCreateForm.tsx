@@ -233,6 +233,7 @@ export default function ProductCreateForm() {
   const [countrySkipped, setCountrySkipped] = useState(false)
 
   // Category
+  const [uzumCatName, setUzumCatName] = useState('')
   const [yandexCatName, setYandexCatName] = useState('')
 
   // Descriptions
@@ -277,6 +278,7 @@ export default function ProductCreateForm() {
     nameRu.trim() && nameUz.trim()
     && (brand.trim() || brandSkipped)
     && (country.trim() || countrySkipped)
+    && uzumCatName.trim()
     && descRu.trim() && descUz.trim()
     && shortDescRu.trim() && shortDescUz.trim()
     && photoUrls.trim()
@@ -351,6 +353,7 @@ export default function ProductCreateForm() {
         setBrand(str(first, ci.brand))
         setModel(str(first, ci.model))
         setCountry(str(first, ci.country))
+        setUzumCatName(str(first, ci.catName))
         setDescRu(str(first, ci.descRu))
         setDescUz(str(first, ci.descUz))
         setShortDescRu(str(first, ci.shortRu))
@@ -476,7 +479,7 @@ export default function ProductCreateForm() {
       nameUz: nameUz.trim(),
       sku: sku.trim(),
       skuGroup: skuGroup.trim() || nameRu.trim(),
-      categoryName: yandexCatName || '',
+      categoryName: uzumCatName || yandexCatName || '',
       categoryId: '',
       brand: brandSkipped ? '' : brand.trim(),
       model: modelSkipped ? '' : model.trim(),
@@ -508,7 +511,7 @@ export default function ProductCreateForm() {
       sellingPrice: Number(v.sellingPrice) || base.sellingPrice,
       oldPrice: Number(v.oldPrice) || base.oldPrice,
     }))
-  }, [nameRu, nameUz, sku, skuGroup, yandexCatName,
+  }, [nameRu, nameUz, sku, skuGroup, uzumCatName, yandexCatName,
     brand, brandSkipped, model, modelSkipped, country, countrySkipped,
     descRu, descUz, shortDescRu, shortDescUz, photoUrls, barcode, ikpu,
     sellingPrice, oldPrice, weightG, heightMm, widthMm, lengthMm, chars, variants])
@@ -522,8 +525,8 @@ export default function ProductCreateForm() {
     if (marketplace === 'uzum') {
       body.uzumCategory = {
         id: '',
-        name: '',
-        fullPath: '',
+        name: uzumCatName || '',
+        fullPath: uzumCatName || '',
       }
     } else {
       body.yandexCategoryName = yandexCatName || 'Не указана'
@@ -729,13 +732,20 @@ export default function ProductCreateForm() {
 
       {/* ── Category ── */}
       <SectionCard title={d.categorySection}>
-        <InputField
-          label={d.yandexCategory}
-          badges={<MpBadges ym reqYm />}
-          value={yandexCatName} onChange={setYandexCatName}
-          placeholder="e.g. Футболки"
-          hint={lang === 'ru' ? 'Категория Uzum выбирается в кабинете продавца при загрузке Excel' : lang === 'uz' ? "Uzum kategoriyasi Excel yuklashda sotuvchi kabinetida tanlanadi" : 'Uzum category is selected in seller cabinet when uploading Excel'}
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <InputField
+            label={d.uzumCategory}
+            badges={<MpBadges uz reqUz />}
+            value={uzumCatName} onChange={setUzumCatName}
+            placeholder="e.g. Футболки"
+          />
+          <InputField
+            label={d.yandexCategory}
+            badges={<MpBadges ym reqYm />}
+            value={yandexCatName} onChange={setYandexCatName}
+            placeholder="e.g. Футболки"
+          />
+        </div>
       </SectionCard>
 
       {/* ── Descriptions ── */}
