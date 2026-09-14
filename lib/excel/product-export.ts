@@ -195,15 +195,16 @@ export function generateUzumExcel(
 // Matches the real Yandex Market seller cabinet template structure exactly.
 // Row 1 = section group headers (sparse), Row 2 = column headers, Row 3 = descriptions, Row 4+ = data.
 
-const YANDEX_SECTION_GROUPS: { col: number; label: string }[] = [
-  { col: 4, label: 'Основные параметры' },
-  { col: 18, label: 'Вес и габариты с упаковкой' },
-  { col: 23, label: 'Цена' },
-  { col: 28, label: 'Срок годности и службы' },
-  { col: 32, label: 'Гарантийный срок' },
-  { col: 34, label: 'Маркировка и документы' },
-  { col: 39, label: 'Уценка' },
-  { col: 42, label: 'Дополнительно' },
+const YANDEX_SECTION_GROUPS: { col: number; endCol: number; label: string }[] = [
+  { col: 1, endCol: 3, label: '' },
+  { col: 4, endCol: 17, label: 'Основные параметры' },
+  { col: 18, endCol: 22, label: 'Вес и габариты с упаковкой' },
+  { col: 23, endCol: 27, label: 'Цена' },
+  { col: 28, endCol: 31, label: 'Срок годности и службы' },
+  { col: 32, endCol: 33, label: 'Гарантийный срок' },
+  { col: 34, endCol: 38, label: 'Маркировка и документы' },
+  { col: 39, endCol: 41, label: 'Уценка' },
+  { col: 42, endCol: 49, label: 'Дополнительно' },
 ]
 
 interface YandexCol {
@@ -320,7 +321,10 @@ export function generateYandexExcel(
   XLSX.utils.book_append_sheet(wb, wsInstr, 'Инструкция')
 
   // ── Enums sheet (minimal — required for template recognition) ──
-  const wsEnums = XLSX.utils.aoa_to_sheet([['createMap', '', 'market_category_id', 'category']])
+  const wsEnums = XLSX.utils.aoa_to_sheet([
+    ['createMap', '', 'market_category_id', 'category'],
+    ['mode', '', 'TRY_OR_EMPTY', 'TRY_OR_ORIGINAL'],
+  ])
   XLSX.utils.book_append_sheet(wb, wsEnums, 'Enums')
 
   // ── Список товаров sheet ──
@@ -373,6 +377,11 @@ export function generateYandexExcel(
     const maxData = Math.max(c.header.length, ...dataRows.map(r => String(r[i] ?? '').length))
     return { wch: Math.min(Math.max(maxData + 2, 12), 50) }
   })
+
+  ws['!merges'] = YANDEX_SECTION_GROUPS.map(g => ({
+    s: { r: 0, c: g.col - 1 },
+    e: { r: 0, c: g.endCol - 1 },
+  }))
 
   XLSX.utils.book_append_sheet(wb, ws, 'Список товаров')
 
