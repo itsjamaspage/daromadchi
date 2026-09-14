@@ -8,6 +8,7 @@ import {
 import Link from 'next/link'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
+import { useAutoTranslate } from '@/hooks/useAutoTranslate'
 
 interface Variant {
   id: string
@@ -109,6 +110,7 @@ function InputField({
   label,
   value,
   onChange,
+  onBlur,
   placeholder,
   type = 'text',
   disabled,
@@ -118,6 +120,7 @@ function InputField({
   label: string
   value: string
   onChange: (v: string) => void
+  onBlur?: () => void
   placeholder?: string
   type?: string
   disabled?: boolean
@@ -134,6 +137,7 @@ function InputField({
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         disabled={disabled}
         className="w-full px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2 disabled:opacity-40"
@@ -154,6 +158,7 @@ function TextAreaField({
   label,
   value,
   onChange,
+  onBlur,
   rows = 3,
   placeholder,
   disabled,
@@ -163,6 +168,7 @@ function TextAreaField({
   label: string
   value: string
   onChange: (v: string) => void
+  onBlur?: () => void
   rows?: number
   placeholder?: string
   disabled?: boolean
@@ -178,6 +184,7 @@ function TextAreaField({
       <textarea
         value={value}
         onChange={e => onChange(e.target.value)}
+        onBlur={onBlur}
         rows={rows}
         placeholder={placeholder}
         disabled={disabled}
@@ -271,6 +278,9 @@ export default function ProductCreateForm() {
 
   // Import state
   const [importResult, setImportResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  // ── Auto-translate RU↔UZ on blur ──────────────────────────────────────
+  const autoTranslate = useAutoTranslate()
 
   // ── Smart per-marketplace export validation ─────────────────────────────
 
@@ -698,11 +708,13 @@ export default function ProductCreateForm() {
             label={d.nameRu}
             badges={<MpBadges uz ym reqUz reqYm />}
             value={nameRu} onChange={setNameRu}
+            onBlur={() => autoTranslate(nameRu, 'ru', 'uz', nameUz, setNameUz)}
           />
           <InputField
             label={d.nameUz}
             badges={<MpBadges uz ym reqUz reqYm />}
             value={nameUz} onChange={setNameUz}
+            onBlur={() => autoTranslate(nameUz, 'uz', 'ru', nameRu, setNameRu)}
           />
           <InputField
             label={d.skuId}
@@ -755,24 +767,28 @@ export default function ProductCreateForm() {
             label={d.descRu}
             badges={<MpBadges uz ym reqUz reqYm />}
             value={descRu} onChange={setDescRu}
+            onBlur={() => autoTranslate(descRu, 'ru', 'uz', descUz, setDescUz)}
             hint={lang === 'ru' ? 'Uzum: до 28 000 симв. · Yandex: до 6 000 симв.' : lang === 'uz' ? 'Uzum: 28 000 belgigacha · Yandex: 6 000 belgigacha' : 'Uzum: up to 28,000 chars · Yandex: up to 6,000 chars'}
           />
           <TextAreaField
             label={d.descUz}
             badges={<MpBadges uz ym reqUz reqYm />}
             value={descUz} onChange={setDescUz}
+            onBlur={() => autoTranslate(descUz, 'uz', 'ru', descRu, setDescRu)}
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <TextAreaField
               label={d.shortDescRu}
               badges={<MpBadges uz reqUz />}
               value={shortDescRu} onChange={setShortDescRu} rows={2}
+              onBlur={() => autoTranslate(shortDescRu, 'ru', 'uz', shortDescUz, setShortDescUz)}
               hint={lang === 'ru' ? 'До 390 символов' : lang === 'uz' ? '390 belgigacha' : 'Up to 390 chars'}
             />
             <TextAreaField
               label={d.shortDescUz}
               badges={<MpBadges uz reqUz />}
               value={shortDescUz} onChange={setShortDescUz} rows={2}
+              onBlur={() => autoTranslate(shortDescUz, 'uz', 'ru', shortDescRu, setShortDescRu)}
               hint={lang === 'ru' ? 'До 390 символов' : lang === 'uz' ? '390 belgigacha' : 'Up to 390 chars'}
             />
           </div>
