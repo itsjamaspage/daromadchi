@@ -88,8 +88,18 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ ok: true, logId: result.logId })
   }
 
+  let detail: string | undefined
+  if (result.responseBody) {
+    try {
+      const parsed = JSON.parse(result.responseBody)
+      detail = parsed.errors?.map((e: { message?: string }) => e.message).join('; ')
+        || parsed.error?.message
+        || parsed.message
+    } catch { /* not JSON */ }
+  }
+
   return NextResponse.json(
-    { error: result.reason ?? 'Product push failed', status: result.status, logId: result.logId },
+    { error: detail || result.reason || 'Product push failed', status: result.status, logId: result.logId },
     { status: result.httpStatus ?? 500 },
   )
 })
