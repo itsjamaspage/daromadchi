@@ -486,7 +486,7 @@ export default function ProductCreateForm() {
         return isNaN(v) ? 0 : v
       }
 
-      const startRow = isUzum ? 2 : 1
+      const startRow = 2
       const dataRows = rows.slice(startRow).filter(r => r.some(c => String(c).trim()))
       if (dataRows.length === 0) throw new Error(lang === 'ru' ? 'Нет данных в файле' : 'No data in file')
 
