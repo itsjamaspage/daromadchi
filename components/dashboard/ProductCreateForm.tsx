@@ -37,14 +37,44 @@ const EMPTY_VARIANT = (): Variant => ({
   oldPrice: '',
 })
 
+// ── Marketplace badge ────────────────────────────────────────────────────────
+
+function MpBadge({ mp, req }: { mp: 'uz' | 'ym'; req?: boolean }) {
+  const bg = mp === 'uz' ? '#7B68EE' : '#FC3F1D'
+  return (
+    <span
+      className="inline-flex items-center text-[10px] font-bold leading-none px-1.5 py-[3px] rounded-[4px] uppercase tracking-wide select-none"
+      style={{ background: bg, color: '#fff' }}
+    >
+      {req && <span className="mr-[1px]">*</span>}
+      {mp === 'uz' ? 'UZ' : 'YM'}
+    </span>
+  )
+}
+
+function MpBadges({ uz, ym, reqUz, reqYm }: {
+  uz?: boolean; ym?: boolean; reqUz?: boolean; reqYm?: boolean
+}) {
+  return (
+    <span className="inline-flex gap-1 ml-1.5 align-middle">
+      {uz && <MpBadge mp="uz" req={reqUz} />}
+      {ym && <MpBadge mp="ym" req={reqYm} />}
+    </span>
+  )
+}
+
+// ── Reusable section card ────────────────────────────────────────────────────
+
 function SectionCard({
   title,
   children,
   defaultOpen = true,
+  badge,
 }: {
   title: string
   children: React.ReactNode
   defaultOpen?: boolean
+  badge?: React.ReactNode
 }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
@@ -58,7 +88,10 @@ function SectionCard({
         className="w-full flex items-center justify-between px-5 py-4 text-left"
         style={{ color: 'var(--text-base)' }}
       >
-        <span className="font-semibold text-[15px]">{title}</span>
+        <span className="font-semibold text-[15px] flex items-center gap-2">
+          {title}
+          {badge}
+        </span>
         {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
       </button>
       {open && (
@@ -70,32 +103,40 @@ function SectionCard({
   )
 }
 
+// ── Input components ─────────────────────────────────────────────────────────
+
 function InputField({
   label,
-  required,
   value,
   onChange,
   placeholder,
   type = 'text',
+  disabled,
+  badges,
+  hint,
 }: {
   label: string
-  required?: boolean
   value: string
   onChange: (v: string) => void
   placeholder?: string
   type?: string
+  disabled?: boolean
+  badges?: React.ReactNode
+  hint?: string
 }) {
   return (
     <div>
       <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
-        {label}{required && <span style={{ color: 'var(--c1)' }}> *</span>}
+        {label}
+        {badges}
       </label>
       <input
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2"
+        disabled={disabled}
+        className="w-full px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2 disabled:opacity-40"
         style={{
           background: 'var(--bg-input)',
           borderColor: 'var(--border)',
@@ -104,36 +145,43 @@ function InputField({
           '--tw-ring-color': 'var(--c1)',
         }}
       />
+      {hint && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{hint}</p>}
     </div>
   )
 }
 
 function TextAreaField({
   label,
-  required,
   value,
   onChange,
   rows = 3,
   placeholder,
+  disabled,
+  badges,
+  hint,
 }: {
   label: string
-  required?: boolean
   value: string
   onChange: (v: string) => void
   rows?: number
   placeholder?: string
+  disabled?: boolean
+  badges?: React.ReactNode
+  hint?: string
 }) {
   return (
     <div>
       <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
-        {label}{required && <span style={{ color: 'var(--c1)' }}> *</span>}
+        {label}
+        {badges}
       </label>
       <textarea
         value={value}
         onChange={e => onChange(e.target.value)}
         rows={rows}
         placeholder={placeholder}
-        className="w-full px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2 resize-y"
+        disabled={disabled}
+        className="w-full px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2 resize-y disabled:opacity-40"
         style={{
           background: 'var(--bg-input)',
           borderColor: 'var(--border)',
@@ -142,9 +190,30 @@ function TextAreaField({
           '--tw-ring-color': 'var(--c1)',
         }}
       />
+      {hint && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{hint}</p>}
     </div>
   )
 }
+
+function SkipCheck({ checked, onChange, label }: {
+  checked: boolean; onChange: (v: boolean) => void; label: string
+}) {
+  return (
+    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none mt-1">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={e => onChange(e.target.checked)}
+        className="rounded border accent-[#7B68EE]"
+        style={{ borderColor: 'var(--border)' }}
+      />
+      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</span>
+      <MpBadge mp="uz" />
+    </label>
+  )
+}
+
+// ── Main form ────────────────────────────────────────────────────────────────
 
 export default function ProductCreateForm() {
   const { lang } = useLang()
@@ -157,6 +226,11 @@ export default function ProductCreateForm() {
   const [brand, setBrand] = useState('')
   const [model, setModel] = useState('')
   const [country, setCountry] = useState('')
+
+  // Uzum skip toggles ("Отсутствует")
+  const [brandSkipped, setBrandSkipped] = useState(false)
+  const [modelSkipped, setModelSkipped] = useState(false)
+  const [countrySkipped, setCountrySkipped] = useState(false)
 
   // Category
   const [uzumCatId, setUzumCatId] = useState('')
@@ -172,7 +246,7 @@ export default function ProductCreateForm() {
   // Media
   const [photoUrls, setPhotoUrls] = useState('')
 
-  // Pricing & dimensions (shared defaults)
+  // Pricing & dimensions
   const [sellingPrice, setSellingPrice] = useState('')
   const [oldPrice, setOldPrice] = useState('')
   const [weightG, setWeightG] = useState('')
@@ -182,23 +256,50 @@ export default function ProductCreateForm() {
   const [ikpu, setIkpu] = useState('')
   const [barcode, setBarcode] = useState('')
 
-  // SKU group
+  // SKU group (Uzum only)
   const [skuGroup, setSkuGroup] = useState('')
 
   // Variants
   const [variants, setVariants] = useState<Variant[]>([])
 
-  // Characteristics
+  // Characteristics (Yandex)
   const [chars, setChars] = useState<Characteristic[]>([])
 
   // Export state
   const [downloading, setDownloading] = useState<'uzum' | 'yandex' | 'both' | null>(null)
-  // Yandex push state
   const [pushing, setPushing] = useState(false)
   const [pushResult, setPushResult] = useState<{ ok: boolean; message: string } | null>(null)
 
   // Import state
   const [importResult, setImportResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  // ── Smart per-marketplace export validation ─────────────────────────────
+
+  const canExportUzum =
+    nameRu.trim() && nameUz.trim()
+    && (brand.trim() || brandSkipped)
+    && (country.trim() || countrySkipped)
+    && uzumCatId.trim() && uzumCatName.trim()
+    && descRu.trim() && descUz.trim()
+    && shortDescRu.trim() && shortDescUz.trim()
+    && photoUrls.trim()
+    && sellingPrice && oldPrice
+    && weightG && heightMm && widthMm && lengthMm
+    && ikpu.trim()
+
+  const canExportYandex =
+    nameRu.trim() && nameUz.trim()
+    && sku.trim()
+    && brand.trim()
+    && yandexCatName.trim()
+    && descRu.trim() && descUz.trim()
+    && photoUrls.trim()
+    && sellingPrice
+    && barcode.trim()
+    && weightG && heightMm && widthMm && lengthMm
+    && ikpu.trim()
+
+  // ── File import ─────────────────────────────────────────────────────────
 
   const handleFileImport = async (file: File) => {
     setImportResult(null)
@@ -268,6 +369,9 @@ export default function ProductCreateForm() {
         setHeightMm(String(num(first, ci.height) || ''))
         setWidthMm(String(num(first, ci.width) || ''))
         setLengthMm(String(num(first, ci.length) || ''))
+        setBrandSkipped(false)
+        setModelSkipped(false)
+        setCountrySkipped(false)
 
         if (dataRows.length > 1) {
           setVariants(dataRows.slice(1).map(r => ({
@@ -352,6 +456,8 @@ export default function ProductCreateForm() {
     }
   }
 
+  // ── Variant & characteristic helpers ────────────────────────────────────
+
   const addVariant = () => setVariants(prev => [...prev, EMPTY_VARIANT()])
   const removeVariant = (id: string) => setVariants(prev => prev.filter(v => v.id !== id))
   const updateVariant = (id: string, field: keyof Variant, val: string) =>
@@ -362,9 +468,7 @@ export default function ProductCreateForm() {
   const updateChar = (id: string, field: 'name' | 'value', val: string) =>
     setChars(prev => prev.map(c => (c.id === id ? { ...c, [field]: val } : c)))
 
-  const canExport = nameRu.trim() && nameUz.trim() && brand.trim() && descRu.trim()
-    && descUz.trim() && shortDescRu.trim() && shortDescUz.trim()
-    && sellingPrice && weightG && heightMm && widthMm && lengthMm && ikpu.trim()
+  // ── Build product data for export ───────────────────────────────────────
 
   const buildProducts = useCallback(() => {
     const charsRecord: Record<string, string> = {}
@@ -379,9 +483,9 @@ export default function ProductCreateForm() {
       skuGroup: skuGroup.trim() || nameRu.trim(),
       categoryName: uzumCatName || yandexCatName || '',
       categoryId: uzumCatId,
-      brand: brand.trim(),
-      model: model.trim(),
-      country: country.trim(),
+      brand: brandSkipped ? '' : brand.trim(),
+      model: modelSkipped ? '' : model.trim(),
+      country: countrySkipped ? '' : country.trim(),
       descriptionRu: descRu.trim(),
       descriptionUz: descUz.trim(),
       shortDescRu: shortDescRu.trim(),
@@ -409,9 +513,12 @@ export default function ProductCreateForm() {
       sellingPrice: Number(v.sellingPrice) || base.sellingPrice,
       oldPrice: Number(v.oldPrice) || base.oldPrice,
     }))
-  }, [nameRu, nameUz, sku, skuGroup, uzumCatName, uzumCatId, yandexCatName, brand, model, country,
+  }, [nameRu, nameUz, sku, skuGroup, uzumCatName, uzumCatId, yandexCatName,
+    brand, brandSkipped, model, modelSkipped, country, countrySkipped,
     descRu, descUz, shortDescRu, shortDescUz, photoUrls, barcode, ikpu,
     sellingPrice, oldPrice, weightG, heightMm, widthMm, lengthMm, chars, variants])
+
+  // ── Export & push handlers ──────────────────────────────────────────────
 
   const doExport = async (marketplace: 'uzum' | 'yandex') => {
     const products = buildProducts()
@@ -521,6 +628,8 @@ export default function ProductCreateForm() {
     }
   }
 
+  const skipLabel = d.notAvailable ?? (lang === 'ru' ? 'Отсутствует' : lang === 'uz' ? 'Mavjud emas' : 'Not available')
+
   return (
     <div className="space-y-4 max-w-3xl">
       {/* Back link */}
@@ -533,7 +642,7 @@ export default function ProductCreateForm() {
         {d.productsTitle}
       </Link>
 
-      {/* Import from Excel */}
+      {/* ── Import from Excel ── */}
       <div
         className="rounded-2xl border p-5"
         style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
@@ -544,15 +653,15 @@ export default function ProductCreateForm() {
               {d.importExcel ?? (lang === 'ru' ? 'Импорт из Excel' : lang === 'uz' ? 'Excel dan import' : 'Import from Excel')}
             </h3>
             <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
-              {d.importExcelHint ?? (lang === 'ru'
-                ? 'Загрузите файл Uzum или Yandex (.xlsx / .xlsm)'
+              {lang === 'ru'
+                ? 'Загрузите свой файл Uzum или Yandex (.xlsx / .xlsm) — данные заполнят форму автоматически'
                 : lang === 'uz'
-                ? 'Uzum yoki Yandex faylni yuklang (.xlsx / .xlsm)'
-                : 'Upload an Uzum or Yandex file (.xlsx / .xlsm)')}
+                ? "Uzum yoki Yandex faylingizni yuklang (.xlsx / .xlsm) — ma'lumotlar avtomatik to'ldiriladi"
+                : 'Upload your Uzum or Yandex file (.xlsx / .xlsm) — data will fill the form automatically'}
             </p>
           </div>
           <label
-            className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl border transition-colors cursor-pointer hover:opacity-80"
             style={{ background: 'var(--bg-card2)', color: 'var(--text-base)', borderColor: 'var(--border)' }}
           >
             <Upload className="w-4 h-4" />
@@ -584,72 +693,191 @@ export default function ProductCreateForm() {
         )}
       </div>
 
-      {/* Basic Info */}
+      {/* ── Basic Info ── */}
       <SectionCard title={d.basicInfo}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <InputField label={d.nameRu} required value={nameRu} onChange={setNameRu} />
-          <InputField label={d.nameUz} required value={nameUz} onChange={setNameUz} />
-          <InputField label={d.skuId} value={sku} onChange={setSku} />
-          <InputField label={d.skuGroupLabel} required value={skuGroup} onChange={setSkuGroup}
-            placeholder={nameRu || undefined} />
-          <InputField label={d.brandLabel} required value={brand} onChange={setBrand} />
-          <InputField label={d.modelLabel} value={model} onChange={setModel} />
-          <InputField label={d.countryLabel} required value={country} onChange={setCountry} />
+          <InputField
+            label={d.nameRu}
+            badges={<MpBadges uz ym reqUz reqYm />}
+            value={nameRu} onChange={setNameRu}
+          />
+          <InputField
+            label={d.nameUz}
+            badges={<MpBadges uz ym reqUz reqYm />}
+            value={nameUz} onChange={setNameUz}
+          />
+          <InputField
+            label={d.skuId}
+            badges={<MpBadges uz ym reqYm />}
+            value={sku} onChange={setSku}
+          />
+          <div>
+            <InputField
+              label={d.brandLabel}
+              badges={<MpBadges uz ym reqUz reqYm />}
+              value={brand} onChange={setBrand}
+              disabled={brandSkipped}
+            />
+            <SkipCheck checked={brandSkipped} onChange={setBrandSkipped} label={skipLabel} />
+          </div>
+          <div>
+            <InputField
+              label={d.countryLabel}
+              badges={<MpBadges uz ym reqUz />}
+              value={country} onChange={setCountry}
+              disabled={countrySkipped}
+            />
+            <SkipCheck checked={countrySkipped} onChange={setCountrySkipped} label={skipLabel} />
+          </div>
         </div>
       </SectionCard>
 
-      {/* Category */}
+      {/* ── Category ── */}
       <SectionCard title={d.categorySection}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <InputField label={d.uzumCategory + ' — ID'} value={uzumCatId} onChange={setUzumCatId}
-              placeholder="e.g. 1234" />
-          </div>
-          <div>
-            <InputField label={d.uzumCategory + ' — ' + d.charName} value={uzumCatName}
-              onChange={setUzumCatName} placeholder="e.g. Футболки" />
-          </div>
+          <InputField
+            label={d.uzumCategory + ' — ID'}
+            badges={<MpBadges uz reqUz />}
+            value={uzumCatId} onChange={setUzumCatId}
+            placeholder="e.g. 1234"
+          />
+          <InputField
+            label={d.uzumCategory + ' — ' + d.charName}
+            badges={<MpBadges uz reqUz />}
+            value={uzumCatName} onChange={setUzumCatName}
+            placeholder="e.g. Футболки"
+          />
           <div className="sm:col-span-2">
-            <InputField label={d.yandexCategory} value={yandexCatName}
-              onChange={setYandexCatName} placeholder="e.g. Футболки" />
+            <InputField
+              label={d.yandexCategory}
+              badges={<MpBadges ym reqYm />}
+              value={yandexCatName} onChange={setYandexCatName}
+              placeholder="e.g. Футболки"
+            />
           </div>
         </div>
       </SectionCard>
 
-      {/* Descriptions */}
+      {/* ── Descriptions ── */}
       <SectionCard title={d.descriptionSection}>
         <div className="space-y-4">
-          <TextAreaField label={d.descRu} required value={descRu} onChange={setDescRu} />
-          <TextAreaField label={d.descUz} required value={descUz} onChange={setDescUz} />
+          <TextAreaField
+            label={d.descRu}
+            badges={<MpBadges uz ym reqUz reqYm />}
+            value={descRu} onChange={setDescRu}
+            hint={lang === 'ru' ? 'Uzum: до 28 000 симв. · Yandex: до 6 000 симв.' : lang === 'uz' ? 'Uzum: 28 000 belgigacha · Yandex: 6 000 belgigacha' : 'Uzum: up to 28,000 chars · Yandex: up to 6,000 chars'}
+          />
+          <TextAreaField
+            label={d.descUz}
+            badges={<MpBadges uz ym reqUz reqYm />}
+            value={descUz} onChange={setDescUz}
+          />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <TextAreaField label={d.shortDescRu} required value={shortDescRu} onChange={setShortDescRu} rows={2} />
-            <TextAreaField label={d.shortDescUz} required value={shortDescUz} onChange={setShortDescUz} rows={2} />
+            <TextAreaField
+              label={d.shortDescRu}
+              badges={<MpBadges uz reqUz />}
+              value={shortDescRu} onChange={setShortDescRu} rows={2}
+              hint={lang === 'ru' ? 'До 390 символов' : lang === 'uz' ? '390 belgigacha' : 'Up to 390 chars'}
+            />
+            <TextAreaField
+              label={d.shortDescUz}
+              badges={<MpBadges uz reqUz />}
+              value={shortDescUz} onChange={setShortDescUz} rows={2}
+              hint={lang === 'ru' ? 'До 390 символов' : lang === 'uz' ? '390 belgigacha' : 'Up to 390 chars'}
+            />
           </div>
         </div>
       </SectionCard>
 
-      {/* Media */}
+      {/* ── Media ── */}
       <SectionCard title={d.mediaSection}>
-        <TextAreaField label={d.photoUrls} required value={photoUrls} onChange={setPhotoUrls} rows={2} />
+        <TextAreaField
+          label={d.photoUrls}
+          badges={<MpBadges uz ym reqUz reqYm />}
+          value={photoUrls} onChange={setPhotoUrls} rows={2}
+        />
         <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{d.photoUrlsHint}</p>
       </SectionCard>
 
-      {/* Pricing & Dimensions */}
+      {/* ── Pricing & Dimensions ── */}
       <SectionCard title={d.pricingSection}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <InputField label={d.sellingPrice} required type="number" value={sellingPrice} onChange={setSellingPrice} />
-          <InputField label={d.oldPriceLabel} required type="number" value={oldPrice} onChange={setOldPrice} />
-          <InputField label={d.ikpuLabel} required value={ikpu} onChange={setIkpu} />
-          <InputField label={d.barcodeLabel} required value={barcode} onChange={setBarcode} />
-          <InputField label={d.weightG} required type="number" value={weightG} onChange={setWeightG} />
-          <InputField label={d.heightMm} required type="number" value={heightMm} onChange={setHeightMm} />
-          <InputField label={d.widthMm} required type="number" value={widthMm} onChange={setWidthMm} />
-          <InputField label={d.lengthMm} required type="number" value={lengthMm} onChange={setLengthMm} />
+          <InputField
+            label={d.sellingPrice}
+            badges={<MpBadges uz ym reqUz reqYm />}
+            type="number" value={sellingPrice} onChange={setSellingPrice}
+          />
+          <InputField
+            label={d.oldPriceLabel}
+            badges={<MpBadges uz ym reqUz />}
+            type="number" value={oldPrice} onChange={setOldPrice}
+          />
+          <InputField
+            label={d.ikpuLabel}
+            badges={<MpBadges uz ym reqUz reqYm />}
+            value={ikpu} onChange={setIkpu}
+          />
+          <InputField
+            label={d.barcodeLabel}
+            badges={<MpBadges uz ym reqYm />}
+            value={barcode} onChange={setBarcode}
+          />
+          <InputField
+            label={d.weightG}
+            badges={<MpBadges uz ym reqUz reqYm />}
+            type="number" value={weightG} onChange={setWeightG}
+            hint={lang === 'ru' ? 'Yandex конвертирует в кг' : lang === 'uz' ? 'Yandex kg ga konvert qiladi' : 'Yandex converts to kg'}
+          />
+          <InputField
+            label={d.heightMm}
+            badges={<MpBadges uz ym reqUz reqYm />}
+            type="number" value={heightMm} onChange={setHeightMm}
+            hint={lang === 'ru' ? 'Yandex конвертирует в см' : lang === 'uz' ? 'Yandex sm ga konvert qiladi' : 'Yandex converts to cm'}
+          />
+          <InputField
+            label={d.widthMm}
+            badges={<MpBadges uz ym reqUz reqYm />}
+            type="number" value={widthMm} onChange={setWidthMm}
+          />
+          <InputField
+            label={d.lengthMm}
+            badges={<MpBadges uz ym reqUz reqYm />}
+            type="number" value={lengthMm} onChange={setLengthMm}
+          />
         </div>
       </SectionCard>
 
-      {/* Variants */}
-      <SectionCard title={d.variantsSection} defaultOpen={false}>
+      {/* ── Uzum-only fields ── */}
+      <SectionCard
+        title={d.uzumOnlySection ?? (lang === 'ru' ? 'Поля только для Uzum' : lang === 'uz' ? 'Faqat Uzum uchun maydonlar' : 'Uzum-only fields')}
+        badge={<MpBadge mp="uz" />}
+        defaultOpen={false}
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <InputField
+            label={d.skuGroupLabel}
+            badges={<MpBadges uz reqUz />}
+            value={skuGroup} onChange={setSkuGroup}
+            placeholder={nameRu || undefined}
+          />
+          <div>
+            <InputField
+              label={d.modelLabel}
+              badges={<MpBadges uz />}
+              value={model} onChange={setModel}
+              disabled={modelSkipped}
+            />
+            <SkipCheck checked={modelSkipped} onChange={setModelSkipped} label={skipLabel} />
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* ── Variants ── */}
+      <SectionCard
+        title={d.variantsSection}
+        badge={<MpBadges uz ym />}
+        defaultOpen={false}
+      >
         {variants.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             {lang === 'ru' ? 'Нет вариантов. Один товар будет экспортирован.' :
@@ -679,17 +907,19 @@ export default function ProductCreateForm() {
                   </button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <InputField label={d.colorLabel} value={v.color}
-                    onChange={val => updateVariant(v.id, 'color', val)} />
-                  <InputField label={d.sizeLabel} value={v.size}
-                    onChange={val => updateVariant(v.id, 'size', val)} />
-                  <InputField label={d.skuId} value={v.sku}
-                    onChange={val => updateVariant(v.id, 'sku', val)} />
-                  <InputField label={d.barcodeLabel} value={v.barcode}
-                    onChange={val => updateVariant(v.id, 'barcode', val)} />
-                  <InputField label={d.sellingPrice} type="number" value={v.sellingPrice}
+                  <InputField label={d.colorLabel} badges={<MpBadges uz />}
+                    value={v.color} onChange={val => updateVariant(v.id, 'color', val)} />
+                  <InputField label={d.sizeLabel} badges={<MpBadges uz />}
+                    value={v.size} onChange={val => updateVariant(v.id, 'size', val)} />
+                  <InputField label={d.skuId} badges={<MpBadges uz ym />}
+                    value={v.sku} onChange={val => updateVariant(v.id, 'sku', val)} />
+                  <InputField label={d.barcodeLabel} badges={<MpBadges uz ym />}
+                    value={v.barcode} onChange={val => updateVariant(v.id, 'barcode', val)} />
+                  <InputField label={d.sellingPrice} badges={<MpBadges uz ym />}
+                    type="number" value={v.sellingPrice}
                     onChange={val => updateVariant(v.id, 'sellingPrice', val)} />
-                  <InputField label={d.oldPriceLabel} type="number" value={v.oldPrice}
+                  <InputField label={d.oldPriceLabel} badges={<MpBadges uz ym />}
+                    type="number" value={v.oldPrice}
                     onChange={val => updateVariant(v.id, 'oldPrice', val)} />
                 </div>
               </div>
@@ -707,8 +937,17 @@ export default function ProductCreateForm() {
         </button>
       </SectionCard>
 
-      {/* Characteristics */}
-      <SectionCard title={d.characteristicsSection} defaultOpen={false}>
+      {/* ── Characteristics (Yandex) ── */}
+      <SectionCard
+        title={d.characteristicsSection}
+        badge={<MpBadge mp="ym" />}
+        defaultOpen={false}
+      >
+        <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+          {lang === 'ru' ? 'Ключевые, Дополнительные, Подробности — зависят от категории Yandex'
+            : lang === 'uz' ? "Asosiy, Qo'shimcha, Tafsilotlar — Yandex kategoriyasiga bog'liq"
+            : 'Key, Additional, Details — depend on Yandex category'}
+        </p>
         {chars.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             {lang === 'ru' ? 'Нет характеристик.' :
@@ -750,77 +989,29 @@ export default function ProductCreateForm() {
         </button>
       </SectionCard>
 
-      {/* Import from Excel */}
+      {/* ── Yandex Market Export / Push ── */}
       <div
         className="rounded-2xl border p-5"
         style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
       >
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h3 className="font-semibold text-[15px]" style={{ color: 'var(--text-base)' }}>
-              {d.importExcel ?? (lang === 'ru' ? 'Импорт из Excel' : lang === 'uz' ? 'Excel dan import' : 'Import from Excel')}
-            </h3>
-            <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
-              {d.importExcelHint ?? (lang === 'ru'
-                ? 'Загрузите свой файл Uzum или Yandex (.xlsx / .xlsm) — данные заполнят форму автоматически'
-                : lang === 'uz'
-                ? 'Uzum yoki Yandex faylingizni yuklang (.xlsx / .xlsm) — ma\'lumotlar avtomatik to\'ldiriladi'
-                : 'Upload your Uzum or Yandex file (.xlsx / .xlsm) — data will fill the form automatically')}
-            </p>
-          </div>
-          <label
-            className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl border transition-colors cursor-pointer hover:opacity-80"
-            style={{ background: 'var(--bg-card2)', color: 'var(--text-base)', borderColor: 'var(--border)' }}
-          >
-            <Upload className="w-4 h-4" />
-            {d.chooseFile ?? (lang === 'ru' ? 'Выбрать файл' : lang === 'uz' ? 'Faylni tanlash' : 'Choose file')}
-            <input
-              type="file"
-              accept=".xlsx,.xlsm"
-              className="hidden"
-              onChange={e => {
-                const f = e.target.files?.[0]
-                if (f) handleFileImport(f)
-                e.target.value = ''
-              }}
-            />
-          </label>
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="font-semibold text-[15px]" style={{ color: 'var(--text-base)' }}>
+            {d.addToYandex ?? 'Yandex Market'}
+          </h3>
+          <MpBadge mp="ym" />
         </div>
-        {importResult && (
-          <div
-            className="flex items-center gap-2 text-sm mt-3 px-3 py-2 rounded-xl border"
-            style={{
-              borderColor: importResult.ok ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)',
-              background: importResult.ok ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
-              color: importResult.ok ? 'rgb(34,197,94)' : 'rgb(239,68,68)',
-            }}
-          >
-            {importResult.ok ? <Check className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
-            {importResult.message}
-          </div>
-        )}
-      </div>
-
-      {/* Yandex Direct Push */}
-      <div
-        className="rounded-2xl border p-5"
-        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
-      >
-        <h3 className="font-semibold text-[15px] mb-3" style={{ color: 'var(--text-base)' }}>
-          {d.addToYandex ?? 'Yandex Market'}
-        </h3>
         <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
           {d.addToYandexHint ?? (lang === 'ru'
             ? 'Товар будет создан напрямую в Yandex Market через API'
             : lang === 'uz'
-            ? 'Mahsulot Yandex Market ga API orqali to\'g\'ridan-to\'g\'ri qo\'shiladi'
+            ? "Mahsulot Yandex Market ga API orqali to'g'ridan-to'g'ri qo'shiladi"
             : 'Product will be created directly on Yandex Market via API')}
         </p>
 
-        {!canExport && (
+        {!canExportYandex && (
           <p className="text-sm mb-4 px-3 py-2 rounded-xl border"
             style={{ color: 'var(--text-muted)', borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
-            {d.fillRequired}
+            {d.fillRequiredYandex ?? (lang === 'ru' ? 'Заполните обязательные поля для Yandex' : lang === 'uz' ? "Yandex uchun majburiy maydonlarni to'ldiring" : 'Fill in required fields for Yandex')}
           </p>
         )}
 
@@ -841,28 +1032,28 @@ export default function ProductCreateForm() {
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
-            disabled={!canExport || pushing}
+            disabled={!canExportYandex || pushing}
             onClick={handleYandexPush}
             className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-40"
             style={{
-              background: canExport && !pushing ? '#FC3F1D' : 'var(--bg-card2)',
-              color: canExport && !pushing ? '#fff' : 'var(--text-muted)',
+              background: canExportYandex && !pushing ? '#FC3F1D' : 'var(--bg-card2)',
+              color: canExportYandex && !pushing ? '#fff' : 'var(--text-muted)',
             }}
           >
             <Send className="w-4 h-4" />
             {pushing
               ? (d.pushing ?? (lang === 'ru' ? 'Отправка...' : lang === 'uz' ? 'Yuborilmoqda...' : 'Pushing...'))
-              : (d.pushToYandex ?? (lang === 'ru' ? 'Добавить в Yandex' : lang === 'uz' ? 'Yandex ga qo\'shish' : 'Add to Yandex'))}
+              : (d.pushToYandex ?? (lang === 'ru' ? 'Добавить в Yandex' : lang === 'uz' ? "Yandex ga qo'shish" : 'Add to Yandex'))}
           </button>
 
           <button
             type="button"
-            disabled={!canExport || downloading !== null}
+            disabled={!canExportYandex || downloading !== null}
             onClick={() => handleExport('yandex')}
             className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl border transition-colors disabled:opacity-40"
             style={{
               borderColor: 'var(--border)',
-              color: canExport ? 'var(--text-base)' : 'var(--text-muted)',
+              color: canExportYandex ? 'var(--text-base)' : 'var(--text-muted)',
               background: 'var(--bg-card2)',
             }}
           >
@@ -872,14 +1063,17 @@ export default function ProductCreateForm() {
         </div>
       </div>
 
-      {/* Uzum Excel Export */}
+      {/* ── Uzum Market Export ── */}
       <div
         className="rounded-2xl border p-5"
         style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
       >
-        <h3 className="font-semibold text-[15px] mb-3" style={{ color: 'var(--text-base)' }}>
-          {d.uzumExport ?? 'Uzum Market'}
-        </h3>
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="font-semibold text-[15px]" style={{ color: 'var(--text-base)' }}>
+            {d.uzumExport ?? 'Uzum Market'}
+          </h3>
+          <MpBadge mp="uz" />
+        </div>
         <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
           {d.uzumExportHint ?? (lang === 'ru'
             ? 'Скачайте Excel-файл и загрузите его в кабинет продавца Uzum'
@@ -888,21 +1082,21 @@ export default function ProductCreateForm() {
             : 'Download Excel file and upload it to Uzum seller cabinet')}
         </p>
 
-        {!canExport && (
+        {!canExportUzum && (
           <p className="text-sm mb-4 px-3 py-2 rounded-xl border"
             style={{ color: 'var(--text-muted)', borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
-            {d.fillRequired}
+            {d.fillRequiredUzum ?? (lang === 'ru' ? 'Заполните обязательные поля для Uzum' : lang === 'uz' ? "Uzum uchun majburiy maydonlarni to'ldiring" : 'Fill in required fields for Uzum')}
           </p>
         )}
 
         <button
           type="button"
-          disabled={!canExport || downloading !== null}
+          disabled={!canExportUzum || downloading !== null}
           onClick={() => handleExport('uzum')}
           className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-40"
           style={{
-            background: canExport ? '#7B68EE' : 'var(--bg-card2)',
-            color: canExport ? '#fff' : 'var(--text-muted)',
+            background: canExportUzum ? '#7B68EE' : 'var(--bg-card2)',
+            color: canExportUzum ? '#fff' : 'var(--text-muted)',
           }}
         >
           <FileSpreadsheet className="w-4 h-4" />
