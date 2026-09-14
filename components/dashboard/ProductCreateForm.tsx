@@ -767,7 +767,7 @@ export default function ProductCreateForm() {
         } : undefined,
         basicPrice: p.sellingPrice ? {
           value: p.sellingPrice,
-          currencyId: 'RUR',
+          currencyId: 'UZS',
           discountBase: p.oldPrice || undefined,
         } : undefined,
         customsCommodityCodes: p.ikpu ? [{ code: p.ikpu }] : undefined,
