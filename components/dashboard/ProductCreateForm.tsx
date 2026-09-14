@@ -1,13 +1,16 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   Plus, Trash2, Download, FileSpreadsheet, Send, Upload,
-  ChevronDown, ChevronUp, ArrowLeft, Check, AlertCircle,
+  ChevronDown, ChevronUp, ArrowLeft, Check, AlertCircle, Search,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
+import { useAutoTranslate } from '@/hooks/useAutoTranslate'
+import { searchDirect } from '@/lib/ikpu/browser-search'
+import type { IkpuResult } from '@/lib/ikpu/client'
 
 interface Variant {
   id: string
@@ -109,6 +112,7 @@ function InputField({
   label,
   value,
   onChange,
+  onBlur,
   placeholder,
   type = 'text',
   disabled,
@@ -118,6 +122,7 @@ function InputField({
   label: string
   value: string
   onChange: (v: string) => void
+  onBlur?: () => void
   placeholder?: string
   type?: string
   disabled?: boolean
@@ -134,6 +139,7 @@ function InputField({
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         disabled={disabled}
         className="w-full px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2 disabled:opacity-40"
@@ -154,6 +160,7 @@ function TextAreaField({
   label,
   value,
   onChange,
+  onBlur,
   rows = 3,
   placeholder,
   disabled,
@@ -163,6 +170,7 @@ function TextAreaField({
   label: string
   value: string
   onChange: (v: string) => void
+  onBlur?: () => void
   rows?: number
   placeholder?: string
   disabled?: boolean
@@ -178,6 +186,7 @@ function TextAreaField({
       <textarea
         value={value}
         onChange={e => onChange(e.target.value)}
+        onBlur={onBlur}
         rows={rows}
         placeholder={placeholder}
         disabled={disabled}
@@ -191,6 +200,153 @@ function TextAreaField({
         }}
       />
       {hint && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{hint}</p>}
+    </div>
+  )
+}
+
+function IkpuSearchField({
+  value,
+  onChange,
+  badges,
+  lang,
+}: {
+  value: string
+  onChange: (v: string) => void
+  badges?: React.ReactNode
+  lang: string
+}) {
+  const [results, setResults] = useState<IkpuResult[]>([])
+  const [matched, setMatched] = useState<IkpuResult | null>(null)
+  const [searching, setSearching] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  const labels = {
+    ru: { label: 'Код ИКПУ', placeholder: 'Введите код или название товара', group: 'Группа', cls: 'Класс', pos: 'Позиция', sub: 'Подпозиция', searching: 'Поиск...', noResults: 'Не найдено', pick: 'Выбрать' },
+    uz: { label: 'IKPU kodi', placeholder: 'Kodni yoki mahsulot nomini kiriting', group: 'Guruh', cls: 'Sinf', pos: 'Pozitsiya', sub: 'Quyi pozitsiya', searching: 'Qidirilmoqda...', noResults: 'Topilmadi', pick: 'Tanlash' },
+    en: { label: 'IKPU Code', placeholder: 'Enter code or product name', group: 'Group', cls: 'Class', pos: 'Position', sub: 'Sub-position', searching: 'Searching...', noResults: 'Not found', pick: 'Select' },
+  }
+  const l = labels[lang as keyof typeof labels] ?? labels.en
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const doSearch = useCallback(async (q: string) => {
+    if (q.length < 2) { setResults([]); setMatched(null); return }
+    setSearching(true)
+    const searchLang = lang === 'en' ? 'ru' : lang
+    const isCode = /^\d{5,}$/.test(q.trim())
+    try {
+      const data = await searchDirect(q.trim(), { lang: searchLang, barcode: false })
+      setResults(data.results)
+      const exact = data.results.find(r => r.mxikCode === q.trim())
+      setMatched(exact ?? data.results[0] ?? null)
+      if (!exact && data.results.length > 1) setShowDropdown(true)
+      else setShowDropdown(false)
+    } catch {
+      setResults([])
+      setMatched(null)
+    } finally {
+      setSearching(false)
+    }
+  }, [lang])
+
+  function handleInput(val: string) {
+    onChange(val)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => doSearch(val), 500)
+  }
+
+  function pickResult(r: IkpuResult) {
+    onChange(r.mxikCode)
+    setMatched(r)
+    setShowDropdown(false)
+  }
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
+        {l.label}
+        {badges}
+      </label>
+      <div className="relative">
+        <input
+          type="text"
+          value={value}
+          onChange={e => handleInput(e.target.value)}
+          onFocus={() => { if (results.length > 1 && !matched) setShowDropdown(true) }}
+          placeholder={l.placeholder}
+          className="w-full px-3 py-2 pr-9 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2"
+          style={{
+            background: 'var(--bg-input)',
+            borderColor: matched ? 'rgba(34,197,94,0.5)' : 'var(--border)',
+            color: 'var(--text-base)',
+            // @ts-expect-error CSS custom property
+            '--tw-ring-color': 'var(--c1)',
+          }}
+        />
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          {searching
+            ? <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--text-muted)', borderTopColor: 'transparent' }} />
+            : <Search className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+          }
+        </div>
+      </div>
+
+      {/* Matched category tree */}
+      {matched && !showDropdown && (
+        <div className="mt-2 px-3 py-2.5 rounded-xl text-xs space-y-0.5"
+          style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
+          <p className="font-semibold mb-1" style={{ color: '#22c55e' }}>
+            {matched.mxikCode} — {matched.name}
+          </p>
+          {matched.groupName && <HierarchyRow label={l.group} value={matched.groupName} indent={0} />}
+          {matched.className && <HierarchyRow label={l.cls} value={matched.className} indent={1} />}
+          {matched.positionName && <HierarchyRow label={l.pos} value={matched.positionName} indent={2} />}
+          {matched.subPositionName && <HierarchyRow label={l.sub} value={matched.subPositionName} indent={3} />}
+        </div>
+      )}
+
+      {/* Search results dropdown */}
+      {showDropdown && results.length > 0 && (
+        <div className="absolute z-20 w-full mt-1 max-h-64 overflow-y-auto rounded-xl border shadow-lg"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+          {results.slice(0, 8).map(r => (
+            <button
+              key={r.mxikCode}
+              type="button"
+              onClick={() => pickResult(r)}
+              className="w-full px-3 py-2.5 text-left text-xs hover:brightness-95 transition-colors border-b last:border-b-0"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-base)' }}
+            >
+              <span className="font-mono font-semibold">{r.mxikCode}</span>
+              {' — '}
+              <span>{r.name}</span>
+              <span className="block mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                {r.groupName} → {r.className}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function HierarchyRow({ label, value, indent }: { label: string; value: string; indent: number }) {
+  return (
+    <div className="flex items-start gap-1" style={{ paddingLeft: `${indent * 12}px`, color: 'var(--text-dim)' }}>
+      <span style={{ color: 'var(--text-muted)' }}>{indent > 0 ? '└' : '├'}</span>
+      <span className="font-medium" style={{ color: '#16a34a' }}>{label}:</span>
+      <span style={{ color: '#16a34a' }}>{value}</span>
     </div>
   )
 }
@@ -271,6 +427,9 @@ export default function ProductCreateForm() {
 
   // Import state
   const [importResult, setImportResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  // ── Auto-translate RU↔UZ on blur ──────────────────────────────────────
+  const autoTranslate = useAutoTranslate()
 
   // ── Smart per-marketplace export validation ─────────────────────────────
 
@@ -698,11 +857,13 @@ export default function ProductCreateForm() {
             label={d.nameRu}
             badges={<MpBadges uz ym reqUz reqYm />}
             value={nameRu} onChange={setNameRu}
+            onBlur={() => autoTranslate(nameRu, 'ru', 'uz', nameUz, setNameUz)}
           />
           <InputField
             label={d.nameUz}
             badges={<MpBadges uz ym reqUz reqYm />}
             value={nameUz} onChange={setNameUz}
+            onBlur={() => autoTranslate(nameUz, 'uz', 'ru', nameRu, setNameRu)}
           />
           <InputField
             label={d.skuId}
@@ -755,24 +916,28 @@ export default function ProductCreateForm() {
             label={d.descRu}
             badges={<MpBadges uz ym reqUz reqYm />}
             value={descRu} onChange={setDescRu}
+            onBlur={() => autoTranslate(descRu, 'ru', 'uz', descUz, setDescUz)}
             hint={lang === 'ru' ? 'Uzum: до 28 000 симв. · Yandex: до 6 000 симв.' : lang === 'uz' ? 'Uzum: 28 000 belgigacha · Yandex: 6 000 belgigacha' : 'Uzum: up to 28,000 chars · Yandex: up to 6,000 chars'}
           />
           <TextAreaField
             label={d.descUz}
             badges={<MpBadges uz ym reqUz reqYm />}
             value={descUz} onChange={setDescUz}
+            onBlur={() => autoTranslate(descUz, 'uz', 'ru', descRu, setDescRu)}
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <TextAreaField
               label={d.shortDescRu}
               badges={<MpBadges uz reqUz />}
               value={shortDescRu} onChange={setShortDescRu} rows={2}
+              onBlur={() => autoTranslate(shortDescRu, 'ru', 'uz', shortDescUz, setShortDescUz)}
               hint={lang === 'ru' ? 'До 390 символов' : lang === 'uz' ? '390 belgigacha' : 'Up to 390 chars'}
             />
             <TextAreaField
               label={d.shortDescUz}
               badges={<MpBadges uz reqUz />}
               value={shortDescUz} onChange={setShortDescUz} rows={2}
+              onBlur={() => autoTranslate(shortDescUz, 'uz', 'ru', shortDescRu, setShortDescRu)}
               hint={lang === 'ru' ? 'До 390 символов' : lang === 'uz' ? '390 belgigacha' : 'Up to 390 chars'}
             />
           </div>
@@ -802,10 +967,10 @@ export default function ProductCreateForm() {
             badges={<MpBadges uz ym reqUz />}
             type="number" value={oldPrice} onChange={setOldPrice}
           />
-          <InputField
-            label={d.ikpuLabel}
-            badges={<MpBadges uz ym reqUz reqYm />}
+          <IkpuSearchField
             value={ikpu} onChange={setIkpu}
+            badges={<MpBadges uz ym reqUz reqYm />}
+            lang={lang}
           />
           <InputField
             label={d.barcodeLabel}
@@ -998,12 +1163,34 @@ export default function ProductCreateForm() {
             : 'Product will be created directly on Yandex Market via API')}
         </p>
 
-        {!canExportYandex && (
-          <p className="text-sm mb-4 px-3 py-2 rounded-xl border"
-            style={{ color: 'var(--text-muted)', borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
-            {d.fillRequiredYandex ?? (lang === 'ru' ? 'Заполните обязательные поля для Yandex' : lang === 'uz' ? "Yandex uchun majburiy maydonlarni to'ldiring" : 'Fill in required fields for Yandex')}
-          </p>
-        )}
+        {!canExportYandex && (() => {
+          const missing: string[] = []
+          const add = (cond: string, label: string) => { if (!cond.trim()) missing.push(label) }
+          add(nameRu, lang === 'ru' ? 'Название RU' : lang === 'uz' ? 'Nomi RU' : 'Name RU')
+          add(nameUz, lang === 'ru' ? 'Название UZ' : lang === 'uz' ? 'Nomi UZ' : 'Name UZ')
+          add(sku, lang === 'ru' ? 'Артикул' : 'SKU')
+          add(brand, lang === 'ru' ? 'Бренд' : 'Brend')
+          add(yandexCatName, lang === 'ru' ? 'Категория Yandex' : lang === 'uz' ? 'Yandex kategoriyasi' : 'Yandex category')
+          add(descRu, lang === 'ru' ? 'Описание RU' : lang === 'uz' ? 'Tavsif RU' : 'Description RU')
+          add(descUz, lang === 'ru' ? 'Описание UZ' : lang === 'uz' ? 'Tavsif UZ' : 'Description UZ')
+          add(photoUrls, lang === 'ru' ? 'Фото' : lang === 'uz' ? 'Rasm' : 'Photos')
+          add(sellingPrice, lang === 'ru' ? 'Цена' : lang === 'uz' ? 'Narx' : 'Price')
+          add(barcode, lang === 'ru' ? 'Штрихкод' : 'Shtrixkod')
+          add(weightG, lang === 'ru' ? 'Вес' : lang === 'uz' ? "Og'irlik" : 'Weight')
+          add(heightMm, lang === 'ru' ? 'Высота' : lang === 'uz' ? 'Balandlik' : 'Height')
+          add(widthMm, lang === 'ru' ? 'Ширина' : lang === 'uz' ? 'Kenglik' : 'Width')
+          add(lengthMm, lang === 'ru' ? 'Длина' : lang === 'uz' ? 'Uzunlik' : 'Length')
+          add(ikpu, 'IKPU')
+          return (
+            <div className="text-sm mb-4 px-3 py-2.5 rounded-xl border"
+              style={{ color: 'var(--text-muted)', borderColor: 'rgba(252,63,29,0.2)', background: 'rgba(252,63,29,0.04)' }}>
+              <p className="font-medium mb-1" style={{ color: '#FC3F1D' }}>
+                {lang === 'ru' ? 'Заполните поля:' : lang === 'uz' ? "Maydonlarni to'ldiring:" : 'Fill in fields:'}
+              </p>
+              <p className="text-xs">{missing.join(', ')}</p>
+            </div>
+          )
+        })()}
 
         {pushResult && (
           <div
@@ -1072,12 +1259,36 @@ export default function ProductCreateForm() {
             : 'Download Excel file and upload it to Uzum seller cabinet')}
         </p>
 
-        {!canExportUzum && (
-          <p className="text-sm mb-4 px-3 py-2 rounded-xl border"
-            style={{ color: 'var(--text-muted)', borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
-            {d.fillRequiredUzum ?? (lang === 'ru' ? 'Заполните обязательные поля для Uzum' : lang === 'uz' ? "Uzum uchun majburiy maydonlarni to'ldiring" : 'Fill in required fields for Uzum')}
-          </p>
-        )}
+        {!canExportUzum && (() => {
+          const missing: string[] = []
+          const add = (cond: string, label: string) => { if (!cond.trim()) missing.push(label) }
+          add(nameRu, lang === 'ru' ? 'Название RU' : lang === 'uz' ? 'Nomi RU' : 'Name RU')
+          add(nameUz, lang === 'ru' ? 'Название UZ' : lang === 'uz' ? 'Nomi UZ' : 'Name UZ')
+          if (!brand.trim() && !brandSkipped) missing.push(lang === 'ru' ? 'Бренд' : 'Brend')
+          if (!country.trim() && !countrySkipped) missing.push(lang === 'ru' ? 'Страна' : lang === 'uz' ? 'Mamlakat' : 'Country')
+          add(uzumCatName, lang === 'ru' ? 'Категория Uzum' : lang === 'uz' ? 'Uzum kategoriyasi' : 'Uzum category')
+          add(descRu, lang === 'ru' ? 'Описание RU' : lang === 'uz' ? 'Tavsif RU' : 'Description RU')
+          add(descUz, lang === 'ru' ? 'Описание UZ' : lang === 'uz' ? 'Tavsif UZ' : 'Description UZ')
+          add(shortDescRu, lang === 'ru' ? 'Краткое описание RU' : lang === 'uz' ? 'Qisqa tavsif RU' : 'Short desc RU')
+          add(shortDescUz, lang === 'ru' ? 'Краткое описание UZ' : lang === 'uz' ? 'Qisqa tavsif UZ' : 'Short desc UZ')
+          add(photoUrls, lang === 'ru' ? 'Фото' : lang === 'uz' ? 'Rasm' : 'Photos')
+          add(sellingPrice, lang === 'ru' ? 'Цена продажи' : lang === 'uz' ? 'Sotuv narxi' : 'Selling price')
+          add(oldPrice, lang === 'ru' ? 'Старая цена' : lang === 'uz' ? 'Eski narx' : 'Old price')
+          add(weightG, lang === 'ru' ? 'Вес' : lang === 'uz' ? "Og'irlik" : 'Weight')
+          add(heightMm, lang === 'ru' ? 'Высота' : lang === 'uz' ? 'Balandlik' : 'Height')
+          add(widthMm, lang === 'ru' ? 'Ширина' : lang === 'uz' ? 'Kenglik' : 'Width')
+          add(lengthMm, lang === 'ru' ? 'Длина' : lang === 'uz' ? 'Uzunlik' : 'Length')
+          add(ikpu, 'IKPU')
+          return (
+            <div className="text-sm mb-4 px-3 py-2.5 rounded-xl border"
+              style={{ color: 'var(--text-muted)', borderColor: 'rgba(123,104,238,0.2)', background: 'rgba(123,104,238,0.04)' }}>
+              <p className="font-medium mb-1" style={{ color: '#7B68EE' }}>
+                {lang === 'ru' ? 'Заполните поля:' : lang === 'uz' ? "Maydonlarni to'ldiring:" : 'Fill in fields:'}
+              </p>
+              <p className="text-xs">{missing.join(', ')}</p>
+            </div>
+          )
+        })()}
 
         <button
           type="button"
