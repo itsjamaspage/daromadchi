@@ -548,7 +548,7 @@ export default function ProductCreateForm() {
           barcode: col(/^Штрихкод/), country: col(/^Страна производства/),
           nameUz: col(/^Название на узбекском/), descUz: col(/^Описание на узбекском/),
           weight: col(/^Вес/), length: col(/^Длина/), width: col(/^Ширина/), height: col(/^Высота/),
-          price: col(/^Цена\b/), oldPrice: col(/^Зачёркнутая цена/),
+          price: col(/^Цена /), oldPrice: col(/^Зачёркнутая цена/),
           ikpu: col(/^ИКПУ/), chars: col(/^Характеристики/),
         }
         setNameRu(str(first, ci.name))
@@ -583,15 +583,19 @@ export default function ProductCreateForm() {
         }
 
         if (dataRows.length > 1) {
-          setVariants(dataRows.slice(1).map(r => ({
-            id: uid(),
-            color: '',
-            size: '',
-            sku: str(r, ci.sku),
-            barcode: str(r, ci.barcode),
-            sellingPrice: String(num(r, ci.price) || ''),
-            oldPrice: String(num(r, ci.oldPrice) || ''),
-          })))
+          setVariants(dataRows.slice(1).map(r => {
+            const varSku = str(r, ci.sku)
+            const existing = variants.find(v => v.sku === varSku)
+            return {
+              id: uid(),
+              color: existing?.color || '',
+              size: existing?.size || '',
+              sku: varSku,
+              barcode: str(r, ci.barcode),
+              sellingPrice: String(num(r, ci.price) || ''),
+              oldPrice: String(num(r, ci.oldPrice) || ''),
+            }
+          }))
         }
       }
 
