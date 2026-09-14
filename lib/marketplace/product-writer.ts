@@ -33,6 +33,7 @@ export interface PushProductsResult {
   reason?: string
   httpStatus?: number
   logId?: string
+  responseBody?: string
 }
 
 async function audit(fields: {
@@ -140,7 +141,7 @@ export async function pushProducts(params: PushProductsParams): Promise<PushProd
       request_body: body.slice(0, 4000),
       response_body: respText.slice(0, 2000),
     })
-    return { status, reason: res.ok ? undefined : reason, httpStatus: res.status, logId }
+    return { status, reason: res.ok ? undefined : reason, httpStatus: res.status, logId, responseBody: res.ok ? undefined : respText.slice(0, 2000) }
   } catch (err) {
     const blocked = err instanceof Error && /GUARD/.test(err.message)
     const status: ProductWriteStatus = blocked ? 'blocked' : 'error'
