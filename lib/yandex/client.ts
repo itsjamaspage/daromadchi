@@ -209,6 +209,7 @@ export interface YandexCategory {
   name: string
   childCount: number
   adult?: boolean
+  children?: YandexCategory[]
 }
 
 export interface YandexModel {
@@ -561,7 +562,9 @@ export interface YandexOfferUpdate {
   }
   basicPrice?: { value: number; currencyId?: string; discountBase?: number }
   parameterValues?: { parameterId: number; valueId?: number; value?: string; unitId?: number }[]
+  /** @deprecated Use commodityCodes instead (shutdown 2026-10-12). */
   customsCommodityCodes?: { code: string; type?: string }[]
+  commodityCodes?: { code: string; type: 'CUSTOMS_COMMODITY_CODE' | 'IKPU_CODE' | 'OKPD2_CODE' }[]
 }
 
 // Market research APIs — errors propagate so callers can surface them to the UI

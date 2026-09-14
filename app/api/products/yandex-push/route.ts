@@ -29,6 +29,7 @@ interface PushBody {
     basicPrice?: { value: number; currencyId?: string; discountBase?: number }
     parameterValues?: { parameterId: number; valueId?: number; value?: string; unitId?: number }[]
     customsCommodityCodes?: { code: string; type?: string }[]
+    commodityCodes?: { code: string; type: 'CUSTOMS_COMMODITY_CODE' | 'IKPU_CODE' | 'OKPD2_CODE' }[]
   }[]
 }
 
@@ -80,6 +81,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     basicPrice: o.basicPrice,
     parameterValues: o.parameterValues,
     customsCommodityCodes: o.customsCommodityCodes,
+    commodityCodes: o.commodityCodes,
   }))
 
   const result = await pushProducts({ shop: writeShop, userId: user.id, offers })

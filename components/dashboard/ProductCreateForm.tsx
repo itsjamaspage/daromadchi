@@ -391,6 +391,19 @@ export default function ProductCreateForm() {
   // Category
   const [uzumCatName, setUzumCatName] = useState('')
   const [yandexCatName, setYandexCatName] = useState('')
+  const [yandexCatId, setYandexCatId] = useState<number | null>(null)
+  const [yandexCatSearch, setYandexCatSearch] = useState('')
+  const [yandexCatResults, setYandexCatResults] = useState<{ id: number; name: string; path: string }[]>([])
+  const [yandexCatLoading, setYandexCatLoading] = useState(false)
+  const [yandexCatOpen, setYandexCatOpen] = useState(false)
+  const yandexCatRef = useRef<HTMLDivElement>(null)
+
+  // Category parameters (fetched from Yandex when category is selected)
+  const [categoryParams, setCategoryParams] = useState<{
+    id: number; name: string; type: string; required?: boolean;
+    values?: { id: number; value: string }[]
+  }[]>([])
+  const [categoryParamsLoading, setCategoryParamsLoading] = useState(false)
 
   // Descriptions
   const [descRu, setDescRu] = useState('')
@@ -428,6 +441,70 @@ export default function ProductCreateForm() {
 
   // Import state
   const [importResult, setImportResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  // ── Yandex category search ────────────────────────────────────────────
+  useEffect(() => {
+    if (!yandexCatSearch.trim() || yandexCatSearch.length < 2) {
+      setYandexCatResults([])
+      return
+    }
+    const timer = setTimeout(async () => {
+      setYandexCatLoading(true)
+      try {
+        const res = await fetch('/api/products/yandex-categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: yandexCatSearch }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setYandexCatResults(data.categories ?? [])
+          setYandexCatOpen(true)
+        }
+      } catch { /* ignore */ }
+      finally { setYandexCatLoading(false) }
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [yandexCatSearch])
+
+  // Close category dropdown on outside click
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (yandexCatRef.current && !yandexCatRef.current.contains(e.target as Node)) setYandexCatOpen(false)
+    }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+
+  // Fetch category parameters when category is selected
+  useEffect(() => {
+    if (!yandexCatId) { setCategoryParams([]); return }
+    let cancelled = false
+    setCategoryParamsLoading(true)
+    fetch('/api/products/yandex-category-params', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ categoryId: yandexCatId }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!cancelled && data?.parameters) {
+          setCategoryParams(data.parameters)
+          // Auto-add required params as characteristics if not already present
+          const required = data.parameters.filter((p: { required?: boolean }) => p.required)
+          setChars(prev => {
+            const existing = new Set(prev.map(c => c.name.trim().toLowerCase()))
+            const toAdd = required
+              .filter((p: { name: string }) => !existing.has(p.name.toLowerCase()))
+              .map((p: { name: string }) => ({ id: uid(), name: p.name, value: '' }))
+            return toAdd.length > 0 ? [...prev, ...toAdd] : prev
+          })
+        }
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setCategoryParamsLoading(false) })
+    return () => { cancelled = true }
+  }, [yandexCatId])
 
   // ── Auto-translate RU↔UZ on blur ──────────────────────────────────────
   const autoTranslate = useAutoTranslate()
@@ -729,6 +806,27 @@ export default function ProductCreateForm() {
     URL.revokeObjectURL(url)
   }
 
+  // Map form characteristics → Yandex parameterValues using fetched category params
+  const buildParameterValues = (p: ReturnType<typeof buildProducts>[0]) => {
+    if (!categoryParams.length || !p.characteristics) return undefined
+    const vals: { parameterId: number; valueId?: number; value?: string }[] = []
+    for (const param of categoryParams) {
+      const charValue = p.characteristics[param.name]
+      if (!charValue) continue
+      if (param.type === 'ENUM' && param.values?.length) {
+        const match = param.values.find(v => v.value.toLowerCase() === charValue.toLowerCase())
+        if (match) {
+          vals.push({ parameterId: param.id, valueId: match.id })
+        } else {
+          vals.push({ parameterId: param.id, value: charValue })
+        }
+      } else {
+        vals.push({ parameterId: param.id, value: charValue })
+      }
+    }
+    return vals.length > 0 ? vals : undefined
+  }
+
   const handleExport = async (target: 'uzum' | 'yandex' | 'both') => {
     setDownloading(target)
     try {
@@ -752,10 +850,11 @@ export default function ProductCreateForm() {
       const products = buildProducts()
       const offers = products.map(p => ({
         offerId: p.sku || `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        name: p.nameRu,
+        name: p.nameUz || p.nameRu,
         category: yandexCatName || undefined,
+        marketCategoryId: yandexCatId || undefined,
         vendor: p.brand || undefined,
-        description: p.descriptionRu || undefined,
+        description: p.descriptionUz || p.descriptionRu || undefined,
         pictures: p.photoUrls ? p.photoUrls.split(/[\n,]+/).map(u => u.trim()).filter(Boolean) : undefined,
         barcodes: p.barcode ? [p.barcode] : undefined,
         manufacturerCountries: p.country ? [p.country] : undefined,
@@ -770,7 +869,8 @@ export default function ProductCreateForm() {
           currencyId: 'UZS',
           discountBase: p.oldPrice || undefined,
         } : undefined,
-        customsCommodityCodes: p.ikpu ? [{ code: p.ikpu }] : undefined,
+        commodityCodes: p.ikpu ? [{ code: p.ikpu, type: 'IKPU_CODE' as const }] : undefined,
+        parameterValues: buildParameterValues(p),
       }))
 
       const res = await fetch('/api/products/yandex-push', {
@@ -920,12 +1020,70 @@ export default function ProductCreateForm() {
             value={uzumCatName} onChange={setUzumCatName}
             placeholder="e.g. Футболки"
           />
-          <InputField
-            label={d.yandexCategory}
-            badges={<MpBadges ym reqYm />}
-            value={yandexCatName} onChange={setYandexCatName}
-            placeholder="e.g. Футболки"
-          />
+          <div ref={yandexCatRef} className="relative">
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
+              {d.yandexCategory}
+              <MpBadges ym reqYm />
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={yandexCatId ? yandexCatName : yandexCatSearch}
+                onChange={e => {
+                  if (yandexCatId) { setYandexCatId(null); setYandexCatName('') }
+                  setYandexCatSearch(e.target.value)
+                }}
+                onFocus={() => { if (yandexCatResults.length) setYandexCatOpen(true) }}
+                placeholder={lang === 'ru' ? 'Поиск категории...' : lang === 'uz' ? 'Kategoriya qidirish...' : 'Search category...'}
+                className="w-full px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2"
+                style={{
+                  background: 'var(--bg-input)',
+                  borderColor: yandexCatId ? 'var(--c1)' : 'var(--border)',
+                  color: 'var(--text-base)',
+                  // @ts-expect-error CSS custom property
+                  '--tw-ring-color': 'var(--c1)',
+                }}
+              />
+              {yandexCatLoading && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--border)', borderTopColor: 'var(--c1)' }} />
+                </div>
+              )}
+              {yandexCatId && !yandexCatLoading && (
+                <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--c1)' }} />
+              )}
+            </div>
+            {yandexCatId && (
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                ID: {yandexCatId}
+                {categoryParamsLoading ? ' — загрузка параметров...' : categoryParams.length > 0 ? ` — ${categoryParams.filter(p => p.required).length} обязательных параметров` : ''}
+              </p>
+            )}
+            {yandexCatOpen && yandexCatResults.length > 0 && (
+              <div
+                className="absolute z-30 left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-xl border shadow-lg"
+                style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+              >
+                {yandexCatResults.map(c => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => {
+                      setYandexCatName(c.name)
+                      setYandexCatId(c.id)
+                      setYandexCatSearch('')
+                      setYandexCatOpen(false)
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm hover:opacity-80 transition-colors border-b last:border-b-0"
+                    style={{ color: 'var(--text-base)', borderColor: 'var(--border)' }}
+                  >
+                    <span className="font-medium">{c.name}</span>
+                    <span className="block text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{c.path}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </SectionCard>
 
