@@ -409,6 +409,7 @@ export default function ProductCreateForm() {
   const [widthMm, setWidthMm] = useState('')
   const [lengthMm, setLengthMm] = useState('')
   const [ikpu, setIkpu] = useState('')
+  const [ikpuPackCode, setIkpuPackCode] = useState('')
   const [barcode, setBarcode] = useState('')
 
   // SKU group (Uzum only)
@@ -562,7 +563,7 @@ export default function ProductCreateForm() {
           nameUz: col(/^Название на узбекском/), descUz: col(/^Описание на узбекском/),
           weight: col(/^Вес/), length: col(/^Длина/), width: col(/^Ширина/), height: col(/^Высота/),
           price: col(/^Цена /), oldPrice: col(/^Зачёркнутая цена/),
-          ikpu: col(/^ИКПУ/), chars: col(/^Характеристики/),
+          ikpu: col(/^ИКПУ/), ikpuPackCode: col(/^Код упаковки/), chars: col(/^Характеристики/),
         }
         setNameRu(str(first, ci.name))
         setSku(str(first, ci.sku))
@@ -575,6 +576,7 @@ export default function ProductCreateForm() {
         setNameUz(str(first, ci.nameUz))
         setDescUz(str(first, ci.descUz))
         setIkpu(str(first, ci.ikpu))
+        setIkpuPackCode(str(first, ci.ikpuPackCode))
         setSellingPrice(String(num(first, ci.price) || ''))
         setOldPrice(String(num(first, ci.oldPrice) || ''))
 
@@ -667,6 +669,7 @@ export default function ProductCreateForm() {
       photoUrls: photoUrls.trim(),
       barcode: barcode.trim(),
       ikpu: ikpu.trim(),
+      ikpuPackCode: ikpuPackCode.trim() || undefined,
       sellingPrice: Number(sellingPrice) || 0,
       oldPrice: Number(oldPrice) || 0,
       weightGrams: Number(weightG) || 0,
@@ -689,7 +692,7 @@ export default function ProductCreateForm() {
     }))
   }, [nameRu, nameUz, sku, skuGroup, uzumCatName, yandexCatName,
     brand, brandSkipped, model, modelSkipped, country, countrySkipped,
-    descRu, descUz, shortDescRu, shortDescUz, photoUrls, barcode, ikpu,
+    descRu, descUz, shortDescRu, shortDescUz, photoUrls, barcode, ikpu, ikpuPackCode,
     sellingPrice, oldPrice, weightG, heightMm, widthMm, lengthMm, chars, variants])
 
   // ── Export & push handlers ──────────────────────────────────────────────
@@ -899,7 +902,7 @@ export default function ProductCreateForm() {
           <div>
             <InputField
               label={d.countryLabel}
-              badges={<MpBadges uz ym reqUz />}
+              badges={<MpBadges uz ym reqUz reqYm />}
               value={country} onChange={setCountry}
               disabled={countrySkipped}
             />
@@ -988,6 +991,12 @@ export default function ProductCreateForm() {
             value={ikpu} onChange={setIkpu}
             badges={<MpBadges uz ym reqUz reqYm />}
             lang={lang}
+          />
+          <InputField
+            label={d.ikpuPackCodeLabel ?? (lang === 'ru' ? 'Код упаковки' : lang === 'uz' ? 'Qadoq kodi' : 'Pack code')}
+            badges={<MpBadges ym reqYm />}
+            value={ikpuPackCode} onChange={setIkpuPackCode}
+            hint={lang === 'ru' ? 'Привязан к ИКПУ, состоит из цифр' : lang === 'uz' ? "IKPU ga bog'langan, raqamlardan iborat" : 'Linked to IKPU, digits only'}
           />
           <InputField
             label={d.barcodeLabel}
