@@ -1,5 +1,7 @@
 import * as XLSX from 'xlsx'
 import { unzipSync, zipSync } from 'fflate'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 
 function convertToInlineStrings(xlsxBuffer: Buffer): Buffer {
   const unzipped = unzipSync(new Uint8Array(xlsxBuffer))
@@ -237,17 +239,6 @@ export function generateUzumExcel(
 // Matches the real Yandex Market seller cabinet template structure exactly.
 // Row 1 = section group headers (sparse), Row 2 = column headers, Row 3 = descriptions, Row 4+ = data.
 
-const YANDEX_SECTION_GROUPS: { col: number; endCol: number; label: string }[] = [
-  { col: 1, endCol: 3, label: '' },
-  { col: 4, endCol: 17, label: 'Основные параметры' },
-  { col: 18, endCol: 22, label: 'Вес и габариты с упаковкой' },
-  { col: 23, endCol: 27, label: 'Цена' },
-  { col: 28, endCol: 31, label: 'Срок годности и службы' },
-  { col: 32, endCol: 33, label: 'Гарантийный срок' },
-  { col: 34, endCol: 38, label: 'Маркировка и документы' },
-  { col: 39, endCol: 41, label: 'Уценка' },
-  { col: 42, endCol: 49, label: 'Дополнительно' },
-]
 
 interface YandexCol {
   header: string
@@ -340,106 +331,60 @@ export function generateYandexExcel(
   yandexCategoryName: string,
   params?: YandexCategoryParam[],
 ): Buffer {
-  const wb = XLSX.utils.book_new()
+  const templatePath = join(process.cwd(), 'lib/excel/templates/yandex-template.xlsx')
+  const templateBuf = readFileSync(templatePath)
+  const zip = unzipSync(new Uint8Array(templateBuf))
 
-  // ── Инструкция sheet (first, matches real template order) ──
-  const instrData = [
-    ['', ''],
-    ['Инструкция\t', ''],
-    ['Шаг 1. Заполните шаблон\t', ''],
-    ['Перейдите на лист Список товаров, изучите пример заполненного товара, но не забудьте удалить его перед загрузкой каталога.', ''],
-    ['Добавьте ваши товары. Обязательные для заполнения поля помечены звездочкой (*).', ''],
-    ['Наведите на название поля, чтобы узнать, как его правильно заполнить.', ''],
-    ['', ''],
-    ['Шаг 2. Загрузите шаблон в систему\t', ''],
-    ['Перейдите в раздел Товары → Каталог.', ''],
-    ['Выберите Загрузить товары и загрузите этот шаблон в появившемся окне.', ''],
-    ['', ''],
-    [`Категория: ${yandexCategoryName}`, ''],
-    ['Файл создан с помощью Daromadchi — daromadchi.uz', ''],
-  ]
-  const wsInstr = XLSX.utils.aoa_to_sheet(instrData)
-  wsInstr['!cols'] = [{ wch: 80 }, { wch: 20 }]
-  XLSX.utils.book_append_sheet(wb, wsInstr, 'Инструкция')
+  const sheet3Key = 'xl/worksheets/sheet3.xml'
+  const sheet3Xml = new TextDecoder().decode(zip[sheet3Key])
 
-  // ── Enums sheet (minimal — required for template recognition) ──
-  const wsEnums = XLSX.utils.aoa_to_sheet([
-    ['createMap', '', 'market_category_id', 'category'],
-    ['mode', '', 'TRY_OR_EMPTY', 'TRY_OR_ORIGINAL'],
-  ])
-  XLSX.utils.book_append_sheet(wb, wsEnums, 'Enums')
+  const escXml = (s: string) =>
+    s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/[^\x20-\x7E]/g, ch => '&#' + ch.charCodeAt(0) + ';')
 
-  // ── Список товаров sheet ──
-  const totalCols = YANDEX_COLUMNS.length
+  const inlineCell = (col: string, row: number, val: string, style = '63') =>
+    `<c r="${col}${row}" s="${style}" t="inlineStr"><is><t>${escXml(val)}</t></is></c>`
 
-  // Row 1: section group headers (sparse, matching real template)
-  const groupRow: (string | null)[] = new Array(totalCols).fill(null)
-  for (const g of YANDEX_SECTION_GROUPS) {
-    groupRow[g.col - 1] = g.label
-  }
+  const numCell = (col: string, row: number, val: number, style = '63') =>
+    `<c r="${col}${row}" s="${style}" t="n"><v>${val}</v></c>`
 
-  // Row 2: column headers
-  const headerRow = YANDEX_COLUMNS.map(c => c.header)
-
-  // Row 3: descriptions
-  const descRow = YANDEX_COLUMNS.map(c => c.desc)
-
-  // Data rows (columns 1-3 empty for error/quality, then data from col 4)
-  const colIndex = (key: string) => YANDEX_COLUMNS.findIndex(c => c.header === key)
-  const dataRows = products.map(p => {
-    const row: (string | number | null)[] = new Array(totalCols).fill('')
-    row[colIndex('Ваш SKU *')] = p.sku || ''
-    row[colIndex('Название товара *')] = p.nameRu
-    row[colIndex('Ссылка на изображение *')] = p.photoUrls
-    row[colIndex('Описание товара *')] = p.descriptionRu
-    row[colIndex('Категория на Маркете *')] = yandexCategoryName
-    row[colIndex('Бренд *')] = p.brand
-    row[colIndex('Штрихкод *')] = p.barcode || ''
-    row[colIndex('Страна производства')] = p.country
-    row[colIndex('Название на узбекском языке латиницей *')] = p.nameUz
-    row[colIndex('Описание на узбекском языке латиницей *')] = p.descriptionUz
-    row[colIndex('Вес, кг *')] = Math.round(p.weightGrams / 10) / 100
-    row[colIndex('Длина, см *')] = Math.round(p.lengthMm / 10) / 10
-    row[colIndex('Ширина, см *')] = Math.round(p.widthMm / 10) / 10
-    row[colIndex('Высота, см *')] = Math.round(p.heightMm / 10) / 10
-    row[colIndex('Цена *')] = p.sellingPrice
-    row[colIndex('Зачёркнутая цена')] = p.oldPrice || ''
-    row[colIndex('Валюта *')] = 'UZS'
-    row[colIndex('ИКПУ *')] = p.ikpu
-    row[colIndex('Код упаковки *')] = ''
-    row[colIndex('Характеристики товара')] = formatCharacteristics(p.characteristics, params)
-    return row
+  const productRows = products.map((p, i) => {
+    const r = 4 + i
+    const chars = formatCharacteristics(p.characteristics, params)
+    const cells = [
+      inlineCell('D', r, p.sku || ''),
+      inlineCell('E', r, p.nameRu),
+      inlineCell('F', r, p.photoUrls, '75'),
+      inlineCell('G', r, p.descriptionRu),
+      inlineCell('H', r, yandexCategoryName),
+      inlineCell('I', r, p.brand),
+      inlineCell('J', r, p.barcode || ''),
+      inlineCell('N', r, p.country),
+      inlineCell('P', r, p.nameUz),
+      inlineCell('Q', r, p.descriptionUz),
+      numCell('R', r, Math.round(p.weightGrams / 10) / 100),
+      numCell('S', r, Math.round(p.lengthMm / 10) / 10),
+      numCell('T', r, Math.round(p.widthMm / 10) / 10),
+      numCell('U', r, Math.round(p.heightMm / 10) / 10),
+      numCell('W', r, p.sellingPrice),
+      ...(p.oldPrice ? [numCell('X', r, p.oldPrice)] : []),
+      inlineCell('Y', r, 'UZS'),
+      inlineCell('AK', r, p.ikpu),
+      ...(chars ? [inlineCell('AT', r, chars)] : []),
+    ]
+    return `<row r="${r}" ht="37.5" customHeight="1" s="38">${cells.join('')}</row>`
   })
 
-  const wsData = [groupRow, headerRow, descRow, ...dataRows]
-  const ws = XLSX.utils.aoa_to_sheet(wsData)
+  const lastRow = 3 + products.length
+  let newXml = sheet3Xml.replace(/<dimension ref="[^"]*"/, `<dimension ref="A1:AY${lastRow}"`)
+  newXml = newXml.replace(/<row r="4"[^]*?<\/row>/, productRows.join(''))
 
-  ws['!cols'] = YANDEX_COLUMNS.map((c, i) => {
-    if (i < 3) return { wch: 20 }
-    const maxData = Math.max(c.header.length, ...dataRows.map(r => String(r[i] ?? '').length))
-    return { wch: Math.min(Math.max(maxData + 2, 12), 50) }
-  })
+  zip[sheet3Key] = new TextEncoder().encode(newXml)
 
-  ws['!merges'] = YANDEX_SECTION_GROUPS.map(g => ({
-    s: { r: 0, c: g.col - 1 },
-    e: { r: 0, c: g.endCol - 1 },
-  }))
-
-  XLSX.utils.book_append_sheet(wb, ws, 'Список товаров')
-
-  // ── Настройки sheet (column mappings — critical for Yandex import) ──
-  const settingsRows: (string | number | boolean)[][] = [
-    ['sheetName', 'Список товаров', '', '', '', ''],
-    ['headerAddress', 'A2', '', '', '', ''],
-    ['skipRows', '1', '', '', '', ''],
-  ]
-  for (const c of YANDEX_COLUMNS) {
-    settingsRows.push(['columnMapping', c.header, c.key, c.direction, '', c.group, c.frontKey])
-  }
-  settingsRows.push(['errorFormatting', 'FALSE'])
-  const wsSettings = XLSX.utils.aoa_to_sheet(settingsRows)
-  wsSettings['!cols'] = [{ wch: 16 }, { wch: 45 }, { wch: 30 }, { wch: 6 }, { wch: 4 }, { wch: 22 }, { wch: 30 }]
-  XLSX.utils.book_append_sheet(wb, wsSettings, 'Настройки')
-
-  return convertToInlineStrings(Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx', bookSST: true })))
+  const result = zipSync(zip, { level: 6 })
+  return Buffer.from(result)
 }
