@@ -187,7 +187,7 @@ export function generateUzumExcel(
   wsInstr['!cols'] = [{ wch: 80 }]
   XLSX.utils.book_append_sheet(wb, wsInstr, 'Инструкция')
 
-  return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }))
+  return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx', bookSST: true }))
 }
 
 // ── Yandex Excel ─────────────────────────────────────────────────────────────
@@ -399,5 +399,5 @@ export function generateYandexExcel(
   wsSettings['!cols'] = [{ wch: 16 }, { wch: 45 }, { wch: 30 }, { wch: 6 }, { wch: 4 }, { wch: 22 }, { wch: 30 }]
   XLSX.utils.book_append_sheet(wb, wsSettings, 'Настройки')
 
-  return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }))
+  return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx', bookSST: true }))
 }
