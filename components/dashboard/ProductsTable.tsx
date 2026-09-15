@@ -199,7 +199,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           setStockError(null)
         }}>
           {value == null ? '—' : value}
-          {productId != null && <Pencil className="w-3 h-3 opacity-0 group-hover/fbscell:opacity-40 transition-opacity" style={{ color: 'var(--text-muted)' }} />}
+          {productId != null && <Pencil className="w-3 h-3 opacity-40 sm:opacity-0 sm:group-hover/fbscell:opacity-40 transition-opacity" style={{ color: 'var(--text-muted)' }} />}
         </span>
       </td>
     )
@@ -222,6 +222,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const [stockSaving, setStockSaving] = useState(false)
   const [stockOptimistic, setStockOptimistic] = useState<Map<string, number>>(new Map())
   const [stockError, setStockError] = useState<string | null>(null)
+  const [stockSuccess, setStockSuccess] = useState(false)
   const tp = translations[lang]?.dashboard ?? translations.ru.dashboard
   const toggleGroup = useCallback((key: string) => {
     setOpenGroups(prev => {
@@ -408,6 +409,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const handleStockSave = useCallback(async (productId: string, qty: number) => {
     setStockSaving(true)
     setStockError(null)
+    setStockSuccess(false)
     try {
       const res = await fetch('/api/products/stock-update', {
         method: 'POST',
@@ -418,6 +420,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       if (data.ok) {
         setStockOptimistic(prev => new Map(prev).set(productId, qty))
         setEditingStockId(null)
+        setStockSuccess(true)
+        setTimeout(() => setStockSuccess(false), 3000)
         router.refresh()
       } else {
         setStockError(data.reason ?? data.error ?? 'Error')
@@ -775,11 +779,22 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         countLabel={d.productCount}
       />
 
-      {stockError && (
-        <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl border"
-          style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#ef4444' }}>
-          <X className="w-4 h-4 shrink-0 cursor-pointer" onClick={() => setStockError(null)} />
-          {lang === 'ru' ? 'Ошибка обновления остатка' : lang === 'uz' ? 'Zaxirani yangilashda xatolik' : 'Stock update error'}: {stockError}
+      {(stockError || stockSuccess) && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-[90vw] animate-[slideUpIn_0.25s_ease-out]">
+          {stockError && (
+            <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl border shadow-lg"
+              style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'var(--bg-card)', color: '#ef4444' }}>
+              <X className="w-4 h-4 shrink-0 cursor-pointer" onClick={() => setStockError(null)} />
+              {lang === 'ru' ? 'Ошибка обновления остатка' : lang === 'uz' ? 'Zaxirani yangilashda xatolik' : 'Stock update error'}: {stockError}
+            </div>
+          )}
+          {stockSuccess && (
+            <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl border shadow-lg"
+              style={{ borderColor: 'rgba(16,185,129,0.3)', background: 'var(--bg-card)', color: '#10b981' }}>
+              <Check className="w-4 h-4 shrink-0" />
+              {lang === 'ru' ? 'Остаток обновлён' : lang === 'uz' ? 'Zaxira yangilandi' : 'Stock updated'}
+            </div>
+          )}
         </div>
       )}
 
