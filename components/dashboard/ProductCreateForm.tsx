@@ -413,6 +413,8 @@ export default function ProductCreateForm() {
 
   // Media
   const [photoUrls, setPhotoUrls] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Pricing & dimensions
   const [sellingPrice, setSellingPrice] = useState('')
@@ -829,6 +831,31 @@ export default function ProductCreateForm() {
     return vals.length > 0 ? vals : undefined
   }
 
+  const handleImageUpload = async (files: FileList | null) => {
+    if (!files?.length) return
+    setUploading(true)
+    const urls: string[] = []
+    for (const file of Array.from(files)) {
+      try {
+        const fd = new FormData()
+        fd.append('image', file)
+        const res = await fetch('/api/products/upload-image', { method: 'POST', body: fd })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.url) urls.push(data.url)
+        }
+      } catch { /* skip failed uploads */ }
+    }
+    if (urls.length > 0) {
+      setPhotoUrls(prev => {
+        const existing = prev.trim()
+        return existing ? `${existing}\n${urls.join('\n')}` : urls.join('\n')
+      })
+    }
+    setUploading(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const handleExport = async (target: 'uzum' | 'yandex' | 'both') => {
     setDownloading(target)
     try {
@@ -1131,7 +1158,40 @@ export default function ProductCreateForm() {
           badges={<MpBadges uz ym reqUz reqYm />}
           value={photoUrls} onChange={setPhotoUrls} rows={2}
         />
-        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{d.photoUrlsHint}</p>
+        <div className="flex items-center gap-3 mt-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            className="hidden"
+            onChange={e => handleImageUpload(e.target.files)}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            style={{
+              background: 'var(--c1)',
+              color: '#fff',
+              opacity: uploading ? 0.6 : 1,
+            }}
+          >
+            {uploading ? (
+              <>
+                <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />
+                {lang === 'ru' ? 'Загрузка...' : lang === 'uz' ? 'Yuklanmoqda...' : 'Uploading...'}
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4" />
+                {lang === 'ru' ? 'Загрузить фото' : lang === 'uz' ? 'Rasm yuklash' : 'Upload photos'}
+              </>
+            )}
+          </button>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{d.photoUrlsHint}</p>
+        </div>
       </SectionCard>
 
       {/* ── Pricing & Dimensions ── */}
