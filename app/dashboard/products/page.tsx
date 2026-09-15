@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { Suspense } from 'react'
 import { Package, Settings, Plus } from 'lucide-react'
 import Link from 'next/link'

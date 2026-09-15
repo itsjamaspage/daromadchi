@@ -79,11 +79,29 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     revalidateTag('product-data', { expire: 0 })
   }
 
+  const REASON_LABELS: Record<string, string> = {
+    missing_uzum_skuid: 'Товар не привязан к FBS (нет skuId). Запустите синхронизацию.',
+    missing_barcode: 'Отсутствует штрихкод товара. Запустите синхронизацию.',
+    missing_campaign: 'Магазин не настроен (нет campaignId).',
+    missing_sku: 'Отсутствует артикул (shopSku). Запустите синхронизацию.',
+    missing_warehouse: 'Склад не найден (warehouseId). Запустите синхронизацию.',
+    no_token: 'API-ключ магазина недействителен.',
+    kill_switch: 'Запись остатков временно отключена.',
+    guard_blocked: 'Запись заблокирована (режим только чтение).',
+    stale_version: 'Более новое обновление уже применено.',
+    dry_run: 'Тестовый режим — запись не отправлена.',
+  }
+
+  let humanReason = result.reason ? (REASON_LABELS[result.reason] ?? result.reason) : undefined
+  if (humanReason && /^http_\d+$/.test(result.reason!)) {
+    humanReason = `Маркетплейс вернул ошибку (${result.reason!.replace('http_', 'HTTP ')})`
+  }
+
   return NextResponse.json({
     ok: result.status === 'sent',
     status: result.status,
     quantity: result.quantity,
-    reason: result.reason,
+    reason: humanReason,
     logId: result.logId,
   }, { status: result.status === 'sent' ? 200 : result.status === 'blocked' ? 403 : 500 })
 })
