@@ -123,6 +123,7 @@ export async function refreshUzumStock(
   const ids = [...live.keys()]
   const rows = await db.select({
     id: products.id, mpid: products.marketplace_product_id, stock: products.stock_quantity,
+    stockOverride: products.stock_override,
   }).from(products).where(and(
     eq(products.shop_id, shopId),
     inArray(products.marketplace_product_id, ids),
@@ -131,12 +132,18 @@ export async function refreshUzumStock(
   let updated = 0
   for (const r of rows) {
     const next = live.get(String(r.mpid))
-    if (next === undefined || next === r.stock) continue
-    // Belt and braces: the row came from a shop-scoped SELECT, so this id is
-    // already this shop's. Re-stating it costs nothing and means the UPDATE is
-    // safe to read on its own.
+    if (next === undefined) continue
+    const fields: Record<string, unknown> = {}
+    if (next !== r.stock) fields.stock_quantity = next
+    // Clear a manual override once the marketplace confirms the value — the
+    // override's job was to keep the UI honest until the next sync reads the
+    // pushed value back. If the marketplace now reports the same number, the
+    // override is redundant; if it reports a different number (seller changed
+    // stock on the marketplace itself), the marketplace is authoritative.
+    if (r.stockOverride != null) fields.stock_override = null
+    if (Object.keys(fields).length === 0) continue
     await db.update(products)
-      .set({ stock_quantity: next })
+      .set(fields)
       .where(and(eq(products.id, r.id), eq(products.shop_id, shopId)))
     updated++
   }
@@ -198,6 +205,7 @@ export async function refreshYandexStock(
     market_sku: products.market_sku,
     marketplace_product_id: products.marketplace_product_id,
     stock: products.stock_quantity,
+    stockOverride: products.stock_override,
   }).from(products).where(eq(products.shop_id, shopId))
   // Ask under every identifier we hold, not just products.sku — a row stored
   // with a marketSku (offer-mappings returned no shopSku) would otherwise never
@@ -240,8 +248,11 @@ export async function refreshYandexStock(
     const next = resolveStock(p, stockMap, trimmed)
     // Absent = UNKNOWN. Never written, never zeroed.
     if (next === undefined) { unmatched++; continue }
-    if (next === p.stock) continue
-    await db.update(products).set({ stock_quantity: next }).where(eq(products.id, p.id))
+    const fields: Record<string, unknown> = {}
+    if (next !== p.stock) fields.stock_quantity = next
+    if (p.stockOverride != null) fields.stock_override = null
+    if (Object.keys(fields).length === 0) continue
+    await db.update(products).set(fields).where(eq(products.id, p.id))
     updated++
   }
 

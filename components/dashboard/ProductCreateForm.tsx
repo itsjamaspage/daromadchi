@@ -1016,17 +1016,20 @@ export default function ProductCreateForm() {
             badges={<MpBadges uz ym reqUz reqYm />}
             value={nameRu} onChange={setNameRu}
             onBlur={() => autoTranslate(nameRu, 'ru', 'uz', nameUz, setNameUz)}
+            placeholder={d.phNameRu}
           />
           <InputField
             label={d.nameUz}
             badges={<MpBadges uz ym reqUz reqYm />}
             value={nameUz} onChange={setNameUz}
             onBlur={() => autoTranslate(nameUz, 'uz', 'ru', nameRu, setNameRu)}
+            placeholder={d.phNameUz}
           />
           <InputField
             label={d.skuId}
             badges={<MpBadges uz ym reqYm />}
             value={sku} onChange={setSku}
+            placeholder={d.phSku}
           />
           <div>
             <InputField
@@ -1034,6 +1037,7 @@ export default function ProductCreateForm() {
               badges={<MpBadges uz ym reqUz reqYm />}
               value={brand} onChange={setBrand}
               disabled={brandSkipped}
+              placeholder={d.phBrand}
             />
             <SkipCheck checked={brandSkipped} onChange={setBrandSkipped} label={skipLabel} />
           </div>
@@ -1043,6 +1047,7 @@ export default function ProductCreateForm() {
               badges={<MpBadges uz ym reqUz reqYm />}
               value={country} onChange={setCountry}
               disabled={countrySkipped}
+              placeholder={d.phCountry}
             />
             <SkipCheck checked={countrySkipped} onChange={setCountrySkipped} label={skipLabel} />
           </div>
@@ -1056,7 +1061,7 @@ export default function ProductCreateForm() {
             label={d.uzumCategory}
             badges={<MpBadges uz reqUz />}
             value={uzumCatName} onChange={setUzumCatName}
-            placeholder="e.g. Футболки"
+            placeholder={d.phUzumCategory}
           />
           <div ref={yandexCatRef} className="relative">
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
@@ -1147,12 +1152,14 @@ export default function ProductCreateForm() {
             value={descRu} onChange={setDescRu}
             onBlur={() => autoTranslate(descRu, 'ru', 'uz', descUz, setDescUz)}
             hint={lang === 'ru' ? 'Uzum: до 28 000 симв. · Yandex: до 6 000 симв.' : lang === 'uz' ? 'Uzum: 28 000 belgigacha · Yandex: 6 000 belgigacha' : 'Uzum: up to 28,000 chars · Yandex: up to 6,000 chars'}
+            placeholder={d.phDescRu}
           />
           <TextAreaField
             label={d.descUz}
             badges={<MpBadges uz ym reqUz reqYm />}
             value={descUz} onChange={setDescUz}
             onBlur={() => autoTranslate(descUz, 'uz', 'ru', descRu, setDescRu)}
+            placeholder={d.phDescUz}
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <TextAreaField
@@ -1161,6 +1168,7 @@ export default function ProductCreateForm() {
               value={shortDescRu} onChange={setShortDescRu} rows={2}
               onBlur={() => autoTranslate(shortDescRu, 'ru', 'uz', shortDescUz, setShortDescUz)}
               hint={lang === 'ru' ? 'До 390 символов' : lang === 'uz' ? '390 belgigacha' : 'Up to 390 chars'}
+              placeholder={d.phShortDescRu}
             />
             <TextAreaField
               label={d.shortDescUz}
@@ -1168,6 +1176,7 @@ export default function ProductCreateForm() {
               value={shortDescUz} onChange={setShortDescUz} rows={2}
               onBlur={() => autoTranslate(shortDescUz, 'uz', 'ru', shortDescRu, setShortDescRu)}
               hint={lang === 'ru' ? 'До 390 символов' : lang === 'uz' ? '390 belgigacha' : 'Up to 390 chars'}
+              placeholder={d.phShortDescUz}
             />
           </div>
         </div>
@@ -1179,6 +1188,7 @@ export default function ProductCreateForm() {
           label={d.photoUrls}
           badges={<MpBadges uz ym reqUz reqYm />}
           value={photoUrls} onChange={setPhotoUrls} rows={2}
+          placeholder={d.phPhotoUrls}
         />
         <div className="flex items-center gap-3 mt-2">
           <input
@@ -1223,11 +1233,13 @@ export default function ProductCreateForm() {
             label={d.sellingPrice}
             badges={<MpBadges uz ym reqUz reqYm />}
             type="number" value={sellingPrice} onChange={setSellingPrice}
+            placeholder={d.phSellingPrice}
           />
           <InputField
             label={d.oldPriceLabel}
             badges={<MpBadges uz ym reqUz />}
             type="number" value={oldPrice} onChange={setOldPrice}
+            placeholder={d.phOldPrice}
           />
           <IkpuSearchField
             value={ikpu} onChange={setIkpu}
@@ -1239,33 +1251,39 @@ export default function ProductCreateForm() {
             badges={<MpBadges ym reqYm />}
             value={ikpuPackCode} onChange={setIkpuPackCode}
             hint={lang === 'ru' ? 'Привязан к ИКПУ, состоит из цифр' : lang === 'uz' ? "IKPU ga bog'langan, raqamlardan iborat" : 'Linked to IKPU, digits only'}
+            placeholder={d.phIkpuPackCode}
           />
           <InputField
             label={d.barcodeLabel}
             badges={<MpBadges uz ym reqYm />}
             value={barcode} onChange={setBarcode}
+            placeholder={d.phBarcode}
           />
           <InputField
             label={d.weightG}
             badges={<MpBadges uz ym reqUz reqYm />}
             type="number" value={weightG} onChange={setWeightG}
             hint={lang === 'ru' ? 'Yandex конвертирует в кг' : lang === 'uz' ? 'Yandex kg ga konvert qiladi' : 'Yandex converts to kg'}
+            placeholder={d.phWeightG}
           />
           <InputField
             label={d.heightMm}
             badges={<MpBadges uz ym reqUz reqYm />}
             type="number" value={heightMm} onChange={setHeightMm}
             hint={lang === 'ru' ? 'Yandex конвертирует в см' : lang === 'uz' ? 'Yandex sm ga konvert qiladi' : 'Yandex converts to cm'}
+            placeholder={d.phHeightMm}
           />
           <InputField
             label={d.widthMm}
             badges={<MpBadges uz ym reqUz reqYm />}
             type="number" value={widthMm} onChange={setWidthMm}
+            placeholder={d.phWidthMm}
           />
           <InputField
             label={d.lengthMm}
             badges={<MpBadges uz ym reqUz reqYm />}
             type="number" value={lengthMm} onChange={setLengthMm}
+            placeholder={d.phLengthMm}
           />
         </div>
       </SectionCard>
@@ -1281,7 +1299,7 @@ export default function ProductCreateForm() {
             label={d.skuGroupLabel}
             badges={<MpBadges uz reqUz />}
             value={skuGroup} onChange={setSkuGroup}
-            placeholder={nameRu || undefined}
+            placeholder={nameRu || d.phSkuGroup}
           />
           <div>
             <InputField
@@ -1289,6 +1307,7 @@ export default function ProductCreateForm() {
               badges={<MpBadges uz />}
               value={model} onChange={setModel}
               disabled={modelSkipped}
+              placeholder={d.phModel}
             />
             <SkipCheck checked={modelSkipped} onChange={setModelSkipped} label={skipLabel} />
           </div>
@@ -1331,19 +1350,25 @@ export default function ProductCreateForm() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <InputField label={d.colorLabel} badges={<MpBadges uz ym />}
-                    value={v.color} onChange={val => updateVariant(v.id, 'color', val)} />
+                    value={v.color} onChange={val => updateVariant(v.id, 'color', val)}
+                    placeholder={d.phColor} />
                   <InputField label={d.sizeLabel} badges={<MpBadges uz ym />}
-                    value={v.size} onChange={val => updateVariant(v.id, 'size', val)} />
+                    value={v.size} onChange={val => updateVariant(v.id, 'size', val)}
+                    placeholder={d.phSize} />
                   <InputField label={d.skuId} badges={<MpBadges uz ym />}
-                    value={v.sku} onChange={val => updateVariant(v.id, 'sku', val)} />
+                    value={v.sku} onChange={val => updateVariant(v.id, 'sku', val)}
+                    placeholder={d.phSku} />
                   <InputField label={d.barcodeLabel} badges={<MpBadges uz ym />}
-                    value={v.barcode} onChange={val => updateVariant(v.id, 'barcode', val)} />
+                    value={v.barcode} onChange={val => updateVariant(v.id, 'barcode', val)}
+                    placeholder={d.phBarcode} />
                   <InputField label={d.sellingPrice} badges={<MpBadges uz ym />}
                     type="number" value={v.sellingPrice}
-                    onChange={val => updateVariant(v.id, 'sellingPrice', val)} />
+                    onChange={val => updateVariant(v.id, 'sellingPrice', val)}
+                    placeholder={d.phSellingPrice} />
                   <InputField label={d.oldPriceLabel} badges={<MpBadges uz ym />}
                     type="number" value={v.oldPrice}
-                    onChange={val => updateVariant(v.id, 'oldPrice', val)} />
+                    onChange={val => updateVariant(v.id, 'oldPrice', val)}
+                    placeholder={d.phOldPrice} />
                 </div>
               </div>
             ))}
@@ -1383,11 +1408,13 @@ export default function ProductCreateForm() {
               <div key={c.id} className="flex flex-col sm:flex-row sm:items-end gap-2">
                 <div className="flex-1">
                   <InputField label={d.charName} value={c.name}
-                    onChange={val => updateChar(c.id, 'name', val)} />
+                    onChange={val => updateChar(c.id, 'name', val)}
+                    placeholder={d.phCharName} />
                 </div>
                 <div className="flex-1">
                   <InputField label={d.charValue} value={c.value}
-                    onChange={val => updateChar(c.id, 'value', val)} />
+                    onChange={val => updateChar(c.id, 'value', val)}
+                    placeholder={d.phCharValue} />
                 </div>
                 <button
                   type="button"
