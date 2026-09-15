@@ -396,6 +396,7 @@ export default function ProductCreateForm() {
   const [yandexCatResults, setYandexCatResults] = useState<{ id: number; name: string; path: string }[]>([])
   const [yandexCatLoading, setYandexCatLoading] = useState(false)
   const [yandexCatOpen, setYandexCatOpen] = useState(false)
+  const [yandexCatError, setYandexCatError] = useState('')
   const yandexCatRef = useRef<HTMLDivElement>(null)
 
   // Category parameters (fetched from Yandex when category is selected)
@@ -447,10 +448,11 @@ export default function ProductCreateForm() {
   // ── Yandex category search ────────────────────────────────────────────
   useEffect(() => {
     if (!yandexCatSearch.trim() || yandexCatSearch.length < 2) {
-      return () => { setYandexCatResults([]) }
+      return () => { setYandexCatResults([]); setYandexCatError('') }
     }
     const timer = setTimeout(async () => {
       setYandexCatLoading(true)
+      setYandexCatError('')
       try {
         const res = await fetch('/api/products/yandex-categories', {
           method: 'POST',
@@ -459,14 +461,21 @@ export default function ProductCreateForm() {
         })
         if (res.ok) {
           const data = await res.json()
-          setYandexCatResults(data.categories ?? [])
-          setYandexCatOpen(true)
+          const cats = data.categories ?? []
+          setYandexCatResults(cats)
+          if (cats.length > 0) setYandexCatOpen(true)
+          else setYandexCatError(lang === 'ru' ? 'Категории не найдены' : lang === 'uz' ? 'Kategoriya topilmadi' : 'No categories found')
+        } else {
+          const err = await res.json().catch(() => ({}))
+          setYandexCatError(err.error || (lang === 'ru' ? 'Ошибка поиска категорий' : 'Category search error'))
         }
-      } catch { /* ignore */ }
+      } catch {
+        setYandexCatError(lang === 'ru' ? 'Не удалось загрузить категории' : 'Failed to load categories')
+      }
       finally { setYandexCatLoading(false) }
     }, 400)
     return () => clearTimeout(timer)
-  }, [yandexCatSearch])
+  }, [yandexCatSearch, lang])
 
   // Close category dropdown on outside click
   useEffect(() => {
@@ -1086,6 +1095,19 @@ export default function ProductCreateForm() {
               <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
                 ID: {yandexCatId}
                 {categoryParamsLoading ? ' — загрузка параметров...' : categoryParams.length > 0 ? ` — ${categoryParams.filter(p => p.required).length} обязательных параметров` : ''}
+              </p>
+            )}
+            {!yandexCatId && !yandexCatLoading && yandexCatError && (
+              <p className="text-xs mt-1" style={{ color: '#FC3F1D' }}>{yandexCatError}</p>
+            )}
+            {!yandexCatId && !yandexCatLoading && !yandexCatError && yandexCatSearch.length >= 2 && yandexCatResults.length > 0 && !yandexCatOpen && (
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                {lang === 'ru' ? 'Нажмите на поле чтобы выбрать категорию из списка' : lang === 'uz' ? "Ro'yxatdan kategoriya tanlash uchun bosing" : 'Click the field to select a category'}
+              </p>
+            )}
+            {!yandexCatId && !yandexCatLoading && !yandexCatError && !yandexCatSearch.trim() && (
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                {lang === 'ru' ? 'Введите название и выберите из списка' : lang === 'uz' ? "Nomini yozing va ro'yxatdan tanlang" : 'Type a name and select from the list'}
               </p>
             )}
             {yandexCatOpen && yandexCatResults.length > 0 && (
