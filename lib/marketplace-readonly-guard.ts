@@ -64,6 +64,8 @@ const APPROVED_POST_ENDPOINTS: RegExp[] = [
   // required/optional fields for a category — used when building the product
   // creation form. Read-only: no write capability.
   /api\.partner\.market\.yandex\.ru\/v2\/category\/\d+\/parameters/,
+  // Yandex Market — category tree (GET returns 405, POST is the read method)
+  /api\.partner\.market\.yandex\.ru\/categories\/tree/,
   // Uzum GraphQL public search API (read-only market research, no auth)
   /^https:\/\/graphql\.uzum\.uz/,
 ]
