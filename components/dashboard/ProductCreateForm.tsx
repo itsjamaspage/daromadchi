@@ -1248,7 +1248,7 @@ export default function ProductCreateForm() {
           />
           <InputField
             label={d.ikpuPackCodeLabel ?? (lang === 'ru' ? 'Код упаковки' : lang === 'uz' ? 'Qadoq kodi' : 'Pack code')}
-            badges={<MpBadges ym reqYm />}
+            badges={<MpBadges uz ym />}
             value={ikpuPackCode} onChange={setIkpuPackCode}
             hint={lang === 'ru' ? 'Привязан к ИКПУ, состоит из цифр' : lang === 'uz' ? "IKPU ga bog'langan, raqamlardan iborat" : 'Linked to IKPU, digits only'}
             placeholder={d.phIkpuPackCode}
