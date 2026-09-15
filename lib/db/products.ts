@@ -111,9 +111,11 @@ const _fetchProducts = unstable_cache(
       const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
       const key = p.sku ? p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
-      // Display the marketplace API's own reported stock — the authoritative
-      // number the seller sees in their cabinet.
-      const availableStock = p.stock_quantity
+      // Prefer a manual override (set by stock-update after a successful push)
+      // over the marketplace's reported value. The override survives the next
+      // sync tick so the number the seller just edited stays on screen until the
+      // sync reads the pushed value back and clears it.
+      const availableStock = p.stock_override != null ? p.stock_override : p.stock_quantity
       const totalPhysical = key
         ? (groupFbsMax.get(key) ?? 0) + (groupFboSum.get(key) ?? 0)
         : p.stock_quantity
@@ -655,9 +657,11 @@ const _fetchProductsPaginated = unstable_cache(
       const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
       const key = p.sku ? p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
-      // Display the marketplace API's own reported stock — the authoritative
-      // number the seller sees in their cabinet.
-      const availableStock = p.stock_quantity
+      // Prefer a manual override (set by stock-update after a successful push)
+      // over the marketplace's reported value. The override survives the next
+      // sync tick so the number the seller just edited stays on screen until the
+      // sync reads the pushed value back and clears it.
+      const availableStock = p.stock_override != null ? p.stock_override : p.stock_quantity
       const totalPhysical = key
         ? (groupFbsMax.get(key) ?? 0) + (groupFboSum.get(key) ?? 0)
         : p.stock_quantity

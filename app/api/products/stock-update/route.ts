@@ -74,7 +74,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
   if (result.status === 'sent') {
     await db.update(products)
-      .set({ stock_quantity: result.quantity })
+      .set({ stock_quantity: result.quantity, stock_override: result.quantity })
       .where(eq(products.id, product.id))
     revalidateTag('product-data', { expire: 0 })
   }
