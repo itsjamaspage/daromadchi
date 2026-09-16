@@ -364,7 +364,6 @@ function SkipCheck({ checked, onChange, label }: {
         style={{ borderColor: 'var(--border)' }}
       />
       <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</span>
-      <MpBadge mp="uz" />
     </label>
   )
 }
@@ -539,7 +538,7 @@ export default function ProductCreateForm() {
   const canExportYandex =
     nameRu.trim() && nameUz.trim()
     && sku.trim()
-    && brand.trim()
+    && (brand.trim() || brandSkipped)
     && yandexCatName.trim()
     && descRu.trim() && descUz.trim()
     && photoUrls.trim()
@@ -1034,7 +1033,7 @@ export default function ProductCreateForm() {
           <div>
             <InputField
               label={d.brandLabel}
-              badges={<MpBadges uz ym reqUz reqYm />}
+              badges={<MpBadges uz ym reqUz />}
               value={brand} onChange={setBrand}
               disabled={brandSkipped}
               placeholder={d.phBrand}
@@ -1457,7 +1456,7 @@ export default function ProductCreateForm() {
           add(nameRu, lang === 'ru' ? 'Название RU' : lang === 'uz' ? 'Nomi RU' : 'Name RU')
           add(nameUz, lang === 'ru' ? 'Название UZ' : lang === 'uz' ? 'Nomi UZ' : 'Name UZ')
           add(sku, lang === 'ru' ? 'Артикул' : 'SKU')
-          add(brand, lang === 'ru' ? 'Бренд' : 'Brend')
+          if (!brand.trim() && !brandSkipped) missing.push(lang === 'ru' ? 'Бренд' : 'Brend')
           add(yandexCatName, lang === 'ru' ? 'Категория Yandex' : lang === 'uz' ? 'Yandex kategoriyasi' : 'Yandex category')
           add(descRu, lang === 'ru' ? 'Описание RU' : lang === 'uz' ? 'Tavsif RU' : 'Description RU')
           add(descUz, lang === 'ru' ? 'Описание UZ' : lang === 'uz' ? 'Tavsif UZ' : 'Description UZ')
