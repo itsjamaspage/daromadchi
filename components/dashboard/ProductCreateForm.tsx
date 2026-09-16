@@ -73,16 +73,18 @@ function SectionCard({
   children,
   defaultOpen = true,
   badge,
+  allowOverflow,
 }: {
   title: string
   children: React.ReactNode
   defaultOpen?: boolean
   badge?: React.ReactNode
+  allowOverflow?: boolean
 }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
     <div
-      className="rounded-2xl border overflow-hidden"
+      className={`rounded-2xl border ${allowOverflow ? 'overflow-visible' : 'overflow-hidden'}`}
       style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
     >
       <button
@@ -1054,7 +1056,7 @@ export default function ProductCreateForm() {
       </SectionCard>
 
       {/* ── Category ── */}
-      <SectionCard title={d.categorySection}>
+      <SectionCard title={d.categorySection} allowOverflow>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <InputField
             label={d.uzumCategory}
@@ -1116,7 +1118,7 @@ export default function ProductCreateForm() {
             )}
             {yandexCatOpen && yandexCatResults.length > 0 && (
               <div
-                className="absolute z-30 left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-xl border shadow-lg"
+                className="absolute z-30 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl border shadow-lg"
                 style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
               >
                 {yandexCatResults.map(c => (
