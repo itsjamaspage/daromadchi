@@ -61,15 +61,24 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     }
   }
 
-  // Strategy 2: Fetch full category tree and filter client-side
+  // Strategy 2: Fetch full category tree and keyword-search
   try {
     const tree = await fetchYandexCategories(token)
     const flat = flattenCategories(tree)
-    const q = query.trim().toLowerCase()
-    const matches = flat
-      .filter(c => c.name.toLowerCase().includes(q) || c.path.toLowerCase().includes(q))
+    const words = query.trim().toLowerCase().split(/\s+/).filter(w => w.length >= 2)
+    if (words.length === 0) {
+      return NextResponse.json({ categories: [] })
+    }
+    const scored = flat
+      .map(c => {
+        const text = `${c.name} ${c.path}`.toLowerCase()
+        const hits = words.filter(w => text.includes(w)).length
+        return { ...c, hits }
+      })
+      .filter(c => c.hits > 0)
+      .sort((a, b) => b.hits - a.hits || a.name.length - b.name.length)
       .slice(0, 20)
-    return NextResponse.json({ categories: matches })
+    return NextResponse.json({ categories: scored })
   } catch (err) {
     console.error('[yandex-categories] tree fetch failed', err)
     if (err instanceof YandexApiError) {
