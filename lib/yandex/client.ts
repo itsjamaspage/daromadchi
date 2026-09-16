@@ -569,8 +569,14 @@ export interface YandexOfferUpdate {
 
 // Market research APIs — errors propagate so callers can surface them to the UI
 export async function fetchYandexCategories(token: string): Promise<YandexCategory[]> {
-  const data = await request<{ result?: YandexCategory[]; categories?: YandexCategory[] }>('/categories/tree', token, { method: 'POST', body: '{}' })
-  return data.result ?? data.categories ?? []
+  const data = await request<{
+    result?: YandexCategory | YandexCategory[]
+    categories?: YandexCategory[]
+  }>('/categories/tree', token, { method: 'POST', body: '{}' })
+  const raw = data.result ?? data.categories
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw
+  return raw.children ?? []
 }
 
 export interface YandexCategorySuggestion {
