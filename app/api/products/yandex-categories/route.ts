@@ -71,12 +71,14 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       .slice(0, 20)
     return NextResponse.json({ categories: matches })
   } catch (err) {
+    console.error('[yandex-categories] tree fetch failed', err)
     if (err instanceof YandexApiError) {
       if (err.status === 401 || err.status === 403) {
         return NextResponse.json({ error: 'Yandex токен недействителен — обновите в настройках' }, { status: 401 })
       }
       return NextResponse.json({ error: `Yandex API ошибка (${err.status})` }, { status: 502 })
     }
-    throw err
+    const msg = err instanceof Error ? err.message : 'Неизвестная ошибка'
+    return NextResponse.json({ error: `Ошибка поиска категорий: ${msg}` }, { status: 500 })
   }
 })
