@@ -25,6 +25,38 @@ function flattenCategories(cats: YandexCategory[], parentPath = ''): { id: numbe
   return result
 }
 
+export const GET = withErrorHandler(async () => {
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const [shop] = await db
+    .select({ api_key_encrypted: shops.api_key_encrypted })
+    .from(shops)
+    .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'yandex_market'), eq(shops.is_active, true)))
+    .limit(1)
+
+  if (!shop?.api_key_encrypted) {
+    return NextResponse.json({ error: 'Yandex Market магазин не подключён' }, { status: 400 })
+  }
+
+  const token = decrypt(shop.api_key_encrypted)
+
+  try {
+    const tree = await fetchYandexCategories(token)
+    return NextResponse.json({ categories: tree })
+  } catch (err) {
+    console.error('[yandex-categories] tree fetch failed', err)
+    if (err instanceof YandexApiError) {
+      if (err.status === 401 || err.status === 403) {
+        return NextResponse.json({ error: 'Yandex токен недействителен — обновите в настройках' }, { status: 401 })
+      }
+      return NextResponse.json({ error: `Yandex API ошибка (${err.status})` }, { status: 502 })
+    }
+    const msg = err instanceof Error ? err.message : 'Неизвестная ошибка'
+    return NextResponse.json({ error: `Ошибка загрузки категорий: ${msg}` }, { status: 500 })
+  }
+})
+
 export const POST = withErrorHandler(async (req: NextRequest) => {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -69,10 +101,40 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     if (words.length === 0) {
       return NextResponse.json({ categories: [] })
     }
+    const adultStems = ['мужск', 'женск', 'взросл', 'мужчин', 'женщин']
+    const childStems = ['детск', 'для детей', 'для мальчик', 'для девоч', 'малыш', 'младен', 'ребёнк', 'ребенк']
+    const queryLc = query.trim().toLowerCase()
+    const queryImpliesAdult = adultStems.some(s => queryLc.includes(s))
+    const queryImpliesChild = childStems.some(s => queryLc.includes(s))
+
+    const synonymMap: Record<string, string[]> = {
+      'мужск': ['для взрослых', 'мужск', 'мужчин'],
+      'женск': ['для взрослых', 'женск', 'женщин'],
+      'взросл': ['для взрослых', 'мужск', 'женск'],
+      'детск': ['детск', 'для детей', 'для мальчик', 'для девоч'],
+    }
+
     const scored = flat
       .map(c => {
         const text = `${c.name} ${c.path}`.toLowerCase()
-        const hits = words.filter(w => text.includes(w)).length
+        let hits = words.filter(w => text.includes(w)).length
+
+        for (const w of words) {
+          if (hits > 0 || text.includes(w)) {
+            const syns = Object.entries(synonymMap).find(([stem]) => w.includes(stem))
+            if (syns) {
+              const bonus = syns[1].some(syn => text.includes(syn)) ? 1 : 0
+              hits += bonus
+            }
+          }
+        }
+
+        if (queryImpliesAdult && !queryImpliesChild) {
+          if (childStems.some(s => text.includes(s))) hits = 0
+        } else if (queryImpliesChild && !queryImpliesAdult) {
+          if (adultStems.some(s => text.includes(s)) && !childStems.some(s => text.includes(s))) hits = 0
+        }
+
         return { ...c, hits }
       })
       .filter(c => c.hits > 0)
