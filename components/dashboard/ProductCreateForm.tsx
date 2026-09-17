@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import {
   Plus, Trash2, Download, FileSpreadsheet, Send, Upload,
   ChevronDown, ChevronUp, ArrowLeft, Check, AlertCircle, Search,
@@ -416,7 +416,6 @@ export default function ProductCreateForm() {
 
   // Category
   const [uzumCatName, setUzumCatName] = useState('')
-  const [uzumCatResults, setUzumCatResults] = useState<{ name: string; canonical: string }[]>([])
   const [uzumCatOpen, setUzumCatOpen] = useState(false)
   const uzumCatRef = useRef<HTMLDivElement>(null)
   const [yandexCatName, setYandexCatName] = useState('')
@@ -517,12 +516,12 @@ export default function ProductCreateForm() {
   }, [])
 
   // ── Uzum category search (client-side from taxonomy) ────────────────
-  useEffect(() => {
+  const uzumCatResults = useMemo(() => {
     const q = uzumCatName.trim()
-    if (!q || q.length < 2) { setUzumCatResults([]); return }
+    if (!q || q.length < 2) return []
     const words = q.toLowerCase().split(/\s+/).filter(w => w.length >= 2)
-    if (words.length === 0) { setUzumCatResults([]); return }
-    const scored = UZUM_CAT_ENTRIES
+    if (words.length === 0) return []
+    return UZUM_CAT_ENTRIES
       .map(e => {
         const hits = words.filter(w => e.searchText.includes(w)).length
         return { name: e.name, canonical: e.canonical, hits }
@@ -530,7 +529,6 @@ export default function ProductCreateForm() {
       .filter(e => e.hits > 0)
       .sort((a, b) => b.hits - a.hits || a.name.length - b.name.length)
       .slice(0, 15)
-    setUzumCatResults(scored)
   }, [uzumCatName])
 
   // Fetch category parameters when category is selected
