@@ -11,6 +11,7 @@ import { translations } from '@/lib/i18n'
 import { useAutoTranslate } from '@/hooks/useAutoTranslate'
 import { searchDirect } from '@/lib/ikpu/browser-search'
 import type { IkpuResult } from '@/lib/ikpu/client'
+import { TAXONOMY } from '@/lib/categories/taxonomy'
 
 interface Variant {
   id: string
@@ -39,6 +40,30 @@ const EMPTY_VARIANT = (): Variant => ({
   sellingPrice: '',
   oldPrice: '',
 })
+
+// ── Uzum category entries from taxonomy (client-side search) ────────────────
+interface UzumCatEntry {
+  name: string
+  canonical: string
+  searchText: string
+}
+
+const UZUM_CAT_ENTRIES: UzumCatEntry[] = []
+for (const cat of TAXONOMY) {
+  const searchTerms = [
+    cat.name.ru, cat.name.uz, cat.name.en,
+    ...cat.terms.ru, ...cat.terms.uz,
+    ...cat.raw_examples.uzum,
+  ].join(' ').toLowerCase()
+
+  for (const uzName of cat.raw_examples.uzum) {
+    UZUM_CAT_ENTRIES.push({
+      name: uzName,
+      canonical: cat.name.ru,
+      searchText: searchTerms,
+    })
+  }
+}
 
 // ── Marketplace badge ────────────────────────────────────────────────────────
 
@@ -391,6 +416,9 @@ export default function ProductCreateForm() {
 
   // Category
   const [uzumCatName, setUzumCatName] = useState('')
+  const [uzumCatResults, setUzumCatResults] = useState<{ name: string; canonical: string }[]>([])
+  const [uzumCatOpen, setUzumCatOpen] = useState(false)
+  const uzumCatRef = useRef<HTMLDivElement>(null)
   const [yandexCatName, setYandexCatName] = useState('')
   const [yandexCatId, setYandexCatId] = useState<number | null>(null)
   const [yandexCatSearch, setYandexCatSearch] = useState('')
@@ -482,10 +510,28 @@ export default function ProductCreateForm() {
   useEffect(() => {
     const h = (e: MouseEvent) => {
       if (yandexCatRef.current && !yandexCatRef.current.contains(e.target as Node)) setYandexCatOpen(false)
+      if (uzumCatRef.current && !uzumCatRef.current.contains(e.target as Node)) setUzumCatOpen(false)
     }
     document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
   }, [])
+
+  // ── Uzum category search (client-side from taxonomy) ────────────────
+  useEffect(() => {
+    const q = uzumCatName.trim()
+    if (!q || q.length < 2) { setUzumCatResults([]); return }
+    const words = q.toLowerCase().split(/\s+/).filter(w => w.length >= 2)
+    if (words.length === 0) { setUzumCatResults([]); return }
+    const scored = UZUM_CAT_ENTRIES
+      .map(e => {
+        const hits = words.filter(w => e.searchText.includes(w)).length
+        return { name: e.name, canonical: e.canonical, hits }
+      })
+      .filter(e => e.hits > 0)
+      .sort((a, b) => b.hits - a.hits || a.name.length - b.name.length)
+      .slice(0, 15)
+    setUzumCatResults(scored)
+  }, [uzumCatName])
 
   // Fetch category parameters when category is selected
   useEffect(() => {
@@ -1058,12 +1104,65 @@ export default function ProductCreateForm() {
       {/* ── Category ── */}
       <SectionCard title={d.categorySection} allowOverflow>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <InputField
-            label={d.uzumCategory}
-            badges={<MpBadges uz reqUz />}
-            value={uzumCatName} onChange={setUzumCatName}
-            placeholder={d.phUzumCategory}
-          />
+          <div ref={uzumCatRef} className="relative">
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
+              {d.uzumCategory}
+              <MpBadges uz reqUz />
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={uzumCatName}
+                onChange={e => {
+                  setUzumCatName(e.target.value)
+                  setUzumCatOpen(true)
+                }}
+                onFocus={() => { if (uzumCatResults.length > 0) setUzumCatOpen(true) }}
+                placeholder={lang === 'ru' ? 'Поиск категории...' : lang === 'uz' ? 'Kategoriya qidirish...' : 'Search category...'}
+                className="w-full px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2"
+                style={{
+                  background: 'var(--bg-input)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text-base)',
+                  // @ts-expect-error CSS custom property
+                  '--tw-ring-color': 'var(--c1)',
+                }}
+              />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+            </div>
+            {!uzumCatName.trim() && (
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                {lang === 'ru' ? 'Введите название и выберите из списка' : lang === 'uz' ? "Nomini yozing va ro'yxatdan tanlang" : 'Type a name and select from the list'}
+              </p>
+            )}
+            {uzumCatName.trim().length >= 2 && uzumCatResults.length === 0 && (
+              <p className="text-xs mt-1" style={{ color: '#7B68EE' }}>
+                {lang === 'ru' ? 'Категории не найдены' : lang === 'uz' ? 'Kategoriya topilmadi' : 'No categories found'}
+              </p>
+            )}
+            {uzumCatOpen && uzumCatResults.length > 0 && (
+              <div
+                className="absolute z-30 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl border shadow-lg"
+                style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+              >
+                {uzumCatResults.map((c, i) => (
+                  <button
+                    key={`${c.name}-${i}`}
+                    type="button"
+                    onClick={() => {
+                      setUzumCatName(c.name)
+                      setUzumCatOpen(false)
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm hover:opacity-80 transition-colors border-b last:border-b-0"
+                    style={{ color: 'var(--text-base)', borderColor: 'var(--border)' }}
+                  >
+                    <span className="font-medium">{c.name}</span>
+                    <span className="block text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{c.canonical}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div ref={yandexCatRef} className="relative">
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
               {d.yandexCategory}
