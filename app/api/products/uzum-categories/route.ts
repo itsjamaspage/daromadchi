@@ -10,5 +10,11 @@ export const GET = withErrorHandler(async () => {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const tree = await getRootCategories()
+  if (tree.length === 0) {
+    return NextResponse.json(
+      { error: 'Не удалось загрузить категории Uzum — попробуйте позже' },
+      { status: 502 },
+    )
+  }
   return NextResponse.json({ categories: tree })
 })

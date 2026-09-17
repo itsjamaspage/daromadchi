@@ -116,7 +116,20 @@ function CascadingCatPicker({
     )
   }
 
-  if (tree.length === 0) return null
+  if (tree.length === 0) {
+    return (
+      <div>
+        <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
+          {label} {badge}
+        </label>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border text-sm"
+          style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+          <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: accentColor }} />
+          Категории недоступны
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div ref={pickerRef}>
