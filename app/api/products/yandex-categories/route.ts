@@ -25,6 +25,38 @@ function flattenCategories(cats: YandexCategory[], parentPath = ''): { id: numbe
   return result
 }
 
+export const GET = withErrorHandler(async () => {
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const [shop] = await db
+    .select({ api_key_encrypted: shops.api_key_encrypted })
+    .from(shops)
+    .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'yandex_market'), eq(shops.is_active, true)))
+    .limit(1)
+
+  if (!shop?.api_key_encrypted) {
+    return NextResponse.json({ error: 'Yandex Market магазин не подключён' }, { status: 400 })
+  }
+
+  const token = decrypt(shop.api_key_encrypted)
+
+  try {
+    const tree = await fetchYandexCategories(token)
+    return NextResponse.json({ categories: tree })
+  } catch (err) {
+    console.error('[yandex-categories] tree fetch failed', err)
+    if (err instanceof YandexApiError) {
+      if (err.status === 401 || err.status === 403) {
+        return NextResponse.json({ error: 'Yandex токен недействителен — обновите в настройках' }, { status: 401 })
+      }
+      return NextResponse.json({ error: `Yandex API ошибка (${err.status})` }, { status: 502 })
+    }
+    const msg = err instanceof Error ? err.message : 'Неизвестная ошибка'
+    return NextResponse.json({ error: `Ошибка загрузки категорий: ${msg}` }, { status: 500 })
+  }
+})
+
 export const POST = withErrorHandler(async (req: NextRequest) => {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

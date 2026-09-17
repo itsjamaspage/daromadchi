@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   Plus, Trash2, Download, FileSpreadsheet, Send, Upload,
   ChevronDown, ChevronUp, ArrowLeft, Check, AlertCircle, Search,
@@ -11,7 +11,11 @@ import { translations } from '@/lib/i18n'
 import { useAutoTranslate } from '@/hooks/useAutoTranslate'
 import { searchDirect } from '@/lib/ikpu/browser-search'
 import type { IkpuResult } from '@/lib/ikpu/client'
-import { TAXONOMY } from '@/lib/categories/taxonomy'
+interface CatNode {
+  id: number
+  name: string
+  children?: CatNode[]
+}
 
 interface Variant {
   id: string
@@ -41,28 +45,179 @@ const EMPTY_VARIANT = (): Variant => ({
   oldPrice: '',
 })
 
-// ── Uzum category entries from taxonomy (client-side search) ────────────────
-interface UzumCatEntry {
-  name: string
-  canonical: string
-  searchText: string
-}
+// ── Cascading category picker ────────────────────────────────────────────────
 
-const UZUM_CAT_ENTRIES: UzumCatEntry[] = []
-for (const cat of TAXONOMY) {
-  const searchTerms = [
-    cat.name.ru, cat.name.uz, cat.name.en,
-    ...cat.terms.ru, ...cat.terms.uz,
-    ...cat.raw_examples.uzum,
-  ].join(' ').toLowerCase()
+function CascadingCatPicker({
+  tree,
+  loading,
+  error,
+  selectedPath,
+  onSelect,
+  label,
+  badge,
+  accentColor,
+}: {
+  tree: CatNode[]
+  loading: boolean
+  error: string
+  selectedPath: CatNode[]
+  onSelect: (path: CatNode[]) => void
+  label: string
+  badge: React.ReactNode
+  accentColor: string
+}) {
+  const levels: { items: CatNode[]; selected: CatNode | null }[] = []
 
-  for (const uzName of cat.raw_examples.uzum) {
-    UZUM_CAT_ENTRIES.push({
-      name: uzName,
-      canonical: cat.name.ru,
-      searchText: searchTerms,
-    })
+  levels.push({ items: tree, selected: selectedPath[0] ?? null })
+  for (let i = 0; i < selectedPath.length; i++) {
+    const node = selectedPath[i]
+    if (node.children?.length) {
+      levels.push({ items: node.children, selected: selectedPath[i + 1] ?? null })
+    }
   }
+
+  const [filterTexts, setFilterTexts] = useState<string[]>([])
+  const [openLevel, setOpenLevel] = useState<number | null>(null)
+  const pickerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setOpenLevel(null)
+    }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+
+  const getName = (node: CatNode) => node.name
+
+  if (loading) {
+    return (
+      <div>
+        <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
+          {label} {badge}
+        </label>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border text-sm"
+          style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+          <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--border)', borderTopColor: accentColor }} />
+          Загрузка категорий...
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div>
+        <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
+          {label} {badge}
+        </label>
+        <p className="text-xs" style={{ color: accentColor }}>{error}</p>
+      </div>
+    )
+  }
+
+  if (tree.length === 0) return null
+
+  return (
+    <div ref={pickerRef}>
+      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
+        {label} {badge}
+      </label>
+      <div className="space-y-2">
+        {levels.map((level, li) => {
+          const filter = (filterTexts[li] ?? '').toLowerCase()
+          const filtered = filter
+            ? level.items.filter(c => getName(c).toLowerCase().includes(filter))
+            : level.items
+          const isOpen = openLevel === li
+
+          return (
+            <div key={li} className="relative">
+              <button
+                type="button"
+                onClick={() => setOpenLevel(isOpen ? null : li)}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl border text-sm transition-colors"
+                style={{
+                  background: 'var(--bg-input)',
+                  borderColor: level.selected ? accentColor : 'var(--border)',
+                  color: level.selected ? 'var(--text-base)' : 'var(--text-muted)',
+                }}
+              >
+                <span className={level.selected ? 'font-medium' : ''}>
+                  {level.selected ? getName(level.selected) : (li === 0 ? 'Выберите категорию' : 'Выберите подкатегорию')}
+                </span>
+                <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
+              </button>
+              {isOpen && (
+                <div
+                  className="absolute z-30 left-0 right-0 mt-1 rounded-xl border shadow-lg"
+                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+                >
+                  {level.items.length > 8 && (
+                    <div className="p-2 border-b" style={{ borderColor: 'var(--border)' }}>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={filterTexts[li] ?? ''}
+                          onChange={e => {
+                            const next = [...filterTexts]
+                            next[li] = e.target.value
+                            setFilterTexts(next)
+                          }}
+                          placeholder="Поиск..."
+                          className="w-full px-3 py-1.5 pr-8 rounded-lg border text-sm focus:outline-none focus:ring-1"
+                          style={{
+                            background: 'var(--bg-input)',
+                            borderColor: 'var(--border)',
+                            color: 'var(--text-base)',
+                          }}
+                          autoFocus
+                        />
+                        <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
+                      </div>
+                    </div>
+                  )}
+                  <div className="max-h-60 overflow-y-auto">
+                    {filtered.length === 0 && (
+                      <p className="px-3 py-2 text-sm" style={{ color: 'var(--text-muted)' }}>Не найдено</p>
+                    )}
+                    {filtered.map(c => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => {
+                          const newPath = [...selectedPath.slice(0, li), c]
+                          onSelect(newPath)
+                          setOpenLevel(null)
+                          setFilterTexts(prev => prev.slice(0, li))
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm hover:opacity-80 transition-colors border-b last:border-b-0 flex items-center justify-between"
+                        style={{
+                          color: 'var(--text-base)',
+                          borderColor: 'var(--border)',
+                          background: level.selected?.id === c.id ? `${accentColor}15` : undefined,
+                        }}
+                      >
+                        <span className={level.selected?.id === c.id ? 'font-medium' : ''}>{getName(c)}</span>
+                        {c.children && c.children.length > 0 && (
+                          <ChevronDown className="w-3 h-3 -rotate-90 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      {selectedPath.length > 0 && (
+        <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
+          {selectedPath.map(n => getName(n)).join(' → ')}
+        </p>
+      )}
+    </div>
+  )
 }
 
 // ── Marketplace badge ────────────────────────────────────────────────────────
@@ -414,18 +569,20 @@ export default function ProductCreateForm() {
   const [modelSkipped, setModelSkipped] = useState(false)
   const [countrySkipped, setCountrySkipped] = useState(false)
 
-  // Category
-  const [uzumCatName, setUzumCatName] = useState('')
-  const [uzumCatOpen, setUzumCatOpen] = useState(false)
-  const uzumCatRef = useRef<HTMLDivElement>(null)
-  const [yandexCatName, setYandexCatName] = useState('')
-  const [yandexCatId, setYandexCatId] = useState<number | null>(null)
-  const [yandexCatSearch, setYandexCatSearch] = useState('')
-  const [yandexCatResults, setYandexCatResults] = useState<{ id: number; name: string; path: string }[]>([])
-  const [yandexCatLoading, setYandexCatLoading] = useState(false)
-  const [yandexCatOpen, setYandexCatOpen] = useState(false)
-  const [yandexCatError, setYandexCatError] = useState('')
-  const yandexCatRef = useRef<HTMLDivElement>(null)
+  // Category — cascading tree pickers
+  const [uzumTree, setUzumTree] = useState<CatNode[]>([])
+  const [uzumTreeLoading, setUzumTreeLoading] = useState(true)
+  const [uzumTreeError, setUzumTreeError] = useState('')
+  const [uzumCatPath, setUzumCatPath] = useState<CatNode[]>([])
+
+  const [yandexTree, setYandexTree] = useState<CatNode[]>([])
+  const [yandexTreeLoading, setYandexTreeLoading] = useState(true)
+  const [yandexTreeError, setYandexTreeError] = useState('')
+  const [yandexCatPath, setYandexCatPath] = useState<CatNode[]>([])
+
+  const uzumCatName = uzumCatPath.length > 0 ? uzumCatPath[uzumCatPath.length - 1].name : ''
+  const yandexCatName = yandexCatPath.length > 0 ? yandexCatPath[yandexCatPath.length - 1].name : ''
+  const yandexCatId = yandexCatPath.length > 0 ? yandexCatPath[yandexCatPath.length - 1].id : null
 
   // Category parameters (fetched from Yandex when category is selected)
   const [categoryParams, setCategoryParams] = useState<{
@@ -473,63 +630,39 @@ export default function ProductCreateForm() {
   // Import state
   const [importResult, setImportResult] = useState<{ ok: boolean; message: string } | null>(null)
 
-  // ── Yandex category search ────────────────────────────────────────────
+  // ── Fetch category trees on mount ──────────────────────────────────────
   useEffect(() => {
-    if (!yandexCatSearch.trim() || yandexCatSearch.length < 2) {
-      return () => { setYandexCatResults([]); setYandexCatError('') }
-    }
-    const timer = setTimeout(async () => {
-      setYandexCatLoading(true)
-      setYandexCatError('')
-      try {
-        const res = await fetch('/api/products/yandex-categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: yandexCatSearch }),
-        })
-        if (res.ok) {
-          const data = await res.json()
+    let cancelled = false
+    fetch('/api/products/uzum-categories')
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(data => {
+        if (!cancelled) {
           const cats = data.categories ?? []
-          setYandexCatResults(cats)
-          if (cats.length > 0) setYandexCatOpen(true)
-          else setYandexCatError(lang === 'ru' ? 'Категории не найдены' : lang === 'uz' ? 'Kategoriya topilmadi' : 'No categories found')
-        } else {
-          const err = await res.json().catch(() => ({}))
-          setYandexCatError(err.error || (lang === 'ru' ? 'Ошибка поиска категорий' : 'Category search error'))
+          const normalize = (nodes: { id: number; title?: string; name?: string; children?: unknown[] }[]): CatNode[] =>
+            nodes.map(n => ({
+              id: n.id,
+              name: n.title ?? n.name ?? '',
+              children: n.children?.length ? normalize(n.children as typeof nodes) : undefined,
+            }))
+          setUzumTree(normalize(cats))
         }
-      } catch {
-        setYandexCatError(lang === 'ru' ? 'Не удалось загрузить категории' : 'Failed to load categories')
-      }
-      finally { setYandexCatLoading(false) }
-    }, 400)
-    return () => clearTimeout(timer)
-  }, [yandexCatSearch, lang])
-
-  // Close category dropdown on outside click
-  useEffect(() => {
-    const h = (e: MouseEvent) => {
-      if (yandexCatRef.current && !yandexCatRef.current.contains(e.target as Node)) setYandexCatOpen(false)
-      if (uzumCatRef.current && !uzumCatRef.current.contains(e.target as Node)) setUzumCatOpen(false)
-    }
-    document.addEventListener('mousedown', h)
-    return () => document.removeEventListener('mousedown', h)
+      })
+      .catch(() => { if (!cancelled) setUzumTreeError('Не удалось загрузить категории Uzum') })
+      .finally(() => { if (!cancelled) setUzumTreeLoading(false) })
+    return () => { cancelled = true }
   }, [])
 
-  // ── Uzum category search (client-side from taxonomy) ────────────────
-  const uzumCatResults = useMemo(() => {
-    const q = uzumCatName.trim()
-    if (!q || q.length < 2) return []
-    const words = q.toLowerCase().split(/\s+/).filter(w => w.length >= 2)
-    if (words.length === 0) return []
-    return UZUM_CAT_ENTRIES
-      .map(e => {
-        const hits = words.filter(w => e.searchText.includes(w)).length
-        return { name: e.name, canonical: e.canonical, hits }
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/products/yandex-categories')
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(data => {
+        if (!cancelled) setYandexTree(data.categories ?? [])
       })
-      .filter(e => e.hits > 0)
-      .sort((a, b) => b.hits - a.hits || a.name.length - b.name.length)
-      .slice(0, 15)
-  }, [uzumCatName])
+      .catch(() => { if (!cancelled) setYandexTreeError('Не удалось загрузить категории Yandex') })
+      .finally(() => { if (!cancelled) setYandexTreeLoading(false) })
+    return () => { cancelled = true }
+  }, [])
 
   // Fetch category parameters when category is selected
   useEffect(() => {
@@ -661,7 +794,7 @@ export default function ProductCreateForm() {
         setBrand(str(first, ci.brand))
         setModel(str(first, ci.model))
         setCountry(str(first, ci.country))
-        setUzumCatName(str(first, ci.catName))
+        // Category from import can't auto-select in tree — user picks from dropdowns
         setDescRu(str(first, ci.descRu))
         setDescUz(str(first, ci.descUz))
         setShortDescRu(str(first, ci.shortRu))
@@ -704,7 +837,7 @@ export default function ProductCreateForm() {
         setSku(str(first, ci.sku))
         setPhotoUrls(str(first, ci.photos))
         setDescRu(str(first, ci.desc))
-        setYandexCatName(str(first, ci.cat))
+        // Category from import can't auto-select in tree — user picks from dropdowns
         setBrand(str(first, ci.brand))
         setBarcode(str(first, ci.barcode))
         setCountry(str(first, ci.country))
@@ -838,9 +971,9 @@ export default function ProductCreateForm() {
     const body: Record<string, unknown> = { marketplace, products }
     if (marketplace === 'uzum') {
       body.uzumCategory = {
-        id: '',
+        id: uzumCatPath.length > 0 ? String(uzumCatPath[uzumCatPath.length - 1].id) : '',
         name: uzumCatName || '',
-        fullPath: uzumCatName || '',
+        fullPath: uzumCatPath.map(n => n.name).join(' > ') || '',
       }
     } else {
       body.yandexCategoryName = yandexCatName || 'Не указана'
@@ -1102,140 +1235,32 @@ export default function ProductCreateForm() {
       {/* ── Category ── */}
       <SectionCard title={d.categorySection} allowOverflow>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div ref={uzumCatRef} className="relative">
-            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
-              {d.uzumCategory}
-              <MpBadges uz reqUz />
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={uzumCatName}
-                onChange={e => {
-                  setUzumCatName(e.target.value)
-                  setUzumCatOpen(true)
-                }}
-                onFocus={() => { if (uzumCatResults.length > 0) setUzumCatOpen(true) }}
-                placeholder={lang === 'ru' ? 'Поиск категории...' : lang === 'uz' ? 'Kategoriya qidirish...' : 'Search category...'}
-                className="w-full px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2"
-                style={{
-                  background: 'var(--bg-input)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-base)',
-                  // @ts-expect-error CSS custom property
-                  '--tw-ring-color': 'var(--c1)',
-                }}
-              />
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-            </div>
-            {!uzumCatName.trim() && (
-              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                {lang === 'ru' ? 'Введите название и выберите из списка' : lang === 'uz' ? "Nomini yozing va ro'yxatdan tanlang" : 'Type a name and select from the list'}
-              </p>
-            )}
-            {uzumCatName.trim().length >= 2 && uzumCatResults.length === 0 && (
-              <p className="text-xs mt-1" style={{ color: '#7B68EE' }}>
-                {lang === 'ru' ? 'Категории не найдены' : lang === 'uz' ? 'Kategoriya topilmadi' : 'No categories found'}
-              </p>
-            )}
-            {uzumCatOpen && uzumCatResults.length > 0 && (
-              <div
-                className="absolute z-30 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl border shadow-lg"
-                style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
-              >
-                {uzumCatResults.map((c, i) => (
-                  <button
-                    key={`${c.name}-${i}`}
-                    type="button"
-                    onClick={() => {
-                      setUzumCatName(c.name)
-                      setUzumCatOpen(false)
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:opacity-80 transition-colors border-b last:border-b-0"
-                    style={{ color: 'var(--text-base)', borderColor: 'var(--border)' }}
-                  >
-                    <span className="font-medium">{c.name}</span>
-                    <span className="block text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{c.canonical}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div ref={yandexCatRef} className="relative">
-            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
-              {d.yandexCategory}
-              <MpBadges ym reqYm />
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={yandexCatId ? yandexCatName : yandexCatSearch}
-                onChange={e => {
-                  if (yandexCatId) { setYandexCatId(null); setYandexCatName('') }
-                  setYandexCatSearch(e.target.value)
-                }}
-                onFocus={() => { if (yandexCatResults.length) setYandexCatOpen(true) }}
-                placeholder={lang === 'ru' ? 'Поиск категории...' : lang === 'uz' ? 'Kategoriya qidirish...' : 'Search category...'}
-                className="w-full px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2"
-                style={{
-                  background: 'var(--bg-input)',
-                  borderColor: yandexCatId ? 'var(--c1)' : 'var(--border)',
-                  color: 'var(--text-base)',
-                  // @ts-expect-error CSS custom property
-                  '--tw-ring-color': 'var(--c1)',
-                }}
-              />
-              {yandexCatLoading && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--border)', borderTopColor: 'var(--c1)' }} />
-                </div>
-              )}
-              {yandexCatId && !yandexCatLoading && (
-                <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--c1)' }} />
-              )}
-            </div>
+          <CascadingCatPicker
+            tree={uzumTree}
+            loading={uzumTreeLoading}
+            error={uzumTreeError}
+            selectedPath={uzumCatPath}
+            onSelect={setUzumCatPath}
+            label={d.uzumCategory}
+            badge={<MpBadges uz reqUz />}
+            accentColor="#7B68EE"
+          />
+          <div>
+            <CascadingCatPicker
+              tree={yandexTree}
+              loading={yandexTreeLoading}
+              error={yandexTreeError}
+              selectedPath={yandexCatPath}
+              onSelect={setYandexCatPath}
+              label={d.yandexCategory}
+              badge={<MpBadges ym reqYm />}
+              accentColor="#FC3F1D"
+            />
             {yandexCatId && (
               <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
                 ID: {yandexCatId}
                 {categoryParamsLoading ? ' — загрузка параметров...' : categoryParams.length > 0 ? ` — ${categoryParams.filter(p => p.required).length} обязательных параметров` : ''}
               </p>
-            )}
-            {!yandexCatId && !yandexCatLoading && yandexCatError && (
-              <p className="text-xs mt-1" style={{ color: '#FC3F1D' }}>{yandexCatError}</p>
-            )}
-            {!yandexCatId && !yandexCatLoading && !yandexCatError && yandexCatSearch.length >= 2 && yandexCatResults.length > 0 && !yandexCatOpen && (
-              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                {lang === 'ru' ? 'Нажмите на поле чтобы выбрать категорию из списка' : lang === 'uz' ? "Ro'yxatdan kategoriya tanlash uchun bosing" : 'Click the field to select a category'}
-              </p>
-            )}
-            {!yandexCatId && !yandexCatLoading && !yandexCatError && !yandexCatSearch.trim() && (
-              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                {lang === 'ru' ? 'Введите название и выберите из списка' : lang === 'uz' ? "Nomini yozing va ro'yxatdan tanlang" : 'Type a name and select from the list'}
-              </p>
-            )}
-            {yandexCatOpen && yandexCatResults.length > 0 && (
-              <div
-                className="absolute z-30 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl border shadow-lg"
-                style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
-              >
-                {yandexCatResults.map(c => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => {
-                      setYandexCatName(c.name)
-                      setYandexCatId(c.id)
-                      setYandexCatSearch('')
-                      setYandexCatOpen(false)
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:opacity-80 transition-colors border-b last:border-b-0"
-                    style={{ color: 'var(--text-base)', borderColor: 'var(--border)' }}
-                  >
-                    <span className="font-medium">{c.name}</span>
-                    <span className="block text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{c.path}</span>
-                  </button>
-                ))}
-              </div>
             )}
           </div>
         </div>
