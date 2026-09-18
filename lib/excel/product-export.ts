@@ -161,9 +161,18 @@ export function generateUzumExcel(
 ): Buffer {
   const wb = XLSX.utils.book_new()
 
+  const charKeys: string[] = []
+  for (const p of products) {
+    if (p.characteristics) {
+      for (const key of Object.keys(p.characteristics)) {
+        if (!charKeys.includes(key)) charKeys.push(key)
+      }
+    }
+  }
+
   // ── Лист1: Product data ──
-  const headerRow = ['', ...UZUM_HEADERS]
-  const descRow = ['', ...UZUM_DESC_ROW]
+  const headerRow = ['', ...UZUM_HEADERS, ...charKeys]
+  const descRow = ['', ...UZUM_DESC_ROW, ...charKeys.map(() => 'Характеристика товара (зависит от категории)')]
 
   const dataRows = products.map((p, i) => [
     i + 1,
@@ -197,12 +206,14 @@ export function generateUzumExcel(
     p.heightMm,
     p.widthMm,
     p.lengthMm,
+    ...charKeys.map(k => p.characteristics?.[k] || ''),
   ])
 
   const wsData = [headerRow, descRow, ...dataRows]
   const ws = XLSX.utils.aoa_to_sheet(wsData)
 
-  const colWidths = UZUM_HEADERS.map((h, i) => {
+  const allHeaders = [...UZUM_HEADERS, ...charKeys]
+  const colWidths = allHeaders.map((h, i) => {
     const maxData = Math.max(h.length, ...dataRows.map(r => String(r[i + 1] ?? '').length))
     return { wch: Math.min(Math.max(maxData + 2, 12), 50) }
   })

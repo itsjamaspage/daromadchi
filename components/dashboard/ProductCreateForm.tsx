@@ -1721,16 +1721,16 @@ export default function ProductCreateForm() {
         </button>
       </SectionCard>
 
-      {/* ── Characteristics (Yandex) ── */}
+      {/* ── Characteristics (Uzum + Yandex) ── */}
       <SectionCard
         title={d.characteristicsSection}
-        badge={<MpBadge mp="ym" />}
+        badge={<MpBadges uz ym />}
         defaultOpen={false}
       >
         <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
-          {lang === 'ru' ? 'Ключевые, Дополнительные, Подробности — зависят от категории Yandex'
-            : lang === 'uz' ? "Asosiy, Qo'shimcha, Tafsilotlar — Yandex kategoriyasiga bog'liq"
-            : 'Key, Additional, Details — depend on Yandex category'}
+          {lang === 'ru' ? 'Характеристики товара — зависят от категории (Uzum и Yandex)'
+            : lang === 'uz' ? "Mahsulot xususiyatlari — kategoriyaga bog'liq (Uzum va Yandex)"
+            : 'Product characteristics — depend on category (Uzum and Yandex)'}
         </p>
         {chars.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
