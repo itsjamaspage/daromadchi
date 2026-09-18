@@ -1352,7 +1352,7 @@ export default function ProductCreateForm() {
       </div>
 
       {/* ── Basic Info ── */}
-      <SectionCard title={d.basicInfo}>
+      <SectionCard title={d.basicInfo} allowOverflow>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <InputField
             label={d.nameRu}
