@@ -989,8 +989,9 @@ export default function ProductCreateForm() {
         setModelSkipped(false)
         setCountrySkipped(false)
 
-        if (dataRows.length > 1) {
-          setVariants(dataRows.slice(1).map(r => ({
+        const hasVariantData = dataRows.length > 1 || str(first, ci.color) || str(first, ci.size)
+        if (hasVariantData) {
+          setVariants(dataRows.map(r => ({
             id: uid(),
             color: str(r, ci.color),
             size: str(r, ci.size),
@@ -1043,13 +1044,18 @@ export default function ProductCreateForm() {
         }
 
         if (dataRows.length > 1) {
-          setVariants(dataRows.slice(1).map(r => {
+          setVariants(dataRows.map(r => {
             const varSku = str(r, ci.sku)
-            const existing = variants.find(v => v.sku === varSku)
+            const charStr = str(r, ci.chars)
+            let color = ''
+            if (charStr) {
+              const colorPair = charStr.split(';').find(p => /^цвет\|/i.test(p.trim()))
+              if (colorPair) color = colorPair.split('|')[1]?.trim() || ''
+            }
             return {
               id: uid(),
-              color: existing?.color || '',
-              size: existing?.size || '',
+              color,
+              size: '',
               sku: varSku,
               barcode: str(r, ci.barcode),
               sellingPrice: String(num(r, ci.price) || ''),
