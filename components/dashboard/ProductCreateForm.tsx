@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   Plus, Trash2, Download, FileSpreadsheet, Send, Upload,
   ChevronDown, ChevronUp, ArrowLeft, Check, AlertCircle, Search,
+  RefreshCw,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useLang } from '@/app/providers'
@@ -34,6 +35,17 @@ interface Characteristic {
 }
 
 const uid = () => Math.random().toString(36).slice(2, 9)
+
+function generateEAN13(): string {
+  const prefix = '200'
+  const body = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10)).join('')
+  const digits = prefix + body
+  let sum = 0
+  for (let i = 0; i < 12; i++) {
+    sum += Number(digits[i]) * (i % 2 === 0 ? 1 : 3)
+  }
+  return digits + ((10 - (sum % 10)) % 10)
+}
 
 const EMPTY_VARIANT = (): Variant => ({
   id: uid(),
@@ -1536,12 +1548,31 @@ export default function ProductCreateForm() {
             badges={<MpBadges uz ym reqUz reqYm />}
             lang={lang}
           />
-          <InputField
-            label={d.barcodeLabel}
-            badges={<MpBadges uz ym reqYm />}
-            value={barcode} onChange={setBarcode}
-            placeholder={d.phBarcode}
-          />
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
+              {d.barcodeLabel}
+              <MpBadges uz ym reqYm />
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={barcode}
+                onChange={e => setBarcode(e.target.value)}
+                placeholder={d.phBarcode}
+                className="flex-1 min-w-0 px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2"
+                style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-base)', '--tw-ring-color': 'var(--c1)' } as React.CSSProperties}
+              />
+              <button
+                type="button"
+                onClick={() => setBarcode(generateEAN13())}
+                className="shrink-0 px-3 py-2 rounded-xl border text-sm font-medium transition-colors hover:opacity-80"
+                style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: 'var(--c1)' }}
+                title={lang === 'ru' ? 'Сгенерировать EAN-13' : lang === 'uz' ? 'EAN-13 yaratish' : 'Generate EAN-13'}
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
           <InputField
             label={d.weightG}
             badges={<MpBadges uz ym reqUz reqYm />}
@@ -1641,9 +1672,31 @@ export default function ProductCreateForm() {
                   <InputField label={d.skuId} badges={<MpBadges uz ym />}
                     value={v.sku} onChange={val => updateVariant(v.id, 'sku', val)}
                     placeholder={d.phSku} />
-                  <InputField label={d.barcodeLabel} badges={<MpBadges uz ym />}
-                    value={v.barcode} onChange={val => updateVariant(v.id, 'barcode', val)}
-                    placeholder={d.phBarcode} />
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
+                      {d.barcodeLabel}
+                      <MpBadges uz ym />
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={v.barcode}
+                        onChange={e => updateVariant(v.id, 'barcode', e.target.value)}
+                        placeholder={d.phBarcode}
+                        className="flex-1 min-w-0 px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2"
+                        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-base)', '--tw-ring-color': 'var(--c1)' } as React.CSSProperties}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateVariant(v.id, 'barcode', generateEAN13())}
+                        className="shrink-0 px-3 py-2 rounded-xl border text-sm font-medium transition-colors hover:opacity-80"
+                        style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: 'var(--c1)' }}
+                        title={lang === 'ru' ? 'Сгенерировать EAN-13' : lang === 'uz' ? 'EAN-13 yaratish' : 'Generate EAN-13'}
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                   <InputField label={d.sellingPrice} badges={<MpBadges uz ym />}
                     type="number" value={v.sellingPrice}
                     onChange={val => updateVariant(v.id, 'sellingPrice', val)}
