@@ -807,30 +807,12 @@ export default function ProductCreateForm() {
         children: n.children?.length ? normalize(n.children as typeof nodes) : undefined,
       }))
 
-    // Try server route first, fall back to direct public API
     fetch('/api/products/uzum-categories')
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(data => {
         if (!cancelled) setUzumTree(normalize(data.categories ?? []))
       })
-      .catch(() => {
-        // Client-side fallback: fetch Uzum public API directly from the browser
-        const uzumCatUrl = `https://api.uzum.uz/api/main/root-categories`
-        return fetch(uzumCatUrl, {
-          headers: {
-            'Accept': 'application/json',
-            'Origin': 'https://uzum.uz',
-            'Referer': 'https://uzum.uz/',
-          },
-        })
-          .then(r => r.ok ? r.json() : Promise.reject(r))
-          .then(data => {
-            if (cancelled) return
-            const cats = Array.isArray(data) ? data : data?.payload?.categories ?? []
-            setUzumTree(normalize(cats))
-          })
-          .catch(() => { if (!cancelled) setUzumTreeError('Не удалось загрузить категории Uzum') })
-      })
+      .catch(() => { if (!cancelled) setUzumTreeError('Не удалось загрузить категории Uzum') })
       .finally(() => { if (!cancelled) setUzumTreeLoading(false) })
     return () => { cancelled = true }
   }, [])
