@@ -233,6 +233,160 @@ function CascadingCatPicker({
   )
 }
 
+// ── Country searchable picker ────────────────────────────────────────────────
+
+const COUNTRIES: { ru: string; uz: string; en: string }[] = [
+  { ru: 'Китай', uz: 'Xitoy', en: 'China' },
+  { ru: 'Турция', uz: 'Turkiya', en: 'Turkey' },
+  { ru: 'Узбекистан', uz: "O'zbekiston", en: 'Uzbekistan' },
+  { ru: 'Россия', uz: 'Rossiya', en: 'Russia' },
+  { ru: 'Южная Корея', uz: 'Janubiy Koreya', en: 'South Korea' },
+  { ru: 'Япония', uz: 'Yaponiya', en: 'Japan' },
+  { ru: 'Германия', uz: 'Germaniya', en: 'Germany' },
+  { ru: 'США', uz: 'AQSH', en: 'USA' },
+  { ru: 'Италия', uz: 'Italiya', en: 'Italy' },
+  { ru: 'Франция', uz: 'Fransiya', en: 'France' },
+  { ru: 'Индия', uz: 'Hindiston', en: 'India' },
+  { ru: 'Великобритания', uz: 'Buyuk Britaniya', en: 'United Kingdom' },
+  { ru: 'Бразилия', uz: 'Braziliya', en: 'Brazil' },
+  { ru: 'Вьетнам', uz: 'Vyetnam', en: 'Vietnam' },
+  { ru: 'Индонезия', uz: 'Indoneziya', en: 'Indonesia' },
+  { ru: 'Таиланд', uz: 'Tailand', en: 'Thailand' },
+  { ru: 'Малайзия', uz: 'Malayziya', en: 'Malaysia' },
+  { ru: 'Тайвань', uz: 'Tayvan', en: 'Taiwan' },
+  { ru: 'Польша', uz: 'Polsha', en: 'Poland' },
+  { ru: 'Испания', uz: 'Ispaniya', en: 'Spain' },
+  { ru: 'Нидерланды', uz: 'Niderlandiya', en: 'Netherlands' },
+  { ru: 'Швеция', uz: 'Shvetsiya', en: 'Sweden' },
+  { ru: 'Швейцария', uz: 'Shveytsariya', en: 'Switzerland' },
+  { ru: 'Канада', uz: 'Kanada', en: 'Canada' },
+  { ru: 'Мексика', uz: 'Meksika', en: 'Mexico' },
+  { ru: 'Австралия', uz: 'Avstraliya', en: 'Australia' },
+  { ru: 'ОАЭ', uz: 'BAA', en: 'UAE' },
+  { ru: 'Саудовская Аравия', uz: 'Saudiya Arabistoni', en: 'Saudi Arabia' },
+  { ru: 'Казахстан', uz: "Qozog'iston", en: 'Kazakhstan' },
+  { ru: 'Кыргызстан', uz: "Qirg'iziston", en: 'Kyrgyzstan' },
+  { ru: 'Таджикистан', uz: 'Tojikiston', en: 'Tajikistan' },
+  { ru: 'Туркменистан', uz: 'Turkmaniston', en: 'Turkmenistan' },
+  { ru: 'Беларусь', uz: 'Belarus', en: 'Belarus' },
+  { ru: 'Украина', uz: 'Ukraina', en: 'Ukraine' },
+  { ru: 'Азербайджан', uz: 'Ozarbayjon', en: 'Azerbaijan' },
+  { ru: 'Грузия', uz: 'Gruziya', en: 'Georgia' },
+  { ru: 'Армения', uz: 'Armaniston', en: 'Armenia' },
+  { ru: 'Пакистан', uz: 'Pokiston', en: 'Pakistan' },
+  { ru: 'Бангладеш', uz: 'Bangladesh', en: 'Bangladesh' },
+  { ru: 'Египет', uz: 'Misr', en: 'Egypt' },
+  { ru: 'Финляндия', uz: 'Finlandiya', en: 'Finland' },
+  { ru: 'Норвегия', uz: 'Norvegiya', en: 'Norway' },
+  { ru: 'Дания', uz: 'Daniya', en: 'Denmark' },
+  { ru: 'Чехия', uz: 'Chexiya', en: 'Czech Republic' },
+  { ru: 'Португалия', uz: 'Portugaliya', en: 'Portugal' },
+  { ru: 'Австрия', uz: 'Avstriya', en: 'Austria' },
+  { ru: 'Венгрия', uz: 'Vengriya', en: 'Hungary' },
+  { ru: 'Израиль', uz: 'Isroil', en: 'Israel' },
+  { ru: 'Аргентина', uz: 'Argentina', en: 'Argentina' },
+  { ru: 'Сингапур', uz: 'Singapur', en: 'Singapore' },
+  { ru: 'Филиппины', uz: 'Filippin', en: 'Philippines' },
+]
+
+function CountryPicker({
+  value,
+  onChange,
+  disabled,
+  label,
+  badges,
+  placeholder,
+  lang,
+}: {
+  value: string
+  onChange: (v: string) => void
+  disabled?: boolean
+  label: string
+  badges?: React.ReactNode
+  placeholder?: string
+  lang: 'ru' | 'uz' | 'en'
+}) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+
+  const displayName = (c: typeof COUNTRIES[0]) => c[lang]
+
+  const filtered = COUNTRIES.filter(c => {
+    const q = query.toLowerCase()
+    if (!q) return true
+    return c.ru.toLowerCase().includes(q)
+      || c.uz.toLowerCase().includes(q)
+      || c.en.toLowerCase().includes(q)
+  })
+
+  const selectedDisplay = value
+    ? (COUNTRIES.find(c => c.ru === value || c.uz === value || c.en === value)?.[lang] ?? value)
+    : ''
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
+        {label}{badges}
+      </label>
+      <div className="relative">
+        <input
+          type="text"
+          value={open ? query : selectedDisplay}
+          onChange={e => { setQuery(e.target.value); if (!open) setOpen(true) }}
+          onFocus={() => { setOpen(true); setQuery('') }}
+          placeholder={placeholder}
+          disabled={disabled}
+          className="w-full px-3 py-2 pr-8 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2 disabled:opacity-40"
+          style={{
+            background: 'var(--bg-input)',
+            borderColor: 'var(--border)',
+            color: 'var(--text-base)',
+            // @ts-expect-error CSS custom property
+            '--tw-ring-color': 'var(--c1)',
+          }}
+        />
+        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
+      </div>
+      {open && !disabled && (
+        <div
+          className="absolute z-30 left-0 right-0 mt-1 rounded-xl border shadow-lg max-h-60 overflow-y-auto"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+        >
+          {filtered.length === 0 && (
+            <p className="px-3 py-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+              {lang === 'ru' ? 'Не найдено' : lang === 'uz' ? 'Topilmadi' : 'Not found'}
+            </p>
+          )}
+          {filtered.map(c => (
+            <button
+              key={c.en}
+              type="button"
+              onClick={() => { onChange(c.ru); setOpen(false); setQuery('') }}
+              className="w-full text-left px-3 py-2 text-sm hover:opacity-80 transition-colors border-b last:border-b-0"
+              style={{
+                color: 'var(--text-base)',
+                borderColor: 'var(--border)',
+                background: value === c.ru ? 'var(--c1-alpha, rgba(99,102,241,0.08))' : undefined,
+              }}
+            >
+              {displayName(c)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Marketplace badge ────────────────────────────────────────────────────────
 
 function MpBadge({ mp, req }: { mp: 'uz' | 'ym'; req?: boolean }) {
@@ -646,21 +800,37 @@ export default function ProductCreateForm() {
   // ── Fetch category trees on mount ──────────────────────────────────────
   useEffect(() => {
     let cancelled = false
+    const normalize = (nodes: { id: number; title?: string; name?: string; children?: unknown[] }[]): CatNode[] =>
+      nodes.map(n => ({
+        id: n.id,
+        name: n.title ?? n.name ?? '',
+        children: n.children?.length ? normalize(n.children as typeof nodes) : undefined,
+      }))
+
+    // Try server route first, fall back to direct public API
     fetch('/api/products/uzum-categories')
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(data => {
-        if (!cancelled) {
-          const cats = data.categories ?? []
-          const normalize = (nodes: { id: number; title?: string; name?: string; children?: unknown[] }[]): CatNode[] =>
-            nodes.map(n => ({
-              id: n.id,
-              name: n.title ?? n.name ?? '',
-              children: n.children?.length ? normalize(n.children as typeof nodes) : undefined,
-            }))
-          setUzumTree(normalize(cats))
-        }
+        if (!cancelled) setUzumTree(normalize(data.categories ?? []))
       })
-      .catch(() => { if (!cancelled) setUzumTreeError('Не удалось загрузить категории Uzum') })
+      .catch(() => {
+        // Client-side fallback: fetch Uzum public API directly from the browser
+        const uzumCatUrl = `https://api.uzum.uz/api/main/root-categories`
+        return fetch(uzumCatUrl, {
+          headers: {
+            'Accept': 'application/json',
+            'Origin': 'https://uzum.uz',
+            'Referer': 'https://uzum.uz/',
+          },
+        })
+          .then(r => r.ok ? r.json() : Promise.reject(r))
+          .then(data => {
+            if (cancelled) return
+            const cats = Array.isArray(data) ? data : data?.payload?.categories ?? []
+            setUzumTree(normalize(cats))
+          })
+          .catch(() => { if (!cancelled) setUzumTreeError('Не удалось загрузить категории Uzum') })
+      })
       .finally(() => { if (!cancelled) setUzumTreeLoading(false) })
     return () => { cancelled = true }
   }, [])
@@ -1232,13 +1402,15 @@ export default function ProductCreateForm() {
             />
             <SkipCheck checked={brandSkipped} onChange={setBrandSkipped} label={skipLabel} />
           </div>
-          <div>
-            <InputField
+          <div className="relative">
+            <CountryPicker
               label={d.countryLabel}
               badges={<MpBadges uz ym reqUz reqYm />}
-              value={country} onChange={setCountry}
+              value={country}
+              onChange={setCountry}
               disabled={countrySkipped}
               placeholder={d.phCountry}
+              lang={lang}
             />
             <SkipCheck checked={countrySkipped} onChange={setCountrySkipped} label={skipLabel} />
           </div>
