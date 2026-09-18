@@ -814,8 +814,9 @@ export default function ProductCreateForm() {
         if (!cancelled) setUzumTree(normalize(data.categories ?? []))
       })
       .catch(() => {
-        // Server route failed — fetch directly from Uzum public API (no auth needed)
-        return fetch('https://api.uzum.uz/api/main/root-categories', {
+        // Client-side fallback: fetch Uzum public API directly from the browser
+        const uzumCatUrl = `https://api.uzum.uz/api/main/root-categories`
+        return fetch(uzumCatUrl, {
           headers: {
             'Accept': 'application/json',
             'Origin': 'https://uzum.uz',
