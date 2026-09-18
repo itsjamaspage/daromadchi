@@ -13,6 +13,9 @@ import {
 
 export const runtime = 'nodejs'
 
+const CACHE_TTL_MS = 10 * 60 * 1000
+let cachedTree: { data: YandexCategory[]; ts: number } | null = null
+
 function flattenCategories(cats: YandexCategory[], parentPath = ''): { id: number; name: string; path: string }[] {
   const result: { id: number; name: string; path: string }[] = []
   for (const c of cats) {
@@ -29,6 +32,10 @@ export const GET = withErrorHandler(async () => {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  if (cachedTree && Date.now() - cachedTree.ts < CACHE_TTL_MS) {
+    return NextResponse.json({ categories: cachedTree.data, cached: true })
+  }
+
   const [shop] = await db
     .select({ api_key_encrypted: shops.api_key_encrypted })
     .from(shops)
@@ -43,9 +50,13 @@ export const GET = withErrorHandler(async () => {
 
   try {
     const tree = await fetchYandexCategories(token)
+    cachedTree = { data: tree, ts: Date.now() }
     return NextResponse.json({ categories: tree })
   } catch (err) {
     console.error('[yandex-categories] tree fetch failed', err)
+    if (cachedTree) {
+      return NextResponse.json({ categories: cachedTree.data, cached: true })
+    }
     if (err instanceof YandexApiError) {
       if (err.status === 401 || err.status === 403) {
         return NextResponse.json({ error: 'Yandex токен недействителен — обновите в настройках' }, { status: 401 })
