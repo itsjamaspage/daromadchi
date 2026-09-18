@@ -10,6 +10,7 @@ import {
   YandexApiError,
   type YandexCategory,
 } from '@/lib/yandex/client'
+import { YANDEX_STATIC_CATEGORIES } from '@/lib/yandex/static-categories'
 
 export const runtime = 'nodejs'
 
@@ -50,22 +51,21 @@ export const GET = withErrorHandler(async () => {
 
   try {
     const tree = await fetchYandexCategories(token)
-    cachedTree = { data: tree, ts: Date.now() }
-    return NextResponse.json({ categories: tree })
+    if (tree.length > 0) {
+      cachedTree = { data: tree, ts: Date.now() }
+      return NextResponse.json({ categories: tree })
+    }
   } catch (err) {
-    console.error('[yandex-categories] tree fetch failed', err)
+    console.error('[yandex-categories] tree fetch failed, using static fallback', err)
     if (cachedTree) {
       return NextResponse.json({ categories: cachedTree.data, cached: true })
     }
-    if (err instanceof YandexApiError) {
-      if (err.status === 401 || err.status === 403) {
-        return NextResponse.json({ error: 'Yandex токен недействителен — обновите в настройках' }, { status: 401 })
-      }
-      return NextResponse.json({ error: `Yandex API ошибка (${err.status})` }, { status: 502 })
+    if (err instanceof YandexApiError && (err.status === 401 || err.status === 403)) {
+      return NextResponse.json({ error: 'Yandex токен недействителен — обновите в настройках' }, { status: 401 })
     }
-    const msg = err instanceof Error ? err.message : 'Неизвестная ошибка'
-    return NextResponse.json({ error: `Ошибка загрузки категорий: ${msg}` }, { status: 500 })
   }
+
+  return NextResponse.json({ categories: YANDEX_STATIC_CATEGORIES, fallback: true })
 })
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
