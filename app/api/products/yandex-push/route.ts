@@ -4,7 +4,10 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
 import { pushProducts, type ProductWriteShop } from '@/lib/marketplace/product-writer'
-import type { YandexOfferUpdate } from '@/lib/yandex/client'
+import { decrypt } from '@/lib/crypto'
+import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
+import { YANDEX_API_BASE, type YandexOfferUpdate } from '@/lib/yandex/client'
+import { logger } from '@/lib/logger'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -87,7 +90,45 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const result = await pushProducts({ shop: writeShop, userId: user.id, offers })
 
   if (result.status === 'sent') {
-    return NextResponse.json({ ok: true, logId: result.logId })
+    // Verify offers actually landed — query offer-mappings after a brief delay
+    let verification: { found: string[]; missing: string[] } | undefined
+    try {
+      await new Promise(r => setTimeout(r, 3000))
+      const token = shop.api_key_encrypted ? decrypt(shop.api_key_encrypted) : ''
+      const verifyUrl = `${YANDEX_API_BASE}/v2/businesses/${shop.business_id}/offer-mappings`
+      const verifyRes = await marketplaceFetch(verifyUrl, {
+        method: 'POST',
+        headers: {
+          'Api-Key': token,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ offerIds: offers.map(o => o.offerId) }),
+        intent: 'read',
+      })
+      if (verifyRes.ok) {
+        const verifyData = await verifyRes.json() as {
+          result?: { offerMappings?: { offer?: { offerId?: string } }[] }
+        }
+        const foundIds = new Set(
+          (verifyData.result?.offerMappings ?? [])
+            .map(m => m.offer?.offerId)
+            .filter(Boolean),
+        )
+        const found = offers.filter(o => foundIds.has(o.offerId)).map(o => o.offerId)
+        const missing = offers.filter(o => !foundIds.has(o.offerId)).map(o => o.offerId)
+        verification = { found, missing }
+      }
+    } catch (err) {
+      logger.warn('product_push_verify_failed', { error: String(err).slice(0, 200) })
+    }
+
+    return NextResponse.json({
+      ok: true,
+      logId: result.logId,
+      yandexResponse: result.responseBody,
+      verification,
+    })
   }
 
   let detail: string | undefined
