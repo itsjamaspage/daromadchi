@@ -1251,14 +1251,45 @@ export default function ProductCreateForm() {
     return vals.length > 0 ? vals : undefined
   }
 
+  const compressImage = (file: File, maxSizeMB = 1, maxDim = 2000): Promise<File> =>
+    new Promise((resolve) => {
+      if (file.size <= maxSizeMB * 1024 * 1024) { resolve(file); return }
+      const img = new window.Image()
+      img.onload = () => {
+        let { width: w, height: h } = img
+        if (w > maxDim || h > maxDim) {
+          const scale = maxDim / Math.max(w, h)
+          w = Math.round(w * scale); h = Math.round(h * scale)
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = w; canvas.height = h
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0, w, h)
+        canvas.toBlob(
+          blob => {
+            if (blob) {
+              resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }))
+            } else {
+              resolve(file)
+            }
+          },
+          'image/jpeg',
+          0.85,
+        )
+      }
+      img.onerror = () => resolve(file)
+      img.src = URL.createObjectURL(file)
+    })
+
   const handleImageUpload = async (files: FileList | null) => {
     if (!files?.length) return
     setUploading(true)
     const urls: string[] = []
     for (const file of Array.from(files)) {
       try {
+        const compressed = await compressImage(file)
         const fd = new FormData()
-        fd.append('image', file)
+        fd.append('image', compressed)
         const res = await fetch('/api/products/upload-image', { method: 'POST', body: fd })
         if (res.ok) {
           const data = await res.json()
@@ -1279,8 +1310,9 @@ export default function ProductCreateForm() {
   const handleVariantImageUpload = async (variantId: string, file: File) => {
     setVariantUploading(variantId)
     try {
+      const compressed = await compressImage(file)
       const fd = new FormData()
-      fd.append('image', file)
+      fd.append('image', compressed)
       const res = await fetch('/api/products/upload-image', { method: 'POST', body: fd })
       if (res.ok) {
         const data = await res.json()
