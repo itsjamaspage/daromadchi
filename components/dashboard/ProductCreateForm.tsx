@@ -1308,6 +1308,15 @@ export default function ProductCreateForm() {
     }
   }
 
+  const checkImageDimensions = (url: string): Promise<{ w: number; h: number } | null> =>
+    new Promise(resolve => {
+      const img = new window.Image()
+      img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight })
+      img.onerror = () => resolve(null)
+      img.src = url
+      setTimeout(() => resolve(null), 5000)
+    })
+
   const handleYandexPush = async () => {
     setPushing(true)
     setPushResult(null)
@@ -1331,6 +1340,38 @@ export default function ProductCreateForm() {
           : lang === 'uz'
           ? "Kamida bitta mahsulot rasmini yuklang."
           : 'Upload at least one product photo.'
+        setPushResult({ ok: false, message: msg })
+        setPushing(false)
+        return
+      }
+
+      // Check image dimensions (Yandex requires min 300x300)
+      const allUrls: { label: string; url: string }[] = []
+      if (variants.length > 0) {
+        for (const v of variants) {
+          for (const u of v.photoUrl.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)) {
+            allUrls.push({ label: v.color || v.sku || '?', url: u })
+          }
+        }
+      } else {
+        for (const u of photoUrls.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)) {
+          allUrls.push({ label: '', url: u })
+        }
+      }
+      const tooSmall: string[] = []
+      await Promise.all(allUrls.map(async ({ label, url }) => {
+        const dims = await checkImageDimensions(url)
+        if (dims && (dims.w < 300 || dims.h < 300)) {
+          const tag = label ? `${label}: ` : ''
+          tooSmall.push(`${tag}${dims.w}x${dims.h}px`)
+        }
+      }))
+      if (tooSmall.length > 0) {
+        const msg = lang === 'ru'
+          ? `Фото слишком маленькие (мин. 300x300 для Yandex): ${tooSmall.join(', ')}`
+          : lang === 'uz'
+          ? `Rasmlar juda kichik (min. 300x300 Yandex uchun): ${tooSmall.join(', ')}`
+          : `Photos too small (min 300x300 for Yandex): ${tooSmall.join(', ')}`
         setPushResult({ ok: false, message: msg })
         setPushing(false)
         return
