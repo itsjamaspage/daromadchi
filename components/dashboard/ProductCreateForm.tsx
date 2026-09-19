@@ -1288,11 +1288,11 @@ export default function ProductCreateForm() {
       const products = buildProducts()
       const offers = products.map(p => ({
         offerId: p.sku || `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        name: p.nameUz || p.nameRu,
+        name: p.nameRu,
         category: yandexCatName || undefined,
         marketCategoryId: yandexCatId || undefined,
         vendor: p.brand || undefined,
-        description: p.descriptionUz || p.descriptionRu || undefined,
+        description: p.descriptionRu || undefined,
         pictures: p.photoUrls ? p.photoUrls.split(/[\n,]+/).map(u => u.trim()).filter(Boolean) : undefined,
         barcodes: p.barcode ? [p.barcode] : undefined,
         manufacturerCountries: p.country ? [p.country] : undefined,
@@ -1309,6 +1309,8 @@ export default function ProductCreateForm() {
         } : undefined,
         commodityCodes: p.ikpu ? [{ code: p.ikpu, type: 'IKPU_CODE' as const }] : undefined,
         parameterValues: buildParameterValues(p),
+        uz_name: p.nameUz || undefined,
+        uz_description: p.descriptionUz || undefined,
       }))
 
       const res = await fetch('/api/products/yandex-push', {
