@@ -70,6 +70,19 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     business_id: shop.business_id,
   }
 
+  const appBase = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '')
+
+  function proxyImgbbUrl(url: string): string {
+    if (!appBase) return url
+    try {
+      const parsed = new URL(url)
+      if (parsed.hostname === 'i.ibb.co') {
+        return `${appBase}/api/img${parsed.pathname}`
+      }
+    } catch { /* keep as-is */ }
+    return url
+  }
+
   const offers: YandexOfferUpdate[] = body.offers.map(o => ({
     offerId: o.offerId,
     name: o.name,
@@ -77,7 +90,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     marketCategoryId: o.marketCategoryId,
     vendor: o.vendor,
     description: o.description,
-    pictures: o.pictures,
+    pictures: o.pictures?.map(proxyImgbbUrl),
     barcodes: o.barcodes,
     manufacturerCountries: o.manufacturerCountries,
     weightDimensions: o.weightDimensions,
