@@ -83,6 +83,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return url
   }
 
+  // Build Russian-language offers (primary push)
   const offers: YandexOfferUpdate[] = body.offers.map(o => ({
     offerId: o.offerId,
     name: o.name,
@@ -98,13 +99,21 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     parameterValues: o.parameterValues,
     customsCommodityCodes: o.customsCommodityCodes,
     commodityCodes: o.commodityCodes,
-    uz_name: o.uz_name,
-    uz_description: o.uz_description,
   }))
+
+  // Build Uzbek-language offers (only offerId + name + description needed)
+  const uzOffers: YandexOfferUpdate[] = body.offers
+    .filter(o => o.uz_name || o.uz_description)
+    .map(o => ({
+      offerId: o.offerId,
+      name: o.uz_name || o.name,
+      description: o.uz_description || o.description,
+    }))
 
   logger.info('yandex_push_offers', {
     shopId: shop.id,
     offerCount: offers.length,
+    uzOfferCount: uzOffers.length,
     offers: offers.map(o => ({
       offerId: o.offerId,
       name: o.name?.slice(0, 50),
@@ -115,36 +124,62 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     })),
   })
 
+  // 1. Push Russian content (primary)
   const result = await pushProducts({ shop: writeShop, userId: user.id, offers })
 
-  if (result.status === 'sent') {
+  if (result.status !== 'sent') {
+    let detail: string | undefined
     if (result.responseBody) {
-      logger.info('yandex_push_response', {
-        shopId: shop.id,
-        logId: result.logId,
-        responseBody: result.responseBody.slice(0, 500),
-      })
+      try {
+        const parsed = JSON.parse(result.responseBody)
+        detail = parsed.errors?.map((e: { message?: string }) => e.message).join('; ')
+          || parsed.error?.message
+          || parsed.message
+      } catch { /* not JSON */ }
     }
-    return NextResponse.json({
-      ok: true,
+    return NextResponse.json(
+      { error: detail || result.reason || 'Product push failed', status: result.status, logId: result.logId },
+      { status: result.httpStatus ?? 500 },
+    )
+  }
+
+  if (result.responseBody) {
+    logger.info('yandex_push_response', {
+      shopId: shop.id,
       logId: result.logId,
-      offerCount: offers.length,
-      totalPictures: offers.reduce((n, o) => n + (o.pictures?.length ?? 0), 0),
+      responseBody: result.responseBody.slice(0, 500),
     })
   }
 
-  let detail: string | undefined
-  if (result.responseBody) {
+  // 2. Push Uzbek content (supplementary — uses ?language=UZ query param)
+  let uzLogId: string | undefined
+  if (uzOffers.length > 0) {
     try {
-      const parsed = JSON.parse(result.responseBody)
-      detail = parsed.errors?.map((e: { message?: string }) => e.message).join('; ')
-        || parsed.error?.message
-        || parsed.message
-    } catch { /* not JSON */ }
+      const uzResult = await pushProducts({
+        shop: writeShop, userId: user.id, offers: uzOffers, language: 'UZ',
+      })
+      uzLogId = uzResult.logId
+      if (uzResult.status !== 'sent') {
+        logger.warn('yandex_push_uz_failed', {
+          shopId: shop.id, status: uzResult.status, reason: uzResult.reason,
+        })
+      } else {
+        logger.info('yandex_push_uz_sent', {
+          shopId: shop.id, uzLogId, offerCount: uzOffers.length,
+        })
+      }
+    } catch (err) {
+      logger.error('yandex_push_uz_error', {
+        shopId: shop.id, error: String(err).slice(0, 300),
+      })
+    }
   }
 
-  return NextResponse.json(
-    { error: detail || result.reason || 'Product push failed', status: result.status, logId: result.logId },
-    { status: result.httpStatus ?? 500 },
-  )
+  return NextResponse.json({
+    ok: true,
+    logId: result.logId,
+    uzLogId,
+    offerCount: offers.length,
+    totalPictures: offers.reduce((n, o) => n + (o.pictures?.length ?? 0), 0),
+  })
 })
