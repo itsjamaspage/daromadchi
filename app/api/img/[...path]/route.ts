@@ -4,6 +4,28 @@ export const runtime = 'nodejs'
 
 const ALLOWED_HOSTS = ['i.ibb.co', 'ibb.co']
 const CACHE_SECONDS = 86400 * 30 // 30 days
+const MAX_RETRIES = 3
+
+const HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  Accept: 'image/webp,image/apng,image/*,*/*;q=0.8',
+}
+
+async function fetchWithRetry(url: string): Promise<Response> {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const res = await fetch(url, { headers: HEADERS })
+    if (res.ok) return res
+    if (res.status === 403 || res.status === 429 || res.status >= 500) {
+      if (attempt < MAX_RETRIES - 1) {
+        await new Promise(r => setTimeout(r, 500 * (attempt + 1)))
+        continue
+      }
+    }
+    return res
+  }
+  return fetch(url, { headers: HEADERS })
+}
 
 export async function GET(
   req: NextRequest,
@@ -19,13 +41,7 @@ export async function GET(
     return NextResponse.json({ error: 'Forbidden host' }, { status: 403 })
   }
 
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      Accept: 'image/webp,image/apng,image/*,*/*;q=0.8',
-    },
-  })
+  const res = await fetchWithRetry(url)
 
   if (!res.ok) {
     return new NextResponse(null, { status: res.status })
@@ -38,6 +54,7 @@ export async function GET(
     status: 200,
     headers: {
       'Content-Type': contentType,
+      'Content-Length': String(body.byteLength),
       'Cache-Control': `public, max-age=${CACHE_SECONDS}, immutable`,
       'CDN-Cache-Control': `public, max-age=${CACHE_SECONDS}`,
     },

@@ -902,7 +902,7 @@ export default function ProductCreateForm() {
   const canExportYandex =
     nameRu.trim() && nameUz.trim()
     && sku.trim()
-    && (brand.trim() || brandSkipped)
+    && brand.trim()
     && yandexCatName.trim()
     && descRu.trim() && descUz.trim()
     && hasPhotos
@@ -1995,7 +1995,7 @@ export default function ProductCreateForm() {
           add(nameRu, lang === 'ru' ? 'Название RU' : lang === 'uz' ? 'Nomi RU' : 'Name RU')
           add(nameUz, lang === 'ru' ? 'Название UZ' : lang === 'uz' ? 'Nomi UZ' : 'Name UZ')
           add(sku, lang === 'ru' ? 'Артикул' : 'SKU')
-          if (!brand.trim() && !brandSkipped) missing.push(lang === 'ru' ? 'Бренд' : 'Brend')
+          if (!brand.trim()) missing.push(lang === 'ru' ? 'Бренд' : 'Brend')
           add(yandexCatName, lang === 'ru' ? 'Категория Yandex' : lang === 'uz' ? 'Yandex kategoriyasi' : 'Yandex category')
           add(descRu, lang === 'ru' ? 'Описание RU' : lang === 'uz' ? 'Tavsif RU' : 'Description RU')
           add(descUz, lang === 'ru' ? 'Описание UZ' : lang === 'uz' ? 'Tavsif UZ' : 'Description UZ')
