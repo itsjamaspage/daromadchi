@@ -902,7 +902,7 @@ export default function ProductCreateForm() {
   const canExportYandex =
     nameRu.trim() && nameUz.trim()
     && sku.trim()
-    && (brand.trim() || brandSkipped)
+    && brand.trim()
     && yandexCatName.trim()
     && descRu.trim() && descUz.trim()
     && hasPhotos
@@ -1284,9 +1284,18 @@ export default function ProductCreateForm() {
       const res = await fetch('/api/products/upload-image', { method: 'POST', body: fd })
       if (res.ok) {
         const data = await res.json()
-        if (data.url) updateVariant(variantId, 'photoUrl', data.url)
+        if (data.url) {
+          updateVariant(variantId, 'photoUrl', data.url)
+        } else {
+          setPushResult({ ok: false, message: lang === 'ru' ? 'Ошибка загрузки фото: URL не получен' : 'Photo upload error: no URL returned' })
+        }
+      } else {
+        const err = await res.json().catch(() => ({ error: res.statusText }))
+        setPushResult({ ok: false, message: `${lang === 'ru' ? 'Ошибка загрузки фото' : 'Photo upload error'}: ${err.error || res.statusText}` })
       }
-    } catch { /* skip */ }
+    } catch (err) {
+      setPushResult({ ok: false, message: `${lang === 'ru' ? 'Ошибка загрузки фото' : 'Photo upload error'}: ${err instanceof Error ? err.message : 'Unknown'}` })
+    }
     setVariantUploading(null)
     const ref = variantFileRefs.current[variantId]
     if (ref) ref.value = ''
@@ -1307,6 +1316,15 @@ export default function ProductCreateForm() {
       setDownloading(null)
     }
   }
+
+  const checkImageDimensions = (url: string): Promise<{ w: number; h: number } | null> =>
+    new Promise(resolve => {
+      const img = new window.Image()
+      img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight })
+      img.onerror = () => resolve(null)
+      img.src = url
+      setTimeout(() => resolve(null), 5000)
+    })
 
   const handleYandexPush = async () => {
     setPushing(true)
@@ -1331,6 +1349,38 @@ export default function ProductCreateForm() {
           : lang === 'uz'
           ? "Kamida bitta mahsulot rasmini yuklang."
           : 'Upload at least one product photo.'
+        setPushResult({ ok: false, message: msg })
+        setPushing(false)
+        return
+      }
+
+      // Check image dimensions (Yandex requires min 300x300)
+      const allUrls: { label: string; url: string }[] = []
+      if (variants.length > 0) {
+        for (const v of variants) {
+          for (const u of v.photoUrl.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)) {
+            allUrls.push({ label: v.color || v.sku || '?', url: u })
+          }
+        }
+      } else {
+        for (const u of photoUrls.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)) {
+          allUrls.push({ label: '', url: u })
+        }
+      }
+      const tooSmall: string[] = []
+      await Promise.all(allUrls.map(async ({ label, url }) => {
+        const dims = await checkImageDimensions(url)
+        if (dims && (dims.w < 300 || dims.h < 300)) {
+          const tag = label ? `${label}: ` : ''
+          tooSmall.push(`${tag}${dims.w}x${dims.h}px`)
+        }
+      }))
+      if (tooSmall.length > 0) {
+        const msg = lang === 'ru'
+          ? `Фото слишком маленькие (мин. 300x300 для Yandex): ${tooSmall.join(', ')}`
+          : lang === 'uz'
+          ? `Rasmlar juda kichik (min. 300x300 Yandex uchun): ${tooSmall.join(', ')}`
+          : `Photos too small (min 300x300 for Yandex): ${tooSmall.join(', ')}`
         setPushResult({ ok: false, message: msg })
         setPushing(false)
         return
@@ -1370,6 +1420,11 @@ export default function ProductCreateForm() {
         uz_description: p.descriptionUz || undefined,
       }))
 
+      console.log('[Yandex Push] Sending offers:', offers.map(o => ({
+        offerId: o.offerId, pictures: o.pictures, vendor: o.vendor,
+        hasDimensions: !!o.weightDimensions, hasBarcodes: !!o.barcodes?.length,
+      })))
+
       const res = await fetch('/api/products/yandex-push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1377,6 +1432,8 @@ export default function ProductCreateForm() {
       })
 
       if (res.ok) {
+        const data = await res.json().catch(() => ({}))
+        console.log('[Yandex Push] Full response:', JSON.stringify(data, null, 2))
         const totalPhotos = offers.reduce((n, o) => n + (o.pictures?.length ?? 0), 0)
         const photoNote = totalPhotos > 0
           ? (lang === 'ru' ? ` Фото: ${totalPhotos} шт.` : lang === 'uz' ? ` Rasmlar: ${totalPhotos} ta.` : ` Photos: ${totalPhotos}.`)
@@ -1859,6 +1916,8 @@ export default function ProductCreateForm() {
                     ) : (
                       <>
                         <input
+                          key={`file-${v.id}`}
+                          id={`variant-file-${v.id}`}
                           ref={el => { variantFileRefs.current[v.id] = el }}
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
@@ -1870,7 +1929,10 @@ export default function ProductCreateForm() {
                         />
                         <button
                           type="button"
-                          onClick={() => variantFileRefs.current[v.id]?.click()}
+                          onClick={() => {
+                            const el = variantFileRefs.current[v.id] ?? document.getElementById(`variant-file-${v.id}`) as HTMLInputElement | null
+                            el?.click()
+                          }}
                           disabled={variantUploading === v.id}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
                           style={{
@@ -1995,7 +2057,7 @@ export default function ProductCreateForm() {
           add(nameRu, lang === 'ru' ? 'Название RU' : lang === 'uz' ? 'Nomi RU' : 'Name RU')
           add(nameUz, lang === 'ru' ? 'Название UZ' : lang === 'uz' ? 'Nomi UZ' : 'Name UZ')
           add(sku, lang === 'ru' ? 'Артикул' : 'SKU')
-          if (!brand.trim() && !brandSkipped) missing.push(lang === 'ru' ? 'Бренд' : 'Brend')
+          if (!brand.trim()) missing.push(lang === 'ru' ? 'Бренд' : 'Brend')
           add(yandexCatName, lang === 'ru' ? 'Категория Yandex' : lang === 'uz' ? 'Yandex kategoriyasi' : 'Yandex category')
           add(descRu, lang === 'ru' ? 'Описание RU' : lang === 'uz' ? 'Tavsif RU' : 'Description RU')
           add(descUz, lang === 'ru' ? 'Описание UZ' : lang === 'uz' ? 'Tavsif UZ' : 'Description UZ')
