@@ -903,6 +903,24 @@ export default function ProductCreateForm() {
     && weightG && heightMm && widthMm && lengthMm
     && ikpu.trim()
 
+  // ── Category tree search helper ─────────────────────────────────────────
+  const findCatPath = useCallback((tree: CatNode[], name: string): CatNode[] | null => {
+    if (!name) return null
+    const target = name.toLowerCase().trim()
+    const dfs = (nodes: CatNode[], path: CatNode[]): CatNode[] | null => {
+      for (const node of nodes) {
+        const cur = [...path, node]
+        if (node.name.toLowerCase().trim() === target) return cur
+        if (node.children?.length) {
+          const found = dfs(node.children, cur)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    return dfs(tree, [])
+  }, [])
+
   // ── File import ─────────────────────────────────────────────────────────
 
   const handleFileImport = async (file: File) => {
@@ -971,7 +989,11 @@ export default function ProductCreateForm() {
         setBrand(str(first, ci.brand))
         setModel(str(first, ci.model))
         setCountry(str(first, ci.country))
-        // Category from import can't auto-select in tree — user picks from dropdowns
+        const uzCatName = str(first, ci.catName)
+        if (uzCatName) {
+          const path = findCatPath(uzumTree, uzCatName)
+          if (path) setUzumCatPath(path)
+        }
         setDescRu(str(first, ci.descRu))
         setDescUz(str(first, ci.descUz))
         setShortDescRu(str(first, ci.shortRu))
@@ -1014,8 +1036,13 @@ export default function ProductCreateForm() {
         setNameRu(str(first, ci.name))
         setSku(str(first, ci.sku))
         setPhotoUrls(str(first, ci.photos))
-        setDescRu(str(first, ci.desc))
-        // Category from import can't auto-select in tree — user picks from dropdowns
+        const yDesc = str(first, ci.desc)
+        setDescRu(yDesc)
+        const ymCatStr = str(first, ci.cat)
+        if (ymCatStr) {
+          const path = findCatPath(yandexTree, ymCatStr)
+          if (path) setYandexCatPath(path)
+        }
         setBrand(str(first, ci.brand))
         setBarcode(str(first, ci.barcode))
         setCountry(str(first, ci.country))
@@ -1025,6 +1052,8 @@ export default function ProductCreateForm() {
         setIkpuPackCode(str(first, ci.ikpuPackCode))
         setSellingPrice(String(num(first, ci.price) || ''))
         setOldPrice(String(num(first, ci.oldPrice) || ''))
+        setSkuGroup(str(first, ci.sku) || str(first, ci.name))
+        if (yDesc && !shortDescRu) setShortDescRu(yDesc.slice(0, 300))
 
         const wKg = num(first, ci.weight)
         if (wKg) setWeightG(String(Math.round(wKg * 1000)))
@@ -1035,28 +1064,38 @@ export default function ProductCreateForm() {
         const hCm = num(first, ci.height)
         if (hCm) setHeightMm(String(Math.round(hCm * 10)))
 
-        const charStr = str(first, ci.chars)
-        if (charStr) {
-          setChars(charStr.split(';').filter(Boolean).map(pair => {
-            const [name, value] = pair.split('|')
-            return { id: uid(), name: name?.trim() || '', value: value?.trim() || '' }
-          }))
+        const parseColor = (charStr: string) => {
+          if (!charStr) return ''
+          const pair = charStr.split(';').find(p => /^цвет\|/i.test(p.trim()))
+          return pair ? pair.split('|')[1]?.trim() || '' : ''
+        }
+        const parseSize = (charStr: string) => {
+          if (!charStr) return ''
+          const pair = charStr.split(';').find(p => /^размер\|/i.test(p.trim()))
+          return pair ? pair.split('|')[1]?.trim() || '' : ''
         }
 
-        if (dataRows.length > 1) {
+        const charStr = str(first, ci.chars)
+        if (charStr) {
+          setChars(charStr.split(';').filter(Boolean)
+            .filter(p => !/^(цвет|размер)\|/i.test(p.trim()))
+            .map(pair => {
+              const [name, value] = pair.split('|')
+              return { id: uid(), name: name?.trim() || '', value: value?.trim() || '' }
+            }))
+        }
+
+        const firstColor = parseColor(str(first, ci.chars))
+        const firstSize = parseSize(str(first, ci.chars))
+        const hasVariantData = dataRows.length > 1 || firstColor || firstSize
+        if (hasVariantData) {
           setVariants(dataRows.map(r => {
-            const varSku = str(r, ci.sku)
-            const charStr = str(r, ci.chars)
-            let color = ''
-            if (charStr) {
-              const colorPair = charStr.split(';').find(p => /^цвет\|/i.test(p.trim()))
-              if (colorPair) color = colorPair.split('|')[1]?.trim() || ''
-            }
+            const rChars = str(r, ci.chars)
             return {
               id: uid(),
-              color,
-              size: '',
-              sku: varSku,
+              color: parseColor(rChars),
+              size: parseSize(rChars),
+              sku: str(r, ci.sku),
               barcode: str(r, ci.barcode),
               sellingPrice: String(num(r, ci.price) || ''),
               oldPrice: String(num(r, ci.oldPrice) || ''),

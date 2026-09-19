@@ -366,7 +366,15 @@ export function generateYandexExcel(
 
   const productRows = products.map((p, i) => {
     const r = 4 + i
-    const chars = formatCharacteristics(p.characteristics, params)
+    let chars = formatCharacteristics(p.characteristics, params)
+    if (p.size) {
+      const sizeEntry = `Размер|${p.size}`
+      chars = chars ? `${sizeEntry};${chars}` : sizeEntry
+    }
+    if (p.color) {
+      const colorEntry = `Цвет|${p.color}`
+      chars = chars ? `${colorEntry};${chars}` : colorEntry
+    }
     const cells = [
       inlineCell('D', r, p.sku || ''),
       inlineCell('E', r, p.nameRu),
