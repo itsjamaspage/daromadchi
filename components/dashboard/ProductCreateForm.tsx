@@ -1295,7 +1295,10 @@ export default function ProductCreateForm() {
         description: p.descriptionRu || undefined,
         pictures: (() => {
           if (!p.photoUrls) return undefined
-          const urls = p.photoUrls.split(/[\n,]+/).map(u => u.trim()).filter(u => u && /^https?:\/\/.+/.test(u))
+          const urls = p.photoUrls.split(/[\n,]+/)
+            .map(u => u.trim())
+            .filter(u => u && /^https?:\/\/.+/.test(u))
+            .map(u => u.replace(/^http:\/\//, 'https://'))
           return urls.length > 0 ? urls : undefined
         })(),
         barcodes: p.barcode ? [p.barcode] : undefined,
