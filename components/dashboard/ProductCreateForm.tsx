@@ -1284,9 +1284,18 @@ export default function ProductCreateForm() {
       const res = await fetch('/api/products/upload-image', { method: 'POST', body: fd })
       if (res.ok) {
         const data = await res.json()
-        if (data.url) updateVariant(variantId, 'photoUrl', data.url)
+        if (data.url) {
+          updateVariant(variantId, 'photoUrl', data.url)
+        } else {
+          setPushResult({ ok: false, message: lang === 'ru' ? 'Ошибка загрузки фото: URL не получен' : 'Photo upload error: no URL returned' })
+        }
+      } else {
+        const err = await res.json().catch(() => ({ error: res.statusText }))
+        setPushResult({ ok: false, message: `${lang === 'ru' ? 'Ошибка загрузки фото' : 'Photo upload error'}: ${err.error || res.statusText}` })
       }
-    } catch { /* skip */ }
+    } catch (err) {
+      setPushResult({ ok: false, message: `${lang === 'ru' ? 'Ошибка загрузки фото' : 'Photo upload error'}: ${err instanceof Error ? err.message : 'Unknown'}` })
+    }
     setVariantUploading(null)
     const ref = variantFileRefs.current[variantId]
     if (ref) ref.value = ''
@@ -1907,6 +1916,8 @@ export default function ProductCreateForm() {
                     ) : (
                       <>
                         <input
+                          key={`file-${v.id}`}
+                          id={`variant-file-${v.id}`}
                           ref={el => { variantFileRefs.current[v.id] = el }}
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
@@ -1918,7 +1929,10 @@ export default function ProductCreateForm() {
                         />
                         <button
                           type="button"
-                          onClick={() => variantFileRefs.current[v.id]?.click()}
+                          onClick={() => {
+                            const el = variantFileRefs.current[v.id] ?? document.getElementById(`variant-file-${v.id}`) as HTMLInputElement | null
+                            el?.click()
+                          }}
                           disabled={variantUploading === v.id}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
                           style={{
