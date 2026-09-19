@@ -175,11 +175,26 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     }
   }
 
+  let yandexResponse: unknown
+  if (result.responseBody) {
+    try { yandexResponse = JSON.parse(result.responseBody) } catch { /* not JSON */ }
+  }
+
   return NextResponse.json({
     ok: true,
     logId: result.logId,
     uzLogId,
     offerCount: offers.length,
     totalPictures: offers.reduce((n, o) => n + (o.pictures?.length ?? 0), 0),
+    offers: offers.map(o => ({
+      offerId: o.offerId,
+      pictures: o.pictures,
+      hasVendor: !!o.vendor,
+      hasDimensions: !!o.weightDimensions,
+      hasBarcodes: !!o.barcodes?.length,
+      hasCommodityCodes: !!o.commodityCodes?.length,
+      hasParameterValues: !!o.parameterValues?.length,
+    })),
+    yandexResponse,
   })
 })

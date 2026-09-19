@@ -1370,6 +1370,11 @@ export default function ProductCreateForm() {
         uz_description: p.descriptionUz || undefined,
       }))
 
+      console.log('[Yandex Push] Sending offers:', offers.map(o => ({
+        offerId: o.offerId, pictures: o.pictures, vendor: o.vendor,
+        hasDimensions: !!o.weightDimensions, hasBarcodes: !!o.barcodes?.length,
+      })))
+
       const res = await fetch('/api/products/yandex-push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1377,6 +1382,8 @@ export default function ProductCreateForm() {
       })
 
       if (res.ok) {
+        const data = await res.json().catch(() => ({}))
+        console.log('[Yandex Push] Full response:', JSON.stringify(data, null, 2))
         const totalPhotos = offers.reduce((n, o) => n + (o.pictures?.length ?? 0), 0)
         const photoNote = totalPhotos > 0
           ? (lang === 'ru' ? ` Фото: ${totalPhotos} шт.` : lang === 'uz' ? ` Rasmlar: ${totalPhotos} ta.` : ` Photos: ${totalPhotos}.`)
