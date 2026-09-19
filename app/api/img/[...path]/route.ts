@@ -12,19 +12,61 @@ const HEADERS = {
   Accept: 'image/webp,image/apng,image/*,*/*;q=0.8',
 }
 
-async function fetchWithRetry(url: string): Promise<Response> {
+const imgCache = new Map<string, { contentType: string; body: ArrayBuffer; ts: number }>()
+const MAX_CACHE = 200
+const CACHE_TTL_MS = 1000 * 60 * 60 // 1 hour
+
+const inflightRequests = new Map<string, Promise<{ contentType: string; body: ArrayBuffer } | null>>()
+
+function evictStale() {
+  const now = Date.now()
+  for (const [key, entry] of imgCache) {
+    if (now - entry.ts > CACHE_TTL_MS) imgCache.delete(key)
+  }
+  if (imgCache.size > MAX_CACHE) {
+    const oldest = [...imgCache.entries()].sort((a, b) => a[1].ts - b[1].ts)
+    for (let i = 0; i < oldest.length - MAX_CACHE; i++) imgCache.delete(oldest[i][0])
+  }
+}
+
+async function fetchImage(url: string): Promise<{ contentType: string; body: ArrayBuffer } | null> {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     const res = await fetch(url, { headers: HEADERS })
-    if (res.ok) return res
+    if (res.ok) {
+      const contentType = res.headers.get('content-type') ?? 'image/jpeg'
+      const body = await res.arrayBuffer()
+      return { contentType, body }
+    }
     if (res.status === 403 || res.status === 429 || res.status >= 500) {
       if (attempt < MAX_RETRIES - 1) {
-        await new Promise(r => setTimeout(r, 500 * (attempt + 1)))
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
         continue
       }
     }
-    return res
+    return null
   }
-  return fetch(url, { headers: HEADERS })
+  return null
+}
+
+async function getImage(url: string): Promise<{ contentType: string; body: ArrayBuffer } | null> {
+  const cached = imgCache.get(url)
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    return { contentType: cached.contentType, body: cached.body }
+  }
+
+  const inflight = inflightRequests.get(url)
+  if (inflight) return inflight
+
+  const promise = fetchImage(url).then(result => {
+    inflightRequests.delete(url)
+    if (result) {
+      evictStale()
+      imgCache.set(url, { ...result, ts: Date.now() })
+    }
+    return result
+  })
+  inflightRequests.set(url, promise)
+  return promise
 }
 
 export async function GET(
@@ -41,20 +83,17 @@ export async function GET(
     return NextResponse.json({ error: 'Forbidden host' }, { status: 403 })
   }
 
-  const res = await fetchWithRetry(url)
+  const result = await getImage(url)
 
-  if (!res.ok) {
-    return new NextResponse(null, { status: res.status })
+  if (!result) {
+    return new NextResponse(null, { status: 502 })
   }
 
-  const contentType = res.headers.get('content-type') ?? 'image/jpeg'
-  const body = await res.arrayBuffer()
-
-  return new NextResponse(body, {
+  return new NextResponse(result.body, {
     status: 200,
     headers: {
-      'Content-Type': contentType,
-      'Content-Length': String(body.byteLength),
+      'Content-Type': result.contentType,
+      'Content-Length': String(result.body.byteLength),
       'Cache-Control': `public, max-age=${CACHE_SECONDS}, immutable`,
       'CDN-Cache-Control': `public, max-age=${CACHE_SECONDS}`,
     },
