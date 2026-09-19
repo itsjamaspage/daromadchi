@@ -1884,7 +1884,18 @@ export default function ProductCreateForm() {
                     onChange={val => updateVariant(v.id, 'oldPrice', val)}
                     placeholder={d.phOldPrice} />
                 </div>
-                {/* Per-variant photo */}
+                {/* Per-variant photo — file input always in DOM for stable ref */}
+                <input
+                  id={`variant-file-${v.id}`}
+                  ref={el => { variantFileRefs.current[v.id] = el }}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={e => {
+                    const f = e.target.files?.[0]
+                    if (f) handleVariantImageUpload(v.id, f)
+                  }}
+                />
                 <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
                     {lang === 'ru' ? `Фото варианта${v.color ? ` (${v.color})` : ''}` :
@@ -1892,76 +1903,88 @@ export default function ProductCreateForm() {
                      `Variant photo${v.color ? ` (${v.color})` : ''}`}
                     <span className="text-red-500 ml-0.5">*</span>
                   </label>
-                  <div className="flex items-center gap-3">
-                    {v.photoUrl ? (
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <img
-                          src={v.photoUrl}
-                          alt={v.color || 'variant'}
-                          className="w-10 h-10 rounded-lg object-cover border"
-                          style={{ borderColor: 'var(--border)' }}
-                        />
-                        <span className="text-xs truncate flex-1 min-w-0" style={{ color: 'var(--text-muted)' }}>
+                  {v.photoUrl ? (
+                    <div className="flex items-center gap-3 p-2 rounded-xl border" style={{ borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
+                      <img
+                        src={v.photoUrl}
+                        alt={v.color || 'variant'}
+                        className="w-14 h-14 rounded-lg object-cover border"
+                        style={{ borderColor: 'var(--border)' }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="block text-xs font-medium truncate" style={{ color: 'var(--text-base)' }}>
                           {v.photoUrl.split('/').pop()}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => updateVariant(v.id, 'photoUrl', '')}
-                          className="text-xs px-2 py-1 rounded-lg transition-colors hover:bg-red-500/10"
-                          style={{ color: 'var(--text-muted)' }}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <span className="block text-xs mt-0.5" style={{ color: 'var(--c1)' }}>
+                          {lang === 'ru' ? 'Фото загружено' : lang === 'uz' ? 'Rasm yuklandi' : 'Photo uploaded'}
+                        </span>
                       </div>
-                    ) : (
-                      <>
-                        <input
-                          key={`file-${v.id}`}
-                          id={`variant-file-${v.id}`}
-                          ref={el => { variantFileRefs.current[v.id] = el }}
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          className="hidden"
-                          onChange={e => {
-                            const f = e.target.files?.[0]
-                            if (f) handleVariantImageUpload(v.id, f)
-                          }}
-                        />
+                      <div className="flex items-center gap-1">
                         <button
                           type="button"
                           onClick={() => {
                             const el = variantFileRefs.current[v.id] ?? document.getElementById(`variant-file-${v.id}`) as HTMLInputElement | null
                             el?.click()
                           }}
-                          disabled={variantUploading === v.id}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                          style={{
-                            background: 'var(--c1)',
-                            color: '#fff',
-                            opacity: variantUploading === v.id ? 0.6 : 1,
-                          }}
+                          className="text-xs px-2 py-1 rounded-lg transition-colors hover:opacity-80"
+                          style={{ color: 'var(--c1)' }}
+                          title={lang === 'ru' ? 'Заменить' : 'Replace'}
                         >
-                          {variantUploading === v.id ? (
-                            <div className="w-3.5 h-3.5 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />
-                          ) : (
-                            <Upload className="w-3.5 h-3.5" />
-                          )}
-                          {lang === 'ru' ? 'Загрузить' : lang === 'uz' ? 'Yuklash' : 'Upload'}
+                          <RefreshCw className="w-3.5 h-3.5" />
                         </button>
-                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                          {lang === 'ru' ? 'или вставьте ссылку →' : lang === 'uz' ? "yoki havola qo'ying →" : 'or paste URL →'}
-                        </span>
-                        <input
-                          type="text"
-                          value={v.photoUrl}
-                          onChange={e => updateVariant(v.id, 'photoUrl', e.target.value)}
-                          placeholder="https://..."
-                          className="flex-1 min-w-0 px-2 py-1 rounded-lg border text-xs focus:outline-none focus:ring-1"
-                          style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-base)', '--tw-ring-color': 'var(--c1)' } as React.CSSProperties}
-                        />
-                      </>
-                    )}
-                  </div>
+                        <button
+                          type="button"
+                          onClick={() => updateVariant(v.id, 'photoUrl', '')}
+                          className="text-xs px-2 py-1 rounded-lg transition-colors hover:bg-red-500/10"
+                          style={{ color: 'var(--text-muted)' }}
+                          title={lang === 'ru' ? 'Удалить' : 'Delete'}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const el = variantFileRefs.current[v.id] ?? document.getElementById(`variant-file-${v.id}`) as HTMLInputElement | null
+                          if (!el) {
+                            setPushResult({ ok: false, message: lang === 'ru' ? 'Не удалось открыть выбор файла. Попробуйте вставить ссылку.' : 'Could not open file picker. Try pasting a URL.' })
+                            return
+                          }
+                          el.click()
+                        }}
+                        disabled={variantUploading === v.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                        style={{
+                          background: 'var(--c1)',
+                          color: '#fff',
+                          opacity: variantUploading === v.id ? 0.6 : 1,
+                        }}
+                      >
+                        {variantUploading === v.id ? (
+                          <div className="w-3.5 h-3.5 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />
+                        ) : (
+                          <Upload className="w-3.5 h-3.5" />
+                        )}
+                        {variantUploading === v.id
+                          ? (lang === 'ru' ? 'Загрузка...' : lang === 'uz' ? 'Yuklanmoqda...' : 'Uploading...')
+                          : (lang === 'ru' ? 'Загрузить' : lang === 'uz' ? 'Yuklash' : 'Upload')}
+                      </button>
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                        {lang === 'ru' ? 'или вставьте ссылку →' : lang === 'uz' ? "yoki havola qo'ying →" : 'or paste URL →'}
+                      </span>
+                      <input
+                        type="text"
+                        value={v.photoUrl}
+                        onChange={e => updateVariant(v.id, 'photoUrl', e.target.value)}
+                        placeholder="https://..."
+                        className="flex-1 min-w-0 px-2 py-1 rounded-lg border text-xs focus:outline-none focus:ring-1"
+                        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-base)', '--tw-ring-color': 'var(--c1)' } as React.CSSProperties}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
