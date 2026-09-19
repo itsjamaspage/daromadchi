@@ -26,6 +26,7 @@ interface Variant {
   barcode: string
   sellingPrice: string
   oldPrice: string
+  photoUrl: string
 }
 
 interface Characteristic {
@@ -55,6 +56,7 @@ const EMPTY_VARIANT = (): Variant => ({
   barcode: '',
   sellingPrice: '',
   oldPrice: '',
+  photoUrl: '',
 })
 
 // ── Cascading category picker ────────────────────────────────────────────────
@@ -779,7 +781,9 @@ export default function ProductCreateForm() {
   // Media
   const [photoUrls, setPhotoUrls] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [variantUploading, setVariantUploading] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const variantFileRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   // Pricing & dimensions
   const [sellingPrice, setSellingPrice] = useState('')
@@ -886,10 +890,14 @@ export default function ProductCreateForm() {
     && uzumCatName.trim()
     && descRu.trim() && descUz.trim()
     && shortDescRu.trim() && shortDescUz.trim()
-    && photoUrls.trim()
+    && (variants.length > 0 ? variants.every(v => v.photoUrl.trim()) : photoUrls.trim())
     && sellingPrice && oldPrice
     && weightG && heightMm && widthMm && lengthMm
     && ikpu.trim()
+
+  const hasPhotos = variants.length > 0
+    ? variants.every(v => v.photoUrl.trim())
+    : !!photoUrls.trim()
 
   const canExportYandex =
     nameRu.trim() && nameUz.trim()
@@ -897,7 +905,7 @@ export default function ProductCreateForm() {
     && (brand.trim() || brandSkipped)
     && yandexCatName.trim()
     && descRu.trim() && descUz.trim()
-    && photoUrls.trim()
+    && hasPhotos
     && sellingPrice
     && barcode.trim()
     && weightG && heightMm && widthMm && lengthMm
@@ -1021,6 +1029,7 @@ export default function ProductCreateForm() {
             barcode: str(r, ci.barcode),
             sellingPrice: String(num(r, ci.price) || ''),
             oldPrice: String(num(r, ci.oldPrice) || ''),
+            photoUrl: '',
           })))
         }
       } else {
@@ -1099,6 +1108,7 @@ export default function ProductCreateForm() {
               barcode: str(r, ci.barcode),
               sellingPrice: String(num(r, ci.price) || ''),
               oldPrice: String(num(r, ci.oldPrice) || ''),
+              photoUrl: '',
             }
           }))
         }
@@ -1179,6 +1189,7 @@ export default function ProductCreateForm() {
       barcode: v.barcode || base.barcode,
       sellingPrice: Number(v.sellingPrice) || base.sellingPrice,
       oldPrice: Number(v.oldPrice) || base.oldPrice,
+      photoUrls: v.photoUrl.trim() || '',
     }))
   }, [nameRu, nameUz, sku, skuGroup, uzumCatName, yandexCatName,
     brand, brandSkipped, model, modelSkipped, country, countrySkipped,
@@ -1265,6 +1276,22 @@ export default function ProductCreateForm() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  const handleVariantImageUpload = async (variantId: string, file: File) => {
+    setVariantUploading(variantId)
+    try {
+      const fd = new FormData()
+      fd.append('image', file)
+      const res = await fetch('/api/products/upload-image', { method: 'POST', body: fd })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.url) updateVariant(variantId, 'photoUrl', data.url)
+      }
+    } catch { /* skip */ }
+    setVariantUploading(null)
+    const ref = variantFileRefs.current[variantId]
+    if (ref) ref.value = ''
+  }
+
   const handleExport = async (target: 'uzum' | 'yandex' | 'both') => {
     setDownloading(target)
     try {
@@ -1285,6 +1312,29 @@ export default function ProductCreateForm() {
     setPushing(true)
     setPushResult(null)
     try {
+      if (variants.length > 0) {
+        const missing = variants.filter(v => !v.photoUrl.trim())
+        if (missing.length > 0) {
+          const names = missing.map(v => v.color || v.sku || '?').join(', ')
+          const msg = lang === 'ru'
+            ? `Загрузите фото для каждого варианта. Без фото: ${names}`
+            : lang === 'uz'
+            ? `Har bir variant uchun rasm yuklang. Rasmsiz: ${names}`
+            : `Upload a photo for each variant. Missing photo: ${names}`
+          setPushResult({ ok: false, message: msg })
+          setPushing(false)
+          return
+        }
+      } else if (!photoUrls.trim()) {
+        const msg = lang === 'ru'
+          ? 'Загрузите хотя бы одно фото товара.'
+          : lang === 'uz'
+          ? "Kamida bitta mahsulot rasmini yuklang."
+          : 'Upload at least one product photo.'
+        setPushResult({ ok: false, message: msg })
+        setPushing(false)
+        return
+      }
       const products = buildProducts()
       const offers = products.map(p => ({
         offerId: p.sku || `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -1542,46 +1592,61 @@ export default function ProductCreateForm() {
 
       {/* ── Media ── */}
       <SectionCard title={d.mediaSection}>
-        <TextAreaField
-          label={d.photoUrls}
-          badges={<MpBadges uz ym reqUz reqYm />}
-          value={photoUrls} onChange={setPhotoUrls} rows={2}
-          placeholder={d.phPhotoUrls}
-        />
-        <div className="flex items-center gap-3 mt-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            className="hidden"
-            onChange={e => handleImageUpload(e.target.files)}
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-            style={{
-              background: 'var(--c1)',
-              color: '#fff',
-              opacity: uploading ? 0.6 : 1,
-            }}
-          >
-            {uploading ? (
-              <>
-                <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />
-                {lang === 'ru' ? 'Загрузка...' : lang === 'uz' ? 'Yuklanmoqda...' : 'Uploading...'}
-              </>
-            ) : (
-              <>
-                <Upload className="w-4 h-4" />
-                {lang === 'ru' ? 'Загрузить фото' : lang === 'uz' ? 'Rasm yuklash' : 'Upload photos'}
-              </>
-            )}
-          </button>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{d.photoUrlsHint}</p>
-        </div>
+        {variants.length > 0 ? (
+          <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--c1)' }} />
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              {lang === 'ru'
+                ? 'Загрузите фото для каждого варианта (цвета) отдельно в разделе «Варианты» ниже.'
+                : lang === 'uz'
+                ? "Har bir variant (rang) uchun rasmni «Variantlar» bo'limida alohida yuklang."
+                : 'Upload a photo for each variant (color) separately in the Variants section below.'}
+            </p>
+          </div>
+        ) : (
+          <>
+            <TextAreaField
+              label={d.photoUrls}
+              badges={<MpBadges uz ym reqUz reqYm />}
+              value={photoUrls} onChange={setPhotoUrls} rows={2}
+              placeholder={d.phPhotoUrls}
+            />
+            <div className="flex items-center gap-3 mt-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                className="hidden"
+                onChange={e => handleImageUpload(e.target.files)}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                style={{
+                  background: 'var(--c1)',
+                  color: '#fff',
+                  opacity: uploading ? 0.6 : 1,
+                }}
+              >
+                {uploading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />
+                    {lang === 'ru' ? 'Загрузка...' : lang === 'uz' ? 'Yuklanmoqda...' : 'Uploading...'}
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    {lang === 'ru' ? 'Загрузить фото' : lang === 'uz' ? 'Rasm yuklash' : 'Upload photos'}
+                  </>
+                )}
+              </button>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{d.photoUrlsHint}</p>
+            </div>
+          </>
+        )}
       </SectionCard>
 
       {/* ── Pricing & Dimensions ── */}
@@ -1762,6 +1827,80 @@ export default function ProductCreateForm() {
                     onChange={val => updateVariant(v.id, 'oldPrice', val)}
                     placeholder={d.phOldPrice} />
                 </div>
+                {/* Per-variant photo */}
+                <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
+                    {lang === 'ru' ? `Фото варианта${v.color ? ` (${v.color})` : ''}` :
+                     lang === 'uz' ? `Variant rasmi${v.color ? ` (${v.color})` : ''}` :
+                     `Variant photo${v.color ? ` (${v.color})` : ''}`}
+                    <span className="text-red-500 ml-0.5">*</span>
+                  </label>
+                  <div className="flex items-center gap-3">
+                    {v.photoUrl ? (
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <img
+                          src={v.photoUrl}
+                          alt={v.color || 'variant'}
+                          className="w-10 h-10 rounded-lg object-cover border"
+                          style={{ borderColor: 'var(--border)' }}
+                        />
+                        <span className="text-xs truncate flex-1 min-w-0" style={{ color: 'var(--text-muted)' }}>
+                          {v.photoUrl.split('/').pop()}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateVariant(v.id, 'photoUrl', '')}
+                          className="text-xs px-2 py-1 rounded-lg transition-colors hover:bg-red-500/10"
+                          style={{ color: 'var(--text-muted)' }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          ref={el => { variantFileRefs.current[v.id] = el }}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onChange={e => {
+                            const f = e.target.files?.[0]
+                            if (f) handleVariantImageUpload(v.id, f)
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => variantFileRefs.current[v.id]?.click()}
+                          disabled={variantUploading === v.id}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                          style={{
+                            background: 'var(--c1)',
+                            color: '#fff',
+                            opacity: variantUploading === v.id ? 0.6 : 1,
+                          }}
+                        >
+                          {variantUploading === v.id ? (
+                            <div className="w-3.5 h-3.5 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />
+                          ) : (
+                            <Upload className="w-3.5 h-3.5" />
+                          )}
+                          {lang === 'ru' ? 'Загрузить' : lang === 'uz' ? 'Yuklash' : 'Upload'}
+                        </button>
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                          {lang === 'ru' ? 'или вставьте ссылку →' : lang === 'uz' ? "yoki havola qo'ying →" : 'or paste URL →'}
+                        </span>
+                        <input
+                          type="text"
+                          value={v.photoUrl}
+                          onChange={e => updateVariant(v.id, 'photoUrl', e.target.value)}
+                          placeholder="https://..."
+                          className="flex-1 min-w-0 px-2 py-1 rounded-lg border text-xs focus:outline-none focus:ring-1"
+                          style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-base)', '--tw-ring-color': 'var(--c1)' } as React.CSSProperties}
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -1860,7 +1999,15 @@ export default function ProductCreateForm() {
           add(yandexCatName, lang === 'ru' ? 'Категория Yandex' : lang === 'uz' ? 'Yandex kategoriyasi' : 'Yandex category')
           add(descRu, lang === 'ru' ? 'Описание RU' : lang === 'uz' ? 'Tavsif RU' : 'Description RU')
           add(descUz, lang === 'ru' ? 'Описание UZ' : lang === 'uz' ? 'Tavsif UZ' : 'Description UZ')
-          add(photoUrls, lang === 'ru' ? 'Фото' : lang === 'uz' ? 'Rasm' : 'Photos')
+          if (variants.length > 0) {
+            const noPhoto = variants.filter(v => !v.photoUrl.trim())
+            if (noPhoto.length > 0) {
+              const names = noPhoto.map(v => v.color || v.sku || '?').join(', ')
+              missing.push(`${lang === 'ru' ? 'Фото вариантов' : lang === 'uz' ? 'Variant rasmlari' : 'Variant photos'}: ${names}`)
+            }
+          } else {
+            add(photoUrls, lang === 'ru' ? 'Фото' : lang === 'uz' ? 'Rasm' : 'Photos')
+          }
           add(sellingPrice, lang === 'ru' ? 'Цена' : lang === 'uz' ? 'Narx' : 'Price')
           add(barcode, lang === 'ru' ? 'Штрихкод' : 'Shtrixkod')
           add(weightG, lang === 'ru' ? 'Вес' : lang === 'uz' ? "Og'irlik" : 'Weight')
@@ -1958,7 +2105,15 @@ export default function ProductCreateForm() {
           add(descUz, lang === 'ru' ? 'Описание UZ' : lang === 'uz' ? 'Tavsif UZ' : 'Description UZ')
           add(shortDescRu, lang === 'ru' ? 'Краткое описание RU' : lang === 'uz' ? 'Qisqa tavsif RU' : 'Short desc RU')
           add(shortDescUz, lang === 'ru' ? 'Краткое описание UZ' : lang === 'uz' ? 'Qisqa tavsif UZ' : 'Short desc UZ')
-          add(photoUrls, lang === 'ru' ? 'Фото' : lang === 'uz' ? 'Rasm' : 'Photos')
+          if (variants.length > 0) {
+            const noPhoto = variants.filter(v => !v.photoUrl.trim())
+            if (noPhoto.length > 0) {
+              const names = noPhoto.map(v => v.color || v.sku || '?').join(', ')
+              missing.push(`${lang === 'ru' ? 'Фото вариантов' : lang === 'uz' ? 'Variant rasmlari' : 'Variant photos'}: ${names}`)
+            }
+          } else {
+            add(photoUrls, lang === 'ru' ? 'Фото' : lang === 'uz' ? 'Rasm' : 'Photos')
+          }
           add(sellingPrice, lang === 'ru' ? 'Цена продажи' : lang === 'uz' ? 'Sotuv narxi' : 'Selling price')
           add(oldPrice, lang === 'ru' ? 'Старая цена' : lang === 'uz' ? 'Eski narx' : 'Old price')
           add(weightG, lang === 'ru' ? 'Вес' : lang === 'uz' ? "Og'irlik" : 'Weight')
