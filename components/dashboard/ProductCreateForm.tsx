@@ -1318,29 +1318,12 @@ export default function ProductCreateForm() {
       })
 
       if (res.ok) {
-        const data = await res.json().catch(() => ({}))
-        const v = data.verification as { found?: string[]; missing?: string[] } | undefined
-        let message: string
-        if (v && v.missing && v.missing.length > 0) {
-          message = lang === 'ru'
-            ? `Отправлено ${offers.length}, но ${v.missing.length} не найдено в Yandex: ${v.missing.join(', ')}. Возможно, Yandex отклонил их — проверьте карточки товаров.`
-            : `Sent ${offers.length}, but ${v.missing.length} not found in Yandex: ${v.missing.join(', ')}. Yandex may have rejected them.`
-          setPushResult({ ok: false, message })
-        } else if (v && v.found && v.found.length > 0) {
-          message = lang === 'ru'
-            ? `${v.found.length} товар(ов) подтверждено в Yandex Market`
-            : lang === 'uz'
-            ? `${v.found.length} ta mahsulot Yandex Market da tasdiqlandi`
-            : `${v.found.length} product(s) confirmed in Yandex Market`
-          setPushResult({ ok: true, message })
-        } else {
-          message = lang === 'ru'
-            ? `${offers.length} товар(ов) отправлено в Yandex Market`
-            : lang === 'uz'
-            ? `${offers.length} ta mahsulot Yandex Market ga yuborildi`
-            : `${offers.length} product(s) pushed to Yandex Market`
-          setPushResult({ ok: true, message })
-        }
+        const message = lang === 'ru'
+          ? `${offers.length} товар(ов) отправлено в Yandex Market. Обработка может занять несколько минут.`
+          : lang === 'uz'
+          ? `${offers.length} ta mahsulot Yandex Market ga yuborildi. Ishlov berish bir necha daqiqa davom etishi mumkin.`
+          : `${offers.length} product(s) pushed to Yandex Market. Processing may take a few minutes.`
+        setPushResult({ ok: true, message })
       } else {
         const data = await res.json().catch(() => ({ error: res.statusText }))
         setPushResult({
