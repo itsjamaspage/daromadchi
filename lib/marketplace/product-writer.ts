@@ -26,6 +26,7 @@ export interface PushProductsParams {
   shop: ProductWriteShop
   userId: string
   offers: YandexOfferUpdate[]
+  language?: 'RU' | 'UZ'
 }
 
 export interface PushProductsResult {
@@ -77,7 +78,7 @@ async function audit(fields: {
 }
 
 export async function pushProducts(params: PushProductsParams): Promise<PushProductsResult> {
-  const { shop, userId, offers } = params
+  const { shop, userId, offers, language } = params
   const base = {
     shop_id: shop.id,
     user_id: userId,
@@ -109,7 +110,8 @@ export async function pushProducts(params: PushProductsParams): Promise<PushProd
     return { status: 'skipped', reason: 'no_token', logId }
   }
 
-  const url = `${YANDEX_API_BASE}/v2/businesses/${businessId}/offer-mappings/update`
+  const langSuffix = language && language !== 'RU' ? `?language=${language}` : ''
+  const url = `${YANDEX_API_BASE}/v2/businesses/${businessId}/offer-mappings/update${langSuffix}`
   const method = 'POST'
   const body = JSON.stringify({ offerMappings: offers.map(o => ({ offer: o })) })
 

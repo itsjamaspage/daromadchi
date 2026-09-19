@@ -132,7 +132,7 @@ const APPROVED_PRODUCT_WRITE_ENDPOINTS: { marketplace: string; method: string; p
   {
     marketplace: 'yandex_market',
     method: 'POST',
-    pattern: /^https:\/\/api\.partner\.market\.yandex\.ru\/v2\/businesses\/\d+\/offer-mappings\/update$/,
+    pattern: /^https:\/\/api\.partner\.market\.yandex\.ru\/v2\/businesses\/\d+\/offer-mappings\/update(\?language=(RU|UZ))?$/,
   },
 ]
 

@@ -565,8 +565,6 @@ export interface YandexOfferUpdate {
   /** @deprecated Use commodityCodes instead (shutdown 2026-10-12). */
   customsCommodityCodes?: { code: string; type?: string }[]
   commodityCodes?: { code: string; type: 'CUSTOMS_COMMODITY_CODE' | 'IKPU_CODE' | 'OKPD2_CODE' }[]
-  uz_name?: string
-  uz_description?: string
 }
 
 // Market research APIs — errors propagate so callers can surface them to the UI
