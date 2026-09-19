@@ -47,7 +47,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
 
   const data = await res.json()
-  const url = data.data?.display_url || data.data?.url
+  const url = data.data?.image?.url || data.data?.url || data.data?.display_url
 
   if (!url) {
     return NextResponse.json({ error: 'No URL returned from upload' }, { status: 500 })

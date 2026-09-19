@@ -1293,7 +1293,11 @@ export default function ProductCreateForm() {
         marketCategoryId: yandexCatId || undefined,
         vendor: p.brand || undefined,
         description: p.descriptionRu || undefined,
-        pictures: p.photoUrls ? p.photoUrls.split(/[\n,]+/).map(u => u.trim()).filter(Boolean) : undefined,
+        pictures: (() => {
+          if (!p.photoUrls) return undefined
+          const urls = p.photoUrls.split(/[\n,]+/).map(u => u.trim()).filter(u => u && /^https?:\/\/.+/.test(u))
+          return urls.length > 0 ? urls : undefined
+        })(),
         barcodes: p.barcode ? [p.barcode] : undefined,
         manufacturerCountries: p.country ? [p.country] : undefined,
         weightDimensions: (p.weightGrams && p.lengthMm && p.widthMm && p.heightMm) ? {
@@ -1320,11 +1324,15 @@ export default function ProductCreateForm() {
       })
 
       if (res.ok) {
+        const totalPhotos = offers.reduce((n, o) => n + (o.pictures?.length ?? 0), 0)
+        const photoNote = totalPhotos > 0
+          ? (lang === 'ru' ? ` Фото: ${totalPhotos} шт.` : lang === 'uz' ? ` Rasmlar: ${totalPhotos} ta.` : ` Photos: ${totalPhotos}.`)
+          : (lang === 'ru' ? ' Фото не указаны.' : lang === 'uz' ? ' Rasmlar ko\'rsatilmagan.' : ' No photos included.')
         const message = lang === 'ru'
-          ? `${offers.length} товар(ов) отправлено в Yandex Market. Обработка может занять несколько минут.`
+          ? `${offers.length} товар(ов) отправлено в Yandex Market. Обработка может занять несколько минут.${photoNote}`
           : lang === 'uz'
-          ? `${offers.length} ta mahsulot Yandex Market ga yuborildi. Ishlov berish bir necha daqiqa davom etishi mumkin.`
-          : `${offers.length} product(s) pushed to Yandex Market. Processing may take a few minutes.`
+          ? `${offers.length} ta mahsulot Yandex Market ga yuborildi. Ishlov berish bir necha daqiqa davom etishi mumkin.${photoNote}`
+          : `${offers.length} product(s) pushed to Yandex Market. Processing may take a few minutes.${photoNote}`
         setPushResult({ ok: true, message })
       } else {
         const data = await res.json().catch(() => ({ error: res.statusText }))
