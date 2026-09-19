@@ -47,10 +47,21 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
 
   const data = await res.json()
-  const url = data.data?.display_url || data.data?.url
+  const rawUrl = data.data?.image?.url || data.data?.url || data.data?.display_url
 
-  if (!url) {
+  if (!rawUrl) {
     return NextResponse.json({ error: 'No URL returned from upload' }, { status: 500 })
+  }
+
+  const appBase = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '')
+  let url = rawUrl
+  if (appBase) {
+    try {
+      const parsed = new URL(rawUrl)
+      if (parsed.hostname === 'i.ibb.co') {
+        url = `${appBase}/api/img${parsed.pathname}`
+      }
+    } catch { /* keep raw URL */ }
   }
 
   return NextResponse.json({ url })

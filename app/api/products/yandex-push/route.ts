@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
 import { pushProducts, type ProductWriteShop } from '@/lib/marketplace/product-writer'
+import { logger } from '@/lib/logger'
 import type { YandexOfferUpdate } from '@/lib/yandex/client'
 
 export const runtime = 'nodejs'
@@ -69,6 +70,19 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     business_id: shop.business_id,
   }
 
+  const appBase = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '')
+
+  function proxyImgbbUrl(url: string): string {
+    if (!appBase) return url
+    try {
+      const parsed = new URL(url)
+      if (parsed.hostname === 'i.ibb.co') {
+        return `${appBase}/api/img${parsed.pathname}`
+      }
+    } catch { /* keep as-is */ }
+    return url
+  }
+
   const offers: YandexOfferUpdate[] = body.offers.map(o => ({
     offerId: o.offerId,
     name: o.name,
@@ -76,7 +90,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     marketCategoryId: o.marketCategoryId,
     vendor: o.vendor,
     description: o.description,
-    pictures: o.pictures,
+    pictures: o.pictures?.map(proxyImgbbUrl),
     barcodes: o.barcodes,
     manufacturerCountries: o.manufacturerCountries,
     weightDimensions: o.weightDimensions,
@@ -88,13 +102,34 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     uz_description: o.uz_description,
   }))
 
+  logger.info('yandex_push_offers', {
+    shopId: shop.id,
+    offerCount: offers.length,
+    offers: offers.map(o => ({
+      offerId: o.offerId,
+      name: o.name?.slice(0, 50),
+      pictureCount: o.pictures?.length ?? 0,
+      pictures: o.pictures?.slice(0, 3),
+      hasCategoryId: !!o.marketCategoryId,
+      hasVendor: !!o.vendor,
+    })),
+  })
+
   const result = await pushProducts({ shop: writeShop, userId: user.id, offers })
 
   if (result.status === 'sent') {
+    if (result.responseBody) {
+      logger.info('yandex_push_response', {
+        shopId: shop.id,
+        logId: result.logId,
+        responseBody: result.responseBody.slice(0, 500),
+      })
+    }
     return NextResponse.json({
       ok: true,
       logId: result.logId,
       offerCount: offers.length,
+      totalPictures: offers.reduce((n, o) => n + (o.pictures?.length ?? 0), 0),
     })
   }
 
