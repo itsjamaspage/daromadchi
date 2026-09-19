@@ -1787,26 +1787,28 @@ export default function ProductCreateForm() {
             label={d.weightG}
             badges={<MpBadges uz ym reqUz reqYm />}
             type="number" value={weightG} onChange={setWeightG}
-            hint={lang === 'ru' ? 'Yandex конвертирует в кг' : lang === 'uz' ? 'Yandex kg ga konvert qiladi' : 'Yandex converts to kg'}
+            hint={weightG ? `→ Yandex: ${(Number(weightG) / 1000).toFixed(3)} ${lang === 'ru' ? 'кг' : 'kg'}` : (lang === 'ru' ? 'Yandex конвертирует в кг' : lang === 'uz' ? 'Yandex kg ga konvert qiladi' : 'Yandex converts to kg')}
             placeholder={d.phWeightG}
           />
           <InputField
             label={d.heightMm}
             badges={<MpBadges uz ym reqUz reqYm />}
             type="number" value={heightMm} onChange={setHeightMm}
-            hint={lang === 'ru' ? 'Yandex конвертирует в см' : lang === 'uz' ? 'Yandex sm ga konvert qiladi' : 'Yandex converts to cm'}
+            hint={heightMm ? `→ Yandex: ${(Number(heightMm) / 10).toFixed(1)} ${lang === 'ru' ? 'см' : 'cm'}` : (lang === 'ru' ? 'Yandex конвертирует в см' : lang === 'uz' ? 'Yandex sm ga konvert qiladi' : 'Yandex converts to cm')}
             placeholder={d.phHeightMm}
           />
           <InputField
             label={d.widthMm}
             badges={<MpBadges uz ym reqUz reqYm />}
             type="number" value={widthMm} onChange={setWidthMm}
+            hint={widthMm ? `→ Yandex: ${(Number(widthMm) / 10).toFixed(1)} ${lang === 'ru' ? 'см' : 'cm'}` : undefined}
             placeholder={d.phWidthMm}
           />
           <InputField
             label={d.lengthMm}
             badges={<MpBadges uz ym reqUz reqYm />}
             type="number" value={lengthMm} onChange={setLengthMm}
+            hint={lengthMm ? `→ Yandex: ${(Number(lengthMm) / 10).toFixed(1)} ${lang === 'ru' ? 'см' : 'cm'}` : undefined}
             placeholder={d.phLengthMm}
           />
         </div>
