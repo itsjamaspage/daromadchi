@@ -4,8 +4,9 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
 import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
-import { YANDEX_API_BASE } from '@/lib/yandex/client'
+import { YANDEX_API_BASE, fetchCampaignInfo } from '@/lib/yandex/client'
 import { withErrorHandler } from '@/lib/api-handler'
+import { resolveColor } from '@/lib/products/resolveColor'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -136,6 +137,73 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       businessId: bid,
       probes,
     }, { status: 200 })
+  }
+
+  const colorProbe = req.nextUrl.searchParams.get('color') === '1'
+  if (colorProbe) {
+    let businessId = shop.business_id ? Number(shop.business_id) : null
+    if (!businessId) {
+      try {
+        const info = await fetchCampaignInfo(token, campaignId)
+        businessId = info.businessId
+      } catch (e) {
+        return NextResponse.json({ ok: false, error: `Cannot resolve businessId: ${String(e).slice(0, 200)}` }, { status: 500 })
+      }
+    }
+    const skuFilter = req.nextUrl.searchParams.get('sku')?.trim() || null
+    const body = skuFilter
+      ? JSON.stringify({ offerIds: skuFilter.split(',').map(s => s.trim()) })
+      : '{}'
+    const res = await marketplaceFetch(
+      `${YANDEX_API_BASE}/v2/businesses/${businessId}/offer-cards?limit=50`,
+      {
+        method: 'POST',
+        headers: { 'Api-Key': token.trim(), 'Content-Type': 'application/json', Accept: 'application/json' },
+        body,
+        next: { revalidate: 0 },
+      },
+    )
+    const text = await res.text().catch(() => '')
+    if (!res.ok) {
+      return NextResponse.json({ ok: false, status: res.status, body: text.slice(0, 800) }, { status: res.status })
+    }
+    const json = JSON.parse(text)
+    const cards = json?.result?.offerCards ?? []
+    const analysis = cards.map((card: Record<string, unknown>) => {
+      const params = (card.parameterValues ?? []) as { parameterId?: number; valueId?: number; value?: string; unitId?: number }[]
+      const colorMatches = params
+        .filter(p => p.value?.trim())
+        .map(p => ({
+          parameterId: p.parameterId,
+          valueId: p.valueId,
+          value: p.value,
+          resolvedColor: resolveColor(p.value)?.key ?? null,
+          valueLength: (p.value?.trim() ?? '').length,
+        }))
+        .filter(p => p.resolvedColor)
+      const allParams = params.map(p => ({
+        parameterId: p.parameterId,
+        valueId: p.valueId,
+        value: p.value,
+        unitId: p.unitId,
+      }))
+      const bestMatch = colorMatches.sort((a, b) => a.valueLength - b.valueLength)[0] ?? null
+      return {
+        offerId: card.offerId,
+        bestColor: bestMatch?.resolvedColor ?? null,
+        bestColorValue: bestMatch?.value ?? null,
+        colorMatches,
+        allParams,
+      }
+    })
+    return NextResponse.json({
+      ok: true,
+      hint: 'color=1 dumps offer-cards parameterValues and shows how resolveColor maps them. colorMatches shows params that resolved to a color; bestColor is the shortest-value-wins pick.',
+      businessId,
+      skuFilter,
+      totalCards: cards.length,
+      analysis,
+    })
   }
 
   if (orderId) {
