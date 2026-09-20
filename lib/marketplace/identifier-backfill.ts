@@ -15,7 +15,7 @@ import { db, products } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
 import { fetchAllUzumSkuStocks } from '@/lib/uzum/client'
-import { fetchYandexStockLocations } from '@/lib/yandex/client'
+import { fetchYandexStockLocations, fetchYandexWarehouses } from '@/lib/yandex/client'
 import type { MarketplaceType } from '@/lib/types'
 
 export interface BackfillShop {
@@ -140,21 +140,29 @@ export async function backfillShopIdentifiers(shop: BackfillShop): Promise<Backf
       const campaignId = nonBlank(shop.shop_id_external)
       if (!campaignId) return { ...base, error: 'no_campaign_id' }
       const locations = await fetchYandexStockLocations(token, campaignId)
+      // Fetch the shop's FBS warehouse independently so we can backfill
+      // products that don't appear in the stock response yet (newly pushed).
+      let fallbackWarehouseId: string | null = null
+      try {
+        const whs = await fetchYandexWarehouses(token, campaignId)
+        if (whs.length > 0) fallbackWarehouseId = String(whs[0].id)
+      } catch { /* best-effort */ }
       for (const p of rows) {
-        // YM stores the shopSku in products.sku; it's also the offers/stocks key.
         const shopSku = nonBlank(p.sku) ?? nonBlank(p.mpid)
+        if (!shopSku) continue
         const loc = (p.sku && locations.get(p.sku.trim())) || (p.mpid && locations.get(String(p.mpid).trim()))
-        if (!shopSku || !loc) continue
+        const wh = loc ? String(loc.warehouseId) : fallbackWarehouseId
+        if (!wh) continue
         base.matched++
-        const wh = String(loc.warehouseId)
         if (p.marketSku !== shopSku || p.warehouseId !== wh) {
           await db.update(products).set({ market_sku: shopSku, market_warehouse_id: wh }).where(eq(products.id, p.id))
           base.updated++
         }
       }
       base.missingAfter = rows.filter(p => {
-        const has = (p.marketSku && p.warehouseId) || ((p.sku && locations.get(p.sku.trim())) || (p.mpid && locations.get(String(p.mpid).trim())))
-        return !has
+        const shopSku = nonBlank(p.sku) ?? nonBlank(p.mpid)
+        const wh = p.warehouseId || fallbackWarehouseId
+        return !(p.marketSku && p.warehouseId) && !(shopSku && wh)
       }).length
     } else {
       return { ...base, error: 'marketplace_out_of_scope' }

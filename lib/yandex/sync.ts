@@ -105,11 +105,8 @@ export function yandexItemSnapshot(
   return {
     title,
     sku,
-    // Same precedence as the product path above: the offer NAME first, since on
-    // per-colour listings the colour word is in the title, then the offer-cards
-    // attribute keyed by offerId. Null when neither yields a colour.
-    variant_color: resolveColor(title ?? '')?.key
-      ?? (sku ? offerCardColors?.get(sku) : undefined)
+    variant_color: (sku ? offerCardColors?.get(sku) : undefined)
+      ?? resolveColor(title ?? '')?.key
       ?? null,
   }
 }
@@ -353,14 +350,14 @@ async function syncFromYandexLocked(
         // JMWHT and JMBLK match; JMJ16BEG differs). String equality groups them.
         // Namespaced so it can never collide with an Uzum key. Null when absent.
         const modelName = e.mapping?.marketModelName?.trim()
-        // No dedicated colour field on offer-mappings — the per-variant colour
-        // lives in the market SKU name (e.g. "M9 Белый"); resolveColor extracts
-        // it, offer name is a secondary source. When the name has no colour word
-        // (e.g. the J16 earphones), fall back to the offer-cards «Цвет» attribute
-        // keyed by offerId (= shopSku). Null when neither yields a colour.
-        const variantColor = resolveColor(e.mapping?.marketSkuName ?? e.offer.name)?.key
-          ?? (shopSku ? offerCardColors.get(shopSku) : undefined)
+        // The seller-set «Цвет» attribute from offer-cards is the most
+        // reliable colour source — it's what the seller explicitly chose.
+        // Fall back to parsing the market SKU name / offer name only when
+        // the attribute isn't available.
+        const variantColor =
+          (shopSku ? offerCardColors.get(shopSku) : undefined)
           ?? (marketSku ? offerCardColors.get(marketSku) : undefined)
+          ?? resolveColor(e.mapping?.marketSkuName ?? e.offer.name)?.key
           ?? null
         return {
           shop_id: shopId,

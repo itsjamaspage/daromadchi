@@ -20,8 +20,9 @@ test('the columns that used to be blank are now non-null for a real item', () =>
 })
 
 // ── Colour precedence ───────────────────────────────────────────────────────
-// Same order as the product path: the offer NAME first (per-colour listings put
-// the colour word in the title), then the offer-cards «Цвет» attribute.
+// The seller-set «Цвет» attribute (offer-cards) takes priority over title
+// parsing: the attribute is what the seller explicitly chose, while the title
+// can match the wrong colour word from a product name.
 
 test('colour comes from the offer name when the name carries one', () => {
   assert.equal(
@@ -30,17 +31,15 @@ test('colour comes from the offer name when the name carries one', () => {
   )
 })
 
-test('the name wins over the offer-cards attribute', () => {
+test('the offer-cards attribute wins over the name', () => {
   const s = yandexItemSnapshot(
     { offerId: 'M9-W', offerName: 'Смарт-часы M9 Белый' },
     new Map([['M9-W', 'black']]),
   )
-  assert.equal(s.variant_color, 'white')
+  assert.equal(s.variant_color, 'black')
 })
 
-test('offer-cards attribute fills in when the name has no colour word', () => {
-  // The J16 earphones: nothing colour-like in the title, but the seller set
-  // «Цвет» on the offer card.
+test('title fills in when the offer-cards attribute is absent', () => {
   const s = yandexItemSnapshot(
     { offerId: 'J16', offerName: 'Наушники J16' },
     new Map([['J16', 'black']]),
