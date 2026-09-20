@@ -1223,7 +1223,7 @@ export default function ProductCreateForm() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${marketplace}-products.xlsx`
+    a.download = `${marketplace}-products.${marketplace === 'uzum' ? 'xlsm' : 'xlsx'}`
     document.body.appendChild(a)
     a.click()
     a.remove()
