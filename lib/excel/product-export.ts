@@ -88,78 +88,57 @@ export interface UzumCategory {
 }
 
 // ── Uzum Excel ───────────────────────────────────────────────────────────────
+// Uses the real Uzum seller-cabinet template (.xlsm) as a base so the uploaded
+// file passes Uzum's structural validation. Data is injected starting at row 4
+// (row 1 = section groups, row 2 = column headers, row 3 = descriptions).
+//
+// Column mapping (1-indexed, matching template):
+//   A=nameRu  B=sku  C=nameUz  D=skuGroup  E=categoryName  F=categoryId
+//   G=brand  H=model  I=country  J=descRu  K=descUz  L=shortDescRu  M=shortDescUz
+//   N=compositionRu  O=compositionUz  P=careRu  Q=careUz  R=sizeChartRu
+//   S=sizeChartUz  T=photoUrls  U=barcode  V=ikpu  W=color  X=size
+//   Y=sellingPrice  Z=oldPrice  AA=weight  AB=height  AC=width  AD=length
+//   AE+=characteristics
 
-const UZUM_HEADERS = [
-  'Название товара RU*',
-  'Идентификатор от продавца',
-  'Название товара UZ*',
-  'Группировка SKU*',
-  'Название категории*',
-  'id категории*',
-  'Бренд*',
-  'Модель',
-  'Страна производства*',
-  'Описание товара RU*',
-  'Описание товара UZ*',
-  'Краткое описание RU*',
-  'Краткое описание UZ*',
-  'Состав RU',
-  'Состав UZ',
-  'Инструкция по уходу RU',
-  'Инструкция по уходу UZ',
-  'Размерная сетка RU',
-  'Размерная сетка UZ',
-  'Ссылки на фото*',
-  'Штрихкод',
-  'ИКПУ*',
-  'Цвет',
-  'Размер',
-  'Цена продажи (som)*',
-  'Цена до скидки (som)*',
-  'Вес (г)*',
-  'Высота (мм)*',
-  'Ширина (мм)*',
-  'Длина (мм)*',
-]
-
-const UZUM_DESC_ROW = [
-  'Обязательное поле. Название товара на русском языке',
-  'Необязательное поле. Ваш внутренний код товара',
-  'Обязательное поле. Название товара на узбекском языке',
-  'Обязательное поле. Используйте для группировки SKU (до 100 символов)',
-  'Обязательное поле. Заполняется автоматически',
-  'Обязательное поле. Заполняется автоматически',
-  'Обязательное поле. Выберите бренд из справочника',
-  'Необязательное поле. Модель товара',
-  'Обязательное поле. Страна производства из справочника',
-  'Обязательное поле. Описание товара на русском',
-  'Обязательное поле. Описание товара на узбекском',
-  'Обязательное поле. Краткое описание на русском',
-  'Обязательное поле. Краткое описание на узбекском',
-  'Состав товара на русском',
-  'Состав товара на узбекском',
-  'Инструкция по уходу на русском',
-  'Инструкция по уходу на узбекском',
-  'Размерная сетка на русском',
-  'Размерная сетка на узбекском',
-  'Обязательное поле. Ссылки через запятую. JPEG/PNG/WebP, 1080×1440',
-  'EAN-13 или UPC-A. Если не заполнено, присвоится автоматически',
-  'Обязательное поле. 16-значный код ИКПУ',
-  'Цвет товара (для группировки SKU)',
-  'Размер товара (для группировки SKU)',
-  'Обязательное поле. Цена продажи в сумах',
-  'Обязательное поле. Цена до скидки в сумах',
-  'Обязательное поле. Вес в граммах',
-  'Обязательное поле. Высота в миллиметрах',
-  'Обязательное поле. Ширина в миллиметрах',
-  'Обязательное поле. Длина в миллиметрах',
-]
+function colLetter(n: number): string {
+  let s = ''
+  let v = n
+  while (v > 0) {
+    v--
+    s = String.fromCharCode(65 + (v % 26)) + s
+    v = Math.floor(v / 26)
+  }
+  return s
+}
 
 export function generateUzumExcel(
   products: ProductRow[],
   category: UzumCategory,
 ): Buffer {
-  const wb = XLSX.utils.book_new()
+  const templatePath = join(process.cwd(), 'lib/excel/templates/uzum-template.xlsm')
+  const templateBuf = readFileSync(templatePath)
+  const zip = unzipSync(new Uint8Array(templateBuf))
+
+  const sheetKey = 'xl/worksheets/sheet1.xml'
+  const sheetXml = new TextDecoder().decode(zip[sheetKey])
+
+  const escXml = (s: string) =>
+    s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/[^\x20-\x7E]/g, ch => '&#' + ch.charCodeAt(0) + ';')
+
+  const inlineCell = (col: string, row: number, val: string, style?: string) => {
+    const sAttr = style ? ` s="${style}"` : ''
+    return `<c r="${col}${row}"${sAttr} t="inlineStr"><is><t>${escXml(val)}</t></is></c>`
+  }
+
+  const numCell = (col: string, row: number, val: number, style?: string) => {
+    const sAttr = style ? ` s="${style}"` : ''
+    return `<c r="${col}${row}"${sAttr} t="n"><v>${val}</v></c>`
+  }
 
   const charKeys: string[] = []
   for (const p of products) {
@@ -170,80 +149,73 @@ export function generateUzumExcel(
     }
   }
 
-  // ── Лист1: Product data ──
-  const headerRow = ['', ...UZUM_HEADERS, ...charKeys]
-  const descRow = ['', ...UZUM_DESC_ROW, ...charKeys.map(() => 'Характеристика товара (зависит от категории)')]
-
-  const dataRows = products.map((p, i) => [
-    i + 1,
-    p.nameRu,
-    p.sku || '',
-    p.nameUz,
-    p.skuGroup,
-    category.name,
-    category.id,
-    p.brand,
-    p.model || '',
-    p.country,
-    p.descriptionRu,
-    p.descriptionUz,
-    p.shortDescRu,
-    p.shortDescUz,
-    p.compositionRu || '',
-    p.compositionUz || '',
-    p.careRu || '',
-    p.careUz || '',
-    p.sizeChartRu || '',
-    p.sizeChartUz || '',
-    p.photoUrls,
-    p.barcode || '',
-    p.ikpu,
-    p.color || '',
-    p.size || '',
-    p.sellingPrice,
-    p.oldPrice,
-    p.weightGrams,
-    p.heightMm,
-    p.widthMm,
-    p.lengthMm,
-    ...charKeys.map(k => p.characteristics?.[k] || ''),
-  ])
-
-  const wsData = [headerRow, descRow, ...dataRows]
-  const ws = XLSX.utils.aoa_to_sheet(wsData)
-
-  const allHeaders = [...UZUM_HEADERS, ...charKeys]
-  const colWidths = allHeaders.map((h, i) => {
-    const maxData = Math.max(h.length, ...dataRows.map(r => String(r[i + 1] ?? '').length))
-    return { wch: Math.min(Math.max(maxData + 2, 12), 50) }
+  const productRows = products.map((p, i) => {
+    const r = 4 + i
+    const cells = [
+      inlineCell('A', r, p.nameRu),
+      inlineCell('B', r, p.sku || ''),
+      inlineCell('C', r, p.nameUz),
+      inlineCell('D', r, p.skuGroup),
+      inlineCell('E', r, category.name),
+      inlineCell('F', r, category.id),
+      inlineCell('G', r, p.brand, '1'),
+      ...(p.model ? [inlineCell('H', r, p.model)] : []),
+      inlineCell('I', r, p.country, '1'),
+      inlineCell('J', r, p.descriptionRu, '1'),
+      inlineCell('K', r, p.descriptionUz, '1'),
+      inlineCell('L', r, p.shortDescRu, '1'),
+      inlineCell('M', r, p.shortDescUz, '1'),
+      ...(p.compositionRu ? [inlineCell('N', r, p.compositionRu)] : []),
+      ...(p.compositionUz ? [inlineCell('O', r, p.compositionUz)] : []),
+      ...(p.careRu ? [inlineCell('P', r, p.careRu)] : []),
+      ...(p.careUz ? [inlineCell('Q', r, p.careUz)] : []),
+      ...(p.sizeChartRu ? [inlineCell('R', r, p.sizeChartRu)] : []),
+      ...(p.sizeChartUz ? [inlineCell('S', r, p.sizeChartUz)] : []),
+      inlineCell('T', r, p.photoUrls),
+      ...(p.barcode ? [inlineCell('U', r, p.barcode)] : []),
+      inlineCell('V', r, p.ikpu, '29'),
+      ...(p.color ? [inlineCell('W', r, p.color)] : []),
+      ...(p.size ? [inlineCell('X', r, p.size, '2')] : []),
+      numCell('Y', r, p.sellingPrice),
+      numCell('Z', r, p.oldPrice),
+      numCell('AA', r, p.weightGrams),
+      numCell('AB', r, p.heightMm),
+      numCell('AC', r, p.widthMm),
+      numCell('AD', r, p.lengthMm),
+      ...charKeys.map((k, ci) => {
+        const val = p.characteristics?.[k]
+        if (!val) return ''
+        return inlineCell(colLetter(31 + ci), r, val)
+      }).filter(Boolean),
+    ]
+    return `<row r="${r}" spans="1:${30 + charKeys.length}">${cells.join('')}</row>`
   })
-  ws['!cols'] = [{ wch: 4 }, ...colWidths]
 
-  XLSX.utils.book_append_sheet(wb, ws, 'Лист1')
+  // Extract rows 1-3 from the template (group headers, column headers, descriptions)
+  const headerRowsMatch = sheetXml.match(/<row r="[123]"[\s\S]*?<\/row>/g)
+  if (!headerRowsMatch) throw new Error('Uzum template: cannot find header rows')
 
-  // ── Instructions sheet ──
-  const instrData = [
-    ['Инструкция по заполнению файла'],
-    [''],
-    ['1. Один файл = одна категория товаров'],
-    [`2. Выбранная категория: ${category.name} (ID: ${category.id})`],
-    ['3. Каждая строка = один SKU (вариант товара)'],
-    ['4. Строки с одинаковым значением в "Группировка SKU" объединяются в один товар'],
-    ['5. Фотографии указываются ссылками через запятую (JPEG/PNG/WebP, 1080×1440, до 5МБ)'],
-    ['6. Цены — только числа, без символов валюты'],
-    ['7. Вес в граммах, размеры в миллиметрах'],
-    ['8. ИКПУ — 16-значный код из tasnif.soliq.uz'],
-    [''],
-    ['Откройте этот файл в Excel для заполнения фильтров категории.'],
-    ['Фильтры (столбцы после "Длина") зависят от категории и заполняются вручную.'],
-    [''],
-    ['Файл создан с помощью Daromadchi — daromadchi.uz'],
-  ]
-  const wsInstr = XLSX.utils.aoa_to_sheet(instrData)
-  wsInstr['!cols'] = [{ wch: 80 }]
-  XLSX.utils.book_append_sheet(wb, wsInstr, 'Инструкция')
+  // Update category path in C1 (row 1, column 3)
+  let row1 = headerRowsMatch[0]
+  row1 = row1.replace(
+    /<c r="C1"[^>]*>[\s\S]*?<\/c>/,
+    `<c r="C1" s="4" t="inlineStr"><is><t>${escXml(category.fullPath)}</t></is></c>`,
+  )
 
-  return convertToInlineStrings(Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx', bookSST: true })))
+  const headerXml = row1 + headerRowsMatch[1] + headerRowsMatch[2]
+
+  const lastDataRow = 3 + products.length
+  const lastCol = colLetter(30 + charKeys.length)
+  let newXml = sheetXml.replace(
+    /<sheetData>[\s\S]*<\/sheetData>/,
+    `<sheetData>${headerXml}${productRows.join('')}</sheetData>`,
+  )
+  newXml = newXml.replace(/<dimension ref="[^"]*"/, `<dimension ref="A1:${lastCol}${lastDataRow}"`)
+
+  zip[sheetKey] = new TextEncoder().encode(newXml)
+
+  const result = zipSync(zip, { level: 6 })
+  return Buffer.from(result)
 }
 
 // ── Yandex Excel ─────────────────────────────────────────────────────────────
