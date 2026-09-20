@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, products } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
 import { pushStock } from '@/lib/marketplace/stock-writer'
+import { backfillShopIdentifiers } from '@/lib/marketplace/identifier-backfill'
 import type { MarketplaceType } from '@/lib/types'
 
 export const runtime = 'nodejs'
@@ -34,7 +35,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const shopIds = userShops.map(s => s.id)
   if (shopIds.length === 0) return NextResponse.json({ error: 'No shops' }, { status: 400 })
 
-  const [product] = await db.select({
+  let [product] = await db.select({
     id: products.id,
     shop_id: products.shop_id,
     sku: products.sku,
@@ -60,6 +61,28 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
 
   const marketplace = shop.marketplace as MarketplaceType
+
+  const needsBackfill =
+    (marketplace === 'yandex_market' && (!product.market_sku || !product.market_warehouse_id)) ||
+    (marketplace === 'uzum' && (!product.market_barcode || !product.market_sku))
+  if (needsBackfill) {
+    await backfillShopIdentifiers({
+      id: shop.id,
+      marketplace,
+      api_key_encrypted: shop.api_key_encrypted,
+      shop_id_external: shop.shop_id_external,
+    })
+    const [refreshed] = await db.select({
+      id: products.id,
+      shop_id: products.shop_id,
+      sku: products.sku,
+      market_barcode: products.market_barcode,
+      market_sku: products.market_sku,
+      market_warehouse_id: products.market_warehouse_id,
+    }).from(products).where(eq(products.id, product.id))
+    if (refreshed) product = refreshed
+  }
+
   const result = await pushStock({
     shop: {
       id: shop.id,
