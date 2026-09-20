@@ -195,7 +195,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           if (productId == null) return
           e.stopPropagation()
           setEditingStockId(productId)
-          setStockValue(String(value ?? 0))
+          setStockValue(value ? String(value) : '')
           setStockError(null)
         }}>
           {value == null ? '—' : value}
@@ -680,7 +680,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                               <span className="ml-auto flex items-center gap-1 shrink-0" onClick={e => {
                                 e.stopPropagation()
                                 setEditingStockId(v.id)
-                                setStockValue(String(v.stock ?? 0))
+                                setStockValue(v.stock ? String(v.stock) : '')
                                 setStockError(null)
                               }}>
                                 <span className="tabular-nums font-medium"

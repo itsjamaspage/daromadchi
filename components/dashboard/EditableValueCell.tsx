@@ -110,7 +110,8 @@ export default function EditableValueCell({
           type="number"
           step={field === 'stockOverride' ? 1 : 'any'}
           min={0}
-          defaultValue={shown ?? ''}
+          defaultValue={shown != null ? String(shown) : ''}
+          onFocus={e => e.target.select()}
           onKeyDown={e => {
             if (e.key === 'Enter') save()
             if (e.key === 'Escape') setEditing(false)
