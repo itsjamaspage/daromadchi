@@ -693,7 +693,10 @@ interface YandexOfferCardsResponse {
 // and swallows failures (accounts without card access answer 403/404). We scan
 // every parameter value through resolveColor rather than hard-coding a colour
 // parameterId — those ids are category-specific and the payload carries no
-// parameter names, and only genuine colour words resolve, so the first hit wins.
+// parameter names. To avoid false matches from non-colour parameters whose value
+// happens to contain a colour word (e.g. material "золотистый пластик" matching
+// "золот"), we prefer the shortest matching value: the actual Цвет parameter's
+// value is just the colour name ("серый", "синий"), while descriptions are longer.
 export async function fetchAllYandexOfferCards(
   token: string,
   businessId: number,
@@ -710,10 +713,18 @@ export async function fetchAllYandexOfferCards(
     ))
     for (const card of res.result?.offerCards ?? []) {
       if (!card.offerId || colorByOffer.has(card.offerId)) continue
+      let bestKey: string | null = null
+      let bestLen = Infinity
       for (const p of card.parameterValues ?? []) {
-        const key = resolveColor(p.value)?.key
-        if (key) { colorByOffer.set(card.offerId, key); break }
+        const val = p.value?.trim()
+        if (!val) continue
+        const key = resolveColor(val)?.key
+        if (key && val.length < bestLen) {
+          bestKey = key
+          bestLen = val.length
+        }
       }
+      if (bestKey) colorByOffer.set(card.offerId, bestKey)
     }
     pageToken = res.result?.paging?.nextPageToken
   } while (pageToken)
