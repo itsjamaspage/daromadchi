@@ -33,8 +33,8 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     const buf = generateUzumExcel(products, cat)
     return new Response(new Uint8Array(buf), {
       headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="uzum-products.xlsx"`,
+        'Content-Type': 'application/vnd.ms-excel.sheet.macroEnabled.12',
+        'Content-Disposition': `attachment; filename="uzum-products.xlsm"`,
       },
     })
   }
