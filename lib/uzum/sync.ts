@@ -34,19 +34,14 @@ function idArray(ids: string[]) {
   return sql`string_to_array(${ids.join(',')}, ',')::uuid[]`
 }
 
-// Resolve a SKU's colour: prefer the skuTitle suffix (БЕЖЕВ / БЕЛЫЙ …), then
-// fall back to the structured «Цвет» / «Rang» characteristic already present in
-// the product-card payload. Its RU value resolves cleanly (e.g. «Бежевый» →
-// beige), so SKUs whose title carries no colour word still get a colour.
 function uzumSkuColor(sku: UzumSku): string | null {
-  const fromTitle = resolveColor(sku.skuTitle)?.key
-  if (fromTitle) return fromTitle
   const c = sku.characteristicsList?.find(
     (x) => x.characteristicTitle?.ru === 'Цвет' || x.characteristicTitle?.uz === 'Rang',
   )
   return (
     resolveColor(c?.characteristicValue?.ru)?.key ??
     resolveColor(c?.characteristicValue?.uz)?.key ??
+    resolveColor(sku.skuTitle)?.key ??
     resolveColor(sku.characteristics)?.key ??
     null
   )
