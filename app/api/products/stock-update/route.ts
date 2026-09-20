@@ -52,7 +52,11 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   if (!shop) return NextResponse.json({ error: 'Shop not found' }, { status: 404 })
 
   if (shop.api_mode === 'read_only') {
-    return NextResponse.json({ error: 'Shop is in read-only mode' }, { status: 403 })
+    return NextResponse.json({
+      ok: false,
+      status: 'blocked',
+      reason: 'Магазин в режиме «только чтение». Включите режим записи остатков в настройках.',
+    }, { status: 403 })
   }
 
   const marketplace = shop.marketplace as MarketplaceType

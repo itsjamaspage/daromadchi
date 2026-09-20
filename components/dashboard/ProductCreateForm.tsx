@@ -1476,6 +1476,22 @@ export default function ProductCreateForm() {
           ? `${offers.length} ta mahsulot Yandex Market ga yuborildi. Ishlov berish bir necha daqiqa davom etishi mumkin.${photoNote}`
           : `${offers.length} product(s) pushed to Yandex Market. Processing may take a few minutes.${photoNote}`
         setPushResult({ ok: true, message })
+        // Trigger a background sync so the pushed product appears in Daromadchi
+        // immediately instead of waiting for the next scheduled heavy sync.
+        fetch('/api/yandex/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        }).then(r => r.json()).then(syncData => {
+          if (syncData.ok) {
+            const syncMsg = lang === 'ru'
+              ? ' Синхронизация завершена — товар появится на странице «Товары».'
+              : lang === 'uz'
+              ? ' Sinxronizatsiya tugadi — mahsulot «Mahsulotlar» sahifasida paydo bo\'ladi.'
+              : ' Sync complete — product will appear on the Products page.'
+            setPushResult(prev => prev?.ok ? { ok: true, message: prev.message + syncMsg } : prev)
+          }
+        }).catch(() => { /* sync failure is non-critical */ })
       } else {
         const data = await res.json().catch(() => ({ error: res.statusText }))
         setPushResult({
