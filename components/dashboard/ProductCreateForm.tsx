@@ -1713,50 +1713,6 @@ export default function ProductCreateForm() {
         </div>
       </SectionCard>
 
-      {/* ── Media ── */}
-      <SectionCard title={d.mediaSection}>
-        <TextAreaField
-          label={d.photoUrls}
-          badges={<MpBadges uz ym reqUz reqYm />}
-          value={photoUrls} onChange={setPhotoUrls} rows={2}
-          placeholder={d.phPhotoUrls}
-        />
-        <div className="flex items-center gap-3 mt-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            className="hidden"
-            onChange={e => handleImageUpload(e.target.files)}
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-            style={{
-              background: 'var(--c1)',
-              color: '#fff',
-              opacity: uploading ? 0.6 : 1,
-            }}
-          >
-            {uploading ? (
-              <>
-                <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />
-                {lang === 'ru' ? 'Загрузка...' : lang === 'uz' ? 'Yuklanmoqda...' : 'Uploading...'}
-              </>
-            ) : (
-              <>
-                <Upload className="w-4 h-4" />
-                {lang === 'ru' ? 'Загрузить фото' : lang === 'uz' ? 'Rasm yuklash' : 'Upload photos'}
-              </>
-            )}
-          </button>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{d.photoUrlsHint}</p>
-        </div>
-      </SectionCard>
-
       {/* ── Pricing & Dimensions ── */}
       <SectionCard title={d.pricingSection}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
