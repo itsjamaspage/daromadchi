@@ -1230,15 +1230,32 @@ export default function ProductCreateForm() {
     URL.revokeObjectURL(url)
   }
 
-  // Map form characteristics → Yandex parameterValues using fetched category params
+  // Map form characteristics → Yandex parameterValues using fetched category params.
+  // Per-variant color/size override shared characteristics so each variant gets its
+  // own correct Цвет / Размер value instead of all sharing the base product's.
+  const COLOR_PARAM_NAMES = ['цвет', 'цвет товара', 'основной цвет', 'color']
+  const SIZE_PARAM_NAMES = ['размер', 'size']
+
   const buildParameterValues = (p: ReturnType<typeof buildProducts>[0]) => {
-    if (!categoryParams.length || !p.characteristics) return undefined
+    if (!categoryParams.length) return undefined
+    const pColor = 'color' in p ? (p as { color?: string }).color : undefined
+    const pSize = 'size' in p ? (p as { size?: string }).size : undefined
     const vals: { parameterId: number; valueId?: number; value?: string }[] = []
     for (const param of categoryParams) {
-      const charValue = p.characteristics[param.name]
+      const paramNameLower = param.name.toLowerCase()
+      let charValue: string | undefined
+
+      if (pColor && COLOR_PARAM_NAMES.includes(paramNameLower)) {
+        charValue = pColor
+      } else if (pSize && SIZE_PARAM_NAMES.includes(paramNameLower)) {
+        charValue = pSize
+      } else {
+        charValue = p.characteristics?.[param.name]
+      }
+
       if (!charValue) continue
       if (param.type === 'ENUM' && param.values?.length) {
-        const match = param.values.find(v => v.value.toLowerCase() === charValue.toLowerCase())
+        const match = param.values.find(v => v.value.toLowerCase() === charValue!.toLowerCase())
         if (match) {
           vals.push({ parameterId: param.id, valueId: match.id })
         } else {
