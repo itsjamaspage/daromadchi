@@ -2,14 +2,12 @@
  * Auto-renewal cron. ATMOS has no native recurring, so we charge the stored card
  * token for subscriptions about to expire.
  *
- * DISABLED by default — set BILLING_AUTORENEW_ENABLED=1 only after the direct flow
- * is validated in prod. BILLING_RENEW_DRY_RUN=1 logs what it WOULD charge without
- * charging.
+ * BILLING_RENEW_DRY_RUN=1 logs what it WOULD charge without charging.
+ * BILLING_AUTORENEW_DISABLED=1 turns auto-renew off (kill-switch for emergencies).
  *
  * This file is auth + flags only. The renewal rules — what to charge, what to
  * skip, what a failure does — live in lib/billing/renew.ts so they can be driven
- * from a test against a real database and a fake gateway before the flag above
- * is ever flipped against live cards.
+ * from a test against a real database and a fake gateway.
  */
 
 import { NextResponse } from 'next/server'
@@ -29,7 +27,7 @@ export const GET = withErrorHandler(async (req: Request) => {
   if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
-  if (!envOn(process.env.BILLING_AUTORENEW_ENABLED)) {
+  if (envOn(process.env.BILLING_AUTORENEW_DISABLED)) {
     return NextResponse.json({ ok: true, skipped: 'disabled' })
   }
 
