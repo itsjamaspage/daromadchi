@@ -5,16 +5,23 @@ import { withErrorHandler } from '@/lib/api-handler'
 export const runtime = 'nodejs'
 
 const IMGBB_API_KEY = process.env.IMGBB_API_KEY
+const UPLOAD_TIMEOUT_MS = 30_000
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   if (!IMGBB_API_KEY) {
-    return NextResponse.json({ error: 'Image upload not configured' }, { status: 500 })
+    return NextResponse.json({ error: 'Image upload not configured (IMGBB_API_KEY missing)' }, { status: 500 })
   }
 
-  const formData = await req.formData()
+  let formData: FormData
+  try {
+    formData = await req.formData()
+  } catch (e) {
+    return NextResponse.json({ error: `Failed to parse form data: ${(e as Error).message}` }, { status: 400 })
+  }
+
   const file = formData.get('image') as File | null
   if (!file) {
     return NextResponse.json({ error: 'No image provided' }, { status: 400 })
@@ -33,20 +40,36 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   body.append('image', base64)
   body.append('name', file.name.replace(/\.[^.]+$/, ''))
 
-  const res = await fetch('https://api.imgbb.com/1/upload', {
-    method: 'POST',
-    body,
-  })
+  const ac = new AbortController()
+  const timer = setTimeout(() => ac.abort(), UPLOAD_TIMEOUT_MS)
+
+  let res: Response
+  try {
+    res = await fetch('https://api.imgbb.com/1/upload', {
+      method: 'POST',
+      body,
+      signal: ac.signal,
+    })
+  } catch (e) {
+    clearTimeout(timer)
+    const msg = (e as Error).name === 'AbortError'
+      ? `imgbb upload timed out after ${UPLOAD_TIMEOUT_MS / 1000}s`
+      : `imgbb unreachable: ${(e as Error).message}`
+    return NextResponse.json({ error: msg }, { status: 502 })
+  } finally {
+    clearTimeout(timer)
+  }
 
   if (!res.ok) {
-    const text = await res.text()
+    let text: string
+    try { text = await res.text() } catch { text = '' }
     let brief = 'Upload failed'
     try {
       const parsed = JSON.parse(text)
       if (parsed?.error?.message) brief = parsed.error.message
       else if (parsed?.status_txt) brief = parsed.status_txt
     } catch {
-      if (text.length < 200) brief = text
+      if (text.length > 0 && text.length < 200) brief = text
     }
     return NextResponse.json(
       { error: brief, detail: text },
