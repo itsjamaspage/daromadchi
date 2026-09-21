@@ -35,11 +35,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const buffer = Buffer.from(await file.arrayBuffer())
   const base64 = buffer.toString('base64')
 
-  const body = new FormData()
-  body.append('key', IMGBB_API_KEY)
-  body.append('image', base64)
-  body.append('name', file.name.replace(/\.[^.]+$/, ''))
-
   const ac = new AbortController()
   const timer = setTimeout(() => ac.abort(), UPLOAD_TIMEOUT_MS)
 
@@ -47,7 +42,12 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   try {
     res = await fetch('https://api.imgbb.com/1/upload', {
       method: 'POST',
-      body,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        key: IMGBB_API_KEY,
+        image: base64,
+        name: file.name.replace(/\.[^.]+$/, ''),
+      }),
       signal: ac.signal,
     })
   } catch (e) {
