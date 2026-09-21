@@ -1340,7 +1340,8 @@ export default function ProductCreateForm() {
         }
       } else {
         const err = await res.json().catch(() => ({ error: res.statusText }))
-        setPushResult({ ok: false, message: `${lang === 'ru' ? 'Ошибка загрузки фото' : 'Photo upload error'}: ${err.error || res.statusText}` })
+        const detail = err.detail ? ` (${String(err.detail).slice(0, 100)})` : ''
+        setPushResult({ ok: false, message: `${lang === 'ru' ? 'Ошибка загрузки фото' : 'Photo upload error'}: ${err.error || res.statusText}${detail}` })
       }
     } catch (err) {
       setPushResult({ ok: false, message: `${lang === 'ru' ? 'Ошибка загрузки фото' : 'Photo upload error'}: ${err instanceof Error ? err.message : 'Unknown'}` })

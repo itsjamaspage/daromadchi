@@ -40,8 +40,16 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
   if (!res.ok) {
     const text = await res.text()
+    let brief = 'Upload failed'
+    try {
+      const parsed = JSON.parse(text)
+      if (parsed?.error?.message) brief = parsed.error.message
+      else if (parsed?.status_txt) brief = parsed.status_txt
+    } catch {
+      if (text.length < 200) brief = text
+    }
     return NextResponse.json(
-      { error: 'Upload failed', detail: text },
+      { error: brief, detail: text },
       { status: res.status },
     )
   }
