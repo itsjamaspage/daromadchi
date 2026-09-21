@@ -7,9 +7,10 @@ export function withErrorHandler(handler: Handler): Handler {
     try {
       return await handler(req, ctx)
     } catch (err) {
-      console.error('[API Error]', err)
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('[API Error]', msg, err)
       return NextResponse.json(
-        { error: 'Ichki server xatosi' },
+        { error: 'Ichki server xatosi', detail: msg },
         { status: 500 },
       )
     }
