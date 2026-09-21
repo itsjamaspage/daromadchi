@@ -1032,6 +1032,18 @@ export default function ProductCreateForm() {
             photoUrl: '',
           })))
         }
+
+        const maxKnown = Math.max(...Object.values(ci).filter(v => v >= 0))
+        const parsedChars: { id: string; name: string; value: string }[] = []
+        for (let hIdx = maxKnown + 1; hIdx < headers.length; hIdx++) {
+          const charName = headers[hIdx]
+          if (!charName) continue
+          const charValue = str(first, hIdx)
+          if (charValue) {
+            parsedChars.push({ id: uid(), name: charName, value: charValue })
+          }
+        }
+        if (parsedChars.length > 0) setChars(parsedChars)
       } else {
         const ci = {
           sku: col(/^Ваш SKU/), name: col(/^Название товара/), photos: col(/^Ссылка на изображение/),
