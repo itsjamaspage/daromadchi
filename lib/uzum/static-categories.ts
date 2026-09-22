@@ -19,7 +19,8 @@ export function getUzumTemplateCategories(): StaticCategory[] {
 
   try {
     const templatePath = join(process.cwd(), 'lib/excel/templates/uzum-template.xlsm')
-    const wb = XLSX.readFile(templatePath)
+    const buf = readFileSync(templatePath)
+    const wb = XLSX.read(buf, { type: 'buffer' })
     const ws = wb.Sheets['Лист2']
     if (!ws) return []
 
