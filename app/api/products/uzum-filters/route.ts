@@ -14,69 +14,90 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   const categoryId = Number(req.nextUrl.searchParams.get('categoryId'))
   if (!categoryId) return NextResponse.json({ error: 'categoryId required' }, { status: 400 })
 
-  // 1) Try live GraphQL API
-  const apiFilters = await getCategoryFilters(categoryId)
-  if (apiFilters.length > 0) {
-    // Merge with fallback to get required/type metadata
-    const fallback = getCategoryFiltersFallback(categoryId)
-    const fallbackMap = new Map(fallback.map(f => [f.name.toLowerCase(), f]))
+  const fallback = getCategoryFiltersFallback(categoryId)
+
+  // For categories with hardcoded definitions (sourced from the seller cabinet),
+  // always use those as the authoritative list. The GraphQL API returns search
+  // facets which are different from seller product attributes.
+  if (fallback.length > 0) {
+    // Try to enrich fallback with dropdown values from the API or template
+    const apiValues = await getApiValueMap(categoryId)
+    const templateValues = getTemplateValueMap(categoryId)
 
     return NextResponse.json({
-      filters: apiFilters.map(f => {
-        const fb = fallbackMap.get(f.title.toLowerCase())
+      filters: fallback.map((f, i) => {
+        const apiMatch = apiValues.get(f.name.toLowerCase())
+        const tmplMatch = templateValues.get(f.name.toLowerCase())
+        const values = apiMatch ?? tmplMatch ?? f.values ?? []
         return {
-          id: f.id,
-          name: f.title,
-          type: fb?.type ?? f.type,
-          required: fb?.required ?? false,
-          min: fb?.min,
-          max: fb?.max,
-          values: f.values.map(v => v.value),
+          id: apiMatch ? (i + 1) : (i + 1),
+          name: f.name,
+          type: f.type,
+          required: f.required,
+          min: f.min,
+          max: f.max,
+          values,
         }
       }),
+      source: 'fallback',
+    })
+  }
+
+  // No hardcoded fallback — try live API
+  const apiFilters = await getCategoryFilters(categoryId)
+  if (apiFilters.length > 0) {
+    return NextResponse.json({
+      filters: apiFilters.map(f => ({
+        id: f.id,
+        name: f.title,
+        type: f.type,
+        required: false,
+        values: f.values.map(v => v.value),
+      })),
       source: 'api',
     })
   }
 
-  // 2) Try template Лист2 data
+  // Try template Лист2 data
   const templateFilters = getUzumTemplateFilters(categoryId)
   if (templateFilters.length > 0) {
-    const fallback = getCategoryFiltersFallback(categoryId)
-    const fallbackMap = new Map(fallback.map(f => [f.name.toLowerCase(), f]))
-
     return NextResponse.json({
-      filters: templateFilters.map(f => {
-        const fb = fallbackMap.get(f.name.toLowerCase())
-        return {
-          id: f.filterId,
-          name: f.name,
-          type: fb?.type ?? f.type,
-          required: fb?.required ?? false,
-          min: fb?.min,
-          max: fb?.max,
-          values: f.values,
-        }
-      }),
-      source: 'template',
-    })
-  }
-
-  // 3) Use hardcoded fallback for known categories
-  const fallback = getCategoryFiltersFallback(categoryId)
-  if (fallback.length > 0) {
-    return NextResponse.json({
-      filters: fallback.map((f, i) => ({
-        id: i + 1,
+      filters: templateFilters.map(f => ({
+        id: f.filterId,
         name: f.name,
         type: f.type,
-        required: f.required,
-        min: f.min,
-        max: f.max,
-        values: f.values ?? [],
+        required: false,
+        values: f.values,
       })),
-      source: 'fallback',
+      source: 'template',
     })
   }
 
   return NextResponse.json({ filters: [], source: 'none' })
 })
+
+async function getApiValueMap(categoryId: number): Promise<Map<string, string[]>> {
+  try {
+    const apiFilters = await getCategoryFilters(categoryId)
+    const map = new Map<string, string[]>()
+    for (const f of apiFilters) {
+      if (f.values.length > 0) {
+        map.set(f.title.toLowerCase(), f.values.map(v => v.value))
+      }
+    }
+    return map
+  } catch {
+    return new Map()
+  }
+}
+
+function getTemplateValueMap(categoryId: number): Map<string, string[]> {
+  const tmpl = getUzumTemplateFilters(categoryId)
+  const map = new Map<string, string[]>()
+  for (const f of tmpl) {
+    if (f.values.length > 0) {
+      map.set(f.name.toLowerCase(), f.values)
+    }
+  }
+  return map
+}
