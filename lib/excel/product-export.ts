@@ -202,7 +202,16 @@ export function generateUzumExcel(
     `<c r="C1" s="4" t="inlineStr"><is><t>${escXml(category.fullPath)}</t></is></c>`,
   )
 
-  const headerXml = row1 + headerRowsMatch[1] + headerRowsMatch[2]
+  // Inject characteristic names as column headers in row 2 (AE+ columns)
+  let row2 = headerRowsMatch[1]
+  if (charKeys.length > 0) {
+    const charHeaderCells = charKeys.map((k, ci) =>
+      `<c r="${colLetter(31 + ci)}2" t="inlineStr"><is><t>${escXml(k)}</t></is></c>`
+    ).join('')
+    row2 = row2.replace(/<\/row>$/, charHeaderCells + '</row>')
+  }
+
+  const headerXml = row1 + row2 + headerRowsMatch[2]
 
   const lastDataRow = 3 + products.length
   const lastCol = colLetter(30 + charKeys.length)
