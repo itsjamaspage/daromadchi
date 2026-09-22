@@ -172,7 +172,57 @@ export async function fetchProductPhoto(productId: number): Promise<string | nul
   return null
 }
 
+// ─── Types: category filters ─────────────────────────────────────────────────
+
+export interface UzumCategoryFilterDef {
+  id: number
+  title: string
+  type: string
+  values: { id: number; value: string }[]
+}
+
 // ─── API calls ────────────────────────────────────────────────────────────────
+
+export async function getCategoryFilters(categoryId: number): Promise<UzumCategoryFilterDef[]> {
+  try {
+    const gql = `query CategoryFilters($categoryId:Int!){makeSearch(query:{categoryId:$categoryId,pagination:{offset:0,limit:1},showAdultContent:NONE}){filters{filter{id title type}values{id value count}}}}`
+    const res = await marketplaceFetch('https://graphql.uzum.uz', {
+      method: 'POST',
+      headers: GRAPHQL_HEADERS,
+      body: JSON.stringify({
+        operationName: 'CategoryFilters',
+        query: gql,
+        variables: { categoryId },
+      }),
+      next: { revalidate: 3600 },
+    })
+    if (!res.ok) return []
+    const data = await res.json() as {
+      data?: {
+        makeSearch?: {
+          filters?: Array<{
+            filter: { id: number; title: string; type: string }
+            values?: Array<{ id: number; value: string; count?: number }>
+          }>
+        }
+      }
+    }
+    const raw = data?.data?.makeSearch?.filters ?? []
+    return raw
+      .filter(f => f.filter?.id && f.filter?.title)
+      .map(f => ({
+        id: f.filter.id,
+        title: f.filter.title,
+        type: f.filter.type ?? 'SINGLE_CHOICE',
+        values: (f.values ?? [])
+          .filter(v => v.value)
+          .map(v => ({ id: v.id, value: v.value })),
+      }))
+  } catch (err) {
+    console.error('[getCategoryFilters] Failed:', err)
+    return []
+  }
+}
 
 export async function getRootCategories(): Promise<UzumPublicCategory[]> {
   try {

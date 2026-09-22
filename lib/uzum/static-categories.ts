@@ -65,5 +65,48 @@ export function getUzumTemplateCategories(): StaticCategory[] {
   }
 }
 
+export interface UzumCategoryFilter {
+  filterId: number
+  name: string
+  type: 'SINGLE_CHOICE' | 'MULTI_CHOICE' | 'TEXT'
+  values: string[]
+}
+
+let filterCache: Map<number, UzumCategoryFilter[]> | null = null
+
+export function getUzumTemplateFilters(categoryId: number): UzumCategoryFilter[] {
+  if (!filterCache) {
+    filterCache = new Map()
+    try {
+      const templatePath = join(process.cwd(), 'lib/excel/templates/uzum-template.xlsm')
+      const buf = readFileSync(templatePath)
+      const wb = XLSX.read(buf, { type: 'buffer' })
+      const ws = wb.Sheets['Лист2']
+      if (!ws) return []
+
+      const rows: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i]
+        const catId = Number(row[0])
+        const filterId = Number(row[3])
+        const filterName = String(row[4] || '').trim()
+        const filterValues = String(row[5] || '').trim()
+        const customerType = String(row[6] || '').trim()
+        if (!catId || !filterId || !filterName) continue
+
+        const type = customerType === 'MULTI_CHOICE' ? 'MULTI_CHOICE'
+          : customerType === 'SINGLE_CHOICE' ? 'SINGLE_CHOICE' : 'TEXT'
+        const values = filterValues ? filterValues.split(';').map(v => v.trim()).filter(Boolean) : []
+
+        if (!filterCache.has(catId)) filterCache.set(catId, [])
+        filterCache.get(catId)!.push({ filterId, name: filterName, type, values })
+      }
+    } catch (err) {
+      console.error('[getUzumTemplateFilters] Failed to parse:', err)
+    }
+  }
+  return filterCache.get(categoryId) ?? []
+}
+
 // Backward-compat export — now returns real IDs from the template
 export const UZUM_STATIC_CATEGORIES: StaticCategory[] = []
