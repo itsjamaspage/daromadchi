@@ -887,15 +887,13 @@ export default function ProductCreateForm() {
 
   // Fetch Uzum category filters when Uzum category changes
   useEffect(() => {
-    if (!uzumCatId) {
-      setUzumFilters([])
-      return
-    }
+    if (!uzumCatId) return () => { setUzumFilters([]) }
     let cancelled = false
-    setUzumFiltersLoading(true)
-    fetch(`/api/products/uzum-filters?categoryId=${uzumCatId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
+    const load = async () => {
+      setUzumFiltersLoading(true)
+      try {
+        const res = await fetch(`/api/products/uzum-filters?categoryId=${uzumCatId}`)
+        const data = res.ok ? await res.json() : null
         if (cancelled) return
         const filters = data?.filters ?? []
         setUzumFilters(filters)
@@ -908,9 +906,10 @@ export default function ProductCreateForm() {
             return toAdd.length > 0 ? [...prev, ...toAdd] : prev
           })
         }
-      })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setUzumFiltersLoading(false) })
+      } catch { /* ignore */ }
+      finally { if (!cancelled) setUzumFiltersLoading(false) }
+    }
+    load()
     return () => { cancelled = true }
   }, [uzumCatId])
 
