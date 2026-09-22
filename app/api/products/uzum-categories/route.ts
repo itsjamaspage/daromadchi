@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { existsSync } from 'fs'
+import { join } from 'path'
 import { getCurrentUser } from '@/lib/auth/session'
 import { withErrorHandler } from '@/lib/api-handler'
 import { getRootCategories } from '@/lib/uzum/public'
@@ -20,5 +22,11 @@ export const GET = withErrorHandler(async () => {
     return NextResponse.json({ categories: templateTree, fallback: true })
   }
 
-  return NextResponse.json({ categories: [], fallback: true })
+  const templatePath = join(process.cwd(), 'lib/excel/templates/uzum-template.xlsm')
+  const debug = {
+    cwd: process.cwd(),
+    templateExists: existsSync(templatePath),
+  }
+  console.error('[uzum-categories] Both sources empty. Debug:', debug)
+  return NextResponse.json({ categories: [], fallback: true, debug })
 })
