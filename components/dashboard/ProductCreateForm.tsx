@@ -1171,7 +1171,7 @@ export default function ProductCreateForm() {
       skuGroup: skuGroup.trim() || nameRu.trim(),
       categoryName: uzumCatName || yandexCatName || '',
       categoryId: '',
-      brand: brandSkipped ? 'Отсутствует' : brand.trim(),
+      brand: brandSkipped ? 'Отсутствует бренд' : brand.trim(),
       model: modelSkipped ? '' : model.trim(),
       country: countrySkipped ? 'Отсутствует' : country.trim(),
       descriptionRu: descRu.trim(),
