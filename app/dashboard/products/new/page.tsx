@@ -6,7 +6,7 @@ export default async function NewProductPage() {
   const d = t.dashboard
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mx-auto" style={{ maxWidth: '860px' }}>
       <div>
         <h1 className="text-2xl font-bold mb-0.5" style={{ color: 'var(--text-base)' }}>
           {d.createProduct}
