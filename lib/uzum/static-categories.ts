@@ -58,7 +58,8 @@ export function getUzumTemplateCategories(): StaticCategory[] {
 
     cached = tree
     return tree
-  } catch {
+  } catch (err) {
+    console.error('[getUzumTemplateCategories] Failed to parse template:', err)
     return []
   }
 }
