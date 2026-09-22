@@ -23,9 +23,27 @@ export const GET = withErrorHandler(async () => {
   }
 
   const templatePath = join(process.cwd(), 'lib/excel/templates/uzum-template.xlsm')
+  let sheetNames: string[] = []
+  let rowCount = 0
+  let parseError: string | null = null
+  try {
+    const XLSX = await import('xlsx')
+    const wb = XLSX.readFile(templatePath)
+    sheetNames = wb.SheetNames
+    const ws = wb.Sheets['Лист2']
+    if (ws) {
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }) as unknown[][]
+      rowCount = rows.length
+    }
+  } catch (e) {
+    parseError = String(e).slice(0, 300)
+  }
   const debug = {
     cwd: process.cwd(),
     templateExists: existsSync(templatePath),
+    sheetNames,
+    rowCount,
+    parseError,
   }
   console.error('[uzum-categories] Both sources empty. Debug:', debug)
   return NextResponse.json({ categories: [], fallback: true, debug })
