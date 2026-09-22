@@ -768,7 +768,7 @@ export default function ProductCreateForm() {
   // Uzum category filters (fetched when Uzum category is selected)
   const uzumCatId = uzumCatPath.length > 0 ? uzumCatPath[uzumCatPath.length - 1].id : null
   const [uzumFilters, setUzumFilters] = useState<{
-    id: number; name: string; type: string; values: string[]
+    id: number; name: string; type: string; required?: boolean; min?: number; max?: number; values: string[]
   }[]>([])
   const [uzumFiltersLoading, setUzumFiltersLoading] = useState(false)
 
@@ -2061,7 +2061,7 @@ export default function ProductCreateForm() {
       <SectionCard
         title={d.characteristicsSection}
         badge={<MpBadges uz ym />}
-        defaultOpen={uzumFilters.length > 0}
+        defaultOpen={uzumFilters.length > 0 || !!uzumCatId}
       >
         <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
           {lang === 'ru' ? 'Свойства товара — зависят от категории (Uzum и Yandex)'
@@ -2072,6 +2072,15 @@ export default function ProductCreateForm() {
           <div className="flex items-center gap-2 mb-3 text-xs" style={{ color: 'var(--text-muted)' }}>
             <div className="w-3.5 h-3.5 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--border)', borderTopColor: 'var(--c1)' }} />
             {lang === 'ru' ? 'Загрузка свойств категории...' : 'Loading category properties...'}
+          </div>
+        )}
+        {uzumFilters.length > 0 && (
+          <div className="flex items-center gap-2 mb-3 text-xs" style={{ color: 'var(--c1)' }}>
+            <span>
+              {lang === 'ru'
+                ? `Загружено ${uzumFilters.length} свойств (${uzumFilters.filter(f => f.required).length} обязательных)`
+                : `Loaded ${uzumFilters.length} properties (${uzumFilters.filter(f => f.required).length} required)`}
+            </span>
           </div>
         )}
         {chars.length === 0 && !uzumFiltersLoading ? (
@@ -2085,30 +2094,75 @@ export default function ProductCreateForm() {
             {chars.map(c => {
               const uzumFilter = uzumFilters.find(f => f.name.toLowerCase() === c.name.trim().toLowerCase())
               const hasDropdown = uzumFilter && uzumFilter.values.length > 0
+              const isNumber = uzumFilter?.type === 'NUMBER'
+              const isRequired = uzumFilter?.required
               return (
               <div key={c.id} className="flex flex-col sm:flex-row sm:items-end gap-2">
                 <div className="flex-1">
-                  <InputField label={d.charName} value={c.name}
-                    onChange={val => updateChar(c.id, 'name', val)}
-                    placeholder={d.phCharName} />
+                  {uzumFilter ? (
+                    <div>
+                      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-dim)' }}>
+                        {d.charName}
+                        {isRequired && <span className="ml-1" style={{ color: '#ef4444' }}>*</span>}
+                      </label>
+                      <div
+                        className="w-full px-3 py-2 rounded-xl border text-sm"
+                        style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: 'var(--text-base)' }}
+                      >
+                        {c.name}
+                        {isRequired && (
+                          <span className="ml-2 text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: '#ef444420', color: '#ef4444' }}>
+                            {lang === 'ru' ? 'обяз.' : 'req.'}
+                          </span>
+                        )}
+                        {isNumber && uzumFilter.min != null && (
+                          <span className="ml-2 text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                            {uzumFilter.min}–{uzumFilter.max}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <InputField label={d.charName} value={c.name}
+                      onChange={val => updateChar(c.id, 'name', val)}
+                      placeholder={d.phCharName} />
+                  )}
                 </div>
                 <div className="flex-1">
                   {hasDropdown ? (
                     <div>
                       <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-dim)' }}>
                         {d.charValue}
+                        {isRequired && <span className="ml-1" style={{ color: '#ef4444' }}>*</span>}
                       </label>
                       <select
                         value={c.value}
                         onChange={e => updateChar(c.id, 'value', e.target.value)}
                         className="w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-1"
-                        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-base)', '--tw-ring-color': 'var(--c1)' } as React.CSSProperties}
+                        style={{ background: 'var(--bg-input)', borderColor: isRequired && !c.value ? '#ef4444' : 'var(--border)', color: 'var(--text-base)', '--tw-ring-color': 'var(--c1)' } as React.CSSProperties}
                       >
                         <option value="">{lang === 'ru' ? '— Выберите —' : '— Select —'}</option>
                         {uzumFilter.values.map(v => (
                           <option key={v} value={v}>{v}</option>
                         ))}
                       </select>
+                    </div>
+                  ) : isNumber ? (
+                    <div>
+                      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-dim)' }}>
+                        {d.charValue}
+                        {isRequired && <span className="ml-1" style={{ color: '#ef4444' }}>*</span>}
+                      </label>
+                      <input
+                        type="number"
+                        value={c.value}
+                        onChange={e => updateChar(c.id, 'value', e.target.value)}
+                        min={uzumFilter?.min}
+                        max={uzumFilter?.max}
+                        placeholder={uzumFilter?.min != null ? `${uzumFilter.min}–${uzumFilter.max}` : (lang === 'ru' ? 'Введите число' : 'Enter number')}
+                        className="w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-1"
+                        style={{ background: 'var(--bg-input)', borderColor: isRequired && !c.value ? '#ef4444' : 'var(--border)', color: 'var(--text-base)', '--tw-ring-color': 'var(--c1)' } as React.CSSProperties}
+                      />
                     </div>
                   ) : (
                     <InputField label={d.charValue} value={c.value}
