@@ -2093,11 +2093,13 @@ export default function ProductCreateForm() {
           <div className="space-y-2">
             {chars.map(c => {
               const uzumFilter = uzumFilters.find(f => f.name.toLowerCase() === c.name.trim().toLowerCase())
-              const hasDropdown = uzumFilter && uzumFilter.values.length > 0
+              const isMulti = uzumFilter?.type === 'MULTI_CHOICE' && uzumFilter.values.length > 0
+              const hasDropdown = uzumFilter && uzumFilter.values.length > 0 && !isMulti
               const isNumber = uzumFilter?.type === 'NUMBER'
               const isRequired = uzumFilter?.required
+              const selectedMulti = isMulti ? new Set(c.value.split(';').map(s => s.trim()).filter(Boolean)) : null
               return (
-              <div key={c.id} className="flex flex-col sm:flex-row sm:items-end gap-2">
+              <div key={c.id} className="flex flex-col sm:flex-row sm:items-start gap-2">
                 <div className="flex-1">
                   {uzumFilter ? (
                     <div>
@@ -2129,7 +2131,36 @@ export default function ProductCreateForm() {
                   )}
                 </div>
                 <div className="flex-1">
-                  {hasDropdown ? (
+                  {isMulti && selectedMulti ? (
+                    <div>
+                      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-dim)' }}>
+                        {d.charValue}
+                        {isRequired && <span className="ml-1" style={{ color: '#ef4444' }}>*</span>}
+                      </label>
+                      <div
+                        className="w-full px-3 py-2 rounded-xl border text-sm space-y-1"
+                        style={{ background: 'var(--bg-input)', borderColor: isRequired && !c.value ? '#ef4444' : 'var(--border)' }}
+                      >
+                        {uzumFilter!.values.map(v => (
+                          <label key={v} className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: 'var(--text-base)' }}>
+                            <input
+                              type="checkbox"
+                              checked={selectedMulti.has(v)}
+                              onChange={() => {
+                                const next = new Set(selectedMulti)
+                                if (next.has(v)) next.delete(v)
+                                else next.add(v)
+                                updateChar(c.id, 'value', [...next].join('; '))
+                              }}
+                              className="rounded"
+                              style={{ accentColor: 'var(--c1)' }}
+                            />
+                            {v}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ) : hasDropdown ? (
                     <div>
                       <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-dim)' }}>
                         {d.charValue}
@@ -2142,7 +2173,7 @@ export default function ProductCreateForm() {
                         style={{ background: 'var(--bg-input)', borderColor: isRequired && !c.value ? '#ef4444' : 'var(--border)', color: 'var(--text-base)', '--tw-ring-color': 'var(--c1)' } as React.CSSProperties}
                       >
                         <option value="">{lang === 'ru' ? '— Выберите —' : '— Select —'}</option>
-                        {uzumFilter.values.map(v => (
+                        {uzumFilter!.values.map(v => (
                           <option key={v} value={v}>{v}</option>
                         ))}
                       </select>
@@ -2173,7 +2204,7 @@ export default function ProductCreateForm() {
                 <button
                   type="button"
                   onClick={() => removeChar(c.id)}
-                  className="p-2 rounded-lg transition-colors hover:bg-red-500/10 mb-0.5 self-end"
+                  className="p-2 rounded-lg transition-colors hover:bg-red-500/10 mt-5 self-start"
                   style={{ color: 'var(--text-muted)' }}
                 >
                   <Trash2 className="w-4 h-4" />
