@@ -815,6 +815,7 @@ export default function ProductCreateForm() {
 
   // Import state
   const [importResult, setImportResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const [importDragOver, setImportDragOver] = useState(false)
 
   // ── Fetch category trees on mount ──────────────────────────────────────
   useEffect(() => {
@@ -1557,8 +1558,40 @@ export default function ProductCreateForm() {
 
       {/* ── Import from Excel ── */}
       <div
-        className="rounded-2xl border p-4 sm:p-5"
-        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+        className="rounded-2xl border p-4 sm:p-5 transition-colors"
+        style={{
+          background: importDragOver ? 'var(--c1)08' : 'var(--bg-card)',
+          borderColor: importDragOver ? 'var(--c1)' : 'var(--border)',
+          borderStyle: importDragOver ? 'dashed' : 'solid',
+        }}
+        onDragOver={e => { e.preventDefault(); e.stopPropagation(); setImportDragOver(true) }}
+        onDragEnter={e => { e.preventDefault(); e.stopPropagation(); setImportDragOver(true) }}
+        onDragLeave={e => { e.preventDefault(); e.stopPropagation(); setImportDragOver(false) }}
+        onDrop={e => {
+          e.preventDefault(); e.stopPropagation(); setImportDragOver(false)
+          const file = e.dataTransfer.files?.[0]
+          if (file && /\.(xlsx|xlsm)$/i.test(file.name)) {
+            handleFileImport(file)
+          } else if (file) {
+            setImportResult({
+              ok: false,
+              message: lang === 'ru'
+                ? 'Поддерживаются только файлы .xlsx и .xlsm'
+                : lang === 'uz'
+                ? 'Faqat .xlsx va .xlsm fayllar qo\'llab-quvvatlanadi'
+                : 'Only .xlsx and .xlsm files are supported',
+            })
+          } else {
+            setImportResult({
+              ok: false,
+              message: lang === 'ru'
+                ? 'Не удалось получить файл. Сначала сохраните файл на компьютер, затем перетащите его сюда.'
+                : lang === 'uz'
+                ? "Faylni olib bo'lmadi. Avval faylni kompyuterga saqlang, keyin shu yerga tashlang."
+                : 'Could not get the file. Save it to your computer first, then drag it here.',
+            })
+          }
+        }}
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
@@ -1567,10 +1600,10 @@ export default function ProductCreateForm() {
             </h3>
             <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
               {lang === 'ru'
-                ? 'Загрузите свой файл Uzum или Yandex (.xlsx / .xlsm) — данные заполнят форму автоматически'
+                ? 'Перетащите файл сюда или нажмите кнопку (.xlsx / .xlsm)'
                 : lang === 'uz'
-                ? "Uzum yoki Yandex faylingizni yuklang (.xlsx / .xlsm) — ma'lumotlar avtomatik to'ldiriladi"
-                : 'Upload your Uzum or Yandex file (.xlsx / .xlsm) — data will fill the form automatically'}
+                ? "Faylni shu yerga tashlang yoki tugmani bosing (.xlsx / .xlsm)"
+                : 'Drag file here or click the button (.xlsx / .xlsm)'}
             </p>
           </div>
           <label
@@ -1591,6 +1624,12 @@ export default function ProductCreateForm() {
             />
           </label>
         </div>
+        {importDragOver && (
+          <div className="flex items-center justify-center gap-2 mt-3 py-4 text-sm font-medium" style={{ color: 'var(--c1)' }}>
+            <Download className="w-5 h-5" />
+            {lang === 'ru' ? 'Отпустите файл для загрузки' : lang === 'uz' ? 'Faylni yuklash uchun qo\'yib yuboring' : 'Drop file to upload'}
+          </div>
+        )}
         {importResult && (
           <div
             className="flex items-center gap-2 text-sm mt-3 px-3 py-2 rounded-xl border"
