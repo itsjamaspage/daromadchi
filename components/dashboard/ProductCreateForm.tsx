@@ -1524,9 +1524,11 @@ export default function ProductCreateForm() {
         }).catch(() => { /* sync failure is non-critical */ })
       } else {
         const data = await res.json().catch(() => ({ error: res.statusText }))
+        console.error('[Yandex Push] Error response:', JSON.stringify(data, null, 2))
+        const detail = data.detail ? ` (${data.detail})` : ''
         setPushResult({
           ok: false,
-          message: data.error || `HTTP ${res.status}`,
+          message: (data.error || `HTTP ${res.status}`) + detail,
         })
       }
     } catch (err) {
