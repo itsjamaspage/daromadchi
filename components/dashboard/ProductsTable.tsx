@@ -614,7 +614,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 <FulfillmentBadge type={shared(k => k.fulfillment_type)} />
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
                   style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>
-                  {variantCountLabel(kids.length, lang)}
+                  {variantCountLabel(new Set(kids.map(k => k.sku ?? k.variant_color ?? k.id)).size, lang)}
                 </span>
               </div>
             </div>
