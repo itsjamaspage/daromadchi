@@ -188,7 +188,8 @@ export function generateUzumExcel(
         return inlineCell(colLetter(31 + ci), r, val)
       }).filter(Boolean),
     ]
-    return `<row r="${r}" spans="1:${30 + charKeys.length}">${cells.join('')}</row>`
+    const spanEnd = Math.max(37, 30 + charKeys.length)
+    return `<row r="${r}" spans="1:${spanEnd}">${cells.join('')}</row>`
   })
 
   // Extract rows 1-3 from the template (group headers, column headers, descriptions)
@@ -196,10 +197,12 @@ export function generateUzumExcel(
   if (!headerRowsMatch) throw new Error('Uzum template: cannot find header rows')
 
   // Update category path in C1 (row 1, column 3)
+  // Template format is "fullPath | categoryId" — the CategoryList data validation requires this exact format
   let row1 = headerRowsMatch[0]
+  const c1Value = category.id ? `${category.fullPath} | ${category.id}` : category.fullPath
   row1 = row1.replace(
     /<c r="C1"[^>]*>[\s\S]*?<\/c>/,
-    `<c r="C1" s="4" t="inlineStr"><is><t>${escXml(category.fullPath)}</t></is></c>`,
+    `<c r="C1" s="4" t="inlineStr"><is><t>${escXml(c1Value)}</t></is></c>`,
   )
 
   // Inject characteristic names as column headers in row 2 (AE+ columns)
@@ -214,7 +217,7 @@ export function generateUzumExcel(
   const headerXml = row1 + row2 + headerRowsMatch[2]
 
   const lastDataRow = 3 + products.length
-  const lastCol = colLetter(30 + charKeys.length)
+  const lastCol = colLetter(Math.max(37, 30 + charKeys.length))
   let newXml = sheetXml.replace(
     /<sheetData>[\s\S]*<\/sheetData>/,
     `<sheetData>${headerXml}${productRows.join('')}</sheetData>`,
