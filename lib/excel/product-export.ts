@@ -128,7 +128,6 @@ export function generateUzumExcel(
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
-      .replace(/[^\x20-\x7E]/g, ch => '&#' + ch.charCodeAt(0) + ';')
 
   const inlineCell = (col: string, row: number, val: string, style?: string) => {
     const sAttr = style ? ` s="${style}"` : ''
@@ -340,7 +339,6 @@ export function generateYandexExcel(
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
-      .replace(/[^\x20-\x7E]/g, ch => '&#' + ch.charCodeAt(0) + ';')
 
   const inlineCell = (col: string, row: number, val: string, style = '63') =>
     `<c r="${col}${row}" s="${style}" t="inlineStr"><is><t>${escXml(val)}</t></is></c>`
