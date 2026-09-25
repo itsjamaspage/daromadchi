@@ -156,7 +156,7 @@ export function generateUzumExcel(
       inlineCell('C', r, p.nameUz),
       inlineCell('D', r, p.skuGroup),
       inlineCell('E', r, category.name),
-      inlineCell('F', r, category.id),
+      numCell('F', r, Number(category.id)),
       inlineCell('G', r, p.brand, '1'),
       ...(p.model ? [inlineCell('H', r, p.model)] : []),
       inlineCell('I', r, p.country, '1'),
