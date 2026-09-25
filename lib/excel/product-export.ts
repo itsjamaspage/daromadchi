@@ -238,7 +238,7 @@ export function generateUzumExcel(
   // Reassemble sheetData: headers + data + remaining empty rows
   const newSheetData = [row1, row2, row3, ...dataRows, ...emptyTemplateRows].join('')
 
-  let newXml = sheetXml.replace(
+  const newXml = sheetXml.replace(
     /<sheetData>[\s\S]*<\/sheetData>/,
     `<sheetData>${newSheetData}</sheetData>`,
   )
