@@ -129,9 +129,22 @@ export function generateUzumExcel(
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
 
-  const inlineCell = (col: string, row: number, val: string, style?: string) => {
+  // Parse existing shared strings table from the template
+  const sstKey = 'xl/sharedStrings.xml'
+  const sstXml = new TextDecoder().decode(zip[sstKey])
+  const existingCount = parseInt(sstXml.match(/uniqueCount="(\d+)"/)?.[1] || '0')
+  const newStrings: string[] = []
+
+  const addSharedString = (val: string): number => {
+    const idx = existingCount + newStrings.length
+    newStrings.push(val)
+    return idx
+  }
+
+  const ssCell = (col: string, row: number, val: string, style?: string) => {
     const sAttr = style ? ` s="${style}"` : ''
-    return `<c r="${col}${row}"${sAttr} t="inlineStr"><is><t>${escXml(val)}</t></is></c>`
+    const idx = addSharedString(val)
+    return `<c r="${col}${row}"${sAttr} t="s"><v>${idx}</v></c>`
   }
 
   const numCell = (col: string, row: number, val: number, style?: string) => {
@@ -151,30 +164,30 @@ export function generateUzumExcel(
   const productRows = products.map((p, i) => {
     const r = 4 + i
     const cells = [
-      inlineCell('A', r, p.nameRu),
-      inlineCell('B', r, p.sku || ''),
-      inlineCell('C', r, p.nameUz),
-      inlineCell('D', r, p.skuGroup),
-      inlineCell('E', r, category.name),
+      ssCell('A', r, p.nameRu),
+      ssCell('B', r, p.sku || ''),
+      ssCell('C', r, p.nameUz),
+      ssCell('D', r, p.skuGroup),
+      ssCell('E', r, category.name),
       numCell('F', r, Number(category.id)),
-      inlineCell('G', r, p.brand, '1'),
-      ...(p.model ? [inlineCell('H', r, p.model)] : []),
-      inlineCell('I', r, p.country, '1'),
-      inlineCell('J', r, p.descriptionRu, '1'),
-      inlineCell('K', r, p.descriptionUz, '1'),
-      inlineCell('L', r, p.shortDescRu, '1'),
-      inlineCell('M', r, p.shortDescUz, '1'),
-      ...(p.compositionRu ? [inlineCell('N', r, p.compositionRu)] : []),
-      ...(p.compositionUz ? [inlineCell('O', r, p.compositionUz)] : []),
-      ...(p.careRu ? [inlineCell('P', r, p.careRu)] : []),
-      ...(p.careUz ? [inlineCell('Q', r, p.careUz)] : []),
-      ...(p.sizeChartRu ? [inlineCell('R', r, p.sizeChartRu)] : []),
-      ...(p.sizeChartUz ? [inlineCell('S', r, p.sizeChartUz)] : []),
-      inlineCell('T', r, p.photoUrls),
-      ...(p.barcode ? [inlineCell('U', r, p.barcode)] : []),
-      inlineCell('V', r, p.ikpu, '29'),
-      ...(p.color ? [inlineCell('W', r, p.color)] : []),
-      ...(p.size ? [inlineCell('X', r, p.size, '2')] : []),
+      ssCell('G', r, p.brand, '1'),
+      ...(p.model ? [ssCell('H', r, p.model)] : []),
+      ssCell('I', r, p.country, '1'),
+      ssCell('J', r, p.descriptionRu, '1'),
+      ssCell('K', r, p.descriptionUz, '1'),
+      ssCell('L', r, p.shortDescRu, '1'),
+      ssCell('M', r, p.shortDescUz, '1'),
+      ...(p.compositionRu ? [ssCell('N', r, p.compositionRu)] : []),
+      ...(p.compositionUz ? [ssCell('O', r, p.compositionUz)] : []),
+      ...(p.careRu ? [ssCell('P', r, p.careRu)] : []),
+      ...(p.careUz ? [ssCell('Q', r, p.careUz)] : []),
+      ...(p.sizeChartRu ? [ssCell('R', r, p.sizeChartRu)] : []),
+      ...(p.sizeChartUz ? [ssCell('S', r, p.sizeChartUz)] : []),
+      ssCell('T', r, p.photoUrls),
+      ...(p.barcode ? [ssCell('U', r, p.barcode)] : []),
+      ssCell('V', r, p.ikpu, '29'),
+      ...(p.color ? [ssCell('W', r, p.color)] : []),
+      ...(p.size ? [ssCell('X', r, p.size, '2')] : []),
       numCell('Y', r, p.sellingPrice),
       numCell('Z', r, p.oldPrice),
       numCell('AA', r, p.weightGrams),
@@ -184,7 +197,7 @@ export function generateUzumExcel(
       ...charKeys.map((k, ci) => {
         const val = p.characteristics?.[k]
         if (!val) return ''
-        return inlineCell(colLetter(31 + ci), r, val)
+        return ssCell(colLetter(31 + ci), r, val)
       }).filter(Boolean),
     ]
     const spanEnd = Math.max(37, 30 + charKeys.length)
@@ -195,21 +208,22 @@ export function generateUzumExcel(
   const headerRowsMatch = sheetXml.match(/<row r="[123]"[\s\S]*?<\/row>/g)
   if (!headerRowsMatch) throw new Error('Uzum template: cannot find header rows')
 
-  // Update category path in C1 (row 1, column 3)
-  // Template format is "fullPath | categoryId" — the CategoryList data validation requires this exact format
+  // Update category path in C1 using shared string (matching template format)
   let row1 = headerRowsMatch[0]
   const c1Value = category.id ? `${category.fullPath} | ${category.id}` : category.fullPath
+  const c1Idx = addSharedString(c1Value)
   row1 = row1.replace(
     /<c r="C1"[^>]*>[\s\S]*?<\/c>/,
-    `<c r="C1" s="4" t="inlineStr"><is><t>${escXml(c1Value)}</t></is></c>`,
+    `<c r="C1" s="4" t="s"><v>${c1Idx}</v></c>`,
   )
 
   // Inject characteristic names as column headers in row 2 (AE+ columns)
   let row2 = headerRowsMatch[1]
   if (charKeys.length > 0) {
-    const charHeaderCells = charKeys.map((k, ci) =>
-      `<c r="${colLetter(31 + ci)}2" t="inlineStr"><is><t>${escXml(k)}</t></is></c>`
-    ).join('')
+    const charHeaderCells = charKeys.map((k, ci) => {
+      const idx = addSharedString(k)
+      return `<c r="${colLetter(31 + ci)}2" t="s"><v>${idx}</v></c>`
+    }).join('')
     row2 = row2.replace(/<\/row>$/, charHeaderCells + '</row>')
   }
 
@@ -224,6 +238,16 @@ export function generateUzumExcel(
   newXml = newXml.replace(/<dimension ref="[^"]*"/, `<dimension ref="A1:${lastCol}${lastDataRow}"`)
 
   zip[sheetKey] = new TextEncoder().encode(newXml)
+
+  // Append new strings to the shared strings table
+  if (newStrings.length > 0) {
+    const newEntries = newStrings.map(s => `<si><t>${escXml(s)}</t></si>`).join('')
+    const totalCount = existingCount + newStrings.length
+    let updatedSst = sstXml.replace(/<\/sst>/, newEntries + '</sst>')
+    updatedSst = updatedSst.replace(/count="\d+"/, `count="${totalCount}"`)
+    updatedSst = updatedSst.replace(/uniqueCount="\d+"/, `uniqueCount="${totalCount}"`)
+    zip[sstKey] = new TextEncoder().encode(updatedSst)
+  }
 
   const result = zipSync(zip, { level: 6 })
   return Buffer.from(result)
