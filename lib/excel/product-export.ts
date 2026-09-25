@@ -129,14 +129,14 @@ export function generateUzumExcel(
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
 
-  // Parse existing shared strings table from the template
   const sstKey = 'xl/sharedStrings.xml'
   const sstXml = new TextDecoder().decode(zip[sstKey])
-  const existingCount = parseInt(sstXml.match(/uniqueCount="(\d+)"/)?.[1] || '0')
+  const existingUniqueCount = parseInt(sstXml.match(/uniqueCount="(\d+)"/)?.[1] || '0')
+  const existingSstCount = parseInt(sstXml.match(/\bcount="(\d+)"/)?.[1] || '0')
   const newStrings: string[] = []
 
   const addSharedString = (val: string): number => {
-    const idx = existingCount + newStrings.length
+    const idx = existingUniqueCount + newStrings.length
     newStrings.push(val)
     return idx
   }
@@ -161,7 +161,36 @@ export function generateUzumExcel(
     }
   }
 
-  const productRows = products.map((p, i) => {
+  // Extract ALL rows from the template
+  const allTemplateRows = sheetXml.match(/<row r="\d+"[\s\S]*?<\/row>/g)
+  if (!allTemplateRows || allTemplateRows.length < 3) {
+    throw new Error('Uzum template: cannot find header rows')
+  }
+
+  // Modify row 1: update C1 with category path
+  let row1 = allTemplateRows[0]
+  const c1Value = category.id ? `${category.fullPath} | ${category.id}` : category.fullPath
+  const c1Idx = addSharedString(c1Value)
+  row1 = row1.replace(
+    /<c r="C1"[^>]*>[\s\S]*?<\/c>/,
+    `<c r="C1" s="4" t="s"><v>${c1Idx}</v></c>`,
+  )
+
+  // Modify row 2: add characteristic column headers
+  let row2 = allTemplateRows[1]
+  if (charKeys.length > 0) {
+    const charHeaderCells = charKeys.map((k, ci) => {
+      const idx = addSharedString(k)
+      return `<c r="${colLetter(31 + ci)}2" t="s"><v>${idx}</v></c>`
+    }).join('')
+    row2 = row2.replace(/<\/row>$/, charHeaderCells + '</row>')
+  }
+
+  const row3 = allTemplateRows[2]
+
+  // Build data rows (row 4+)
+  const spanEnd = Math.max(37, 30 + charKeys.length)
+  const dataRows = products.map((p, i) => {
     const r = 4 + i
     const cells = [
       ssCell('A', r, p.nameRu),
@@ -200,52 +229,30 @@ export function generateUzumExcel(
         return ssCell(colLetter(31 + ci), r, val)
       }).filter(Boolean),
     ]
-    const spanEnd = Math.max(37, 30 + charKeys.length)
     return `<row r="${r}" spans="1:${spanEnd}">${cells.join('')}</row>`
   })
 
-  // Extract rows 1-3 from the template (group headers, column headers, descriptions)
-  const headerRowsMatch = sheetXml.match(/<row r="[123]"[\s\S]*?<\/row>/g)
-  if (!headerRowsMatch) throw new Error('Uzum template: cannot find header rows')
+  // Preserve the template's empty styled rows AFTER our data rows
+  const emptyTemplateRows = allTemplateRows.slice(3 + products.length)
 
-  // Update category path in C1 using shared string (matching template format)
-  let row1 = headerRowsMatch[0]
-  const c1Value = category.id ? `${category.fullPath} | ${category.id}` : category.fullPath
-  const c1Idx = addSharedString(c1Value)
-  row1 = row1.replace(
-    /<c r="C1"[^>]*>[\s\S]*?<\/c>/,
-    `<c r="C1" s="4" t="s"><v>${c1Idx}</v></c>`,
-  )
+  // Reassemble sheetData: headers + data + remaining empty rows
+  const newSheetData = [row1, row2, row3, ...dataRows, ...emptyTemplateRows].join('')
 
-  // Inject characteristic names as column headers in row 2 (AE+ columns)
-  let row2 = headerRowsMatch[1]
-  if (charKeys.length > 0) {
-    const charHeaderCells = charKeys.map((k, ci) => {
-      const idx = addSharedString(k)
-      return `<c r="${colLetter(31 + ci)}2" t="s"><v>${idx}</v></c>`
-    }).join('')
-    row2 = row2.replace(/<\/row>$/, charHeaderCells + '</row>')
-  }
-
-  const headerXml = row1 + row2 + headerRowsMatch[2]
-
-  const lastDataRow = 3 + products.length
-  const lastCol = colLetter(Math.max(37, 30 + charKeys.length))
-  let newXml = sheetXml.replace(
+  const newXml = sheetXml.replace(
     /<sheetData>[\s\S]*<\/sheetData>/,
-    `<sheetData>${headerXml}${productRows.join('')}</sheetData>`,
+    `<sheetData>${newSheetData}</sheetData>`,
   )
-  newXml = newXml.replace(/<dimension ref="[^"]*"/, `<dimension ref="A1:${lastCol}${lastDataRow}"`)
 
   zip[sheetKey] = new TextEncoder().encode(newXml)
 
-  // Append new strings to the shared strings table
+  // Update shared strings table — use correct base values for count vs uniqueCount
   if (newStrings.length > 0) {
     const newEntries = newStrings.map(s => `<si><t>${escXml(s)}</t></si>`).join('')
-    const totalCount = existingCount + newStrings.length
+    const newUniqueCount = existingUniqueCount + newStrings.length
+    const newSstCount = existingSstCount + newStrings.length
     let updatedSst = sstXml.replace(/<\/sst>/, newEntries + '</sst>')
-    updatedSst = updatedSst.replace(/count="\d+"/, `count="${totalCount}"`)
-    updatedSst = updatedSst.replace(/uniqueCount="\d+"/, `uniqueCount="${totalCount}"`)
+    updatedSst = updatedSst.replace(/\bcount="\d+"/, `count="${newSstCount}"`)
+    updatedSst = updatedSst.replace(/uniqueCount="\d+"/, `uniqueCount="${newUniqueCount}"`)
     zip[sstKey] = new TextEncoder().encode(updatedSst)
   }
 
