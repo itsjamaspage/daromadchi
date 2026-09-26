@@ -49,7 +49,8 @@ function resolveIdPath(tree: CatNode[], ids: number[]): CatNode[] {
   return path
 }
 
-const FORM_STORAGE_KEY = 'product-create-form-draft'
+const FORM_DRAFT_KEY = 'product-create-form-draft'
+const FORM_SAVED_KEY = 'product-create-form-saved'
 
 interface FormDraft {
   nameRu: string; nameUz: string; sku: string; brand: string; model: string; country: string
@@ -60,19 +61,28 @@ interface FormDraft {
   ikpu: string; ikpuPackCode: string; barcode: string; skuGroup: string
   variants: Variant[]; chars: Characteristic[]
   uzumCatPathIds: number[]; yandexCatPathIds: number[]
+  savedAt?: number
 }
 
 function loadDraft(): Partial<FormDraft> | null {
   try {
-    const raw = sessionStorage.getItem(FORM_STORAGE_KEY)
-    if (!raw) return null
-    sessionStorage.removeItem(FORM_STORAGE_KEY)
-    return JSON.parse(raw)
+    const session = sessionStorage.getItem(FORM_DRAFT_KEY)
+    if (session) {
+      sessionStorage.removeItem(FORM_DRAFT_KEY)
+      return JSON.parse(session)
+    }
+    const saved = localStorage.getItem(FORM_SAVED_KEY)
+    if (saved) return JSON.parse(saved)
+    return null
   } catch { return null }
 }
 
-function saveDraft(draft: FormDraft) {
-  try { sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(draft)) } catch {}
+function saveDraftToSession(draft: FormDraft) {
+  try { sessionStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(draft)) } catch {}
+}
+
+function saveDraftToLocal(draft: FormDraft) {
+  try { localStorage.setItem(FORM_SAVED_KEY, JSON.stringify({ ...draft, savedAt: Date.now() })) } catch {}
 }
 
 function generateEAN13(): string {
@@ -857,21 +867,37 @@ export default function ProductCreateForm() {
   const [importResult, setImportResult] = useState<{ ok: boolean; message: string } | null>(null)
   const [importDragOver, setImportDragOver] = useState(false)
 
-  // ── Save form state before page reload (language switch) ───────────────
+  const [saveFlash, setSaveFlash] = useState(false)
+  const [savedAt, setSavedAt] = useState<number | null>(() => draft?.savedAt ?? null)
+
+  const collectDraft = useCallback((): FormDraft => ({
+    nameRu, nameUz, sku, brand, model, country,
+    brandSkipped, modelSkipped, countrySkipped,
+    descRu, descUz, shortDescRu, shortDescUz,
+    photoUrls, sellingPrice, oldPrice,
+    weightG, heightMm, widthMm, lengthMm,
+    ikpu, ikpuPackCode, barcode, skuGroup,
+    variants, chars,
+    uzumCatPathIds: uzumCatPath.map(n => n.id),
+    yandexCatPathIds: yandexCatPath.map(n => n.id),
+  }), [nameRu, nameUz, sku, brand, model, country,
+    brandSkipped, modelSkipped, countrySkipped,
+    descRu, descUz, shortDescRu, shortDescUz,
+    photoUrls, sellingPrice, oldPrice,
+    weightG, heightMm, widthMm, lengthMm,
+    ikpu, ikpuPackCode, barcode, skuGroup,
+    variants, chars, uzumCatPath, yandexCatPath])
+
+  const handleSave = useCallback(() => {
+    saveDraftToLocal(collectDraft())
+    setSavedAt(Date.now())
+    setSaveFlash(true)
+    setTimeout(() => setSaveFlash(false), 2000)
+  }, [collectDraft])
+
+  // ── Auto-save to sessionStorage before page reload (language switch) ──
   useEffect(() => {
-    const save = () => {
-      saveDraft({
-        nameRu, nameUz, sku, brand, model, country,
-        brandSkipped, modelSkipped, countrySkipped,
-        descRu, descUz, shortDescRu, shortDescUz,
-        photoUrls, sellingPrice, oldPrice,
-        weightG, heightMm, widthMm, lengthMm,
-        ikpu, ikpuPackCode, barcode, skuGroup,
-        variants, chars,
-        uzumCatPathIds: uzumCatPath.map(n => n.id),
-        yandexCatPathIds: yandexCatPath.map(n => n.id),
-      })
-    }
+    const save = () => saveDraftToSession(collectDraft())
     window.addEventListener('beforeunload', save)
     return () => window.removeEventListener('beforeunload', save)
   })
@@ -1626,6 +1652,39 @@ export default function ProductCreateForm() {
         <ArrowLeft className="w-4 h-4" />
         {d.productsTitle}
       </Link>
+
+      {/* ── Save draft button ── */}
+      <div
+        className="sticky top-0 z-20 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3"
+        style={{ background: 'var(--bg-card)', borderColor: saveFlash ? 'var(--c1)' : 'var(--border)', transition: 'border-color .3s' }}
+      >
+        <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+          {savedAt && (
+            <>
+              <Check className="w-3.5 h-3.5" style={{ color: 'var(--c1)' }} />
+              <span>
+                {lang === 'ru' ? 'Сохранено' : lang === 'uz' ? 'Saqlandi' : 'Saved'}{' '}
+                {new Date(savedAt).toLocaleTimeString(lang === 'ru' ? 'ru-RU' : lang === 'uz' ? 'uz-UZ' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={handleSave}
+          className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-all"
+          style={{
+            background: saveFlash ? 'var(--c1)' : 'var(--bg-card2)',
+            color: saveFlash ? '#fff' : 'var(--text-base)',
+            borderColor: 'var(--border)',
+          }}
+        >
+          {saveFlash ? <Check className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+          {saveFlash
+            ? (lang === 'ru' ? 'Сохранено!' : lang === 'uz' ? 'Saqlandi!' : 'Saved!')
+            : (lang === 'ru' ? 'Сохранить данные' : lang === 'uz' ? 'Ma\'lumotlarni saqlash' : 'Save data')}
+        </button>
+      </div>
 
       {/* ── Import from Excel ── */}
       <div
