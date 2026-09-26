@@ -207,7 +207,9 @@ export function generateUzumExcel(
   if (newStrings.length > 0) {
     const newEntries = newStrings.map(s => `<si><t>${escXml(s)}</t></si>`).join('')
     const newUniqueCount = existingUniqueCount + newStrings.length
-    const newSstCount = existingSstCount + newStrings.length
+    // C1 is a replacement (old ref removed, new ref added = net 0), not a new cell,
+    // so total reference count increases by newStrings.length - 1.
+    const newSstCount = existingSstCount + newStrings.length - 1
     let updatedSst = sstXml.replace(/<\/sst>/, newEntries + '</sst>')
     updatedSst = updatedSst.replace(/\bcount="\d+"/, `count="${newSstCount}"`)
     updatedSst = updatedSst.replace(/uniqueCount="\d+"/, `uniqueCount="${newUniqueCount}"`)
