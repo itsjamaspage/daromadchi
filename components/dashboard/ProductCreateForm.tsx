@@ -37,6 +37,54 @@ interface Characteristic {
 
 const uid = () => Math.random().toString(36).slice(2, 9)
 
+function resolveIdPath(tree: CatNode[], ids: number[]): CatNode[] {
+  const path: CatNode[] = []
+  let nodes = tree
+  for (const id of ids) {
+    const found = nodes.find(n => n.id === id)
+    if (!found) break
+    path.push(found)
+    nodes = found.children ?? []
+  }
+  return path
+}
+
+const FORM_DRAFT_KEY = 'product-create-form-draft'
+const FORM_SAVED_KEY = 'product-create-form-saved'
+
+interface FormDraft {
+  nameRu: string; nameUz: string; sku: string; brand: string; model: string; country: string
+  brandSkipped: boolean; modelSkipped: boolean; countrySkipped: boolean
+  descRu: string; descUz: string; shortDescRu: string; shortDescUz: string
+  photoUrls: string; sellingPrice: string; oldPrice: string
+  weightG: string; heightMm: string; widthMm: string; lengthMm: string
+  ikpu: string; ikpuPackCode: string; barcode: string; skuGroup: string
+  variants: Variant[]; chars: Characteristic[]
+  uzumCatPathIds: number[]; yandexCatPathIds: number[]
+  savedAt?: number
+}
+
+function loadDraft(): Partial<FormDraft> | null {
+  try {
+    const session = sessionStorage.getItem(FORM_DRAFT_KEY)
+    if (session) {
+      sessionStorage.removeItem(FORM_DRAFT_KEY)
+      return JSON.parse(session)
+    }
+    const saved = localStorage.getItem(FORM_SAVED_KEY)
+    if (saved) return JSON.parse(saved)
+    return null
+  } catch { return null }
+}
+
+function saveDraftToSession(draft: FormDraft) {
+  try { sessionStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(draft)) } catch {}
+}
+
+function saveDraftToLocal(draft: FormDraft) {
+  try { localStorage.setItem(FORM_SAVED_KEY, JSON.stringify({ ...draft, savedAt: Date.now() })) } catch {}
+}
+
 function generateEAN13(): string {
   const prefix = '200'
   const body = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10)).join('')
@@ -737,18 +785,20 @@ export default function ProductCreateForm() {
   const { lang } = useLang()
   const d = translations[lang].dashboard
 
+  const [draft] = useState(() => loadDraft())
+
   // Basic info
-  const [nameRu, setNameRu] = useState('')
-  const [nameUz, setNameUz] = useState('')
-  const [sku, setSku] = useState('')
-  const [brand, setBrand] = useState('')
-  const [model, setModel] = useState('')
-  const [country, setCountry] = useState('')
+  const [nameRu, setNameRu] = useState(() => draft?.nameRu ?? '')
+  const [nameUz, setNameUz] = useState(() => draft?.nameUz ?? '')
+  const [sku, setSku] = useState(() => draft?.sku ?? '')
+  const [brand, setBrand] = useState(() => draft?.brand ?? '')
+  const [model, setModel] = useState(() => draft?.model ?? '')
+  const [country, setCountry] = useState(() => draft?.country ?? '')
 
   // Uzum skip toggles ("Отсутствует")
-  const [brandSkipped, setBrandSkipped] = useState(false)
-  const [modelSkipped, setModelSkipped] = useState(false)
-  const [countrySkipped, setCountrySkipped] = useState(false)
+  const [brandSkipped, setBrandSkipped] = useState(() => draft?.brandSkipped ?? false)
+  const [modelSkipped, setModelSkipped] = useState(() => draft?.modelSkipped ?? false)
+  const [countrySkipped, setCountrySkipped] = useState(() => draft?.countrySkipped ?? false)
 
   // Category — cascading tree pickers
   const [uzumTree, setUzumTree] = useState<CatNode[]>([])
@@ -776,37 +826,37 @@ export default function ProductCreateForm() {
   const [categoryParamsLoading, setCategoryParamsLoading] = useState(false)
 
   // Descriptions
-  const [descRu, setDescRu] = useState('')
-  const [descUz, setDescUz] = useState('')
-  const [shortDescRu, setShortDescRu] = useState('')
-  const [shortDescUz, setShortDescUz] = useState('')
+  const [descRu, setDescRu] = useState(() => draft?.descRu ?? '')
+  const [descUz, setDescUz] = useState(() => draft?.descUz ?? '')
+  const [shortDescRu, setShortDescRu] = useState(() => draft?.shortDescRu ?? '')
+  const [shortDescUz, setShortDescUz] = useState(() => draft?.shortDescUz ?? '')
 
   // Media
-  const [photoUrls, setPhotoUrls] = useState('')
+  const [photoUrls, setPhotoUrls] = useState(() => draft?.photoUrls ?? '')
   const [uploading, setUploading] = useState(false)
   const [variantUploading, setVariantUploading] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const variantFileRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   // Pricing & dimensions
-  const [sellingPrice, setSellingPrice] = useState('')
-  const [oldPrice, setOldPrice] = useState('')
-  const [weightG, setWeightG] = useState('')
-  const [heightMm, setHeightMm] = useState('')
-  const [widthMm, setWidthMm] = useState('')
-  const [lengthMm, setLengthMm] = useState('')
-  const [ikpu, setIkpu] = useState('')
-  const [ikpuPackCode, setIkpuPackCode] = useState('')
-  const [barcode, setBarcode] = useState('')
+  const [sellingPrice, setSellingPrice] = useState(() => draft?.sellingPrice ?? '')
+  const [oldPrice, setOldPrice] = useState(() => draft?.oldPrice ?? '')
+  const [weightG, setWeightG] = useState(() => draft?.weightG ?? '')
+  const [heightMm, setHeightMm] = useState(() => draft?.heightMm ?? '')
+  const [widthMm, setWidthMm] = useState(() => draft?.widthMm ?? '')
+  const [lengthMm, setLengthMm] = useState(() => draft?.lengthMm ?? '')
+  const [ikpu, setIkpu] = useState(() => draft?.ikpu ?? '')
+  const [ikpuPackCode, setIkpuPackCode] = useState(() => draft?.ikpuPackCode ?? '')
+  const [barcode, setBarcode] = useState(() => draft?.barcode ?? '')
 
   // SKU group (Uzum only)
-  const [skuGroup, setSkuGroup] = useState('')
+  const [skuGroup, setSkuGroup] = useState(() => draft?.skuGroup ?? '')
 
   // Variants
-  const [variants, setVariants] = useState<Variant[]>([])
+  const [variants, setVariants] = useState<Variant[]>(() => draft?.variants ?? [])
 
   // Characteristics (Yandex)
-  const [chars, setChars] = useState<Characteristic[]>([])
+  const [chars, setChars] = useState<Characteristic[]>(() => draft?.chars ?? [])
 
   // Export state
   const [downloading, setDownloading] = useState<'uzum' | 'yandex' | 'both' | null>(null)
@@ -816,6 +866,41 @@ export default function ProductCreateForm() {
   // Import state
   const [importResult, setImportResult] = useState<{ ok: boolean; message: string } | null>(null)
   const [importDragOver, setImportDragOver] = useState(false)
+
+  const [saveFlash, setSaveFlash] = useState(false)
+  const [savedAt, setSavedAt] = useState<number | null>(() => draft?.savedAt ?? null)
+
+  const collectDraft = useCallback((): FormDraft => ({
+    nameRu, nameUz, sku, brand, model, country,
+    brandSkipped, modelSkipped, countrySkipped,
+    descRu, descUz, shortDescRu, shortDescUz,
+    photoUrls, sellingPrice, oldPrice,
+    weightG, heightMm, widthMm, lengthMm,
+    ikpu, ikpuPackCode, barcode, skuGroup,
+    variants, chars,
+    uzumCatPathIds: uzumCatPath.map(n => n.id),
+    yandexCatPathIds: yandexCatPath.map(n => n.id),
+  }), [nameRu, nameUz, sku, brand, model, country,
+    brandSkipped, modelSkipped, countrySkipped,
+    descRu, descUz, shortDescRu, shortDescUz,
+    photoUrls, sellingPrice, oldPrice,
+    weightG, heightMm, widthMm, lengthMm,
+    ikpu, ikpuPackCode, barcode, skuGroup,
+    variants, chars, uzumCatPath, yandexCatPath])
+
+  const handleSave = useCallback(() => {
+    saveDraftToLocal(collectDraft())
+    setSavedAt(Date.now())
+    setSaveFlash(true)
+    setTimeout(() => setSaveFlash(false), 2000)
+  }, [collectDraft])
+
+  // ── Auto-save to sessionStorage before page reload (language switch) ──
+  useEffect(() => {
+    const save = () => saveDraftToSession(collectDraft())
+    window.addEventListener('beforeunload', save)
+    return () => window.removeEventListener('beforeunload', save)
+  })
 
   // ── Fetch category trees on mount ──────────────────────────────────────
   useEffect(() => {
@@ -830,7 +915,13 @@ export default function ProductCreateForm() {
     fetch('/api/products/uzum-categories')
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(data => {
-        if (!cancelled) setUzumTree(normalize(data.categories ?? []))
+        if (cancelled) return
+        const tree = normalize(data.categories ?? [])
+        setUzumTree(tree)
+        if (draft?.uzumCatPathIds?.length) {
+          const path = resolveIdPath(tree, draft.uzumCatPathIds)
+          if (path.length) setUzumCatPath(path)
+        }
       })
       .catch(() => { if (!cancelled) setUzumTreeError('Не удалось загрузить категории Uzum') })
       .finally(() => { if (!cancelled) setUzumTreeLoading(false) })
@@ -842,7 +933,13 @@ export default function ProductCreateForm() {
     fetch('/api/products/yandex-categories')
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(data => {
-        if (!cancelled) setYandexTree(data.categories ?? [])
+        if (cancelled) return
+        const tree = data.categories ?? []
+        setYandexTree(tree)
+        if (draft?.yandexCatPathIds?.length) {
+          const path = resolveIdPath(tree, draft.yandexCatPathIds)
+          if (path.length) setYandexCatPath(path)
+        }
       })
       .catch(() => { if (!cancelled) setYandexTreeError('Не удалось загрузить категории Yandex') })
       .finally(() => { if (!cancelled) setYandexTreeLoading(false) })
@@ -1555,6 +1652,39 @@ export default function ProductCreateForm() {
         <ArrowLeft className="w-4 h-4" />
         {d.productsTitle}
       </Link>
+
+      {/* ── Save draft button ── */}
+      <div
+        className="sticky top-0 z-20 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3"
+        style={{ background: 'var(--bg-card)', borderColor: saveFlash ? 'var(--c1)' : 'var(--border)', transition: 'border-color .3s' }}
+      >
+        <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+          {savedAt && (
+            <>
+              <Check className="w-3.5 h-3.5" style={{ color: 'var(--c1)' }} />
+              <span>
+                {lang === 'ru' ? 'Сохранено' : lang === 'uz' ? 'Saqlandi' : 'Saved'}{' '}
+                {new Date(savedAt).toLocaleTimeString(lang === 'ru' ? 'ru-RU' : lang === 'uz' ? 'uz-UZ' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={handleSave}
+          className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-all"
+          style={{
+            background: saveFlash ? 'var(--c1)' : 'var(--bg-card2)',
+            color: saveFlash ? '#fff' : 'var(--text-base)',
+            borderColor: 'var(--border)',
+          }}
+        >
+          {saveFlash ? <Check className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+          {saveFlash
+            ? (lang === 'ru' ? 'Сохранено!' : lang === 'uz' ? 'Saqlandi!' : 'Saved!')
+            : (lang === 'ru' ? 'Сохранить данные' : lang === 'uz' ? 'Ma\'lumotlarni saqlash' : 'Save data')}
+        </button>
+      </div>
 
       {/* ── Import from Excel ── */}
       <div
