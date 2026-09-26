@@ -1,48 +1,6 @@
-import * as XLSX from 'xlsx'
 import { unzipSync, zipSync } from 'fflate'
 import { readFileSync } from 'fs'
 import { join } from 'path'
-
-function convertToInlineStrings(xlsxBuffer: Buffer): Buffer {
-  const unzipped = unzipSync(new Uint8Array(xlsxBuffer))
-
-  const sstData = unzipped['xl/sharedStrings.xml']
-  if (!sstData) return xlsxBuffer
-
-  const sstXml = new TextDecoder().decode(sstData)
-  const strings: string[] = []
-  const siRegex = /<si><t(?:\s[^>]*)?>([^<]*)<\/t><\/si>/g
-  let m
-  while ((m = siRegex.exec(sstXml)) !== null) {
-    strings.push(m[1])
-  }
-
-  for (const [path, data] of Object.entries(unzipped)) {
-    if (!path.startsWith('xl/worksheets/sheet') || !path.endsWith('.xml')) continue
-    let xml = new TextDecoder().decode(data as Uint8Array)
-    xml = xml.replace(
-      /<c r="([^"]+)"((?:\s+s="[^"]*")?) t="s"><v>(\d+)<\/v><\/c>/g,
-      (_, cellRef, styleAttr, idx) => {
-        const text = strings[parseInt(idx)] || ''
-        const spaceAttr = /^\s|\s$|\n/.test(text) ? ' xml:space="preserve"' : ''
-        return `<c r="${cellRef}"${styleAttr} t="inlineStr"><is><t${spaceAttr}>${text}</t></is></c>`
-      },
-    )
-    unzipped[path] = new TextEncoder().encode(xml)
-  }
-
-  delete unzipped['xl/sharedStrings.xml']
-
-  let contentTypes = new TextDecoder().decode(unzipped['[Content_Types].xml'])
-  contentTypes = contentTypes.replace(/<Override[^>]*sharedStrings[^>]*\/>/g, '')
-  unzipped['[Content_Types].xml'] = new TextEncoder().encode(contentTypes)
-
-  let rels = new TextDecoder().decode(unzipped['xl/_rels/workbook.xml.rels'])
-  rels = rels.replace(/<Relationship[^>]*sharedStrings[^>]*\/>/g, '')
-  unzipped['xl/_rels/workbook.xml.rels'] = new TextEncoder().encode(rels)
-
-  return Buffer.from(zipSync(unzipped))
-}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
