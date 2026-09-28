@@ -10,7 +10,6 @@ import Link from 'next/link'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import { useAutoTranslate } from '@/hooks/useAutoTranslate'
-import { searchDirect } from '@/lib/ikpu/browser-search'
 import type { IkpuResult } from '@/lib/ikpu/client'
 interface CatNode {
   id: number
@@ -644,9 +643,13 @@ function IkpuSearchField({
     if (q.length < 2) { setResults([]); setMatched(null); return }
     setSearching(true)
     const searchLang = lang === 'en' ? 'ru' : lang
-    const isCode = /^\d{5,}$/.test(q.trim())
+    const isBarcode = /^\d{13}$/.test(q.trim())
     try {
-      const data = await searchDirect(q.trim(), { lang: searchLang, barcode: false })
+      const qs = new URLSearchParams({ lang: searchLang })
+      if (isBarcode) qs.set('barcode', q.trim())
+      else qs.set('q', q.trim())
+      const res = await fetch(`/api/ikpu/search?${qs}`)
+      const data: { results: IkpuResult[]; total: number } = res.ok ? await res.json() : { results: [], total: 0 }
       setResults(data.results)
       const exact = data.results.find(r => r.mxikCode === q.trim())
       setMatched(exact ?? data.results[0] ?? null)

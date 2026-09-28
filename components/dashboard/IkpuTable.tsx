@@ -8,7 +8,6 @@ import { translations } from '@/lib/i18n'
 import { normalizeText } from '@/lib/shared/text-similarity'
 import type { Product, MarketplaceType } from '@/lib/types'
 import type { IkpuResult } from '@/lib/ikpu/client'
-import { searchDirect } from '@/lib/ikpu/browser-search'
 import { useRouter } from 'next/navigation'
 
 type Tab = 'search' | 'products'
@@ -58,7 +57,6 @@ export default function IkpuTable({ products: initialProducts }: Props) {
   const assignedCount = useMemo(() => products.filter(pr => !!pr.ikpu_code).length, [products])
   const unassignedCount = products.length - assignedCount
 
-  // ─── Search logic — direct browser→tasnif with server fallback ─
   const doSearch = useCallback(async (q: string) => {
     if (q.length < 2) { setSearchResults([]); setSearchTotal(0); setHasSearched(false); setSearchError(false); return }
     setSearching(true)
@@ -67,24 +65,20 @@ export default function IkpuTable({ products: initialProducts }: Props) {
     const searchLang = lang === 'en' ? 'ru' : lang
     const isBarcode = /^\d{8,14}$/.test(q.trim())
     try {
-      const data = await searchDirect(q.trim(), { lang: searchLang, barcode: isBarcode })
-      setSearchResults(data.results)
-      setSearchTotal(data.total)
+      const qs = new URLSearchParams({ lang: searchLang })
+      if (isBarcode) qs.set('barcode', q.trim())
+      else qs.set('q', q.trim())
+      const res = await fetch(`/api/ikpu/search?${qs}`, {
+        signal: AbortSignal.timeout(15_000),
+      })
+      if (!res.ok) throw new Error('search failed')
+      const data = await res.json()
+      setSearchResults(data.results ?? [])
+      setSearchTotal(data.total ?? 0)
     } catch {
-      try {
-        const param = isBarcode ? `barcode=${encodeURIComponent(q.trim())}` : `q=${encodeURIComponent(q.trim())}`
-        const res = await fetch(`/api/ikpu/search?${param}&lang=${searchLang}`, {
-          signal: AbortSignal.timeout(15_000),
-        })
-        if (!res.ok) throw new Error('proxy failed')
-        const data = await res.json()
-        setSearchResults(data.results ?? [])
-        setSearchTotal(data.total ?? 0)
-      } catch {
-        setSearchError(true)
-        setSearchResults([])
-        setSearchTotal(0)
-      }
+      setSearchError(true)
+      setSearchResults([])
+      setSearchTotal(0)
     } finally {
       setSearching(false)
     }
@@ -151,9 +145,11 @@ export default function IkpuTable({ products: initialProducts }: Props) {
     const searchLang = lang === 'en' ? 'ru' : lang
 
     for (const cat of catsToFetch) {
-      searchDirect(cat, { lang: searchLang })
+      const qs = new URLSearchParams({ q: cat, lang: searchLang })
+      fetch(`/api/ikpu/search?${qs}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r))
         .then(data => {
-          const first = data.results[0] ?? null
+          const first = (data.results ?? [])[0] ?? null
           setSuggestions(prev => ({ ...prev, [cat]: { result: first, loading: false } }))
         })
         .catch(() => {
