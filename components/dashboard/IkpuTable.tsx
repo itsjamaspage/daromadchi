@@ -8,6 +8,7 @@ import { translations } from '@/lib/i18n'
 import { normalizeText } from '@/lib/shared/text-similarity'
 import type { Product, MarketplaceType } from '@/lib/types'
 import type { IkpuResult } from '@/lib/ikpu/client'
+import { searchIkpu } from '@/lib/ikpu/browser-client'
 import { useRouter } from 'next/navigation'
 
 type Tab = 'search' | 'products'
@@ -65,14 +66,7 @@ export default function IkpuTable({ products: initialProducts }: Props) {
     const searchLang = lang === 'en' ? 'ru' : lang
     const isBarcode = /^\d{8,14}$/.test(q.trim())
     try {
-      const qs = new URLSearchParams({ lang: searchLang })
-      if (isBarcode) qs.set('barcode', q.trim())
-      else qs.set('q', q.trim())
-      const res = await fetch(`/api/ikpu/search?${qs}`, {
-        signal: AbortSignal.timeout(15_000),
-      })
-      if (!res.ok) throw new Error('search failed')
-      const data = await res.json()
+      const data = await searchIkpu(q.trim(), { lang: searchLang, barcode: isBarcode })
       setSearchResults(data.results ?? [])
       setSearchTotal(data.total ?? 0)
     } catch {
@@ -145,9 +139,7 @@ export default function IkpuTable({ products: initialProducts }: Props) {
     const searchLang = lang === 'en' ? 'ru' : lang
 
     for (const cat of catsToFetch) {
-      const qs = new URLSearchParams({ q: cat, lang: searchLang })
-      fetch(`/api/ikpu/search?${qs}`)
-        .then(r => r.ok ? r.json() : Promise.reject(r))
+      searchIkpu(cat, { lang: searchLang })
         .then(data => {
           const first = (data.results ?? [])[0] ?? null
           setSuggestions(prev => ({ ...prev, [cat]: { result: first, loading: false } }))
