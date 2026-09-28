@@ -38,6 +38,14 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['recharts', 'date-fns', 'lucide-react'],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/_tasnif/:path*',
+        destination: 'https://tasnif.soliq.uz/api/cls-api/:path*',
+      },
+    ]
+  },
   async headers() {
     return [
       {

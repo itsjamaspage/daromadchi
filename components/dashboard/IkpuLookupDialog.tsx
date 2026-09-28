@@ -5,6 +5,7 @@ import { X, Search } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { IkpuResult } from '@/lib/ikpu/client'
+import { searchIkpu } from '@/lib/ikpu/browser-client'
 
 interface Props {
   productId: string
@@ -28,10 +29,8 @@ export default function IkpuLookupDialog({ productId, productTitle, currentCode,
     setSearching(true)
     try {
       const isBarcode = /^\d{8,14}$/.test(q.trim())
-      const param = isBarcode ? `barcode=${encodeURIComponent(q.trim())}` : `q=${encodeURIComponent(q.trim())}`
-      const res = await fetch(`/api/ikpu/search?${param}&lang=${lang === 'uz' ? 'uz' : 'ru'}`)
-      if (!res.ok) return
-      const data = await res.json()
+      const searchLang = lang === 'uz' ? 'uz' : 'ru'
+      const data = await searchIkpu(q.trim(), { lang: searchLang, barcode: isBarcode })
       setResults(data.results ?? [])
     } finally {
       setSearching(false)
