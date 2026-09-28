@@ -10,7 +10,6 @@ import Link from 'next/link'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import { useAutoTranslate } from '@/hooks/useAutoTranslate'
-import { searchDirect } from '@/lib/ikpu/browser-search'
 import type { IkpuResult } from '@/lib/ikpu/client'
 interface CatNode {
   id: number
@@ -644,13 +643,18 @@ function IkpuSearchField({
     if (q.length < 2) { setResults([]); setMatched(null); return }
     setSearching(true)
     const searchLang = lang === 'en' ? 'ru' : lang
-    const isCode = /^\d{5,}$/.test(q.trim())
     try {
-      const data = await searchDirect(q.trim(), { lang: searchLang, barcode: false })
-      setResults(data.results)
-      const exact = data.results.find(r => r.mxikCode === q.trim())
-      setMatched(exact ?? data.results[0] ?? null)
-      if (!exact && data.results.length > 1) setShowDropdown(true)
+      const param = `q=${encodeURIComponent(q.trim())}`
+      const res = await fetch(`/api/ikpu/search?${param}&lang=${searchLang}`, {
+        signal: AbortSignal.timeout(15_000),
+      })
+      if (!res.ok) throw new Error('search failed')
+      const data = await res.json()
+      const results: IkpuResult[] = data.results ?? []
+      setResults(results)
+      const exact = results.find(r => r.mxikCode === q.trim())
+      setMatched(exact ?? results[0] ?? null)
+      if (!exact && results.length > 1) setShowDropdown(true)
       else setShowDropdown(false)
     } catch {
       setResults([])
