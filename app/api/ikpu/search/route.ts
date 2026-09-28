@@ -27,7 +27,11 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       headers: { 'Cache-Control': 'private, max-age=60' },
     })
   } catch (err) {
-    console.error('[IKPU Search] tasnif API error:', err instanceof Error ? err.message : err)
-    return NextResponse.json({ results: [], total: 0, error: 'tasnif_unavailable' }, { status: 502 })
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[IKPU Search] tasnif API error:', msg)
+    return NextResponse.json(
+      { results: [], total: 0, error: 'tasnif_unavailable', detail: msg },
+      { status: 502 },
+    )
   }
 })
