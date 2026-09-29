@@ -8,6 +8,11 @@ const TIMEOUT_MS = 15_000
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
 const FALLBACK_DNS = ['8.8.8.8', '1.1.1.1', '8.8.4.4']
 
+const PROXY_URLS = [
+  'https://corsproxy.io/?url=',
+  'https://api.allorigins.win/raw?url=',
+]
+
 let cachedIp: { ip: string; ts: number } | null = null
 const IP_CACHE_TTL = 5 * 60_000
 
@@ -60,38 +65,20 @@ function httpsGet(ip: string, path: string, headers: Record<string, string>): Pr
   })
 }
 
-function httpsPost(ip: string, path: string, headers: Record<string, string>, bodyStr: string): Promise<FetchLike> {
-  return new Promise((resolve, reject) => {
-    const req = https.request(
-      {
-        hostname: ip,
-        port: 443,
-        path,
-        method: 'POST',
-        headers: { ...headers, Host: HOST, 'Content-Length': Buffer.byteLength(bodyStr) },
-        servername: HOST,
-        timeout: TIMEOUT_MS,
-      },
-      (res) => {
-        const chunks: Buffer[] = []
-        res.on('data', (c: Buffer) => chunks.push(c))
-        res.on('end', () => {
-          const body = Buffer.concat(chunks).toString('utf-8')
-          const status = res.statusCode ?? 0
-          resolve({
-            ok: status >= 200 && status < 300,
-            status,
-            json: () => Promise.resolve(JSON.parse(body)),
-            text: () => Promise.resolve(body),
-          })
-        })
-      },
-    )
-    req.on('timeout', () => { req.destroy(); reject(new Error(`timeout after ${TIMEOUT_MS}ms`)) })
-    req.on('error', reject)
-    req.write(bodyStr)
-    req.end()
-  })
+async function fetchViaProxy(targetUrl: string): Promise<FetchLike> {
+  for (const proxy of PROXY_URLS) {
+    try {
+      const res = await fetch(`${proxy}${encodeURIComponent(targetUrl)}`, {
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' },
+      })
+      if (res.ok) return res
+    } catch {
+      continue
+    }
+  }
+  throw new Error('all proxy attempts failed for ' + targetUrl)
 }
 
 async function tasnifGet(path: string, headers: Record<string, string>): Promise<FetchLike> {
@@ -103,27 +90,17 @@ async function tasnifGet(path: string, headers: Record<string, string>): Promise
     })
     return res
   } catch {
-    // fetch failed at network level — try DNS fallback + direct HTTPS
+    // direct fetch failed
   }
-  const ip = await resolveHost()
-  return httpsGet(ip, `${BASE_PATH}${path}`, headers)
-}
 
-async function tasnifPost(path: string, headers: Record<string, string>, body: string): Promise<FetchLike> {
   try {
-    const res = await fetch(`${BASE}${path}`, {
-      method: 'POST',
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-      cache: 'no-store',
-      headers,
-      body,
-    })
-    return res
+    const ip = await resolveHost()
+    return await httpsGet(ip, `${BASE_PATH}${path}`, headers)
   } catch {
-    // fetch failed at network level — try DNS fallback + direct HTTPS
+    // direct HTTPS with DNS fallback also failed
   }
-  const ip = await resolveHost()
-  return httpsPost(ip, `${BASE_PATH}${path}`, headers, body)
+
+  return fetchViaProxy(`${BASE}${path}`)
 }
 
 export interface IkpuSearchItem {
@@ -241,16 +218,7 @@ export async function searchByKeyword(
   const page = opts.page ?? 0
 
   const qs = new URLSearchParams({ search: keyword, lang, size: String(size), page: String(page) })
-  let res: FetchLike
-  try {
-    res = await tasnifGet(`/elasticsearch/search?${qs}`, COMMON_HEADERS)
-  } catch {
-    res = await tasnifPost(
-      '/elasticsearch/search',
-      { ...COMMON_HEADERS, 'Content-Type': 'application/json' },
-      JSON.stringify({ search: keyword, lang, size, page }),
-    )
-  }
+  const res = await tasnifGet(`/elasticsearch/search?${qs}`, COMMON_HEADERS)
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
