@@ -4,18 +4,6 @@ const TASNIF_BASE = 'https://tasnif.soliq.uz/api/cls-api'
 
 const CUSTOM_PROXY_URL = process.env.NEXT_PUBLIC_TASNIF_PROXY_URL ?? ''
 
-interface RawSearchItem {
-  mxikCode: string
-  name: string
-  fullName: string
-  groupName: string
-  className: string
-  positionName: string
-  subPositionName: string
-  brandName: string | null
-  unitsName: string
-}
-
 interface RawByParamsItem {
   mxikCode: string
   mxikName: string
@@ -27,17 +15,16 @@ interface RawByParamsItem {
   unitName: string | null
 }
 
-function mapSearch(item: RawSearchItem): IkpuResult {
-  return {
-    mxikCode: item.mxikCode,
-    name: item.name || item.fullName,
-    groupName: item.groupName,
-    className: item.className,
-    positionName: item.positionName,
-    subPositionName: item.subPositionName,
-    brandName: item.brandName,
-    unitName: item.unitsName || null,
-  }
+interface RawSearchItem {
+  mxikCode: string
+  name: string
+  fullName: string
+  groupName: string
+  className: string
+  positionName: string
+  subPositionName: string
+  brandName: string | null
+  unitsName: string
 }
 
 function mapByParams(item: RawByParamsItem): IkpuResult {
@@ -53,33 +40,95 @@ function mapByParams(item: RawByParamsItem): IkpuResult {
   }
 }
 
-function buildTargetUrl(query: string, lang: string, barcode: boolean): string {
-  if (barcode) {
-    const qs = new URLSearchParams({ gtin: query, lang, size: '20', page: '0' })
-    return `${TASNIF_BASE}/mxik/search/by-params?${qs}`
+function mapSearch(item: RawSearchItem): IkpuResult {
+  return {
+    mxikCode: item.mxikCode,
+    name: item.name || item.fullName,
+    groupName: item.groupName,
+    className: item.className,
+    positionName: item.positionName,
+    subPositionName: item.subPositionName,
+    brandName: item.brandName,
+    unitName: item.unitsName || null,
   }
-  const qs = new URLSearchParams({ search: query, lang, size: '20', page: '0' })
-  return `${TASNIF_BASE}/elasticsearch/search?${qs}`
 }
 
-function parseResponse(
+function parseByParamsBody(
   body: Record<string, unknown>,
-  barcode: boolean,
 ): { results: IkpuResult[]; total: number } | null {
-  if (barcode) {
-    const data = body.data as { content?: RawByParamsItem[]; totalElements?: number } | undefined
-    if (body.success && data?.content) {
-      return { results: data.content.map(mapByParams), total: data.totalElements ?? 0 }
-    }
-  } else {
-    if (body.success && body.data) {
-      return {
-        results: (body.data as RawSearchItem[]).map(mapSearch),
-        total: (body.recordTotal as number) ?? 0,
-      }
+  const data = body.data as { content?: RawByParamsItem[]; totalElements?: number } | undefined
+  if (body.success && data?.content?.length) {
+    return { results: data.content.map(mapByParams), total: data.totalElements ?? 0 }
+  }
+  return null
+}
+
+function parseElasticBody(
+  body: Record<string, unknown>,
+): { results: IkpuResult[]; total: number } | null {
+  if (body.success && Array.isArray(body.data) && body.data.length) {
+    return {
+      results: (body.data as RawSearchItem[]).map(mapSearch),
+      total: (body.recordTotal as number) ?? 0,
     }
   }
   return null
+}
+
+async function tryFetch(
+  url: string,
+  timeoutMs: number,
+): Promise<Record<string, unknown> | null> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) })
+    if (res.ok) return await res.json()
+  } catch { /* swallow */ }
+  return null
+}
+
+function subpositionUrl(query: string, lang: string): string {
+  const qs = new URLSearchParams({ search_text: query, lang, size: '20', page: '0' })
+  return `/mxik/search-subposition?${qs}`
+}
+
+function byParamsTextUrl(query: string, lang: string): string {
+  const qs = new URLSearchParams({ text: query, lang, size: '20', page: '0' })
+  return `/mxik/search/by-params?${qs}`
+}
+
+function byParamsBarcodeUrl(query: string, lang: string): string {
+  const qs = new URLSearchParams({ gtin: query, lang, size: '20', page: '0' })
+  return `/mxik/search/by-params?${qs}`
+}
+
+function elasticUrl(query: string, lang: string): string {
+  const qs = new URLSearchParams({ search: query, lang, size: '20', page: '0' })
+  return `/elasticsearch/search?${qs}`
+}
+
+async function searchDirect(
+  query: string,
+  lang: string,
+  barcode: boolean,
+  base: string,
+  timeoutMs: number,
+): Promise<{ results: IkpuResult[]; total: number } | null> {
+  if (barcode) {
+    const body = await tryFetch(`${base}${byParamsBarcodeUrl(query, lang)}`, timeoutMs)
+    return body ? parseByParamsBody(body) : null
+  }
+
+  // Text search: try classification-specific endpoints first, then generic elasticsearch
+  const body1 = await tryFetch(`${base}${subpositionUrl(query, lang)}`, timeoutMs)
+  const parsed1 = body1 ? parseByParamsBody(body1) : null
+  if (parsed1) return parsed1
+
+  const body2 = await tryFetch(`${base}${byParamsTextUrl(query, lang)}`, timeoutMs)
+  const parsed2 = body2 ? parseByParamsBody(body2) : null
+  if (parsed2) return parsed2
+
+  const body3 = await tryFetch(`${base}${elasticUrl(query, lang)}`, timeoutMs)
+  return body3 ? parseElasticBody(body3) : null
 }
 
 export async function searchIkpu(
@@ -88,40 +137,18 @@ export async function searchIkpu(
 ): Promise<{ results: IkpuResult[]; total: number }> {
   const lang = opts.lang ?? 'ru'
   const barcode = opts.barcode ?? false
-  const targetUrl = buildTargetUrl(query, lang, barcode)
 
   // 1. Custom proxy (self-hosted, if configured via NEXT_PUBLIC_TASNIF_PROXY_URL)
   if (CUSTOM_PROXY_URL) {
-    try {
-      const path = barcode
-        ? `/mxik/search/by-params?${new URLSearchParams({ gtin: query, lang, size: '20', page: '0' })}`
-        : `/elasticsearch/search?${new URLSearchParams({ search: query, lang, size: '20', page: '0' })}`
-      const res = await fetch(`${CUSTOM_PROXY_URL}${path}`, {
-        signal: AbortSignal.timeout(10_000),
-      })
-      if (res.ok) {
-        const body = await res.json()
-        const parsed = parseResponse(body, barcode)
-        if (parsed) return parsed
-      }
-    } catch {
-      // fall through
-    }
+    const result = await searchDirect(query, lang, barcode, CUSTOM_PROXY_URL, 10_000)
+    if (result) return result
   }
 
   // 2. Direct browser → tasnif.soliq.uz (fast when user is in UZ)
-  try {
-    const res = await fetch(targetUrl, { signal: AbortSignal.timeout(5_000) })
-    if (res.ok) {
-      const body = await res.json()
-      const parsed = parseResponse(body, barcode)
-      if (parsed) return parsed
-    }
-  } catch {
-    // CORS-blocked or geo-blocked, fall through
-  }
+  const directResult = await searchDirect(query, lang, barcode, TASNIF_BASE, 5_000)
+  if (directResult) return directResult
 
-  // 3. Server-side API route (server proxies to tasnif internally)
+  // 3. Server-side API route (server proxies to tasnif internally, uses same endpoint chain)
   const param = barcode
     ? `barcode=${encodeURIComponent(query)}`
     : `q=${encodeURIComponent(query)}`

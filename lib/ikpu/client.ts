@@ -217,9 +217,33 @@ export async function searchByKeyword(
   const size = opts.size ?? 20
   const page = opts.page ?? 0
 
+  // 1. /mxik/search-subposition — classification-specific, most accurate (what tasnif.soliq.uz website uses)
+  try {
+    const qs = new URLSearchParams({ search_text: keyword, lang, size: String(size), page: String(page) })
+    const res = await tasnifGet(`/mxik/search-subposition?${qs}`, COMMON_HEADERS)
+    if (res.ok) {
+      const body = (await res.json()) as ByParamsResponse
+      if (body.success && body.data?.content?.length) {
+        return { results: body.data.content.map(paramToResult), total: body.data.totalElements }
+      }
+    }
+  } catch { /* fall through */ }
+
+  // 2. /mxik/search/by-params?text= — structured text search
+  try {
+    const qs = new URLSearchParams({ text: keyword, lang, size: String(size), page: String(page) })
+    const res = await tasnifGet(`/mxik/search/by-params?${qs}`, COMMON_HEADERS)
+    if (res.ok) {
+      const body = (await res.json()) as ByParamsResponse
+      if (body.success && body.data?.content?.length) {
+        return { results: body.data.content.map(paramToResult), total: body.data.totalElements }
+      }
+    }
+  } catch { /* fall through */ }
+
+  // 3. /elasticsearch/search — generic full-text fallback (less accurate)
   const qs = new URLSearchParams({ search: keyword, lang, size: String(size), page: String(page) })
   const res = await tasnifGet(`/elasticsearch/search?${qs}`, COMMON_HEADERS)
-
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`tasnif search failed: ${res.status} ${text.slice(0, 200)}`)
