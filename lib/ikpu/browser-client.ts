@@ -4,11 +4,6 @@ const TASNIF_BASE = 'https://tasnif.soliq.uz/api/cls-api'
 
 const CUSTOM_PROXY_URL = process.env.NEXT_PUBLIC_TASNIF_PROXY_URL ?? ''
 
-const CORS_PROXIES = [
-  'https://corsproxy.io/?url=',
-  'https://api.allorigins.win/raw?url=',
-]
-
 interface RawSearchItem {
   mxikCode: string
   name: string
@@ -87,24 +82,6 @@ function parseResponse(
   return null
 }
 
-async function fetchViaProxy(
-  targetUrl: string,
-  proxies: string[],
-  timeoutMs = 10_000,
-): Promise<Record<string, unknown> | null> {
-  for (const proxy of proxies) {
-    try {
-      const res = await fetch(`${proxy}${encodeURIComponent(targetUrl)}`, {
-        signal: AbortSignal.timeout(timeoutMs),
-      })
-      if (res.ok) return await res.json()
-    } catch {
-      continue
-    }
-  }
-  return null
-}
-
 export async function searchIkpu(
   query: string,
   opts: { lang?: string; barcode?: boolean } = {},
@@ -113,7 +90,7 @@ export async function searchIkpu(
   const barcode = opts.barcode ?? false
   const targetUrl = buildTargetUrl(query, lang, barcode)
 
-  // 1. Custom proxy (self-hosted or Cloudflare Worker, if configured)
+  // 1. Custom proxy (self-hosted, if configured via NEXT_PUBLIC_TASNIF_PROXY_URL)
   if (CUSTOM_PROXY_URL) {
     try {
       const path = barcode
@@ -132,27 +109,19 @@ export async function searchIkpu(
     }
   }
 
-  // 2. Public CORS proxy services (primary path — no deployment needed)
-  const proxyBody = await fetchViaProxy(targetUrl, CORS_PROXIES)
-  if (proxyBody) {
-    const parsed = parseResponse(proxyBody, barcode)
-    if (parsed) return parsed
-    return { results: [], total: 0 }
-  }
-
-  // 3. Direct browser → tasnif.soliq.uz (works if user is in UZ)
+  // 2. Direct browser → tasnif.soliq.uz (fast when user is in UZ)
   try {
-    const res = await fetch(targetUrl, { signal: AbortSignal.timeout(10_000) })
+    const res = await fetch(targetUrl, { signal: AbortSignal.timeout(5_000) })
     if (res.ok) {
       const body = await res.json()
       const parsed = parseResponse(body, barcode)
       if (parsed) return parsed
     }
   } catch {
-    // blocked by CORS or geo-block, fall through
+    // CORS-blocked or geo-blocked, fall through
   }
 
-  // 4. Server-side API route (server also uses proxy fallback)
+  // 3. Server-side API route (server proxies to tasnif internally)
   const param = barcode
     ? `barcode=${encodeURIComponent(query)}`
     : `q=${encodeURIComponent(query)}`
