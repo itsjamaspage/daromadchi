@@ -519,6 +519,7 @@ function InputField({
   disabled,
   badges,
   hint,
+  error,
 }: {
   label: string
   value: string
@@ -529,6 +530,7 @@ function InputField({
   disabled?: boolean
   badges?: React.ReactNode
   hint?: string
+  error?: string
 }) {
   return (
     <div>
@@ -546,13 +548,14 @@ function InputField({
         className="w-full px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2 disabled:opacity-40"
         style={{
           background: 'var(--bg-input)',
-          borderColor: 'var(--border)',
+          borderColor: error ? '#ef4444' : 'var(--border)',
           color: 'var(--text-base)',
           // @ts-expect-error CSS custom property
           '--tw-ring-color': 'var(--c1)',
         }}
       />
-      {hint && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{hint}</p>}
+      {error && <p className="text-xs mt-1" style={{ color: '#ef4444' }}>{error}</p>}
+      {!error && hint && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{hint}</p>}
     </div>
   )
 }
@@ -829,6 +832,14 @@ export default function ProductCreateForm() {
   // Pricing & dimensions
   const [sellingPrice, setSellingPrice] = useState('')
   const [oldPrice, setOldPrice] = useState('')
+
+  const priceNotMultipleOf1000 = (val: string) => {
+    const n = Number(val)
+    return n > 0 && n % 1000 !== 0
+  }
+  const priceErrorMsg = lang === 'ru' ? 'Цена должна быть кратна 1000 сум' : lang === 'uz' ? "Narx 1000 so'mga karrali bo'lishi kerak" : 'Price must be a multiple of 1000 UZS'
+  const sellingPriceError = priceNotMultipleOf1000(sellingPrice) ? priceErrorMsg : undefined
+  const oldPriceError = priceNotMultipleOf1000(oldPrice) ? priceErrorMsg : undefined
   const [weightG, setWeightG] = useState('')
   const [heightMm, setHeightMm] = useState('')
   const [widthMm, setWidthMm] = useState('')
@@ -1296,8 +1307,8 @@ export default function ProductCreateForm() {
       barcode: barcode.trim(),
       ikpu: ikpu.trim(),
       ikpuPackCode: ikpuPackCode.trim() || undefined,
-      sellingPrice: Number(sellingPrice) || 0,
-      oldPrice: Number(oldPrice) || 0,
+      sellingPrice: Math.round((Number(sellingPrice) || 0) / 1000) * 1000,
+      oldPrice: Math.round((Number(oldPrice) || 0) / 1000) * 1000,
       weightGrams: Number(weightG) || 0,
       heightMm: Number(heightMm) || 0,
       widthMm: Number(widthMm) || 0,
@@ -1313,8 +1324,8 @@ export default function ProductCreateForm() {
       color: v.color || undefined,
       size: v.size || undefined,
       barcode: v.barcode || base.barcode,
-      sellingPrice: Number(v.sellingPrice) || base.sellingPrice,
-      oldPrice: Number(v.oldPrice) || base.oldPrice,
+      sellingPrice: Math.round((Number(v.sellingPrice) || base.sellingPrice) / 1000) * 1000,
+      oldPrice: Math.round((Number(v.oldPrice) || base.oldPrice) / 1000) * 1000,
       photoUrls: v.photoUrl.trim() || '',
     }))
   }, [nameRu, nameUz, sku, skuGroup, uzumCatName, yandexCatName,
@@ -1935,12 +1946,14 @@ export default function ProductCreateForm() {
             badges={<MpBadges uz ym reqUz reqYm />}
             type="number" value={sellingPrice} onChange={setSellingPrice}
             placeholder={d.phSellingPrice}
+            error={sellingPriceError}
           />
           <InputField
             label={d.oldPriceLabel}
             badges={<MpBadges uz ym reqUz />}
             type="number" value={oldPrice} onChange={setOldPrice}
             placeholder={d.phOldPrice}
+            error={oldPriceError}
           />
           <IkpuSearchField
             value={ikpu} onChange={setIkpu}
@@ -2101,11 +2114,13 @@ export default function ProductCreateForm() {
                   <InputField label={d.sellingPrice} badges={<MpBadges uz ym />}
                     type="number" value={v.sellingPrice}
                     onChange={val => updateVariant(v.id, 'sellingPrice', val)}
-                    placeholder={d.phSellingPrice} />
+                    placeholder={d.phSellingPrice}
+                    error={priceNotMultipleOf1000(v.sellingPrice) ? priceErrorMsg : undefined} />
                   <InputField label={d.oldPriceLabel} badges={<MpBadges uz ym />}
                     type="number" value={v.oldPrice}
                     onChange={val => updateVariant(v.id, 'oldPrice', val)}
-                    placeholder={d.phOldPrice} />
+                    placeholder={d.phOldPrice}
+                    error={priceNotMultipleOf1000(v.oldPrice) ? priceErrorMsg : undefined} />
                 </div>
                 {/* Per-variant photo — file input always in DOM for stable ref */}
                 <input
