@@ -28,9 +28,12 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error('[IKPU Search] tasnif API error:', msg)
+    const cause = err instanceof Error && err.cause
+      ? (err.cause instanceof Error ? err.cause.message : String(err.cause))
+      : undefined
+    console.error('[IKPU Search] tasnif API error:', msg, cause ?? '')
     return NextResponse.json(
-      { results: [], total: 0, error: 'tasnif_unavailable', detail: msg },
+      { results: [], total: 0, error: 'tasnif_unavailable', detail: msg, cause },
       { status: 502 },
     )
   }
