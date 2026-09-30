@@ -75,7 +75,7 @@ export default async function ProductsPage({ searchParams }: Props) {
         </div>
       ) : (
         <>
-          <ProductsTable products={products} />
+          <ProductsTable key={archived ? 'archived' : 'active'} products={products} />
           <Pagination page={page} totalPages={totalPages} basePath="/dashboard/products" />
         </>
       )}
