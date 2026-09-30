@@ -190,6 +190,10 @@ export const shops = pgTable('shops', {
   // signal to run Step A/B for that shop's SKU groups.
   last_orders_count:        integer('last_orders_count'),
   stock_poll_at:            timestamp('stock_poll_at', { withTimezone: true }),
+  // When the product-catalog-only refresh last ran. Separate from
+  // last_synced_at (which gates the heavy pass with settlements) so
+  // products can refresh every 30 min regardless of plan.
+  products_synced_at:       timestamp('products_synced_at', { withTimezone: true }),
   created_at:        timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   index('shops_user_id_idx').on(t.user_id),

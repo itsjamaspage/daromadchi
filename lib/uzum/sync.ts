@@ -266,8 +266,8 @@ export interface SyncResult {
  * entry point fires. See lib/db/shop-lock.ts for why that matters: order_items
  * are written delete-then-insert, and two interleaved runs can drop them.
  */
-export async function syncFromUzum(shopId: string, token: string, heavy = true): Promise<SyncResult> {
-  const outcome = await withShopLock(shopId, () => syncFromUzumLocked(shopId, token, heavy))
+export async function syncFromUzum(shopId: string, token: string, heavy = true, advanceSyncTimestamp = true): Promise<SyncResult> {
+  const outcome = await withShopLock(shopId, () => syncFromUzumLocked(shopId, token, heavy, advanceSyncTimestamp))
   if (outcome.ran) return outcome.value
   // ok:true deliberately — nothing failed. A run is already in progress, and
   // reporting an error here would light up the Settings card and the sync-alert
@@ -279,7 +279,7 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
   }
 }
 
-async function syncFromUzumLocked(shopId: string, token: string, heavy = true): Promise<SyncResult> {
+async function syncFromUzumLocked(shopId: string, token: string, heavy = true, advanceSyncTimestamp = true): Promise<SyncResult> {
   const warnings: string[] = []
   const debug: Record<string, string> = {}
   let itemsUpserted = 0
@@ -349,7 +349,28 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
               || card.photos?.[0]?.link?.low
               || (card.photos?.[0]?.photoKey ? `https://images.uzum.uz/${card.photos[0].photoKey}/t_product_540_high.jpg` : null)
               || null
-            for (const sku of card.skuList ?? []) {
+            const skuList = card.skuList ?? []
+            if (skuList.length === 0) {
+              // Cards with no SKUs (status "Нет СКУ") are unsellable —
+              // archive them so they appear in the "Архивные" tab instead
+              // of silently vanishing from the app.
+              productRows.push({
+                shop_id: shopId,
+                marketplace_product_id: String(card.productId),
+                title: stripTitleColor(card.title || 'Mahsulot'),
+                sku: String(card.productId),
+                category: card.category ?? null,
+                selling_price: null,
+                cost_price: null,
+                stock_quantity: 0,
+                quantity_sold: null,
+                is_archived: true,
+                variant_group_key: `uzum:${card.productId}`,
+                variant_color: null,
+                image_url: cardImageUrl,
+              })
+            }
+            for (const sku of skuList) {
               const isArchived = cardArchived || sku.archived === true || sku.status?.value === 'ARCHIVED'
               const variantColor = uzumSkuColor(sku)
               const rawTitle = sku.productTitle || card.title || sku.skuTitle || 'Mahsulot'
@@ -1426,7 +1447,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true): 
         },
       }),
     ]
-    if (!ordersDegraded) {
+    if (!ordersDegraded && advanceSyncTimestamp) {
       metaWrites.push(db.update(shops).set({ last_synced_at: new Date() }).where(eq(shops.id, shopId)))
     }
     await Promise.all(metaWrites)

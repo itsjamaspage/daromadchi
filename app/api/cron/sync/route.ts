@@ -34,6 +34,12 @@ const MP_LABEL: Record<string, string> = {
 // expensive work below stays throttled.
 const STOCK_REFRESH_MS = 15 * 60 * 1000
 
+// Product catalog re-reads on its own fixed clock, separate from the heavy
+// pass (settlements/finance). New products added to a seller account show
+// up within 30 min on any plan, while the expensive settlement sync stays
+// plan-gated.
+const PRODUCT_REFRESH_MS = 30 * 60 * 1000
+
 const SYNC_INTERVAL_MS: Record<string, number> = {
   free:     6 * 60 * 60 * 1000,
   pro:      2 * 60 * 60 * 1000,
@@ -54,6 +60,7 @@ async function syncShop(
   shop: { id: string; marketplace: string; api_key_encrypted: string; shop_id_external: string | null },
   heavy: boolean,
   stockDue: boolean,
+  productsDue: boolean,
 ): Promise<Record<string, unknown>> {
   const start = Date.now()
   try {
@@ -82,9 +89,14 @@ async function syncShop(
         }
       }
     }
+    // Fetch products when either the product-refresh clock (30 min) or the
+    // full heavy clock (plan-gated) is due. Pass advanceSyncTimestamp=false
+    // on product-only ticks so last_synced_at (which gates settlements) is
+    // preserved.
+    const fetchProducts = productsDue || heavy
     let r: { ok: boolean; [key: string]: unknown } | undefined
     if (shop.marketplace === 'uzum') {
-      r = { ...await syncFromUzum(shop.id, token, heavy) }
+      r = { ...await syncFromUzum(shop.id, token, fetchProducts, heavy) }
       // Settlements are heavy (extra API + async reports) — only on a heavy tick.
       // Also pull real per-order-item financials from /v1/finance/orders
       // so Payouts shows Uzum's authoritative commission / delivery /
@@ -99,7 +111,7 @@ async function syncShop(
         }
       }
     } else if (shop.marketplace === 'yandex_market' && shop.shop_id_external) {
-      r = { ...await syncFromYandex(shop.id, token, shop.shop_id_external, undefined, heavy) }
+      r = { ...await syncFromYandex(shop.id, token, shop.shop_id_external, undefined, fetchProducts, heavy) }
       // Settlements are heavy (async report API can take minutes) — only on a
       // heavy tick. Kept behind try/catch so a settlement failure never blocks
       // the primary orders sync from being marked ok.
@@ -113,18 +125,22 @@ async function syncShop(
       }
     }
     if (!r) return { shopId: shop.id, marketplace: shop.marketplace, ok: true, skipped: true, ...(stockRefresh ? { stockRefresh } : {}) }
-    // After a heavy product sync refreshed stock_quantity from the live listings,
+    // After a product sync refreshed stock_quantity from the live listings,
     // reconcile physical_stock (the shared pool that drives `available`): adopt a
     // listing read as the pool ONLY when it's seller-originated — differs from our
     // most-recent stock write — never when it equals our own throttle. This is
     // what keeps our mirror writes from ever feeding the pool. Best-effort — a
     // reconcile failure must never fail the sync.
-    if (heavy && r.ok) {
+    if (fetchProducts && r.ok) {
       try {
         await reconcilePhysicalStock(shop.id)
       } catch (e) {
         logger.warn('physical_stock_reconcile_failed', { shopId: shop.id, error: String(e).slice(0, 200) })
       }
+    }
+    // Advance the product-refresh clock when products were fetched.
+    if (fetchProducts && r.ok) {
+      await db.update(shops).set({ products_synced_at: new Date() }).where(eq(shops.id, shop.id))
     }
     return { shopId: shop.id, marketplace: shop.marketplace, ms: Date.now() - start, ...r, ...(stockRefresh ? { stockRefresh } : {}) }
   } catch (err) {
@@ -149,6 +165,7 @@ export const GET = withErrorHandler(async (req: Request) => {
     shop_id_external: shops.shop_id_external,
     last_synced_at: shops.last_synced_at,
     stock_synced_at: shops.stock_synced_at,
+    products_synced_at: shops.products_synced_at,
   }).from(shops)
     .where(and(eq(shops.is_active, true), isNotNull(shops.api_key_encrypted)))
 
@@ -180,17 +197,21 @@ export const GET = withErrorHandler(async (req: Request) => {
     // Independent of `heavy` and of the plan. Null reads as "never refreshed",
     // so the first tick after deploy refreshes every shop.
     const stockDue = !s.stock_synced_at || (now - new Date(s.stock_synced_at).getTime() >= STOCK_REFRESH_MS)
-    return { ...s, heavy, stockDue }
+    // Product catalog refresh: every 30 min regardless of plan. New products
+    // show up quickly without waiting for the plan-gated heavy pass.
+    const productsDue = !s.products_synced_at || (now - new Date(s.products_synced_at).getTime() >= PRODUCT_REFRESH_MS)
+    return { ...s, heavy, stockDue, productsDue }
   })
 
   const results: Record<string, unknown>[] = []
   const heavyCount = shopsToSync.filter(s => s.heavy).length
   const stockCount = shopsToSync.filter(s => s.stockDue && !s.heavy).length
+  const productCount = shopsToSync.filter(s => s.productsDue && !s.heavy).length
 
   for (let i = 0; i < shopsToSync.length; i += CONCURRENCY) {
     const batch = shopsToSync.slice(i, i + CONCURRENCY)
     const settled = await Promise.allSettled(
-      batch.map(s => syncShop({ ...s, api_key_encrypted: s.api_key_encrypted! }, s.heavy, s.stockDue))
+      batch.map(s => syncShop({ ...s, api_key_encrypted: s.api_key_encrypted! }, s.heavy, s.stockDue, s.productsDue))
     )
     for (const outcome of settled) {
       if (outcome.status === 'fulfilled') {
@@ -351,5 +372,5 @@ export const GET = withErrorHandler(async (req: Request) => {
     }
   }
 
-  return NextResponse.json({ ok: true, synced: results.length, heavy: heavyCount, stockRefreshed: stockCount, results })
+  return NextResponse.json({ ok: true, synced: results.length, heavy: heavyCount, productRefreshed: productCount, stockRefreshed: stockCount, results })
 })
