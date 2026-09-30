@@ -362,14 +362,6 @@ async function syncFromYandexLocked(
           ?? (marketSku ? offerCardColors.get(marketSku) : undefined)
           ?? resolveColor(e.mapping?.marketSkuName ?? e.offer.name)?.key
           ?? null
-        // Yandex exposes availability via offer.available (false = disabled
-        // by seller or moderation) and per-campaign status (DISABLED /
-        // REJECTED / SUSPENDED). Any of these signals an archived listing.
-        const campaignStatus = e.offer.campaigns?.find(c => c.campaignId === Number(campaignId))?.status
-        const isArchived = e.offer.available === false
-          || campaignStatus === 'DISABLED'
-          || campaignStatus === 'REJECTED'
-          || campaignStatus === 'SUSPENDED'
         return {
           shop_id: shopId,
           marketplace_product_id: String(marketSku || shopSku || ''),
@@ -383,7 +375,7 @@ async function syncFromYandexLocked(
           variant_group_key: modelName ? `yandex:${modelName}` : null,
           variant_color: variantColor,
           image_url: e.offer.pictures?.[0] ?? null,
-          is_archived: isArchived,
+          is_archived: false,
         }
       })
       if (productRows.length > 0) {
