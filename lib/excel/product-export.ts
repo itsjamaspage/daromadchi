@@ -69,6 +69,24 @@ function colLetter(n: number): string {
   return s
 }
 
+function stripCellsBeyondAD(rowXml: string): string {
+  return rowXml.replace(
+    /<c r="(A[E-Z]|[B-Z][A-Z]|[A-Z]{3,})\d+"[^>]*(?:\/>|>[\s\S]*?<\/c>)/g,
+    '',
+  )
+}
+
+function countSstRefsRemoved(rowXml: string): number {
+  const beyond = rowXml.match(
+    /<c r="(A[E-Z]|[B-Z][A-Z]|[A-Z]{3,})\d+"[^>]*(?:\/>|>[\s\S]*?<\/c>)/g,
+  ) || []
+  let count = 0
+  for (const cell of beyond) {
+    if (/t="s"/.test(cell) && /<v>/.test(cell)) count++
+  }
+  return count
+}
+
 export function generateUzumExcel(
   products: ProductRow[],
   category: UzumCategory,
@@ -125,8 +143,14 @@ export function generateUzumExcel(
     throw new Error('Uzum template: cannot find header rows')
   }
 
-  // Modify row 1: update C1 with category path
-  let row1 = allTemplateRows[0]
+  // Count SST references in columns AE+ that we'll strip from header rows
+  let sstRefsRemoved = 0
+  for (let i = 0; i < 3; i++) {
+    sstRefsRemoved += countSstRefsRemoved(allTemplateRows[i])
+  }
+
+  // Modify row 1: update C1 with category path, strip filter columns (AE+)
+  let row1 = stripCellsBeyondAD(allTemplateRows[0])
   const c1Value = category.id ? `${category.fullPath} | ${category.id}` : category.fullPath
   const c1Idx = addSharedString(c1Value)
   row1 = row1.replace(
@@ -134,8 +158,8 @@ export function generateUzumExcel(
     `<c r="C1" s="4" t="s"><v>${c1Idx}</v></c>`,
   )
 
-  // Modify row 2: add characteristic column headers
-  let row2 = allTemplateRows[1]
+  // Modify row 2: strip filter columns, add characteristic column headers
+  let row2 = stripCellsBeyondAD(allTemplateRows[1])
   if (charKeys.length > 0) {
     const charHeaderCells = charKeys.map((k, ci) => {
       const idx = addSharedString(k)
@@ -144,10 +168,11 @@ export function generateUzumExcel(
     row2 = row2.replace(/<\/row>$/, charHeaderCells + '</row>')
   }
 
-  const row3 = allTemplateRows[2]
+  // Modify row 3: strip filter columns
+  const row3 = stripCellsBeyondAD(allTemplateRows[2])
 
   // Build data rows (row 4+)
-  const spanEnd = Math.max(37, 30 + charKeys.length)
+  const spanEnd = Math.max(30, 30 + charKeys.length)
   const dataRows = products.map((p, i) => {
     const r = 4 + i
     const cells = [
@@ -196,20 +221,59 @@ export function generateUzumExcel(
   // Reassemble sheetData: headers + data + remaining empty rows
   const newSheetData = [row1, row2, row3, ...dataRows, ...emptyTemplateRows].join('')
 
-  const newXml = sheetXml.replace(
+  let newXml = sheetXml.replace(
     /<sheetData>[\s\S]*<\/sheetData>/,
     `<sheetData>${newSheetData}</sheetData>`,
   )
 
+  // Strip category-specific data validations (columns AE+) — keep only the
+  // C1 CategoryList validation and the base-column validations (A-AD).
+  newXml = newXml.replace(
+    /<dataValidations[\s\S]*?<\/dataValidations>/,
+    (block) => {
+      const allDvs = block.match(
+        /<dataValidation [\s\S]*?(?:\/>|<\/dataValidation>)/g,
+      ) || []
+      const kept = allDvs.filter(dv => {
+        const sqref = dv.match(/sqref="([^"]+)"/)?.[1] || ''
+        return !/(?:A[E-Z]|[B-Z][A-Z]|[A-Z]{3,})\d/.test(sqref)
+      })
+      if (kept.length === 0) return ''
+      return `<dataValidations count="${kept.length}">${kept.join('')}</dataValidations>`
+    },
+  )
+
+  // Update dimension to exclude filter columns
+  const lastRow = 3 + products.length + emptyTemplateRows.length
+  const lastCol = charKeys.length > 0 ? colLetter(30 + charKeys.length) : 'AD'
+  newXml = newXml.replace(
+    /<dimension ref="[^"]*"/,
+    `<dimension ref="A1:${lastCol}${lastRow}"`,
+  )
+
   zip[sheetKey] = new TextEncoder().encode(newXml)
 
-  // Update shared strings table — use correct base values for count vs uniqueCount
-  if (newStrings.length > 0) {
+  // Clean up workbook defined names: remove category-specific FilterList_*,
+  // LastFilters, and LastCategory. Keep CategoryList and structural names.
+  const wbKey = 'xl/workbook.xml'
+  let wbXml = new TextDecoder().decode(zip[wbKey])
+  wbXml = wbXml.replace(
+    /<definedNames>[\s\S]*?<\/definedNames>/,
+    (block) => {
+      const cleaned = block.replace(
+        /<definedName [^>]*name="(FilterList_[^"]*|LastFilters|LastCategory)"[^>]*>[\s\S]*?<\/definedName>/g,
+        '',
+      )
+      return cleaned
+    },
+  )
+  zip[wbKey] = new TextEncoder().encode(wbXml)
+
+  // Update shared strings table
+  if (newStrings.length > 0 || sstRefsRemoved > 0) {
     const newEntries = newStrings.map(s => `<si><t>${escXml(s)}</t></si>`).join('')
     const newUniqueCount = existingUniqueCount + newStrings.length
-    // C1 is a replacement (old ref removed, new ref added = net 0), not a new cell,
-    // so total reference count increases by newStrings.length - 1.
-    const newSstCount = existingSstCount + newStrings.length - 1
+    const newSstCount = existingSstCount + newStrings.length - 1 - sstRefsRemoved
     let updatedSst = sstXml.replace(/<\/sst>/, newEntries + '</sst>')
     updatedSst = updatedSst.replace(/\bcount="\d+"/, `count="${newSstCount}"`)
     updatedSst = updatedSst.replace(/uniqueCount="\d+"/, `uniqueCount="${newUniqueCount}"`)
