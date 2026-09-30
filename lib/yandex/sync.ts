@@ -149,9 +149,10 @@ export async function syncFromYandex(
   campaignId: string,
   fromDateOverride?: Date,
   heavy = true,
+  advanceSyncTimestamp = true,
 ): Promise<YandexSyncResult> {
   const outcome = await withShopLock(shopId,
-    () => syncFromYandexLocked(shopId, token, campaignId, fromDateOverride, heavy))
+    () => syncFromYandexLocked(shopId, token, campaignId, fromDateOverride, heavy, advanceSyncTimestamp))
   if (outcome.ran) return outcome.value
   return {
     ok: true, skippedLocked: true,
@@ -168,6 +169,7 @@ async function syncFromYandexLocked(
   // heavy=false → orders-only pass: fetch/insert orders + fire new-order alerts,
   // but skip the throttled product-catalog work and don't advance last_synced_at.
   heavy = true,
+  advanceSyncTimestamp = true,
 ): Promise<YandexSyncResult> {
   const warnings: string[] = []
   const debug: Record<string, string | number> = {}
@@ -236,6 +238,7 @@ async function syncFromYandexLocked(
       variant_group_key: string | null
       variant_color: string | null
       image_url: string | null
+      is_archived: boolean
     }[] = []
     // Heavy-only: the paginated product-catalog fetch (offer-mappings + SKU
     // stats) is the expensive, throttled part. An orders-only tick skips it;
@@ -359,6 +362,14 @@ async function syncFromYandexLocked(
           ?? (marketSku ? offerCardColors.get(marketSku) : undefined)
           ?? resolveColor(e.mapping?.marketSkuName ?? e.offer.name)?.key
           ?? null
+        // Yandex exposes availability via offer.available (false = disabled
+        // by seller or moderation) and per-campaign status (DISABLED /
+        // REJECTED / SUSPENDED). Any of these signals an archived listing.
+        const campaignStatus = e.offer.campaigns?.find(c => c.campaignId === Number(campaignId))?.status
+        const isArchived = e.offer.available === false
+          || campaignStatus === 'DISABLED'
+          || campaignStatus === 'REJECTED'
+          || campaignStatus === 'SUSPENDED'
         return {
           shop_id: shopId,
           marketplace_product_id: String(marketSku || shopSku || ''),
@@ -372,6 +383,7 @@ async function syncFromYandexLocked(
           variant_group_key: modelName ? `yandex:${modelName}` : null,
           variant_color: variantColor,
           image_url: e.offer.pictures?.[0] ?? null,
+          is_archived: isArchived,
         }
       })
       if (productRows.length > 0) {
@@ -394,6 +406,7 @@ async function syncFromYandexLocked(
             // Column is NOT NULL — default to 0 on first insert when Yandex
             // didn't report a stock number.
             stock_quantity: r.stock_quantity ?? 0,
+            is_archived: r.is_archived,
             fulfillment_type: r.fulfillment_type,
             variant_group_key: r.variant_group_key,
             variant_color: r.variant_color,
@@ -411,6 +424,7 @@ async function syncFromYandexLocked(
               title: r.title,
               sku: r.sku,
               fulfillment_type: r.fulfillment_type,
+              is_archived: r.is_archived,
             }
             if (r.category != null) patch.category = r.category
             if (r.selling_price != null) patch.selling_price = String(r.selling_price)
@@ -893,6 +907,7 @@ async function syncFromYandexLocked(
                 // and a mislink an audit cannot see — the colour is on both sides
                 // or on neither.
                 variant_color: yandexItemSnapshot(it).variant_color,
+                is_archived: false,
                 image_url: null,
               })
             }
@@ -967,6 +982,7 @@ async function syncFromYandexLocked(
                   variant_group_key: null,
                   variant_color: yandexItemSnapshot(it).variant_color,
                   image_url: null,
+                  is_archived: false,
                 })
               }
             }
@@ -1153,7 +1169,7 @@ async function syncFromYandexLocked(
     const criticalOk = productsOk && ordersOk
     const today = new Date().toISOString().slice(0, 10)
     const promises: Promise<unknown>[] = []
-    if (criticalOk) {
+    if (criticalOk && advanceSyncTimestamp) {
       promises.push(db.update(shops).set({ last_synced_at: new Date() }).where(eq(shops.id, shopId)))
     }
     const syncStatus = criticalOk ? 'success' : 'degraded'
