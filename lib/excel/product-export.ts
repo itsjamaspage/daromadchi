@@ -58,35 +58,6 @@ export interface UzumCategory {
 //   Y=sellingPrice  Z=oldPrice  AA=weight  AB=height  AC=width  AD=length
 //   AE+=characteristics
 
-function colLetter(n: number): string {
-  let s = ''
-  let v = n
-  while (v > 0) {
-    v--
-    s = String.fromCharCode(65 + (v % 26)) + s
-    v = Math.floor(v / 26)
-  }
-  return s
-}
-
-function stripCellsBeyondAD(rowXml: string): string {
-  return rowXml.replace(
-    /<c r="(A[E-Z]|[B-Z][A-Z]|[A-Z]{3,})\d+"[^>]*(?:\/>|>[\s\S]*?<\/c>)/g,
-    '',
-  )
-}
-
-function countSstRefsRemoved(rowXml: string): number {
-  const beyond = rowXml.match(
-    /<c r="(A[E-Z]|[B-Z][A-Z]|[A-Z]{3,})\d+"[^>]*(?:\/>|>[\s\S]*?<\/c>)/g,
-  ) || []
-  let count = 0
-  for (const cell of beyond) {
-    if (/t="s"/.test(cell) && /<v>/.test(cell)) count++
-  }
-  return count
-}
-
 export function generateUzumExcel(
   products: ProductRow[],
   category: UzumCategory,
@@ -105,180 +76,78 @@ export function generateUzumExcel(
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
 
-  const sstKey = 'xl/sharedStrings.xml'
-  const sstXml = new TextDecoder().decode(zip[sstKey])
-  const existingUniqueCount = parseInt(sstXml.match(/uniqueCount="(\d+)"/)?.[1] || '0')
-  const existingSstCount = parseInt(sstXml.match(/\bcount="(\d+)"/)?.[1] || '0')
-  const newStrings: string[] = []
-
-  const addSharedString = (val: string): number => {
-    const idx = existingUniqueCount + newStrings.length
-    newStrings.push(val)
-    return idx
-  }
-
-  const ssCell = (col: string, row: number, val: string, style?: string) => {
+  const strCell = (col: string, row: number, val: string, style?: string) => {
     const sAttr = style ? ` s="${style}"` : ''
-    const idx = addSharedString(val)
-    return `<c r="${col}${row}"${sAttr} t="s"><v>${idx}</v></c>`
+    return `<c r="${col}${row}"${sAttr} t="inlineStr"><is><t>${escXml(val)}</t></is></c>`
   }
 
   const numCell = (col: string, row: number, val: number, style?: string) => {
     const sAttr = style ? ` s="${style}"` : ''
-    return `<c r="${col}${row}"${sAttr} t="n"><v>${val}</v></c>`
+    return `<c r="${col}${row}"${sAttr}><v>${val}</v></c>`
   }
 
-  const charKeys: string[] = []
-  for (const p of products) {
-    if (p.characteristics) {
-      for (const key of Object.keys(p.characteristics)) {
-        if (!charKeys.includes(key)) charKeys.push(key)
-      }
-    }
-  }
-
-  // Extract ALL rows from the template
   const allTemplateRows = sheetXml.match(/<row r="\d+"[\s\S]*?<\/row>/g)
   if (!allTemplateRows || allTemplateRows.length < 3) {
     throw new Error('Uzum template: cannot find header rows')
   }
 
-  // Count SST references in columns AE+ that we'll strip from header rows
-  let sstRefsRemoved = 0
-  for (let i = 0; i < 3; i++) {
-    sstRefsRemoved += countSstRefsRemoved(allTemplateRows[i])
-  }
-
-  // Modify row 1: update C1 with category path, strip filter columns (AE+)
-  let row1 = stripCellsBeyondAD(allTemplateRows[0])
+  // Keep rows 1-3 exactly as in the template — only replace C1 value
   const c1Value = category.id ? `${category.fullPath} | ${category.id}` : category.fullPath
-  const c1Idx = addSharedString(c1Value)
-  row1 = row1.replace(
+  const row1 = allTemplateRows[0].replace(
     /<c r="C1"[^>]*>[\s\S]*?<\/c>/,
-    `<c r="C1" s="4" t="s"><v>${c1Idx}</v></c>`,
+    `<c r="C1" s="4" t="inlineStr"><is><t>${escXml(c1Value)}</t></is></c>`,
   )
 
-  // Modify row 2: strip filter columns, add characteristic column headers
-  let row2 = stripCellsBeyondAD(allTemplateRows[1])
-  if (charKeys.length > 0) {
-    const charHeaderCells = charKeys.map((k, ci) => {
-      const idx = addSharedString(k)
-      return `<c r="${colLetter(31 + ci)}2" t="s"><v>${idx}</v></c>`
-    }).join('')
-    row2 = row2.replace(/<\/row>$/, charHeaderCells + '</row>')
-  }
-
-  // Modify row 3: strip filter columns
-  const row3 = stripCellsBeyondAD(allTemplateRows[2])
-
-  // Build data rows (row 4+)
-  const spanEnd = Math.max(30, 30 + charKeys.length)
+  // Build data rows (row 4+) using inline strings — no SST modification
   const dataRows = products.map((p, i) => {
     const r = 4 + i
     const cells = [
-      ssCell('A', r, p.nameRu),
-      ssCell('B', r, p.sku || ''),
-      ssCell('C', r, p.nameUz),
-      ssCell('D', r, p.skuGroup),
-      ssCell('E', r, category.name),
+      strCell('A', r, p.nameRu),
+      strCell('B', r, p.sku || ''),
+      strCell('C', r, p.nameUz),
+      strCell('D', r, p.skuGroup),
+      strCell('E', r, category.name),
       numCell('F', r, Number(category.id)),
-      ssCell('G', r, p.brand, '1'),
-      ...(p.model ? [ssCell('H', r, p.model)] : []),
-      ssCell('I', r, p.country, '1'),
-      ssCell('J', r, p.descriptionRu, '1'),
-      ssCell('K', r, p.descriptionUz, '1'),
-      ssCell('L', r, p.shortDescRu, '1'),
-      ssCell('M', r, p.shortDescUz, '1'),
-      ...(p.compositionRu ? [ssCell('N', r, p.compositionRu)] : []),
-      ...(p.compositionUz ? [ssCell('O', r, p.compositionUz)] : []),
-      ...(p.careRu ? [ssCell('P', r, p.careRu)] : []),
-      ...(p.careUz ? [ssCell('Q', r, p.careUz)] : []),
-      ...(p.sizeChartRu ? [ssCell('R', r, p.sizeChartRu)] : []),
-      ...(p.sizeChartUz ? [ssCell('S', r, p.sizeChartUz)] : []),
-      ssCell('T', r, p.photoUrls),
-      ...(p.barcode ? [ssCell('U', r, p.barcode)] : []),
-      ssCell('V', r, p.ikpu, '29'),
-      ...(p.color ? [ssCell('W', r, p.color)] : []),
-      ...(p.size ? [ssCell('X', r, p.size, '2')] : []),
+      strCell('G', r, p.brand, '1'),
+      ...(p.model ? [strCell('H', r, p.model)] : []),
+      strCell('I', r, p.country, '1'),
+      strCell('J', r, p.descriptionRu, '1'),
+      strCell('K', r, p.descriptionUz, '1'),
+      strCell('L', r, p.shortDescRu, '1'),
+      strCell('M', r, p.shortDescUz, '1'),
+      ...(p.compositionRu ? [strCell('N', r, p.compositionRu)] : []),
+      ...(p.compositionUz ? [strCell('O', r, p.compositionUz)] : []),
+      ...(p.careRu ? [strCell('P', r, p.careRu)] : []),
+      ...(p.careUz ? [strCell('Q', r, p.careUz)] : []),
+      ...(p.sizeChartRu ? [strCell('R', r, p.sizeChartRu)] : []),
+      ...(p.sizeChartUz ? [strCell('S', r, p.sizeChartUz)] : []),
+      strCell('T', r, p.photoUrls),
+      ...(p.barcode ? [strCell('U', r, p.barcode)] : []),
+      strCell('V', r, p.ikpu, '29'),
+      ...(p.color ? [strCell('W', r, p.color)] : []),
+      ...(p.size ? [strCell('X', r, p.size, '2')] : []),
       numCell('Y', r, Math.round(p.sellingPrice / 1000) * 1000),
       numCell('Z', r, Math.round(p.oldPrice / 1000) * 1000),
       numCell('AA', r, p.weightGrams),
       numCell('AB', r, p.heightMm),
       numCell('AC', r, p.widthMm),
       numCell('AD', r, p.lengthMm),
-      ...charKeys.map((k, ci) => {
-        const val = p.characteristics?.[k]
-        if (!val) return ''
-        return ssCell(colLetter(31 + ci), r, val)
-      }).filter(Boolean),
     ]
-    return `<row r="${r}" spans="1:${spanEnd}">${cells.join('')}</row>`
+    return `<row r="${r}" spans="1:37">${cells.join('')}</row>`
   })
 
   // Preserve the template's empty styled rows AFTER our data rows
   const emptyTemplateRows = allTemplateRows.slice(3 + products.length)
 
-  // Reassemble sheetData: headers + data + remaining empty rows
-  const newSheetData = [row1, row2, row3, ...dataRows, ...emptyTemplateRows].join('')
+  // Reassemble sheetData: row1 (with C1 updated) + rows 2-3 unchanged + data + remaining
+  const newSheetData = [row1, allTemplateRows[1], allTemplateRows[2], ...dataRows, ...emptyTemplateRows].join('')
 
-  let newXml = sheetXml.replace(
+  const newXml = sheetXml.replace(
     /<sheetData>[\s\S]*<\/sheetData>/,
     `<sheetData>${newSheetData}</sheetData>`,
   )
 
-  // Strip category-specific data validations (columns AE+) — keep only the
-  // C1 CategoryList validation and the base-column validations (A-AD).
-  newXml = newXml.replace(
-    /<dataValidations[\s\S]*?<\/dataValidations>/,
-    (block) => {
-      const allDvs = block.match(
-        /<dataValidation [\s\S]*?(?:\/>|<\/dataValidation>)/g,
-      ) || []
-      const kept = allDvs.filter(dv => {
-        const sqref = dv.match(/sqref="([^"]+)"/)?.[1] || ''
-        return !/(?:A[E-Z]|[B-Z][A-Z]|[A-Z]{3,})\d/.test(sqref)
-      })
-      if (kept.length === 0) return ''
-      return `<dataValidations count="${kept.length}">${kept.join('')}</dataValidations>`
-    },
-  )
-
-  // Update dimension to exclude filter columns
-  const lastRow = 3 + products.length + emptyTemplateRows.length
-  const lastCol = charKeys.length > 0 ? colLetter(30 + charKeys.length) : 'AD'
-  newXml = newXml.replace(
-    /<dimension ref="[^"]*"/,
-    `<dimension ref="A1:${lastCol}${lastRow}"`,
-  )
-
   zip[sheetKey] = new TextEncoder().encode(newXml)
-
-  // Clean up workbook defined names: remove category-specific FilterList_*,
-  // LastFilters, and LastCategory. Keep CategoryList and structural names.
-  const wbKey = 'xl/workbook.xml'
-  let wbXml = new TextDecoder().decode(zip[wbKey])
-  wbXml = wbXml.replace(
-    /<definedNames>[\s\S]*?<\/definedNames>/,
-    (block) => {
-      const cleaned = block.replace(
-        /<definedName [^>]*name="(FilterList_[^"]*|LastFilters|LastCategory)"[^>]*>[\s\S]*?<\/definedName>/g,
-        '',
-      )
-      return cleaned
-    },
-  )
-  zip[wbKey] = new TextEncoder().encode(wbXml)
-
-  // Update shared strings table
-  if (newStrings.length > 0 || sstRefsRemoved > 0) {
-    const newEntries = newStrings.map(s => `<si><t>${escXml(s)}</t></si>`).join('')
-    const newUniqueCount = existingUniqueCount + newStrings.length
-    const newSstCount = existingSstCount + newStrings.length - 1 - sstRefsRemoved
-    let updatedSst = sstXml.replace(/<\/sst>/, newEntries + '</sst>')
-    updatedSst = updatedSst.replace(/\bcount="\d+"/, `count="${newSstCount}"`)
-    updatedSst = updatedSst.replace(/uniqueCount="\d+"/, `uniqueCount="${newUniqueCount}"`)
-    zip[sstKey] = new TextEncoder().encode(updatedSst)
-  }
 
   const result = zipSync(zip, { level: 6 })
   return Buffer.from(result)
