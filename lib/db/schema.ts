@@ -194,6 +194,11 @@ export const shops = pgTable('shops', {
   // last_synced_at (which gates the heavy pass with settlements) so
   // products can refresh every 30 min regardless of plan.
   products_synced_at:       timestamp('products_synced_at', { withTimezone: true }),
+  // Cached Yandex Market campaign placementType (FBS/DBS/FBY/LAAS). Stored on
+  // a successful fetchCampaignInfo so the new-order alert gate can fall back to
+  // it when the API call fails on a later tick — without this, a transient API
+  // error silently suppresses ALL order alerts for the shop. Migration 098.
+  campaign_placement:       text('campaign_placement'),
   created_at:        timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   index('shops_user_id_idx').on(t.user_id),

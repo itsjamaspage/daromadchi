@@ -204,11 +204,22 @@ async function syncFromYandexLocked(
       // it resolves to the same 'fbs'; noted so it isn't read as a live case.
       else if (placement === 'FBS' || placement === 'DBS' || placement === 'EXPRESS') campaignFulfillmentType = 'fbs'
       debug.placement = placement ?? 'unknown'
-      if (businessId) {
-        await db.update(shops).set({ business_id: String(businessId) }).where(eq(shops.id, shopId))
+      const shopUpdate: Record<string, unknown> = {}
+      if (businessId) shopUpdate.business_id = String(businessId)
+      if (placement) shopUpdate.campaign_placement = placement
+      if (Object.keys(shopUpdate).length > 0) {
+        await db.update(shops).set(shopUpdate).where(eq(shops.id, shopId))
       }
     } catch (e) {
       debug.campaignInfo = e instanceof YandexApiError ? `${e.status}` : 'err'
+      // Fall back to the cached placement so a transient API failure doesn't
+      // silently suppress every order alert for this shop.
+      const [cached] = await db.select({ campaign_placement: shops.campaign_placement })
+        .from(shops).where(eq(shops.id, shopId))
+      if (cached?.campaign_placement) {
+        campaignPlacement = cached.campaign_placement
+        debug.placementSource = 'cached'
+      }
     }
 
     // Colour-attribute fallback. The offer / market-SKU NAME often has no colour
