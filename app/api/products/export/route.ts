@@ -4,6 +4,7 @@ import { withErrorHandler } from '@/lib/api-handler'
 import {
   generateUzumExcel,
   generateYandexExcel,
+  validateProductRows,
   type ProductRow,
   type UzumCategory,
   type YandexCategoryParam,
@@ -29,6 +30,16 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
 
   if (marketplace === 'uzum') {
+    const validationErrors = validateProductRows(products)
+    if (validationErrors.length > 0) {
+      return NextResponse.json({
+        error: 'Ошибки валидации Uzum',
+        details: validationErrors.map(e =>
+          `Строка ${e.row}: ${e.field} — "${e.value}" не найдено в списке допустимых значений`
+        ),
+      }, { status: 400 })
+    }
+
     const cat = body.uzumCategory ?? { id: '', name: '', fullPath: '' }
     const buf = generateUzumExcel(products, cat)
     return new Response(new Uint8Array(buf), {

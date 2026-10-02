@@ -285,82 +285,31 @@ function CascadingCatPicker({
   )
 }
 
-// ── Country searchable picker ────────────────────────────────────────────────
+// ── Uzum Лист3 enum picker (autocomplete dropdown) ──────────────────────────
 
-const COUNTRIES: { ru: string; uz: string; en: string }[] = [
-  { ru: 'Китай', uz: 'Xitoy', en: 'China' },
-  { ru: 'Турция', uz: 'Turkiya', en: 'Turkey' },
-  { ru: 'Узбекистан', uz: "O'zbekiston", en: 'Uzbekistan' },
-  { ru: 'Россия', uz: 'Rossiya', en: 'Russia' },
-  { ru: 'Южная Корея', uz: 'Janubiy Koreya', en: 'South Korea' },
-  { ru: 'Япония', uz: 'Yaponiya', en: 'Japan' },
-  { ru: 'Германия', uz: 'Germaniya', en: 'Germany' },
-  { ru: 'США', uz: 'AQSH', en: 'USA' },
-  { ru: 'Италия', uz: 'Italiya', en: 'Italy' },
-  { ru: 'Франция', uz: 'Fransiya', en: 'France' },
-  { ru: 'Индия', uz: 'Hindiston', en: 'India' },
-  { ru: 'Великобритания', uz: 'Buyuk Britaniya', en: 'United Kingdom' },
-  { ru: 'Бразилия', uz: 'Braziliya', en: 'Brazil' },
-  { ru: 'Вьетнам', uz: 'Vyetnam', en: 'Vietnam' },
-  { ru: 'Индонезия', uz: 'Indoneziya', en: 'Indonesia' },
-  { ru: 'Таиланд', uz: 'Tailand', en: 'Thailand' },
-  { ru: 'Малайзия', uz: 'Malayziya', en: 'Malaysia' },
-  { ru: 'Тайвань', uz: 'Tayvan', en: 'Taiwan' },
-  { ru: 'Польша', uz: 'Polsha', en: 'Poland' },
-  { ru: 'Испания', uz: 'Ispaniya', en: 'Spain' },
-  { ru: 'Нидерланды', uz: 'Niderlandiya', en: 'Netherlands' },
-  { ru: 'Швеция', uz: 'Shvetsiya', en: 'Sweden' },
-  { ru: 'Швейцария', uz: 'Shveytsariya', en: 'Switzerland' },
-  { ru: 'Канада', uz: 'Kanada', en: 'Canada' },
-  { ru: 'Мексика', uz: 'Meksika', en: 'Mexico' },
-  { ru: 'Австралия', uz: 'Avstraliya', en: 'Australia' },
-  { ru: 'ОАЭ', uz: 'BAA', en: 'UAE' },
-  { ru: 'Саудовская Аравия', uz: 'Saudiya Arabistoni', en: 'Saudi Arabia' },
-  { ru: 'Казахстан', uz: "Qozog'iston", en: 'Kazakhstan' },
-  { ru: 'Кыргызстан', uz: "Qirg'iziston", en: 'Kyrgyzstan' },
-  { ru: 'Таджикистан', uz: 'Tojikiston', en: 'Tajikistan' },
-  { ru: 'Туркменистан', uz: 'Turkmaniston', en: 'Turkmenistan' },
-  { ru: 'Беларусь', uz: 'Belarus', en: 'Belarus' },
-  { ru: 'Украина', uz: 'Ukraina', en: 'Ukraine' },
-  { ru: 'Азербайджан', uz: 'Ozarbayjon', en: 'Azerbaijan' },
-  { ru: 'Грузия', uz: 'Gruziya', en: 'Georgia' },
-  { ru: 'Армения', uz: 'Armaniston', en: 'Armenia' },
-  { ru: 'Пакистан', uz: 'Pokiston', en: 'Pakistan' },
-  { ru: 'Бангладеш', uz: 'Bangladesh', en: 'Bangladesh' },
-  { ru: 'Египет', uz: 'Misr', en: 'Egypt' },
-  { ru: 'Финляндия', uz: 'Finlandiya', en: 'Finland' },
-  { ru: 'Норвегия', uz: 'Norvegiya', en: 'Norway' },
-  { ru: 'Дания', uz: 'Daniya', en: 'Denmark' },
-  { ru: 'Чехия', uz: 'Chexiya', en: 'Czech Republic' },
-  { ru: 'Португалия', uz: 'Portugaliya', en: 'Portugal' },
-  { ru: 'Австрия', uz: 'Avstriya', en: 'Austria' },
-  { ru: 'Венгрия', uz: 'Vengriya', en: 'Hungary' },
-  { ru: 'Израиль', uz: 'Isroil', en: 'Israel' },
-  { ru: 'Аргентина', uz: 'Argentina', en: 'Argentina' },
-  { ru: 'Сингапур', uz: 'Singapur', en: 'Singapore' },
-  { ru: 'Филиппины', uz: 'Filippin', en: 'Philippines' },
-]
-
-function CountryPicker({
+function UzumEnumPicker({
+  field,
   value,
   onChange,
-  disabled,
   label,
   badges,
   placeholder,
-  lang,
+  disabled,
 }: {
+  field: 'colors' | 'sizes' | 'brands' | 'countries'
   value: string
   onChange: (v: string) => void
-  disabled?: boolean
   label: string
   badges?: React.ReactNode
   placeholder?: string
-  lang: 'ru' | 'uz' | 'en'
+  disabled?: boolean
 }) {
   const [query, setQuery] = useState('')
+  const [options, setOptions] = useState<string[]>([])
   const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -370,19 +319,25 @@ function CountryPicker({
     return () => document.removeEventListener('mousedown', h)
   }, [])
 
-  const displayName = (c: typeof COUNTRIES[0]) => c[lang]
+  const fetchOptions = useCallback((q: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true)
+      try {
+        const params = new URLSearchParams({ field, q })
+        const res = await fetch(`/api/products/uzum-enums?${params}`)
+        if (res.ok) {
+          const data = await res.json()
+          setOptions(data.values ?? [])
+        }
+      } catch { /* ignore */ }
+      setLoading(false)
+    }, 200)
+  }, [field])
 
-  const filtered = COUNTRIES.filter(c => {
-    const q = query.toLowerCase()
-    if (!q) return true
-    return c.ru.toLowerCase().includes(q)
-      || c.uz.toLowerCase().includes(q)
-      || c.en.toLowerCase().includes(q)
-  })
-
-  const selectedDisplay = value
-    ? (COUNTRIES.find(c => c.ru === value || c.uz === value || c.en === value)?.[lang] ?? value)
-    : ''
+  useEffect(() => {
+    if (open) fetchOptions(query)
+  }, [open, query, fetchOptions])
 
   return (
     <div ref={ref} className="relative">
@@ -392,9 +347,9 @@ function CountryPicker({
       <div className="relative">
         <input
           type="text"
-          value={open ? query : selectedDisplay}
+          value={open ? query : value}
           onChange={e => { setQuery(e.target.value); if (!open) setOpen(true) }}
-          onFocus={() => { setOpen(true); setQuery('') }}
+          onFocus={() => { setOpen(true); setQuery(value) }}
           placeholder={placeholder}
           disabled={disabled}
           className="w-full px-3 py-2 pr-8 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2 disabled:opacity-40"
@@ -406,31 +361,38 @@ function CountryPicker({
             '--tw-ring-color': 'var(--c1)',
           }}
         />
-        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
+        {loading ? (
+          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 border-2 rounded-full animate-spin"
+            style={{ borderColor: 'var(--border)', borderTopColor: 'var(--c1)' }} />
+        ) : (
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
+        )}
       </div>
       {open && !disabled && (
         <div
           className="absolute z-30 left-0 right-0 mt-1 rounded-xl border shadow-lg max-h-60 overflow-y-auto"
           style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
         >
-          {filtered.length === 0 && (
+          {options.length === 0 && !loading && (
             <p className="px-3 py-2 text-sm" style={{ color: 'var(--text-muted)' }}>
-              {lang === 'ru' ? 'Не найдено' : lang === 'uz' ? 'Topilmadi' : 'Not found'}
+              {field === 'brands' && query.length < 2
+                ? 'Введите минимум 2 символа'
+                : 'Не найдено'}
             </p>
           )}
-          {filtered.map(c => (
+          {options.map(opt => (
             <button
-              key={c.en}
+              key={opt}
               type="button"
-              onClick={() => { onChange(c.ru); setOpen(false); setQuery('') }}
+              onClick={() => { onChange(opt); setOpen(false); setQuery('') }}
               className="w-full text-left px-3 py-2 text-sm hover:opacity-80 transition-colors border-b last:border-b-0"
               style={{
                 color: 'var(--text-base)',
                 borderColor: 'var(--border)',
-                background: value === c.ru ? 'var(--c1-alpha, rgba(99,102,241,0.08))' : undefined,
+                background: value === opt ? 'var(--c1-alpha, rgba(99,102,241,0.08))' : undefined,
               }}
             >
-              {displayName(c)}
+              {opt}
             </button>
           ))}
         </div>
@@ -1841,7 +1803,7 @@ export default function ProductCreateForm() {
             placeholder={d.phSku}
           />
           <div>
-            <InputField
+            <UzumEnumPicker field="brands"
               label={d.brandLabel}
               badges={<MpBadges uz ym reqUz />}
               value={brand} onChange={setBrand}
@@ -1851,14 +1813,13 @@ export default function ProductCreateForm() {
             <SkipCheck checked={brandSkipped} onChange={setBrandSkipped} label={skipLabel} />
           </div>
           <div className="relative">
-            <CountryPicker
+            <UzumEnumPicker field="countries"
               label={d.countryLabel}
               badges={<MpBadges uz ym reqUz reqYm />}
               value={country}
               onChange={setCountry}
               disabled={countrySkipped}
               placeholder={d.phCountry}
-              lang={lang}
             />
             <SkipCheck checked={countrySkipped} onChange={setCountrySkipped} label={skipLabel} />
           </div>
@@ -2077,10 +2038,10 @@ export default function ProductCreateForm() {
                   </button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <InputField label={d.colorLabel} badges={<MpBadges uz ym />}
+                  <UzumEnumPicker field="colors" label={d.colorLabel} badges={<MpBadges uz ym />}
                     value={v.color} onChange={val => updateVariant(v.id, 'color', val)}
                     placeholder={d.phColor} />
-                  <InputField label={d.sizeLabel} badges={<MpBadges uz ym />}
+                  <UzumEnumPicker field="sizes" label={d.sizeLabel} badges={<MpBadges uz ym />}
                     value={v.size} onChange={val => updateVariant(v.id, 'size', val)}
                     placeholder={d.phSize} />
                   <InputField label={d.skuId} badges={<MpBadges uz ym />}
