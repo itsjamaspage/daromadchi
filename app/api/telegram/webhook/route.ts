@@ -253,12 +253,22 @@ async function sendLangSelect(chatId: string) {
 
 async function sendNotifSettings(chatId: string, lang: string) {
   const t = botT(lang)
+  const [row] = await db.select({
+    ls: userSettings.notif_low_stock,
+    ds: userSettings.notif_daily_summary,
+    no: userSettings.notif_new_orders,
+    wr: userSettings.notif_weekly_report,
+  }).from(userSettings).where(eq(userSettings.telegram_chat_id, chatId))
+  const ls = row?.ls ?? true
+  const ds = row?.ds ?? true
+  const no = row?.no ?? true
+  const wr = row?.wr ?? false
   await sendTelegramKeyboard(chatId, t.notifPrompt, [
-    [{ text: `📦 ${t.lowStock} ✅`,     callback_data: 'notif_toggle:low_stock:1' }],
-    [{ text: `📊 ${t.dailySummary} ✅`, callback_data: 'notif_toggle:daily_summary:1' }],
-    [{ text: `🛒 ${t.newOrders} ❌`,    callback_data: 'notif_toggle:new_orders:0' }],
-    [{ text: `📈 ${t.weeklyReport} ❌`, callback_data: 'notif_toggle:weekly_report:0' }],
-    [{ text: t.timeStep,                callback_data: 'notif_step:time' }],
+    [{ text: `📦 ${t.lowStock} ${ls ? '✅' : '❌'}`,     callback_data: `notif_toggle:low_stock:${ls ? '1' : '0'}` }],
+    [{ text: `📊 ${t.dailySummary} ${ds ? '✅' : '❌'}`, callback_data: `notif_toggle:daily_summary:${ds ? '1' : '0'}` }],
+    [{ text: `🛒 ${t.newOrders} ${no ? '✅' : '❌'}`,    callback_data: `notif_toggle:new_orders:${no ? '1' : '0'}` }],
+    [{ text: `📈 ${t.weeklyReport} ${wr ? '✅' : '❌'}`, callback_data: `notif_toggle:weekly_report:${wr ? '1' : '0'}` }],
+    [{ text: t.timeStep,                                 callback_data: 'notif_step:time' }],
   ])
 }
 
