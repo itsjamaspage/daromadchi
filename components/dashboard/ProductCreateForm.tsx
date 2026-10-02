@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import {
   Plus, Trash2, Download, FileSpreadsheet, Send, Upload,
   ChevronDown, ChevronUp, ArrowLeft, Check, AlertCircle, Search,
@@ -320,7 +320,6 @@ function UzumEnumPicker({
   const [options, setOptions] = useState<string[]>([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [sizeError, setSizeError] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
 
@@ -332,9 +331,7 @@ function UzumEnumPicker({
     return () => document.removeEventListener('mousedown', h)
   }, [])
 
-  useEffect(() => {
-    if (field === 'sizes') setSizeError(validateSizeClient(value))
-  }, [field, value])
+  const sizeError = useMemo(() => field === 'sizes' ? validateSizeClient(value) : null, [field, value])
 
   const fetchOptions = useCallback((q: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)

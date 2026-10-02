@@ -1,7 +1,7 @@
 import { unzipSync, zipSync } from 'fflate'
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import { validateEnum, validateSize, type ValidationResult } from '@/lib/uzum/list3-enums'
+import { validateEnum, validateSize } from '@/lib/uzum/list3-enums'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
