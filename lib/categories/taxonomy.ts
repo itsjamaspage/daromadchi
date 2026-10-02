@@ -57,7 +57,7 @@ export const TAXONOMY: CanonicalCategory[] = [
     },
     raw_examples: {
       uzum: ['Telefon aksessuarlari','Chexollar','Himoya oynalari'],
-      yandex_market: ['Аксессуары для мобильных телефонов','Аксессуары для смартфонов','Чехлы для телефонов','Защитные стекла'],
+      yandex_market: ['Аксессуары для мобильных телефонов','Аксессуары для смартфонов','Чехлы для телефонов','Чехлы и накладки для телефонов','Защитные стекла'],
     },
   },
   {
@@ -106,7 +106,7 @@ export const TAXONOMY: CanonicalCategory[] = [
     },
     raw_examples: {
       uzum: ['Noutbuklar','Ноутбуки'],
-      yandex_market: ['Ноутбуки','Ноутбуки и ультрабуки'],
+      yandex_market: ['Ноутбуки','Ноутбуки персональные','Ноутбуки и ультрабуки'],
     },
   },
   {
@@ -120,7 +120,7 @@ export const TAXONOMY: CanonicalCategory[] = [
     },
     raw_examples: {
       uzum: ['Planshetlar','Планшеты'],
-      yandex_market: ['Планшеты','Электронные книги'],
+      yandex_market: ['Планшеты','Планшетные компьютеры','Электронные книги','Книги электронные'],
     },
   },
   {
@@ -134,7 +134,7 @@ export const TAXONOMY: CanonicalCategory[] = [
     },
     raw_examples: {
       uzum: ['Kompyuter aksessuarlari','Klaviaturalar','Monitorlar','Klaviatura va sichqoncha to\'plami'],
-      yandex_market: ['Компьютерная периферия','Мониторы','Клавиатуры','Компьютерные мыши','Комплекты клавиатур и мышей'],
+      yandex_market: ['Компьютерная периферия','Мониторы','Клавиатуры','Клавиатуры компьютерные','Компьютерные мыши','Комплекты клавиатур и мышей'],
     },
   },
   {
@@ -176,7 +176,7 @@ export const TAXONOMY: CanonicalCategory[] = [
     },
     raw_examples: {
       uzum: ['Kolonkalar','Portativ kolonkalar'],
-      yandex_market: ['Портативная акустика','Домашняя акустика','Портативные колонки','Акустические системы','Саундбары'],
+      yandex_market: ['Портативная акустика','Беспроводные колонки','Домашняя акустика','Портативные колонки','Акустические системы','Акустические системы для дома','Саундбары'],
     },
     notes: 'Distinct from headphones. Speakers = external audio playback.',
   },
@@ -205,7 +205,7 @@ export const TAXONOMY: CanonicalCategory[] = [
     },
     raw_examples: {
       uzum: ["O'yin konsollari",'Игровые приставки'],
-      yandex_market: ['Игровые приставки','Игры для консолей','Геймпады'],
+      yandex_market: ['Игровые приставки','Приставки игровые','Игры для консолей','Геймпады','Геймпад'],
     },
   },
   {
@@ -262,7 +262,7 @@ export const TAXONOMY: CanonicalCategory[] = [
     },
     raw_examples: {
       uzum: ['Tovalar va qozonlar'],
-      yandex_market: ['Кастрюли и сковороды','Посуда для приготовления','Сковороды','Кастрюли'],
+      yandex_market: ['Кастрюли и сковороды','Посуда для приготовления','Сковороды','Сковороды для готовки','Кастрюли'],
     },
   },
   {
@@ -290,7 +290,7 @@ export const TAXONOMY: CanonicalCategory[] = [
     },
     raw_examples: {
       uzum: ["Choyshab to'plamlari",'Sochiqlar'],
-      yandex_market: ['Домашний текстиль','Постельное белье','Полотенца','Одеяла'],
+      yandex_market: ['Домашний текстиль','Постельное белье','Полотенца','Одеяла','Одеяла для сна'],
     },
   },
   {
@@ -319,7 +319,7 @@ export const TAXONOMY: CanonicalCategory[] = [
     },
     raw_examples: {
       uzum: ['Uy bezaklari','Gilamlar'],
-      yandex_market: ['Домашний декор','Декор для дома','Картины','Ковры'],
+      yandex_market: ['Домашний декор','Декор для дома','Картины','Картины интерьерные','Ковры','Ковры напольные'],
     },
   },
   {
@@ -445,7 +445,7 @@ export const TAXONOMY: CanonicalCategory[] = [
     },
     raw_examples: {
       uzum: ['Tish parvarishi','Tish pastalari'],
-      yandex_market: ['Уход за полостью рта','Гигиена полости рта','Зубные щетки'],
+      yandex_market: ['Уход за полостью рта','Гигиена полости рта','Зубные щетки','Щетки зубные'],
     },
   },
   {
@@ -530,7 +530,7 @@ export const TAXONOMY: CanonicalCategory[] = [
     },
     raw_examples: {
       uzum: ['Sumkalar','Ryukzaklar'],
-      yandex_market: ['Сумки и аксессуары','Сумки','Женские сумки','Рюкзаки','Чемоданы'],
+      yandex_market: ['Сумки и аксессуары','Сумки','Сумки повседневные','Женские сумки','Рюкзаки','Чемоданы','Чемоданы и аксессуары для чемоданов'],
     },
   },
   {
@@ -573,7 +573,7 @@ export const TAXONOMY: CanonicalCategory[] = [
     },
     raw_examples: {
       uzum: ["O'yinchoqlar"],
-      yandex_market: ['Игрушки','Мягкие игрушки','Конструкторы'],
+      yandex_market: ['Игрушки','Мягкие игрушки','Конструкторы','Конструкторы детские'],
     },
   },
   {
@@ -671,7 +671,7 @@ export const TAXONOMY: CanonicalCategory[] = [
     },
     raw_examples: {
       uzum: ['Kitoblar','Kantselyariya'],
-      yandex_market: ['Книги','Канцелярские товары','Канцтовары','Тетради'],
+      yandex_market: ['Книги','Канцелярские товары','Канцтовары','Тетради','Тетради школьные'],
     },
   },
   {
