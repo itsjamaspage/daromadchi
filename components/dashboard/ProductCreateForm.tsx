@@ -287,6 +287,18 @@ function CascadingCatPicker({
 
 // ── Uzum Лист3 enum picker (autocomplete dropdown) ──────────────────────────
 
+function validateSizeClient(v: string): string | null {
+  const trimmed = v.trim()
+  if (!trimmed) return null
+  if (/^\d+\s*[-–]\s*\d+$/.test(trimmed)) {
+    return 'Размерный диапазон недопустим — создайте отдельный вариант для каждого размера'
+  }
+  if (/^\d+([.,]\d+)?$/.test(trimmed)) {
+    return 'Укажите размер в формате из списка, например: «Мужской размер обуви EUR:42»'
+  }
+  return null
+}
+
 function UzumEnumPicker({
   field,
   value,
@@ -308,6 +320,7 @@ function UzumEnumPicker({
   const [options, setOptions] = useState<string[]>([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [sizeError, setSizeError] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
 
@@ -318,6 +331,10 @@ function UzumEnumPicker({
     document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
   }, [])
+
+  useEffect(() => {
+    if (field === 'sizes') setSizeError(validateSizeClient(value))
+  }, [field, value])
 
   const fetchOptions = useCallback((q: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -339,6 +356,8 @@ function UzumEnumPicker({
     if (open) fetchOptions(query)
   }, [open, query, fetchOptions])
 
+  const error = field === 'sizes' ? sizeError : null
+
   return (
     <div ref={ref} className="relative">
       <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
@@ -355,7 +374,7 @@ function UzumEnumPicker({
           className="w-full px-3 py-2 pr-8 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2 disabled:opacity-40"
           style={{
             background: 'var(--bg-input)',
-            borderColor: 'var(--border)',
+            borderColor: error ? '#ef4444' : 'var(--border)',
             color: 'var(--text-base)',
             // @ts-expect-error CSS custom property
             '--tw-ring-color': 'var(--c1)',
@@ -368,6 +387,7 @@ function UzumEnumPicker({
           <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
         )}
       </div>
+      {error && <p className="text-xs mt-1" style={{ color: '#ef4444' }}>{error}</p>}
       {open && !disabled && (
         <div
           className="absolute z-30 left-0 right-0 mt-1 rounded-xl border shadow-lg max-h-60 overflow-y-auto"
@@ -974,6 +994,8 @@ export default function ProductCreateForm() {
 
   // ── Smart per-marketplace export validation ─────────────────────────────
 
+  const hasInvalidSize = variants.some(v => v.size.trim() && validateSizeClient(v.size) !== null)
+
   const canExportUzum =
     nameRu.trim() && nameUz.trim()
     && (brand.trim() || brandSkipped)
@@ -985,6 +1007,7 @@ export default function ProductCreateForm() {
     && sellingPrice && oldPrice
     && weightG && heightMm && widthMm && lengthMm
     && ikpu.trim()
+    && !hasInvalidSize
 
   const hasPhotos = variants.length > 0
     ? variants.every(v => v.photoUrl.trim())
@@ -2372,6 +2395,9 @@ export default function ProductCreateForm() {
           add(widthMm, lang === 'ru' ? 'Ширина' : lang === 'uz' ? 'Kenglik' : 'Width')
           add(lengthMm, lang === 'ru' ? 'Длина' : lang === 'uz' ? 'Uzunlik' : 'Length')
           add(ikpu, 'IKPU')
+          if (hasInvalidSize) {
+            missing.push(lang === 'ru' ? 'Размер (недопустимый формат — выберите из списка)' : lang === 'uz' ? "O'lcham (noto'g'ri format)" : 'Size (invalid format — pick from list)')
+          }
           return (
             <div className="text-sm mb-4 px-3 py-2.5 rounded-xl border"
               style={{ color: 'var(--text-muted)', borderColor: 'rgba(123,104,238,0.2)', background: 'rgba(123,104,238,0.04)' }}>
