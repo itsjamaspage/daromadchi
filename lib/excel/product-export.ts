@@ -1,6 +1,7 @@
 import { unzipSync, zipSync } from 'fflate'
 import { readFileSync } from 'fs'
 import { join } from 'path'
+import { validateEnum, validateSize } from '@/lib/uzum/list3-enums'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,69 @@ export interface UzumCategory {
 //   Y=sellingPrice  Z=oldPrice  AA=weight  AB=height  AC=width  AD=length
 //   AE+=characteristics
 
+export interface UzumValidationError {
+  row: number
+  field: string
+  value: string
+}
+
+export function validateProductRows(products: ProductRow[]): UzumValidationError[] {
+  const errors: UzumValidationError[] = []
+
+  for (let i = 0; i < products.length; i++) {
+    const p = products[i]
+    const rowNum = i + 1
+
+    if (p.color) {
+      const r = validateEnum('color', p.color)
+      if (!r.valid) errors.push({ row: rowNum, field: 'Цвет', value: r.value })
+    }
+
+    if (p.size) {
+      const r = validateSize(p.size)
+      if (!r.valid) errors.push({ row: rowNum, field: 'Размер', value: r.value })
+    }
+
+    if (p.country) {
+      const r = validateEnum('country', p.country)
+      if (!r.valid) errors.push({ row: rowNum, field: 'Страна производства', value: r.value })
+    }
+
+    if (p.brand) {
+      const r = validateEnum('brand', p.brand)
+      if (!r.valid) errors.push({ row: rowNum, field: 'Бренд', value: r.value })
+    }
+  }
+
+  return errors
+}
+
+function normalizeProduct(p: ProductRow): ProductRow {
+  const result = { ...p }
+
+  if (result.color) {
+    const r = validateEnum('color', result.color)
+    if (r.valid) result.color = r.canonical || result.color
+  }
+
+  if (result.size) {
+    const r = validateSize(result.size)
+    if (r.valid) result.size = r.canonical || result.size
+  }
+
+  if (result.country) {
+    const r = validateEnum('country', result.country)
+    if (r.valid) result.country = r.canonical || result.country
+  }
+
+  if (result.brand) {
+    const r = validateEnum('brand', result.brand)
+    if (r.valid) result.brand = r.canonical || result.brand
+  }
+
+  return result
+}
+
 export function generateUzumExcel(
   products: ProductRow[],
   category: UzumCategory,
@@ -99,7 +163,8 @@ export function generateUzumExcel(
   )
 
   // Build data rows (row 4+) using inline strings — no SST modification
-  const dataRows = products.map((p, i) => {
+  const dataRows = products.map((rawP, i) => {
+    const p = normalizeProduct(rawP)
     const r = 4 + i
     const cells = [
       strCell('A', r, p.nameRu),
