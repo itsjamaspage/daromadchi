@@ -19,7 +19,7 @@ import {
   type UzumSku,
 } from './client'
 import { fetchProductPhoto } from './public'
-import { resolveColor } from '@/lib/products/resolveColor'
+import { resolveColor, COLOR_LABELS, type ColorKey } from '@/lib/products/resolveColor'
 import { buildVariantIndex, resolveVariant } from '@/lib/uzum/variant-match'
 import { withShopLock } from '@/lib/db/shop-lock'
 
@@ -143,7 +143,7 @@ export function formatOrderLine(
   extId: string,
   revenue: number,
   items: Array<{ skuId: string; qty: number }>,
-  prodInfo: Map<string, { title: string; sku: string | null }>,
+  prodInfo: Map<string, { title: string; sku: string | null; color?: string | null; stock?: number | null }>,
 ): string {
   const money = `${revenue} so'm`
   if (items.length === 0) return `#${extId} — ${money}`
@@ -152,7 +152,10 @@ export function formatOrderLine(
     const title = info?.title?.trim() || `SKU ${it.skuId}`
     const sku   = info?.sku?.trim()
     const name  = sku ? `${title} (${sku})` : title
-    return it.qty > 1 ? `${name} × ${it.qty}` : name
+    const parts: string[] = [it.qty > 1 ? `${name} × ${it.qty}` : name]
+    if (info?.color) parts.push(info.color)
+    if (info?.stock != null) parts.push(`📦 ${info.stock}`)
+    return parts.join(' · ')
   }
   if (items.length === 1) return `#${extId} — ${labelFor(items[0])} — ${money}`
   const bullets = items.slice(0, 5).map(it => `      • ${labelFor(it)}`).join('\n')
@@ -746,7 +749,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
         rawByExtId.set(extId, items)
         for (const it of items) skuIds.add(it.skuId)
       }
-      let prodInfo = new Map<string, { title: string; sku: string | null }>()
+      let prodInfo = new Map<string, { title: string; sku: string | null; color?: string | null; stock?: number | null }>()
       // skuId (marketplace_product_id) → physical_stock, for the reserving-time
       // snapshot. The order's items carry skuId; physical_stock is the true pool
       // (the listing restore target), separate from the throttled stock_quantity.
@@ -757,11 +760,17 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
           title: products.title,
           sku: products.sku,
           physical_stock: products.physical_stock,
+          variant_color: products.variant_color,
+          stock_quantity: products.stock_quantity,
         }).from(products).where(and(
           eq(products.shop_id, shopId),
           inArray(products.marketplace_product_id, [...skuIds]),
         ))
-        prodInfo = new Map(prodRows.map(p => [String(p.mpid), { title: p.title ?? '', sku: p.sku }]))
+        prodInfo = new Map(prodRows.map(p => {
+          const colorKey = p.variant_color ?? resolveColor(p.title ?? '')?.key ?? null
+          const color = colorKey ? (COLOR_LABELS[colorKey as ColorKey]?.ru ?? null) : null
+          return [String(p.mpid), { title: p.title ?? '', sku: p.sku, color, stock: p.stock_quantity ?? null }]
+        }))
         for (const p of prodRows) physByMpid.set(String(p.mpid), p.physical_stock)
       }
 
