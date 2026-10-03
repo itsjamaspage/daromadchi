@@ -54,6 +54,8 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
         ilike(products.sku, pattern),
         ilike(products.title, pattern),
         ilike(products.marketplace_product_id, pattern),
+        ilike(products.market_barcode, pattern),
+        ilike(products.market_sku, pattern),
       ),
     ))
     .limit(50)
