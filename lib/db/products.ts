@@ -42,7 +42,6 @@ const _fetchProducts = unstable_cache(
         variant_color: products.variant_color,
         image_url: products.image_url,
         ikpu_code: products.ikpu_code,
-        moderation_status: products.moderation_status,
         updated_at: products.updated_at,
       }).from(products)
         // Active metrics (dashboard home, analytics, ABC-XYZ) exclude archived.
@@ -149,7 +148,6 @@ const _fetchProducts = unstable_cache(
         is_shared: isShared,
         image_url: p.image_url,
         ikpu_code: p.ikpu_code,
-        moderation_status: p.moderation_status,
         variant_group_key: p.variant_group_key,
         variant_color: p.variant_color,
       } as Product
@@ -589,7 +587,6 @@ const _fetchProductsPaginated = unstable_cache(
         marketplace_product_id: products.marketplace_product_id,
         fulfillment_type: products.fulfillment_type,
         is_archived: products.is_archived,
-        moderation_status: products.moderation_status,
         variant_group_key: products.variant_group_key,
         variant_color: products.variant_color,
         image_url: products.image_url,
@@ -697,7 +694,6 @@ const _fetchProductsPaginated = unstable_cache(
         is_shared: isShared,
         image_url: p.image_url,
         ikpu_code: p.ikpu_code,
-        moderation_status: p.moderation_status,
         is_archived: p.is_archived,
         variant_group_key: p.variant_group_key,
         variant_color: p.variant_color,
