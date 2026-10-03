@@ -316,6 +316,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
       shop_id: string; marketplace_product_id: string; title: string; sku: string
       category: string | null; selling_price: number | null; cost_price: number | null
       stock_quantity: number; quantity_sold: number | null; is_archived: boolean
+      moderation_status: string | null
       variant_group_key: string | null; variant_color: string | null
       image_url: string | null
     }[] = []
@@ -351,9 +352,6 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
               || null
             const skuList = card.skuList ?? []
             if (skuList.length === 0) {
-              // Cards with no SKUs (status "Нет СКУ") are unsellable —
-              // archive them so they appear in the "Архивные" tab instead
-              // of silently vanishing from the app.
               productRows.push({
                 shop_id: shopId,
                 marketplace_product_id: String(card.productId),
@@ -364,7 +362,8 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
                 cost_price: null,
                 stock_quantity: 0,
                 quantity_sold: null,
-                is_archived: true,
+                is_archived: cardArchived,
+                moderation_status: 'pending_sku',
                 variant_group_key: `uzum:${card.productId}`,
                 variant_color: null,
                 image_url: cardImageUrl,
@@ -389,6 +388,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
                 stock_quantity: uzumStockQuantity(sku),
                 quantity_sold: sku.quantitySold ?? null,
                 is_archived: isArchived,
+                moderation_status: null,
                 variant_group_key: `uzum:${card.productId}`,
                 variant_color: variantColor,
                 image_url: skuImageUrl,
@@ -456,13 +456,10 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
             stock_quantity: r.stock_quantity,
             quantity_sold: r.quantity_sold,
             is_archived: r.is_archived,
+            moderation_status: r.moderation_status ?? null,
             variant_group_key: r.variant_group_key,
             variant_color: r.variant_color,
             image_url: r.image_url,
-            // Uzbekistan's dominant model is FBS (seller ships from home).
-            // Uzum's product API doesn't expose per-SKU fulfillment reliably,
-            // so mark all Uzum products FBS by default. Users on FBO can
-            // switch to baseline mode for exact counts.
             fulfillment_type: 'fbs',
           })))
         }
@@ -476,11 +473,8 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
               stock_quantity: r.stock_quantity,
               quantity_sold: r.quantity_sold,
               marketplace_product_id: r.marketplace_product_id,
-              // Re-stamped every sync so un-archiving on Uzum flips this back to
-              // false. (cost_price stays omitted here on purpose — see note in
-              // the insert path: re-syncs must not clobber hand-entered costs.)
               is_archived: r.is_archived,
-              // Re-stamped so a card's variant grouping stays current.
+              moderation_status: r.moderation_status ?? null,
               variant_group_key: r.variant_group_key,
               variant_color: r.variant_color,
               fulfillment_type: 'fbs',
@@ -923,15 +917,9 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
                 cost_price: null,
                 stock_quantity: 0,
                 quantity_sold: null,
-                // Order-derived fallback: no card data, so not archived and no
-                // variant grouping (no parent productId available).
                 is_archived: false,
+                moderation_status: null,
                 variant_group_key: null,
-                // The colour still comes from the order line itself, via the same
-                // snapshot the line is written with. A stub left at NULL here is
-                // a product the variant matcher cannot tell apart from its
-                // sibling, and a mislink the audit cannot see — the colour is on
-                // both sides or on neither.
                 variant_color: uzumItemSnapshot(it).variant_color,
                 image_url: null,
               })
@@ -1013,10 +1001,8 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
                   sku: mpid, category: null,
                   selling_price: it.price ?? null, cost_price: null, stock_quantity: 0,
                   quantity_sold: null,
-                  // Order-derived fallback: no card data, so not archived and no
-                  // variant grouping (no parent productId available). Colour from
-                  // the order line — see the sibling path above.
                   is_archived: false,
+                  moderation_status: null,
                   variant_group_key: null,
                   variant_color: uzumItemSnapshot(it).variant_color,
                   image_url: null,
