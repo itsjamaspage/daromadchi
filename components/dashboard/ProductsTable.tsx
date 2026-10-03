@@ -452,7 +452,19 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
   const tabCounts = {
     all:       enriched.length,
-    low_stock: enriched.reduce((s, p) => s + p.available_stock, 0),
+    low_stock: (() => {
+      // Deduplicate by match_key: the same physical product listed on
+      // multiple marketplaces shares one real stock, not the sum.
+      const seen = new Map<string, number>()
+      for (const p of enriched) {
+        const k = p.match_key ?? p.id
+        const prev = seen.get(k)
+        if (prev == null || p.available_stock > prev) seen.set(k, p.available_stock)
+      }
+      let total = 0
+      for (const v of seen.values()) total += v
+      return total
+    })(),
   }
 
   // One product row. As a group child it carries only what DIFFERS from its
