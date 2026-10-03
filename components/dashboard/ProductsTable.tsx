@@ -486,12 +486,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                   {isChild && <VariantColorChip colorKey={p.variant_color} lang={lang} />}
                   <span className={isChild ? "text-xs font-medium" : "text-xs"} style={{ color: isChild ? 'var(--text-dim)' : 'var(--text-muted)' }}>{p.sku}</span>
                   {p.marketplace && <MpBadge mp={p.marketplace} />}
-                  {p.moderation_status === 'pending_sku' && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded border font-medium"
-                      style={{ color: '#f59e0b', background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.2)' }}>
-                      {lang === 'ru' ? 'Ожидает СКУ' : lang === 'en' ? 'Pending SKU' : 'SKU kutilmoqda'}
-                    </span>
-                  )}
                   {!isChild && <FulfillmentBadge type={p.fulfillment_type} />}
                   {!isChild && <ColorBadge title={p.title} />}
                   {!isChild && (() => {

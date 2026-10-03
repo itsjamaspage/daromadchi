@@ -316,7 +316,6 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
       shop_id: string; marketplace_product_id: string; title: string; sku: string
       category: string | null; selling_price: number | null; cost_price: number | null
       stock_quantity: number; quantity_sold: number | null; is_archived: boolean
-      moderation_status: string | null
       variant_group_key: string | null; variant_color: string | null
       image_url: string | null
     }[] = []
@@ -363,7 +362,6 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
                 stock_quantity: 0,
                 quantity_sold: null,
                 is_archived: cardArchived,
-                moderation_status: 'pending_sku',
                 variant_group_key: `uzum:${card.productId}`,
                 variant_color: null,
                 image_url: cardImageUrl,
@@ -388,7 +386,6 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
                 stock_quantity: uzumStockQuantity(sku),
                 quantity_sold: sku.quantitySold ?? null,
                 is_archived: isArchived,
-                moderation_status: null,
                 variant_group_key: `uzum:${card.productId}`,
                 variant_color: variantColor,
                 image_url: skuImageUrl,
@@ -456,7 +453,6 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
             stock_quantity: r.stock_quantity,
             quantity_sold: r.quantity_sold,
             is_archived: r.is_archived,
-            moderation_status: r.moderation_status ?? null,
             variant_group_key: r.variant_group_key,
             variant_color: r.variant_color,
             image_url: r.image_url,
@@ -474,7 +470,6 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
               quantity_sold: r.quantity_sold,
               marketplace_product_id: r.marketplace_product_id,
               is_archived: r.is_archived,
-              moderation_status: r.moderation_status ?? null,
               variant_group_key: r.variant_group_key,
               variant_color: r.variant_color,
               fulfillment_type: 'fbs',
@@ -918,7 +913,6 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
                 stock_quantity: 0,
                 quantity_sold: null,
                 is_archived: false,
-                moderation_status: null,
                 variant_group_key: null,
                 variant_color: uzumItemSnapshot(it).variant_color,
                 image_url: null,
@@ -1002,7 +996,6 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
                   selling_price: it.price ?? null, cost_price: null, stock_quantity: 0,
                   quantity_sold: null,
                   is_archived: false,
-                  moderation_status: null,
                   variant_group_key: null,
                   variant_color: uzumItemSnapshot(it).variant_color,
                   image_url: null,

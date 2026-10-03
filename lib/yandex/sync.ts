@@ -11,7 +11,7 @@ import {
   fetchCampaignInfo,
   YandexApiError,
 } from './client'
-import { resolveColor } from '@/lib/products/resolveColor'
+import { resolveColor, COLOR_LABELS, type ColorKey } from '@/lib/products/resolveColor'
 import { RESERVING_RAW_STATUSES } from '@/lib/marketplace/stock-allocation'
 import { ORDER_STATUS_LOOKBACK_DAYS } from '@/lib/marketplace/reserved-display'
 import { isYandexFulfillmentRequired, isYandexSellerFulfilled } from '@/lib/marketplace/fulfillment-statuses'
@@ -64,14 +64,17 @@ export const YANDEX_STATUS_MAP: Readonly<Record<string, string>> = STATUS_MAP
 export function formatYmOrderLine(
   extId: string,
   revenue: number,
-  items: Array<{ name: string; sku: string; qty: number }>,
+  items: Array<{ name: string; sku: string; qty: number; color?: string | null; stock?: number | null }>,
 ): string {
   const money = `${revenue} so'm`
   if (items.length === 0) return `#${extId} — ${money}`
-  const labelFor = (it: { name: string; sku: string; qty: number }) => {
+  const labelFor = (it: typeof items[number]) => {
     const title = it.name?.trim() || (it.sku ? `SKU ${it.sku}` : 'товар')
     const name  = it.sku ? `${title} (${it.sku})` : title
-    return it.qty > 1 ? `${name} × ${it.qty}` : name
+    const parts: string[] = [it.qty > 1 ? `${name} × ${it.qty}` : name]
+    if (it.color) parts.push(it.color)
+    if (it.stock != null) parts.push(`📦 ${it.stock}`)
+    return parts.join(' · ')
   }
   if (items.length === 1) return `#${extId} — ${labelFor(items[0])} — ${money}`
   const bullets = items.slice(0, 5).map(it => `      • ${labelFor(it)}`).join('\n')
@@ -678,14 +681,18 @@ async function syncFromYandexLocked(
       // so no products-table lookup needed to enrich the new-order alert
       // with a human-readable product name (colour lives in the title on
       // per-colour listings, in the SKU stem on variant listings).
-      const itemsByExtId = new Map<string, Array<{ name: string; sku: string; qty: number }>>()
+      const itemsByExtId = new Map<string, Array<{ name: string; sku: string; qty: number; color?: string | null; stock?: number | null }>>()
       const offerIds = new Set<string>()
       for (const o of withDates) {
-        const items = (o.o.items ?? []).map(it => ({
-          name: it.offerName ?? '',
-          sku:  it.offerId ?? '',
-          qty:  it.count ?? 1,
-        }))
+        const items = (o.o.items ?? []).map(it => {
+          const sku = it.offerId ?? ''
+          const name = it.offerName ?? ''
+          const colorKey = (sku ? offerCardColors.get(sku) : undefined)
+            ?? resolveColor(name)?.key ?? null
+          const color = colorKey
+            ? (COLOR_LABELS[colorKey as ColorKey]?.ru ?? null) : null
+          return { name, sku, qty: it.count ?? 1, color }
+        })
         itemsByExtId.set(String(o.o.id), items)
         for (const it of items) if (it.sku) offerIds.add(it.sku)
       }
@@ -695,10 +702,19 @@ async function syncFromYandexLocked(
       // offerId (the shopSku-empty edge, see issue #310) simply won't match and
       // the snapshot stays NULL — no alert rather than a wrong number.
       const physBySku = new Map<string, number | null>()
+      const stockBySku = new Map<string, number>()
       if (offerIds.size > 0) {
-        const physRows = await db.select({ sku: products.sku, physical_stock: products.physical_stock })
+        const physRows = await db.select({ sku: products.sku, physical_stock: products.physical_stock, stock_quantity: products.stock_quantity })
           .from(products).where(and(eq(products.shop_id, shopId), inArray(products.sku, [...offerIds])))
-        for (const p of physRows) if (p.sku) physBySku.set(p.sku, p.physical_stock)
+        for (const p of physRows) if (p.sku) {
+          physBySku.set(p.sku, p.physical_stock)
+          stockBySku.set(p.sku, p.stock_quantity ?? 0)
+        }
+      }
+      for (const [, items] of itemsByExtId) {
+        for (const it of items) {
+          if (it.sku && stockBySku.has(it.sku)) it.stock = stockBySku.get(it.sku)!
+        }
       }
 
       // physical_stock to snapshot the FIRST time an order is reserving — the
