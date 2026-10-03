@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { eq, and, or, ilike, sql } from 'drizzle-orm'
+import { eq, and, or, ilike, sql, inArray } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, products } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
@@ -15,13 +15,19 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: 'q parameter required (min 2 chars)' }, { status: 400 })
   }
 
-  const userShops = await db.select({ id: shops.id, marketplace: shops.marketplace })
+  const userShops = await db.select({
+    id: shops.id,
+    marketplace: shops.marketplace,
+    campaign_placement: shops.campaign_placement,
+    last_synced_at: shops.last_synced_at,
+    name: shops.name,
+  })
     .from(shops)
     .where(and(eq(shops.user_id, user.id), eq(shops.is_active, true)))
 
   const shopIds = userShops.map(s => s.id)
   if (shopIds.length === 0) {
-    return NextResponse.json({ ok: true, matches: [], shopCount: 0 })
+    return NextResponse.json({ ok: true, matches: [], shopCount: 0, shops: [] })
   }
 
   const shopMap = new Map(userShops.map(s => [s.id, s.marketplace]))
@@ -36,7 +42,6 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     stock_quantity: products.stock_quantity,
     selling_price: products.selling_price,
     is_archived: products.is_archived,
-    moderation_status: products.moderation_status,
     market_barcode: products.market_barcode,
     market_sku: products.market_sku,
     variant_group_key: products.variant_group_key,
@@ -44,7 +49,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     updated_at: products.updated_at,
   }).from(products)
     .where(and(
-      sql`${products.shop_id} = ANY(${sql`string_to_array(${shopIds.join(',')}, ',')::uuid[]`})`,
+      inArray(products.shop_id, shopIds),
       or(
         ilike(products.sku, pattern),
         ilike(products.title, pattern),
@@ -57,6 +62,13 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     ok: true,
     query: q,
     shopCount: shopIds.length,
+    shops: userShops.map(s => ({
+      id: s.id,
+      marketplace: s.marketplace,
+      name: s.name,
+      campaign_placement: s.campaign_placement,
+      last_synced_at: s.last_synced_at?.toISOString(),
+    })),
     matchCount: rows.length,
     matches: rows.map(r => ({
       id: r.id,
@@ -68,7 +80,6 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       stock_quantity: r.stock_quantity,
       selling_price: r.selling_price ? Number(r.selling_price) : null,
       is_archived: r.is_archived,
-      moderation_status: r.moderation_status,
       market_barcode: r.market_barcode,
       market_sku: r.market_sku,
       variant_group_key: r.variant_group_key,
