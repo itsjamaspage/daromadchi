@@ -1,7 +1,7 @@
 import { unzipSync, zipSync } from 'fflate'
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import { validateEnum, validateSize } from '@/lib/uzum/list3-enums'
+import { replaceYo, validateEnum, validateSize } from '@/lib/uzum/list3-enums'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -343,7 +343,7 @@ export function generateYandexExcel(
       chars = chars ? `${sizeEntry};${chars}` : sizeEntry
     }
     if (p.color) {
-      const colorEntry = `Цвет|${p.color}`
+      const colorEntry = `Цвет|${replaceYo(p.color)}`
       chars = chars ? `${colorEntry};${chars}` : colorEntry
     }
     const cells = [
@@ -358,9 +358,9 @@ export function generateYandexExcel(
       inlineCell('P', r, p.nameUz),
       inlineCell('Q', r, p.descriptionUz),
       numCell('R', r, Math.round(p.weightGrams / 10) / 100),
-      numCell('S', r, Math.round(p.lengthMm / 10) / 10),
-      numCell('T', r, Math.round(p.widthMm / 10) / 10),
-      numCell('U', r, Math.round(p.heightMm / 10) / 10),
+      numCell('S', r, Math.round(p.lengthMm / 10)),
+      numCell('T', r, Math.round(p.widthMm / 10)),
+      numCell('U', r, Math.round(p.heightMm / 10)),
       numCell('W', r, Math.round(p.sellingPrice / 1000) * 1000),
       ...(p.oldPrice ? [numCell('X', r, Math.round(p.oldPrice / 1000) * 1000)] : []),
       inlineCell('Y', r, 'UZS'),

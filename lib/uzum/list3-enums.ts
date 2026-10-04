@@ -48,12 +48,16 @@ const NORMALIZE_MAP: Record<string, string> = {
   'Ё': 'Е', // Ё → Е
 }
 
-function normalizeString(s: string): string {
-  let result = s.trim()
+export function replaceYo(s: string): string {
+  let result = s
   for (const [from, to] of Object.entries(NORMALIZE_MAP)) {
     result = result.split(from).join(to)
   }
-  return result.toLowerCase()
+  return result
+}
+
+export function normalizeString(s: string): string {
+  return replaceYo(s.trim()).toLowerCase()
 }
 
 let normalizedMaps: {

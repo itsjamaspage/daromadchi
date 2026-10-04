@@ -1365,7 +1365,7 @@ export default function ProductCreateForm() {
       let charValue: string | undefined
 
       if (pColor && COLOR_PARAM_NAMES.includes(paramNameLower)) {
-        charValue = pColor
+        charValue = pColor.replace(/ё/g, 'е').replace(/Ё/g, 'Е')
       } else if (pSize && SIZE_PARAM_NAMES.includes(paramNameLower)) {
         charValue = pSize
       } else {
@@ -1374,7 +1374,8 @@ export default function ProductCreateForm() {
 
       if (!charValue) continue
       if (param.type === 'ENUM' && param.values?.length) {
-        const match = param.values.find(v => v.value.toLowerCase() === charValue!.toLowerCase())
+        const norm = (s: string) => s.toLowerCase().replace(/ё/g, 'е')
+        const match = param.values.find(v => norm(v.value) === norm(charValue!))
         if (match) {
           vals.push({ parameterId: param.id, valueId: match.id })
         } else {
