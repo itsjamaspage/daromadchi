@@ -2,12 +2,12 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { YANDEX_STATUS_MAP } from './sync'
 
-// The dashboard's four buckets, mirroring STATUS_GROUP in
+// The dashboard's five buckets, mirroring STATUS_GROUP in
 // components/dashboard/OrdersTable.tsx. Asserting the BUCKET (not just the enum
 // value) is the point: the reported bug was a bucket error, not an enum error.
 const BUCKET: Record<string, string> = {
   pending: 'Создан', confirmed: 'В процессе', delivered: 'Доставлен',
-  cancelled: 'Отменён', returned: 'Отменён',
+  cancelled: 'Отменён', returned: 'Возврат',
 }
 const bucketOf = (raw: string): string | undefined => {
   const mapped = YANDEX_STATUS_MAP[raw]
@@ -31,8 +31,8 @@ test('every transit state lands in «В процессе»', () => {
 test('terminal states keep their buckets', () => {
   assert.equal(bucketOf('DELIVERED'), 'Доставлен')
   assert.equal(bucketOf('CANCELLED'), 'Отменён')
-  assert.equal(bucketOf('RETURNED'), 'Отменён')
-  assert.equal(bucketOf('PARTIALLY_RETURNED'), 'Отменён')
+  assert.equal(bucketOf('RETURNED'), 'Возврат')
+  assert.equal(bucketOf('PARTIALLY_RETURNED'), 'Возврат')
 })
 
 test('PENDING stays «Создан» — the seller has it and has not shipped it', () => {

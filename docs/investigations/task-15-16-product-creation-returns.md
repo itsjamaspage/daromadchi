@@ -826,3 +826,206 @@ marketplace:
 The MVP (Tier 1 Uzum + Phase 1 Yandex) still provides massive value: filling 30+ fixed
 columns for Uzum and 45+ columns for Yandex programmatically, even if some category-specific
 fields need manual completion.
+
+---
+
+## Section 5 — Task 16 Feasibility Report: Returns-from-Warehouse (Sergeli) Tracking
+
+**Date:** 2026-10-04
+**Status:** Investigation complete — FULLY FEASIBLE, phased plan ready
+**Scope:** INVESTIGATION ONLY — no code written, no schema changes, no sync modifications.
+
+### 1. What returns data is already available?
+
+#### Uzum — Dedicated Return Invoice API (read-only GET, no guard changes needed)
+
+**Source:** Uzum OpenAPI spec, "Return Invoice" tag (confirmed in Section 2 above)
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `GET /v1/shop/{shopId}/return` | GET | List return invoices for a shop |
+| `GET /v1/shop/{shopId}/return/{returnId}` | GET | Detailed return invoice with items |
+| `GET /v1/return` | GET | Global seller returns list |
+| `GET /v1/fbs/order/return-reasons` | GET | Return reasons enum |
+
+**Response shape** (`SellerReturnLite`):
+```
+{
+  id: integer,
+  dateCreated: date-time,
+  status: "CREATED" | "IN_TRANSIT" | "READY_TO_PICK" | "PICKED" | "EXPIRED" | "CANCELLED",
+  stock: {
+    title: string,          // e.g. "Sergeli"
+    address: string         // full address
+  },
+  timeSlotReservation: {
+    timeSlotId: integer,
+    startTime: date-time,
+    endTime: date-time,
+    status: "PENDING" | "ACTIVE" | "COMPLETED" | "EXPIRED"
+  },
+  paidStorage: {
+    startDate: date-time,
+    endDate: date-time,
+    dailyRate: number       // storage fee per day
+  },
+  type: "DEFECTED" | "RETURN" | "FBS"
+}
+```
+
+**Detail endpoint** (`GET /v1/shop/{shopId}/return/{returnId}`) adds `returnItems[]`:
+```
+returnItems: [{
+  skuId: integer,
+  amount: integer,          // quantity returned
+  packedAmount: integer,    // quantity packed for pickup
+  skuTitle: string,
+  productTitle: string,
+  purchasePrice: number
+}]
+```
+
+This gives us: warehouse name + address (Sergeli identification), pickup status,
+pickup time window, storage fees, item-level detail (SKU, quantity, title, price),
+and return type (defective/return/FBS).
+
+#### Yandex — No dedicated returns endpoint, but order status tracks returns
+
+Yandex does NOT have a dedicated returns API for Partner API users. However:
+
+- Orders with status `RETURNED` / `PARTIALLY_RETURNED` are already synced by Daromadchi
+  (mapped to internal status `'returned'` in `lib/yandex/sync.ts:54-55`)
+- The Yandex `YandexOrder` interface includes `status: string` which covers
+  `CANCELLED | DELIVERED | DELIVERY | PENDING | PROCESSING | RETURNED`
+  (`lib/yandex/client.ts:90`)
+- Yandex netting report (`lib/yandex/netting-report.ts`) captures return-related
+  financial data in settlement transactions
+
+**Yandex verdict:** Returns are visible only through order status changes (RETURNED /
+PARTIALLY_RETURNED). No warehouse pickup tracking, no storage fee data, no item-level
+return detail beyond what the order already carries. This is adequate for counting
+returned orders but NOT for warehouse pickup tracking (Yandex handles FBY returns
+internally — sellers don't go pick up items from a Yandex warehouse).
+
+### 2. Is returns data already being synced?
+
+**YES, partially.** Daromadchi already has:
+
+| Data point | Already in DB? | Source |
+|---|---|---|
+| Orders with status `'returned'` | ✅ Yes | `orders` table, status enum includes `'returned'` (`lib/db/schema.ts:30`) |
+| `qty_returned` per product | ✅ Yes | Computed in `lib/db/products.ts:231` — `sum(quantity) filter (where status = 'returned')` |
+| Returned order count (KPIs) | ✅ Yes | `lib/db/kpis-period.ts:54` — `count(*) filter (where status = 'returned')` |
+| Uzum `amount_returns` (settlement) | ✅ Yes | `uzum_settlements.amount_returns` (`lib/db/schema.ts:920`) |
+| Uzum `return_cause` (settlement) | ✅ Yes | `uzum_settlements.return_cause` (`lib/db/schema.ts:922`) |
+| **Uzum return invoices** | ❌ No | Never fetched — `fetchReturnInvoices` does not exist in the codebase |
+| **Warehouse pickup status** | ❌ No | Not tracked — no `READY_TO_PICK` / `PICKED` concept |
+| **Storage fee data** | ❌ No | `paidStorage` never read |
+| **Pickup time slots** | ❌ No | `timeSlotReservation` never read |
+
+**Key finding:** The **high-value data** (which items are at Sergeli waiting for pickup,
+when to pick them up, storage fees accumulating) is **NOT being synced**. We have
+order-level return counts, but NOT the warehouse logistics the seller actually needs.
+
+### 3. Can it be done WITHOUT touching stock/money/write paths?
+
+**YES — 100% additive.**
+
+The return invoice endpoints are **read-only GETs**. The data lives in a separate domain
+(warehouse logistics / pickup scheduling) that has zero overlap with:
+
+- ❌ Stock ledger (`stock_ledger` table, #421 logic) — NOT touched
+- ❌ Oversell detection / stock-sync write path — NOT touched
+- ❌ `stock-writer.ts` / `marketplace-readonly-guard.ts` — NOT touched
+- ❌ Order economics / money layer (`order-economics.ts`) — NOT touched
+- ❌ Any marketplace WRITE operation — NOT touched
+
+**Proposed data model** (new table, fully additive):
+
+```sql
+CREATE TABLE return_invoices (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  shop_id UUID NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+  marketplace TEXT NOT NULL DEFAULT 'uzum',   -- 'uzum' for now
+  return_id_external INTEGER NOT NULL,        -- Uzum's return invoice ID
+  status TEXT NOT NULL,                       -- CREATED/IN_TRANSIT/READY_TO_PICK/PICKED/EXPIRED/CANCELLED
+  return_type TEXT,                           -- DEFECTED/RETURN/FBS
+  warehouse_name TEXT,                        -- e.g. "Sergeli"
+  warehouse_address TEXT,
+  pickup_start TIMESTAMPTZ,
+  pickup_end TIMESTAMPTZ,
+  pickup_status TEXT,                         -- PENDING/ACTIVE/COMPLETED/EXPIRED
+  storage_start TIMESTAMPTZ,
+  storage_end TIMESTAMPTZ,
+  storage_daily_rate NUMERIC(14,2),
+  items JSONB,                                -- [{skuId, amount, packedAmount, skuTitle, productTitle, purchasePrice}]
+  created_at TIMESTAMPTZ DEFAULT now(),
+  synced_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(shop_id, return_id_external)
+);
+```
+
+This is a standalone read-only table. No foreign keys to orders, products, or stock tables.
+No triggers. No changes to existing sync logic.
+
+### 4. Phased plan — lowest-risk first
+
+#### Phase 1 — Display returns data we already have (NO new sync, NO new API calls)
+
+**Risk: ZERO.** Pure UI, reads existing DB columns.
+
+- Add a "Возвраты" (Returns) tab or section to the Orders page
+- Filter orders where `status = 'returned'`
+- Show: order ID, product name, quantity, date, marketplace
+- Show `qty_returned` per product (already computed in `lib/db/products.ts`)
+- Show KPI card: total returned orders count (already in `lib/db/kpis-period.ts`)
+- Show Uzum settlement `return_cause` and `amount_returns` where available
+
+**Value:** Sellers can see which orders were returned and why — data they already have
+but that's currently mixed into the general orders list.
+
+#### Phase 2 — Sync Uzum return invoices (NEW API reads, NO writes)
+
+**Risk: LOW.** Adds a new read-only sync path — completely separate from existing sync.
+
+- Add `fetchReturnInvoices(shopId, token)` to `lib/uzum/client.ts` — calls
+  `GET /v1/shop/{shopId}/return`
+- Add `fetchReturnDetail(shopId, returnId, token)` — calls
+  `GET /v1/shop/{shopId}/return/{returnId}` for item-level detail
+- Create `return_invoices` table (migration)
+- Add return invoice sync to the existing cron cycle (after order sync completes)
+- Build "Возвраты на складе" (Returns at Warehouse) dashboard:
+  - **READY_TO_PICK items** highlighted prominently (action needed!)
+  - Warehouse name + address
+  - Pickup time slot with countdown
+  - Storage fee calculator (daily rate × days since storage_start)
+  - Item list with quantities
+
+**Value: HIGH.** This is the core of Task 16 — surfacing what Uzum hides: which products
+are sitting at Sergeli, when to pick them up, and how much storage fees are costing.
+
+#### Phase 3 — Alerts + enrichment (optional, after Phase 2 proven)
+
+**Risk: LOW.** Extends the notification system (already has Telegram bot).
+
+- Telegram alert when a return invoice reaches `READY_TO_PICK` status
+- Alert when `timeSlotReservation` is about to expire
+- Alert when storage fees exceed a threshold
+- Link return invoices to orders (by matching SKU + date range) for full lifecycle view
+
+### 5. Conclusion
+
+**Task 16 is FULLY FEASIBLE** for Uzum. The return invoice API provides everything needed:
+warehouse location, pickup status, time slots, storage fees, and item-level detail.
+
+**For Yandex:** Returns are already tracked via order status. No additional warehouse
+pickup tracking is needed (Yandex handles FBY returns internally).
+
+**Recommended approach:** Start with Phase 1 (zero risk, immediate value from existing data),
+then Phase 2 (the main feature — Uzum return invoice sync + dashboard). Phase 3 (alerts)
+can follow once the data is flowing.
+
+**All phases are read-only.** No marketplace writes, no guard changes, no stock/money
+path modifications. The `marketplace-readonly-guard.ts` does NOT need any updates.
+
+### STOP — Awaiting owner approval before any implementation.

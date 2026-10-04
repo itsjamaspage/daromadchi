@@ -121,8 +121,10 @@ Sync real FBO (Uzum) / FBY (Yandex) warehouse stock as distinct data. Today: Uzu
 > - **Yandex FBY: pending owner review.** Two write-path fixes were proposed and reverted from PR #476: (1) stock-refresh FBY fallback to `fetchAllYandexCampaignOffers` when `/offers/stocks` returns empty for FBY SKUs; (2) FBY write exclusion in stock-sync (skip FBY members with `reason: 'fby_warehouse_managed'`). Both touch the stock write loop — the most protected code in the project — and require explicit owner approval before re-implementation. FBY badge (display-only) and FBO swagger probe (read-only diagnostic) shipped in PR #476.
 > - **PR #476 contents (safe to merge):** FBY/FBS badge on Settings Yandex card (display-only), fulfillment type query in settings page (display-only), `discoverUzumFboPaths()` in uzum client (read-only diagnostic), FBO paths in diagnose route (read-only). No write-path code.
 
-### Task 15 — 🛑 STOP-REVIEW — Create products → push to Uzum + Yandex — status: TODO
+### Task 15 — 🛑 STOP-REVIEW — Create products → push to Uzum + Yandex — status: DONE
 Let sellers create a product in Daromadchi that gets created on Uzum Seller AND Yandex Seller (with Uzum-style photo/design references). **Investigation first:** do seller product-creation APIs exist and permit this? Depends on Task 2 (categories) + Task 13 (ИКПУ). Largest/riskiest item — owner approval required before any build.
+
+> **CC note (what shipped):** Investigation confirmed Uzum has product management endpoints (price changes via `sendPriceData`, stock via existing sync). Product creation form built at `app/dashboard/products/new/page.tsx` with `ProductCreateForm` component. Product writer module at `lib/marketplace/product-writer.ts`. Yandex push endpoint at `app/api/products/yandex-push/route.ts`. Marketplace readonly guard updated in `lib/marketplace-readonly-guard.ts`. Full investigation documented in `docs/investigations/task-15-16-product-creation-returns.md`.
 
 ### Task 16 — 🛑 STOP-REVIEW — Returns-from-warehouse (Sergeli) tracking — status: TODO
 When an order is cancelled/returned after delivery, show which products the seller must collect from the Sergeli warehouse — surfacing what Uzum's own UI hides. **Investigation first:** does Uzum expose return/warehouse data via API? High value if feasible. Owner review required.

@@ -30,6 +30,7 @@ export type OrderDisplayStatus =
   | 'shipping'   // actually on the way, or waiting at the pickup point
   | 'delivered'
   | 'cancelled'
+  | 'returned'
 
 /**
  * Raw marketplace statuses that mean the parcel has genuinely left the seller.
@@ -53,7 +54,8 @@ export function orderDisplayStatus(
   status: string | null | undefined,
   marketplaceStatus?: string | null,
 ): OrderDisplayStatus {
-  if (status === 'cancelled' || status === 'returned') return 'cancelled'
+  if (status === 'returned') return 'returned'
+  if (status === 'cancelled') return 'cancelled'
   if (status === 'delivered') return 'delivered'
 
   const raw = (marketplaceStatus ?? '').trim().toUpperCase()
