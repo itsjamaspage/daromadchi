@@ -206,6 +206,21 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     })
   }
 
+  const returnsProbe = req.nextUrl.searchParams.get('returns') === '1'
+  if (returnsProbe) {
+    probes.push(await probe(
+      `GET /v2/campaigns/${campaignId}/returns (latest 10)`,
+      `${YANDEX_API_BASE}/v2/campaigns/${campaignId}/returns?pageSize=10`,
+      token,
+    ))
+    return NextResponse.json({
+      ok: true,
+      hint: 'returns=1 probes the Yandex returns endpoint. If this returns data, the endpoint is real and usable for a returns sync.',
+      campaignId,
+      probes,
+    }, { status: 200 })
+  }
+
   if (orderId) {
     probes.push(await probe(
       `GET /v2/campaigns/${campaignId}/orders/${orderId}`,
