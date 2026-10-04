@@ -68,7 +68,7 @@ export const dashT = {
     },
     status: {
       pending: 'Yaratildi', confirmed: 'Yo‘lda', delivered: 'Yetkazildi',
-      cancelled: 'Bekor', returned: 'Bekor',
+      cancelled: 'Bekor', returned: 'Qaytarildi',
       // Display-only, from orderDisplayStatus(): `confirmed` covers both
       // "packed, still here" and "actually shipped", and the badge tells
       // them apart. A missing key here falls back to the raw enum name.
@@ -101,7 +101,7 @@ export const dashT = {
       emptyDesc: "Uzum do'koningizni ulab, sinxronizatsiyani boshlang — buyurtmalar avtomatik import qilinadi.",
       goSettings: "Sozlamalarga o'tish",
       pending: 'Yaratildi', confirmed: 'Yo‘lda', delivered: 'Yetkazildi',
-      cancelledFull: 'Bekor qilindi', returned: 'Bekor qilindi',
+      cancelledFull: 'Bekor qilindi', returned: 'Qaytarildi',
       all: 'Barchasi', cancelled: 'Bekor',
       searchPlaceholder: 'Buyurtma ID yoki marketplace...', notFound: 'Hech narsa topilmadi',
       orderId: 'Buyurtma ID', marketplace: 'Marketplace', date: 'Sana',
@@ -488,7 +488,7 @@ export const dashT = {
     },
     status: {
       pending: 'Created', confirmed: 'In transit', delivered: 'Delivered',
-      cancelled: 'Cancelled', returned: 'Cancelled',
+      cancelled: 'Cancelled', returned: 'Returned',
       // Display-only, from orderDisplayStatus(): `confirmed` covers both
       // "packed, still here" and "actually shipped", and the badge tells
       // them apart. A missing key here falls back to the raw enum name.
@@ -521,7 +521,7 @@ export const dashT = {
       emptyDesc: 'Connect your Uzum store and start syncing — orders will be imported automatically.',
       goSettings: 'Go to settings',
       pending: 'Created', confirmed: 'In transit', delivered: 'Delivered',
-      cancelledFull: 'Cancelled', returned: 'Cancelled',
+      cancelledFull: 'Cancelled', returned: 'Returned',
       all: 'All', cancelled: 'Cancelled',
       searchPlaceholder: 'Order ID or marketplace...', notFound: 'Nothing found',
       orderId: 'Order ID', marketplace: 'Marketplace', date: 'Date',
@@ -901,7 +901,7 @@ export const dashT = {
     },
     status: {
       pending: 'Создан', confirmed: 'В процессе', delivered: 'Доставлен',
-      cancelled: 'Отменён', returned: 'Отменён',
+      cancelled: 'Отменён', returned: 'Возврат',
       // Display-only, from orderDisplayStatus(): `confirmed` covers both
       // "packed, still here" and "actually shipped", and the badge tells
       // them apart. A missing key here falls back to the raw enum name.
@@ -934,7 +934,7 @@ export const dashT = {
       emptyDesc: 'Подключите магазин Uzum и запустите синхронизацию — заказы импортируются автоматически.',
       goSettings: 'Перейти в настройки',
       pending: 'Создан', confirmed: 'В процессе', delivered: 'Доставлен',
-      cancelledFull: 'Отменён', returned: 'Отменён',
+      cancelledFull: 'Отменён', returned: 'Возврат',
       all: 'Все', cancelled: 'Отменён',
       searchPlaceholder: 'ID заказа или маркетплейс...', notFound: 'Ничего не найдено',
       orderId: 'ID заказа', marketplace: 'Маркетплейс', date: 'Дата',

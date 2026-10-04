@@ -24,7 +24,7 @@ import { dashT } from '@/lib/dashT'
 
 const LANGS = ['uz', 'ru', 'en'] as const
 const DISPLAY_STATUSES: OrderDisplayStatus[] = [
-  'pending', 'preparing', 'shipping', 'delivered', 'cancelled',
+  'pending', 'preparing', 'shipping', 'delivered', 'cancelled', 'returned',
 ]
 
 describe('every display status is translated', () => {

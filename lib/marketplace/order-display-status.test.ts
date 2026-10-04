@@ -41,7 +41,7 @@ describe('terminal states ignore the raw value', () => {
   it('delivered and cancelled win over anything in marketplace_status', () => {
     assert.equal(orderDisplayStatus('delivered', 'DELIVERY'), 'delivered')
     assert.equal(orderDisplayStatus('cancelled', 'PROCESSING'), 'cancelled')
-    assert.equal(orderDisplayStatus('returned', 'PICKUP'), 'cancelled')
+    assert.equal(orderDisplayStatus('returned', 'PICKUP'), 'returned')
   })
 })
 
