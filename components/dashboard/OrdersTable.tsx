@@ -47,18 +47,19 @@ export function sellerOrderUrl(marketplace: string, extId: string | null, opts?:
   return null
 }
 
-const STATUS_GROUP: Record<OrderStatus, 'pending' | 'confirmed' | 'delivered' | 'cancelled'> = {
+const STATUS_GROUP: Record<OrderStatus, 'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'returned'> = {
   pending: 'pending', confirmed: 'confirmed',
   delivered: 'delivered',
-  cancelled: 'cancelled', returned: 'cancelled',
+  cancelled: 'cancelled', returned: 'returned',
 }
-type StatusTab = 'all' | 'pending' | 'confirmed' | 'delivered' | 'cancelled'
+type StatusTab = 'all' | 'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'returned'
 
 const STATUS_DOT_COLOR: Record<string, string> = {
   pending: '#64748b',
   confirmed: '#f59e0b',
   delivered: '#10b981',
   cancelled: '#ef4444',
+  returned: '#8b5cf6',
 }
 
 export default function OrdersTable({ orders }: { orders: Order[] }) {
@@ -72,6 +73,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
     shipping:  { label: s.shipping,  className: 'bg-blue-50 text-blue-600 border border-blue-200',             dot: 'bg-blue-500'    },
     delivered: { label: s.delivered, className: 'bg-emerald-50 text-emerald-700 border border-emerald-200',    dot: 'bg-emerald-500' },
     cancelled: { label: s.cancelled, className: 'bg-red-50 text-red-600 border border-red-200',                dot: 'bg-red-500'     },
+    returned:  { label: s.returned,  className: 'bg-violet-50 text-violet-600 border border-violet-200',       dot: 'bg-violet-500'  },
   }
 
   const STATUS_TABS: { value: StatusTab; label: string }[] = [
@@ -80,6 +82,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
     { value: 'confirmed',  label: s.confirmed      },
     { value: 'delivered',  label: s.delivered      },
     { value: 'cancelled',  label: s.cancelledShort },
+    { value: 'returned',   label: s.returnedShort  },
   ]
 
   const [query,  setQuery]  = useState('')
@@ -216,14 +219,18 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                     <td className="px-5 py-3 text-xs" style={{ color: 'var(--text-base)' }} title={fullDate}>
                       {relativeDate(order.ordered_at, lang)}
                     </td>
-                    {/* Cancelled/returned orders show "—" — the seller never
-                        received that money or paid that fee. */}
+                    {(() => {
+                      const g = STATUS_GROUP[order.status]
+                      const noMoney = g === 'cancelled' || g === 'returned'
+                      return (<>
                     <td className="px-5 py-3 text-right text-sm tabular-nums font-medium" style={{ color: 'var(--text-base)' }}>
-                      {STATUS_GROUP[order.status] === 'cancelled' ? '—' : (order.revenue != null ? fmt(order.revenue, lang) : '—')}
+                      {noMoney ? '—' : (order.revenue != null ? fmt(order.revenue, lang) : '—')}
                     </td>
                     <td className="px-5 py-3 text-right text-sm tabular-nums font-medium" style={{ color: 'var(--text-muted)' }}>
-                      {STATUS_GROUP[order.status] === 'cancelled' ? '—' : (order.marketplace_fee != null ? fmt(order.marketplace_fee, lang) : '—')}
+                      {noMoney ? '—' : (order.marketplace_fee != null ? fmt(order.marketplace_fee, lang) : '—')}
                     </td>
+                      </>)
+                    })()}
                     <td className="px-5 py-3 text-right tabular-nums font-medium" style={{ color: 'var(--text-base)' }}>{order.items_count}</td>
                     <td className="px-5 py-3 text-center">
                       <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${sc.className}`}>
