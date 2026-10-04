@@ -871,7 +871,10 @@ async function syncFromYandexLocked(
           marketplace_fee: r.marketplace_fee != null ? String(r.marketplace_fee) : null,
           delivery_cost: r.delivery_cost != null ? String(r.delivery_cost) : null,
           items_count: r.items_count,
-          ordered_at: new Date(r.ordered_at),
+          // ordered_at is NOT overwritten: the creation date of an order never
+          // changes, and the derivation falls back to updatedAt when creationDate
+          // is missing — which would shift a cancelled order's date forward to
+          // its cancellation timestamp, placing it in the wrong date range.
           fulfillment_type: r.fulfillment_type,
           // Only ever set, never cleared: an order that has been announced stays
           // announced even if its status moves on.
