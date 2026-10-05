@@ -335,14 +335,20 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     // 2b: cross-marketplace bridge via shared product-identifying tokens.
     // Titles are in different languages (Uzum=Uzbek, Yandex=Russian) so
     // exact matching fails. After Cyrillic→Latin transliteration, model
-    // codes like "m9", "j16", "gtx350" survive in both and are the
-    // reliable bridge. Score: alphanumeric tokens (letter+digit) = 3,
-    // long words (>= 6 chars, e.g. "magsafe") = 2, others = 1.
-    // Threshold 3 prevents false merges from single shared generic words.
+    // codes like "j16pro", "gtx350" survive in both and are the reliable
+    // bridge. Score: alphanumeric tokens >= 4 chars (e.g. "gtx350") = 3,
+    // long words >= 6 chars (e.g. "magsafe") = 2, others = 1. Short
+    // alphanumeric tokens like "m9" score 1 — they're too common across
+    // unrelated products. Threshold 5 + category gate prevent false merges.
     const distinctiveFor = new Map<string, Set<string>>()
+    const catForGroup = new Map<string, string>()
     for (const [mk, members] of colorGroups) {
       const tokens = new Set<string>()
       for (const p of members) {
+        if (!catForGroup.has(mk)) {
+          const ck = catKey(p.category ?? null, p.title ?? null)
+          if (ck) catForGroup.set(mk, ck)
+        }
         const catToks = p.category
           ? new Set(normalizeText(cyrillicToLatin(p.category)).split(' ').filter(Boolean))
           : new Set<string>()
@@ -358,14 +364,17 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         const gi = colorGroups.get(keys[i])!
         const gj = colorGroups.get(keys[j])!
         if (gi[0].marketplace === gj[0].marketplace) continue
+        const ci = catForGroup.get(keys[i])
+        const cj = catForGroup.get(keys[j])
+        if (ci && cj && ci !== cj) continue
         const ti = distinctiveFor.get(keys[i])!
         const tj = distinctiveFor.get(keys[j])!
         let score = 0
         for (const tok of ti) {
           if (!tj.has(tok)) continue
-          score += /[a-z]/.test(tok) && /\d/.test(tok) ? 3 : tok.length >= 6 ? 2 : 1
+          score += /[a-z]/.test(tok) && /\d/.test(tok) && tok.length >= 4 ? 3 : tok.length >= 6 ? 2 : 1
         }
-        if (score >= 3) union(i, j)
+        if (score >= 5) union(i, j)
       }
     }
 
