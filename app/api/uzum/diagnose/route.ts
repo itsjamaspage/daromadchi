@@ -253,7 +253,7 @@ export const GET = withErrorHandler(async (req: Request) => {
     }
 
     // (c) Mine the OpenAPI spec for any return-related paths we missed.
-    let specReturnPaths: { path: string; methods: string[] }[] = []
+    const specReturnPaths: { path: string; methods: string[] }[] = []
     try {
       const specResult = await fetchUzumOpenApiSpec(token)
       if (specResult?.spec?.paths) {
