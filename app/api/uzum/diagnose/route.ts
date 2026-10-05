@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, isNotNull, sql } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, orders } from '@/lib/db'
+import { uzumSettlementOrders } from '@/lib/db/schema'
 import { decrypt } from '@/lib/crypto'
 import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
 import { UZUM_API_BASE, fetchAllUzumSkuStocks, discoverUzumFboPaths } from '@/lib/uzum/client'
@@ -214,6 +215,103 @@ export const GET = withErrorHandler(async (req: Request) => {
   }
 
   const token = decrypt(shop.api_key_encrypted)
+
+  // ── ?returns=1 — lightweight returns-endpoint probe ──────────────────────
+  const returnsProbe = new URL(req.url).searchParams.get('returns') === '1'
+  if (returnsProbe) {
+    // Grab shop ids first — most Uzum endpoints need them.
+    let uzumShopIds: number[] = []
+    try {
+      const res = await marketplaceFetch(`${UZUM_API_BASE}/v1/shops`, {
+        headers: { Authorization: token.trim(), Accept: 'application/json' },
+        next: { revalidate: 0 },
+      })
+      const data = await res.json().catch(() => null)
+      const arr = Array.isArray(data) ? data : (data?.shops ?? data?.data ?? [])
+      uzumShopIds = (arr as { id: number }[]).map(s => s.id).filter(Boolean)
+    } catch { /* best-effort */ }
+
+    const returnProbes: Probe[] = []
+    const gap = () => new Promise(r => setTimeout(r, 2000))
+
+    // (a) Direct candidate return endpoints — try common Uzum URL patterns.
+    const shopId = uzumShopIds[0]
+    if (shopId) {
+      returnProbes.push(await probe('GET /v1/shop/{id}/return', `${UZUM_API_BASE}/v1/shop/${shopId}/return`, token)); await gap()
+      returnProbes.push(await probe('GET /v2/fbs/returns', `${UZUM_API_BASE}/v2/fbs/returns?shopIds=${shopId}&page=0&size=10`, token)); await gap()
+      returnProbes.push(await probe('GET /v1/fbs/returns', `${UZUM_API_BASE}/v1/fbs/returns?shopIds=${shopId}&page=0&size=10`, token)); await gap()
+      returnProbes.push(await probe('GET /v2/return/list', `${UZUM_API_BASE}/v2/return/list?shopIds=${shopId}&page=0&size=10`, token)); await gap()
+      returnProbes.push(await probe('GET /v1/return/list', `${UZUM_API_BASE}/v1/return/list?shopIds=${shopId}&page=0&size=10`, token)); await gap()
+    }
+
+    // (b) Orders with status=RETURNED — we already sync these; confirm the
+    //     endpoint works and see what fields a returned order carries.
+    if (uzumShopIds.length > 0) {
+      const params = new URLSearchParams({ page: '0', size: '10', status: 'RETURNED' })
+      for (const id of uzumShopIds) params.append('shopIds', String(id))
+      returnProbes.push(await probe('fbs orders status=RETURNED', `${UZUM_API_BASE}/v2/fbs/orders?${params}`, token)); await gap()
+    }
+
+    // (c) Mine the OpenAPI spec for any return-related paths we missed.
+    let specReturnPaths: { path: string; methods: string[] }[] = []
+    try {
+      const specResult = await fetchUzumOpenApiSpec(token)
+      if (specResult?.spec?.paths) {
+        const keywords = /return|refund|claim|rma/i
+        for (const [path, ops] of Object.entries(specResult.spec.paths)) {
+          if (!keywords.test(path)) continue
+          const methods = Object.keys(ops as object).filter(m => ['get', 'post'].includes(m))
+          specReturnPaths.push({ path, methods: methods.length > 0 ? methods : ['get'] })
+        }
+        // Probe any spec-discovered GET return endpoints we haven't tried yet.
+        for (const ep of specReturnPaths) {
+          if (!ep.methods.includes('get')) continue
+          const url = ep.path.includes('{')
+            ? `${UZUM_API_BASE}${ep.path.replace(/\{[^}]+\}/g, String(shopId ?? 0))}?page=0&size=10`
+            : `${UZUM_API_BASE}${ep.path}?page=0&size=10`
+          const alreadyProbed = returnProbes.some(p => p.url === url.replace(UZUM_API_BASE, ''))
+          if (!alreadyProbed) {
+            returnProbes.push(await probe(`spec: GET ${ep.path}`, url, token)); await gap()
+          }
+        }
+      }
+    } catch { /* best-effort */ }
+
+    // (d) Settlement data with return fields — query our DB to see if we already
+    //     have return_cause / amount_returns from finance sync.
+    let settlementsTotal = 0
+    let settlementsWithReturns = 0
+    let returnCauseSample: string[] = []
+    try {
+      const [totRow] = await db.select({ c: sql<number>`count(*)::int` })
+        .from(uzumSettlementOrders)
+        .where(eq(uzumSettlementOrders.shop_id, shop.id))
+      settlementsTotal = totRow?.c ?? 0
+      const [retRow] = await db.select({ c: sql<number>`count(*)::int` })
+        .from(uzumSettlementOrders)
+        .where(and(eq(uzumSettlementOrders.shop_id, shop.id), isNotNull(uzumSettlementOrders.return_cause)))
+      settlementsWithReturns = retRow?.c ?? 0
+      if (settlementsWithReturns > 0) {
+        const samples = await db.selectDistinct({ rc: uzumSettlementOrders.return_cause })
+          .from(uzumSettlementOrders)
+          .where(and(eq(uzumSettlementOrders.shop_id, shop.id), isNotNull(uzumSettlementOrders.return_cause)))
+          .limit(10)
+        returnCauseSample = samples.map(r => r.rc).filter((v): v is string => v != null)
+      }
+    } catch { /* table may not exist yet */ }
+
+    return NextResponse.json({
+      ok: true,
+      hint: 'returns=1 probes Uzum returns endpoints. returnProbes shows which URLs responded (ok:true = endpoint exists). specReturnPaths lists return-related paths from the OpenAPI spec. settlementsTotal/settlementsWithReturns show how many finance rows we already have vs how many carry return_cause. returnCauseSample lists distinct return reasons found.',
+      shopDbId: shop.id,
+      uzumShopIds,
+      specReturnPaths,
+      settlementsTotal,
+      settlementsWithReturns,
+      returnCauseSample,
+      returnProbes,
+    })
+  }
 
   // Step 1: shops — probe for status, and extract the shop ids for order calls.
   const shopsProbe = await probe('shops', `${UZUM_API_BASE}/v1/shops`, token)
