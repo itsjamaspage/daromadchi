@@ -37,48 +37,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!session?.user) redirect('/login')
 
   const user = await getCurrentUser()
+  const userId = user?.id ?? null
 
-  // Total in-app notifications shown as a badge next to the theme toggle.
-  // Currently the notifications page surfaces stock alerts, so the count is
-  // simply how many alerts the seller has right now. Best-effort: a DB hiccup
-  // must never break the whole dashboard shell, so fall back to 0.
-  let notificationCount = 0
-  try {
-    // Badge counts BOTH halves of the notifications page. Counting only stock
-    // meant a seller with three unshipped orders and full shelves saw no badge
-    // at all — the page they were meant to open never asked them to.
-    const [stock, orderNotifs] = await Promise.all([getStockAlerts(), getOrderNotifications()])
-    notificationCount = groupStockAlerts(stock).length + orderNotifs.length
-  } catch { /* best-effort — show no badge on failure */ }
-
-  // Which sidebar entries lead to a locked page. Computed here, in the one
-  // server component every dashboard route already renders, so the nav marks
-  // them instead of letting a seller walk into a wall with no warning.
-  //
-  // Best-effort, like the alert count above: this only decorates the nav, and a
-  // DB hiccup must not take the whole dashboard shell down. Failing open costs
-  // nothing — every gated page re-checks entitlement itself.
-  let locked: string[] = []
-  try {
-    locked = await lockedNavKeys(user?.id ?? null)
-  } catch { /* best-effort — show no locks on failure */ }
-
-  // The newest nudge the seller has not dismissed. Best-effort for the same
-  // reason as the two above: this is a suggestion, and nothing about the
-  // dashboard should fail because a suggestion could not be loaded.
-  let notice: Awaited<ReturnType<typeof getActiveNotice>> = null
-  try {
-    if (user?.id) notice = await getActiveNotice(user.id)
-  } catch { /* best-effort — show no banner on failure */ }
-
-  // A frozen account sees the restore screen instead of the dashboard. NOT
-  // best-effort in the other direction: if this lookup fails we show the
-  // dashboard, because locking a paying seller out on a DB hiccup is far worse
-  // than a frozen one seeing their data for another day.
-  let frozen = false
-  try {
-    if (user?.id) frozen = await isFrozen(user.id)
-  } catch { /* on failure, do not gate */ }
+  // All four lookups depend only on userId and are independent — run them in
+  // parallel instead of sequentially. Each is best-effort (a DB hiccup must
+  // not break the dashboard shell), except isFrozen which fails open (showing
+  // the dashboard is safer than locking a paying seller out).
+  const [notifResult, locked, notice, frozen] = await Promise.all([
+    Promise.all([getStockAlerts(), getOrderNotifications()])
+      .then(([stock, orderNotifs]) => groupStockAlerts(stock).length + orderNotifs.length)
+      .catch(() => 0),
+    lockedNavKeys(userId).catch(() => [] as string[]),
+    userId ? getActiveNotice(userId).catch(() => null) : Promise.resolve(null),
+    userId ? isFrozen(userId).catch(() => false) : Promise.resolve(false),
+  ])
+  const notificationCount = notifResult
 
   return (
     <ChannelGate>

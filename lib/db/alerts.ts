@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { eq, and, ne, or, isNull, inArray, gte, sql } from 'drizzle-orm'
 import { db, shops, products, orderItems, orders, userSettings } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
@@ -5,7 +6,7 @@ import type { StockAlert, MarketplaceType } from '@/lib/types'
 
 export type { StockAlert }
 
-export async function getStockAlerts(): Promise<StockAlert[]> {
+export const getStockAlerts = cache(async function getStockAlerts(): Promise<StockAlert[]> {
   const userId = await getCurrentUserId()
   if (!userId) return []
 
@@ -58,20 +59,19 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
   try {
     const salesRows = await db.select({
       product_id: orderItems.product_id,
-      quantity: orderItems.quantity,
-      status: orders.status,
+      total_qty: sql<number>`COALESCE(SUM(${orderItems.quantity}), 0)`,
+      in_transit: sql<number>`COALESCE(SUM(CASE WHEN ${orders.status} IN ('pending','confirmed') THEN ${orderItems.quantity} ELSE 0 END), 0)`,
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .where(and(
         inArray(orderItems.product_id, productIds),
         gte(orders.ordered_at, since30),
       ))
+      .groupBy(orderItems.product_id)
     for (const row of salesRows) {
       if (!row.product_id) continue
-      salesMap.set(row.product_id, (salesMap.get(row.product_id) ?? 0) + (row.quantity ?? 0))
-      if (row.status === 'pending' || row.status === 'confirmed') {
-        inTransitMap.set(row.product_id, (inTransitMap.get(row.product_id) ?? 0) + (row.quantity ?? 0))
-      }
+      salesMap.set(row.product_id, row.total_qty)
+      if (row.in_transit > 0) inTransitMap.set(row.product_id, row.in_transit)
     }
   } catch { /* best-effort */ }
 
@@ -152,7 +152,7 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
   }
 
   return result.sort((a, b) => a.daysLeft - b.daysLeft)
-}
+})
 
 export interface AlertSettings {
   stockThreshold: number
