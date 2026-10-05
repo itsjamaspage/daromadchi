@@ -33,6 +33,7 @@ import type React from 'react'
 import { ChevronRight, ChevronDown } from 'lucide-react'
 import ExportButton from '@/components/dashboard/ExportButton'
 import FilterBar from '@/components/dashboard/FilterBar'
+import BracketChips, { ALL_BRACKET, revenueBrackets } from '@/components/dashboard/BracketChips'
 import EditableValueCell from '@/components/dashboard/EditableValueCell'
 import FulfillmentBadge from '@/components/dashboard/FulfillmentBadge'
 import { groupByVariant } from '@/lib/variant-grouping'
@@ -141,6 +142,8 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
   const [query, setQuery] = useState('')
   const categories = useMemo(() => buildCategoryList(products), [products])
   const [category, setCategory] = useState(ALL_CAT)
+  const [revBracket, setRevBracket] = useState(ALL_BRACKET)
+  const brackets = revenueBrackets(lang)
 
   // Column visibility. Read on mount rather than during render so the server
   // and the first client render agree — reading localStorage inline would
@@ -223,8 +226,12 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
       )
     }
     if (category !== ALL_CAT) rows = rows.filter(p => catKey(p.category, p.title) === category)
+    if (revBracket !== ALL_BRACKET) {
+      const bracket = brackets.find(b => b.key === revBracket)
+      if (bracket) rows = rows.filter(p => bracket.test((salesByProduct.get(p.id) ?? NO_SALES).revenue))
+    }
     return rows
-  }, [products, query, category, lang])
+  }, [products, query, category, lang, revBracket, brackets, salesByProduct])
 
   const filteredOrphans = useMemo(() => {
     if (!query.trim()) return orphanSales
@@ -558,6 +565,9 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
             <ExportButton data={exportData} filename="analitika" />
             <AnalyticsTableSettings hidden={hidden} onChange={changeHidden} labels={labels.settings} />
           </>}
+          extraFilters={
+            <BracketChips label={labels.revenue} brackets={brackets} selected={revBracket} onChange={setRevBracket} />
+          }
           resultCount={filteredProducts.length}
           countLabel={labels.productCount}
         />

@@ -15,6 +15,7 @@ interface FilterBarProps {
   allCategoryLabel?: string
   lang: Lang
   actions?: ReactNode
+  extraFilters?: ReactNode
   resultCount?: number
   countLabel?: string
 }
@@ -22,7 +23,7 @@ interface FilterBarProps {
 export default function FilterBar({
   query, onQueryChange, searchPlaceholder,
   categories, selectedCategory, onCategoryChange, allCategoryLabel,
-  lang, actions, resultCount, countLabel,
+  lang, actions, extraFilters, resultCount, countLabel,
 }: FilterBarProps) {
   const isFiltered = query.trim() || (selectedCategory && selectedCategory !== ALL_CAT)
   return (
@@ -59,6 +60,7 @@ export default function FilterBar({
         )}
         {actions && <div className="sm:ml-auto shrink-0 flex items-center gap-2">{actions}</div>}
       </div>
+      {extraFilters}
       {resultCount != null && countLabel && (
         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
           {resultCount} {countLabel} {isFiltered ? '(filtr)' : ''}

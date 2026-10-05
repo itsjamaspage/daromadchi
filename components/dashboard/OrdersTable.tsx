@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { ShoppingCart } from 'lucide-react'
 import ExportButton from './ExportButton'
 import FilterBar from './FilterBar'
+import BracketChips, { ALL_BRACKET, revenueBrackets } from './BracketChips'
 import FulfillmentBadge from './FulfillmentBadge'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
@@ -87,6 +88,8 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 
   const [query,  setQuery]  = useState('')
   const [status, setStatus] = useState<StatusTab>('all')
+  const [revBracket, setRevBracket] = useState(ALL_BRACKET)
+  const brackets = revenueBrackets(lang)
 
   const statusCounts = useMemo(() =>
     orders.reduce((acc, o) => {
@@ -106,8 +109,12 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
         o.marketplace.toLowerCase().includes(q)
       )
     }
+    if (revBracket !== ALL_BRACKET) {
+      const bracket = brackets.find(b => b.key === revBracket)
+      if (bracket) rows = rows.filter(o => bracket.test(o.revenue ?? 0))
+    }
     return rows
-  }, [orders, status, query])
+  }, [orders, status, query, revBracket, brackets])
 
   const exportData = filtered.map(o => ({
     [d.orderId]: o.order_id_external ?? o.id,
@@ -159,6 +166,9 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
         searchPlaceholder={d.searchOrderPlaceholder}
         lang={lang}
         actions={<ExportButton data={exportData} filename="buyurtmalar" />}
+        extraFilters={
+          <BracketChips label={d.revenue} brackets={brackets} selected={revBracket} onChange={setRevBracket} />
+        }
         resultCount={filtered.length}
         countLabel={d.orderCount}
       />
