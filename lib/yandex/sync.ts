@@ -62,10 +62,12 @@ const STATUS_MAP: Record<string, string> = {
  */
 const RETURN_SUBSTATUSES = new Set([
   'PICKUP_EXPIRED',           // не забрал из ПВЗ (classic невыкуп)
+  'FULL_NOT_RANSOM',          // невыкуп (FBS substatus — same event, different key)
   'USER_NOT_RECEIVED',        // покупатель не получил / отказался
   'DELIVERY_SERVICE_FAILED',  // ошибка службы доставки
   'USER_REFUSED_DELIVERY',    // отказ от доставки
   'USER_REFUSED_PRODUCT',     // отказ от товара
+  'USER_REFUSED_QUALITY',     // отказ по качеству — товар возвращается
   'USER_CHANGED_MIND',        // отменил до/во время доставки
   'REPLACING_ORDER',          // замена заказа — товар возвращается
 ])
