@@ -159,6 +159,24 @@ const MIGRATIONS = [
   'migrations/migrations/092_share_token.sql',
   'migrations/migrations/093_default_stock_sync.sql',
   'migrations/migrations/094_products_ikpu_code.sql',
+  // Clears the ATMOS sandbox test card bound during dev testing. Idempotent
+  // (UPDATE WHERE matching; re-run is a no-op once columns are already NULL).
+  'migrations/migrations/095_clear_test_card.sql',
+  // Audit trail for product creation/update attempts. Additive + idempotent
+  // (CREATE TABLE/INDEX IF NOT EXISTS).
+  'migrations/migrations/096_product_write_log.sql',
+  // Additive + idempotent (ADD COLUMN IF NOT EXISTS).
+  'migrations/migrations/097_products_synced_at.sql',
+  // Additive + idempotent (ADD COLUMN IF NOT EXISTS).
+  'migrations/migrations/098_shop_campaign_placement.sql',
+  // Yandex category renames effective 2026-10-01. Idempotent (UPDATE WHERE
+  // matching old name; re-run is a no-op once names are already updated).
+  'migrations/migrations/099_yandex_category_renames_oct2026.sql',
+  // Additive + idempotent (ADD COLUMN IF NOT EXISTS).
+  'migrations/migrations/100_products_moderation_status.sql',
+  // Persist marketplace substatus for return-reason display. Additive +
+  // idempotent (ADD COLUMN IF NOT EXISTS).
+  'migrations/migrations/101_marketplace_substatus.sql',
 ]
 
 function loadDatabaseUrl() {
