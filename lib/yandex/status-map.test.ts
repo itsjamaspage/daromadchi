@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { YANDEX_STATUS_MAP } from './sync'
+import { YANDEX_STATUS_MAP, YANDEX_RETURN_SUBSTATUSES } from './sync'
 
 // The dashboard's five buckets, mirroring STATUS_GROUP in
 // components/dashboard/OrdersTable.tsx. Asserting the BUCKET (not just the enum
@@ -75,5 +75,26 @@ test('the remap moves nothing across the turnover predicate', () => {
       countsTowardTurnover(newVal), countsTowardTurnover(oldVal),
       `${raw}: ${oldVal} → ${newVal} crosses the turnover predicate`,
     )
+  }
+})
+
+// ── Substatus-based return reclassification ─────────────────────────────────
+// CANCELLED + a return substatus is reclassified to 'returned' at sync time.
+// Both cancelled and returned are excluded from turnover, so this is safe.
+test('RETURN_SUBSTATUSES contains the core невыкуп substatuses', () => {
+  for (const sub of ['PICKUP_EXPIRED', 'USER_NOT_RECEIVED', 'DELIVERY_SERVICE_FAILED']) {
+    assert.ok(YANDEX_RETURN_SUBSTATUSES.has(sub), `${sub} must be a return substatus`)
+  }
+})
+
+test('RETURN_SUBSTATUSES reclassification stays on the same side of the turnover predicate', () => {
+  const countsTowardTurnover = (s: string) => !['cancelled', 'returned'].includes(s)
+  // CANCELLED → returned: both excluded from turnover
+  assert.equal(countsTowardTurnover('cancelled'), countsTowardTurnover('returned'))
+})
+
+test('RETURN_SUBSTATUSES does not include substatuses that should stay cancelled', () => {
+  for (const sub of ['USER_NOT_PAID', 'PROCESSING_EXPIRED', 'PENDING_EXPIRED']) {
+    assert.ok(!YANDEX_RETURN_SUBSTATUSES.has(sub), `${sub} should NOT be a return substatus`)
   }
 })
