@@ -204,6 +204,7 @@ export interface Order {
   // this decides which of the two `confirmed` meanings to SHOW — packed but not
   // shipped, versus actually on the way. See lib/marketplace/order-display-status.ts.
   marketplace_status?: string | null
+  marketplace_substatus?: string | null
   revenue: number | null
   marketplace_fee: number | null
   delivery_cost: number | null
