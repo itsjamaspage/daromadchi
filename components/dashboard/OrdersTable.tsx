@@ -10,6 +10,7 @@ import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { Order, OrderStatus } from '@/lib/types'
 import { orderDisplayStatus, type OrderDisplayStatus } from '@/lib/marketplace/order-display-status'
+import { returnReasonLabel } from '@/lib/marketplace/return-reason'
 
 function fmt(n: number, lang: string) {
   const suf = lang === 'ru' ? 'сум' : lang === 'en' ? 'UZS' : "so'm"
@@ -231,22 +232,31 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                     </td>
                     {(() => {
                       const g = STATUS_GROUP[order.status]
-                      const noMoney = g === 'cancelled' || g === 'returned'
+                      const isReturned = g === 'returned'
+                      const isCancelled = g === 'cancelled'
                       return (<>
                     <td className="px-5 py-3 text-right text-sm tabular-nums font-medium" style={{ color: 'var(--text-base)' }}>
-                      {noMoney ? '—' : (order.revenue != null ? fmt(order.revenue, lang) : '—')}
+                      {isCancelled ? '—' : isReturned && order.revenue != null
+                        ? <span style={{ textDecoration: 'line-through', opacity: 0.5 }}>{fmt(order.revenue, lang)}</span>
+                        : (order.revenue != null ? fmt(order.revenue, lang) : '—')}
                     </td>
                     <td className="px-5 py-3 text-right text-sm tabular-nums font-medium" style={{ color: 'var(--text-muted)' }}>
-                      {noMoney ? '—' : (order.marketplace_fee != null ? fmt(order.marketplace_fee, lang) : '—')}
+                      {(isCancelled || isReturned) ? '—' : (order.marketplace_fee != null ? fmt(order.marketplace_fee, lang) : '—')}
                     </td>
                       </>)
                     })()}
                     <td className="px-5 py-3 text-right tabular-nums font-medium" style={{ color: 'var(--text-base)' }}>{order.items_count}</td>
                     <td className="px-5 py-3 text-center">
-                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${sc.className}`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                        {sc.label}
-                      </span>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${sc.className}`}>
+                          <div className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                          {sc.label}
+                        </span>
+                        {STATUS_GROUP[order.status] === 'returned' && (() => {
+                          const reason = returnReasonLabel(order.marketplace_substatus, order.marketplace_status, lang)
+                          return reason ? <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{reason}</span> : null
+                        })()}
+                      </div>
                     </td>
                   </tr>
                 )

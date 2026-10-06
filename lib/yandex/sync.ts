@@ -55,8 +55,24 @@ const STATUS_MAP: Record<string, string> = {
   PARTIALLY_RETURNED: 'returned',  // «возвращен частично»
 }
 
+/**
+ * Yandex CANCELLED substatuses that mean the product was shipped / in transit
+ * and came back to the seller (невыкуп). These override CANCELLED → 'returned'
+ * so the dashboard counts them as returns, not cancellations.
+ */
+const RETURN_SUBSTATUSES = new Set([
+  'PICKUP_EXPIRED',           // не забрал из ПВЗ (classic невыкуп)
+  'USER_NOT_RECEIVED',        // покупатель не получил / отказался
+  'DELIVERY_SERVICE_FAILED',  // ошибка службы доставки
+  'USER_REFUSED_DELIVERY',    // отказ от доставки
+  'USER_REFUSED_PRODUCT',     // отказ от товара
+  'USER_CHANGED_MIND',        // отменил до/во время доставки
+  'REPLACING_ORDER',          // замена заказа — товар возвращается
+])
+
 /** Exported for the mapping test; not used elsewhere. */
 export const YANDEX_STATUS_MAP: Readonly<Record<string, string>> = STATUS_MAP
+export const YANDEX_RETURN_SUBSTATUSES: ReadonlySet<string> = RETURN_SUBSTATUSES
 
 // Same shape as Uzum's formatOrderLine helper — kept per-file so each
 // sync stays independently importable. Single-item orders compact,
@@ -610,14 +626,16 @@ async function syncFromYandexLocked(
         order_id_external: String(o.id),
         marketplace: 'yandex_market' as const,
         status: (() => {
-          const mapped = STATUS_MAP[o.status] ?? 'pending'
+          let mapped = STATUS_MAP[o.status] ?? 'pending'
           if (!STATUS_MAP[o.status]) console.warn(`[SYNC WARNING] Unmapped Yandex order status: "${o.status}" for order ${o.id}. Defaulting to pending.`)
+          if (mapped === 'cancelled' && o.substatus && RETURN_SUBSTATUSES.has(o.substatus)) mapped = 'returned'
           return mapped as 'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'returned'
         })(),
         // Raw Yandex status, kept so the stock draw-down keys off the physical
         // hand-off boundary (DELIVERY) rather than the coarse normalized enum.
         // See RESERVING_RAW_STATUSES.
         marketplace_status: o.status ?? null,
+        marketplace_substatus: o.substatus ?? null,
         revenue: o.buyerTotal ?? o.itemsTotal ?? 0,
         // marketplace_fee is settlement-sourced for Yandex and stays NULL here
         // by design. The /campaigns/{id}/orders endpoint carries no real fee —
@@ -829,6 +847,7 @@ async function syncFromYandexLocked(
             marketplace: r.marketplace,
             status: r.status,
             marketplace_status: r.marketplace_status,
+            marketplace_substatus: r.marketplace_substatus,
             revenue: r.revenue != null ? String(r.revenue) : null,
             marketplace_fee: r.marketplace_fee != null ? String(r.marketplace_fee) : null,
             delivery_cost: r.delivery_cost != null ? String(r.delivery_cost) : null,
@@ -867,6 +886,7 @@ async function syncFromYandexLocked(
         await db.update(orders).set({
           status: r.status,
           marketplace_status: r.marketplace_status,
+          marketplace_substatus: r.marketplace_substatus,
           revenue: r.revenue != null ? String(r.revenue) : null,
           marketplace_fee: r.marketplace_fee != null ? String(r.marketplace_fee) : null,
           delivery_cost: r.delivery_cost != null ? String(r.delivery_cost) : null,

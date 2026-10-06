@@ -99,7 +99,7 @@ const STATUS_MAP: Record<string, string> = {
   CANCELED: 'cancelled',
   CANCELLED: 'cancelled',
   PENDING_CANCELLATION: 'cancelled',
-  EXPIRED: 'cancelled',
+  EXPIRED: 'returned',          // невыкуп: buyer didn't collect from PVZ
   RETURNED: 'returned',
 }
 
@@ -117,7 +117,7 @@ const FBS_STATUSES = [
   'CREATED', 'PACKING', 'PENDING_DELIVERY',
   'DELIVERING', 'ACCEPTED_AT_DP', 'DELIVERED_TO_CUSTOMER_DELIVERY_POINT',
   'DELIVERED', 'COMPLETED', 'PENDING_CANCELLATION',
-  'CANCELED', 'RETURNED',
+  'CANCELED', 'EXPIRED', 'RETURNED',
 ]
 
 // The spec-derived enum, cached per server process so cron syncs don't

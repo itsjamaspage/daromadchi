@@ -299,6 +299,7 @@ export const orders = pgTable('orders', {
   // DELIVERY) preserved verbatim. The normalized `status` above collapses states
   // the stock draw-down must separate — see migration 054 + RESERVING_RAW_STATUSES.
   marketplace_status: text('marketplace_status'),
+  marketplace_substatus: text('marketplace_substatus'),
   revenue:           numeric('revenue'),
   marketplace_fee:   numeric('marketplace_fee'),
   delivery_cost:     numeric('delivery_cost'),
