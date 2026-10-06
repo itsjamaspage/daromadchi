@@ -82,7 +82,7 @@ test('the remap moves nothing across the turnover predicate', () => {
 // CANCELLED + a return substatus is reclassified to 'returned' at sync time.
 // Both cancelled and returned are excluded from turnover, so this is safe.
 test('RETURN_SUBSTATUSES contains the core невыкуп substatuses', () => {
-  for (const sub of ['PICKUP_EXPIRED', 'USER_NOT_RECEIVED', 'DELIVERY_SERVICE_FAILED']) {
+  for (const sub of ['PICKUP_EXPIRED', 'FULL_NOT_RANSOM', 'USER_NOT_RECEIVED', 'DELIVERY_SERVICE_FAILED', 'USER_REFUSED_QUALITY']) {
     assert.ok(YANDEX_RETURN_SUBSTATUSES.has(sub), `${sub} must be a return substatus`)
   }
 })
