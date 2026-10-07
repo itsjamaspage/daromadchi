@@ -236,6 +236,15 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
         <span className="text-[var(--text-muted)] text-xs">{t.totalDeductions}</span>
         <span className="text-[var(--text-base)] text-sm font-bold">{fmt(total, lang)}</span>
       </div>
+
+      {entry.reconciliationDelta != null && Math.abs(entry.reconciliationDelta) >= 1 && (
+        <div className="flex items-center gap-2 pt-2 border-t border-[var(--border)]">
+          <span className="text-amber-500 text-xs font-semibold">!</span>
+          <span className="text-[var(--text-muted)] text-xs">
+            {t.reconMismatch}: {fmt(Math.round(entry.reconciliationDelta), lang)}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -404,6 +413,7 @@ export default function PayoutsView({ entries, from, to }: Props) {
     [`${t.colAd} (so'm)`]:      e.adSpend,
     [`${t.colTax} (so'm)`]:     e.tax,
     [`${t.colNet} (so'm)`]:     e.netPayout,
+    ...(e.reconciliationDelta != null && Math.abs(e.reconciliationDelta) >= 1 ? { [t.reconMismatch]: e.reconciliationDelta } : {}),
   }))
 
   return (
@@ -657,8 +667,14 @@ export default function PayoutsView({ entries, from, to }: Props) {
                             title={[
                               entry.status === 'fees_pending' ? t.statusFeesPending : null,
                               entry.cogsPartial ? t.cogsPartialHint : null,
+                              entry.reconciliationDelta && Math.abs(entry.reconciliationDelta) >= 1
+                                ? `${t.reconMismatch}: ${new Intl.NumberFormat('uz-UZ').format(Math.round(entry.reconciliationDelta))} ${currencySuffix(lang)}`
+                                : null,
                             ].filter(Boolean).join('\n\n') || undefined}>
                             {entry.status === 'fees_pending' || entry.cogsPartial ? '≈ ' : ''}{fmtShort(entry.netPayout, lang)}
+                            {entry.reconciliationDelta != null && Math.abs(entry.reconciliationDelta) >= 1 && (
+                              <span className="ml-1 text-amber-500 text-xs" title={t.reconMismatch}>!</span>
+                            )}
                           </span>
                         </td>
                       </>

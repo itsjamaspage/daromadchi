@@ -420,6 +420,12 @@ export interface PayoutEntry {
    * costed items, so it is a floor and `netPayout` is an optimistic ceiling.
    */
   cogsPartial: boolean
+  /**
+   * Reconciliation check: grossRevenue − commission − delivery − otherDeductions − netPayout.
+   * Zero (or absent) means the row ties out; non-zero flags a discrepancy for
+   * investigation. Only meaningful on settled rows (real settlement data).
+   */
+  reconciliationDelta?: number
 }
 
 export interface WatchlistItem {

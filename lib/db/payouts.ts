@@ -432,11 +432,13 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           const financeName = k ? ymFinanceNameBySku.get(k) : undefined
           return financeName ? { ...it, productTitle: financeName } : it
         })
+        const ymGross = settled.credit || v.revenue
+        const ymReconDelta = Math.round((ymGross - settled.commission - settled.delivery - settled.other - netPayout) * 100) / 100
         const entry: PayoutEntry = {
           id: key,
           period: weekKey,
           marketplace: mp,
-          grossRevenue: settled.credit || v.revenue,
+          grossRevenue: ymGross,
           commission: settled.commission,
           delivery: settled.delivery,
           adSpend: 0,
@@ -445,12 +447,13 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           penalty: 0,
           storageFee: 0,
           additionalPayment: 0,
-          otherDeductions: settled.other, // penalties, transfer/acquiring, storage, ads — no longer folded into commission
+          otherDeductions: settled.other,
           netPayout,
-          ordersCount: v.count,
+          ordersCount: settled.orderNumbers.size || v.count,
           orderNumbers: [...settled.orderNumbers],
           paymentReferences: [...settled.paymentOrders],
           orders: orderLines,
+          reconciliationDelta: ymReconDelta,
           // Status from the netting report, never the calendar:
           //  • transferPosted (a payment order issued, none still awaiting) → paid
           //  • credit>0 & debit==0 (fees not posted yet) → fees_pending (visible at gross)
@@ -542,11 +545,13 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
             uzumStatus: rollUpUzumOrderStatus([...l.statuses]),
           }))
           .sort((a, b) => b.net - a.net)
+        const uzGross = settled.gross || v.revenue
+        const uzReconDelta = Math.round((uzGross - settled.commission - settled.delivery - 0 - net) * 100) / 100
         const entry: PayoutEntry = {
           id: key,
           period: weekKey,
           marketplace: mp,
-          grossRevenue: settled.gross || v.revenue,
+          grossRevenue: uzGross,
           commission: settled.commission,
           delivery: settled.delivery,
           adSpend: 0,
@@ -557,9 +562,10 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           additionalPayment: v.additionalPayment,
           otherDeductions: 0,
           netPayout: net,
-          ordersCount: v.count,
+          ordersCount: settled.orderNumbers.size || v.count,
           orderNumbers: [...settled.orderNumbers],
           orders: orderLines,
+          reconciliationDelta: uzReconDelta,
           // Status from REAL Uzum order signals, never the calendar: any
           // TO_WITHDRAW → available_to_withdraw (earned, not withdrawn), else
           // pending. Never 'paid' — no accessible completed-withdrawal feed.

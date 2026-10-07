@@ -350,6 +350,7 @@ export const dashT = {
       refreshingYandex: 'Yangilanmoqda…',
       refreshYandexDone: 'Tayyor — sahifani yangilang',
       refreshYandexFailed: 'Yandex ma\'lumotlarini olish uchun xato',
+      reconMismatch: 'Taqoslash farqi (brutto − chegirmalar ≠ sof)',
     },
     seasonality: {
       insightBest: 'Eng yaxshi oy', insightLow: 'Eng past oy',
@@ -766,6 +767,7 @@ export const dashT = {
       refreshingYandex: 'Refreshing…',
       refreshYandexDone: 'Done — reload the page',
       refreshYandexFailed: 'Could not fetch Yandex data',
+      reconMismatch: 'Reconciliation gap (gross − deductions ≠ net)',
     },
     seasonality: {
       insightBest: 'Best month', insightLow: 'Lowest month',
@@ -1179,6 +1181,7 @@ export const dashT = {
       refreshingYandex: 'Обновляем…',
       refreshYandexDone: 'Готово — обновите страницу',
       refreshYandexFailed: 'Не удалось получить данные Yandex',
+      reconMismatch: 'Расхождение (брутто − удержания ≠ нетто)',
     },
     seasonality: {
       insightBest: 'Лучший месяц', insightLow: 'Худший месяц',
