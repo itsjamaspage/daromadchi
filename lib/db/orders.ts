@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache'
-import { inArray, desc, gte, lte, and, or, count, eq } from 'drizzle-orm'
+import { inArray, desc, gte, lte, and, count, eq } from 'drizzle-orm'
 import { db, orders, shops } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import type { Order, MarketplaceType } from '@/lib/types'
@@ -25,23 +25,16 @@ function mapRow(row: typeof orders.$inferSelect, shopRow?: { shop_id_external: s
   }
 }
 
-const RETURNS_LOOKBACK_DAYS = 90
-
 const _fetchOrders = unstable_cache(
   async (shopIdsStr: string, limit: number, from: string, to: string): Promise<Order[]> => {
     const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
     if (shopIds.length === 0) return []
 
-    const returnsFloor = new Date()
-    returnsFloor.setDate(returnsFloor.getDate() - RETURNS_LOOKBACK_DAYS)
     const conditions = [inArray(orders.shop_id, shopIds)]
     if (from && to) {
       const start = parseLocalDate(from)
       const end = endOfLocalDay(parseLocalDate(to))
-      conditions.push(or(
-        and(gte(orders.ordered_at, start), lte(orders.ordered_at, end)),
-        and(eq(orders.status, 'returned'), gte(orders.ordered_at, returnsFloor)),
-      )!)
+      conditions.push(and(gte(orders.ordered_at, start), lte(orders.ordered_at, end))!)
     }
 
     let query = db.select({
@@ -83,17 +76,8 @@ const _fetchOrdersPaginated = unstable_cache(
     // an order placed at 18:33 on the last day of the range is still in it.
     const until = to ? endOfLocalDay(parseLocalDate(to)) : null
     if (until) until.setHours(23, 59, 59, 999)
-    // Returned orders surface by their original ordered_at, which can predate the
-    // selected week (a невыкуп from Sep shows up as a return in Oct). Widen the
-    // window for status='returned' so the Returns tab is never empty just because
-    // the original order was placed before the picker range.
-    const returnsFloor = new Date()
-    returnsFloor.setDate(returnsFloor.getDate() - RETURNS_LOOKBACK_DAYS)
     const dateFilter = from && until
-      ? or(
-          and(gte(orders.ordered_at, parseLocalDate(from)), lte(orders.ordered_at, until)),
-          and(eq(orders.status, 'returned'), gte(orders.ordered_at, returnsFloor)),
-        )
+      ? and(gte(orders.ordered_at, parseLocalDate(from)), lte(orders.ordered_at, until))
       : undefined
     const condition = and(
       inArray(orders.shop_id, shopIds),
