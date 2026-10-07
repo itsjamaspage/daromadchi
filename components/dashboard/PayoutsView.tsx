@@ -191,13 +191,12 @@ function OrderBreakdown({ orders }: { orders: PayoutOrderLine[] }) {
 function DeductionBar({ entry }: { entry: PayoutEntry }) {
   const { lang } = useLang()
   const t = dashT[lang].payouts
-  const total = entry.commission + entry.delivery + entry.returns + entry.adSpend + entry.acquiring + entry.tax + entry.penalty + entry.storageFee + entry.additionalPayment + entry.otherDeductions
+  const total = entry.commission + entry.delivery + entry.adSpend + entry.acquiring + entry.tax + entry.penalty + entry.storageFee + entry.additionalPayment + entry.otherDeductions
   if (total === 0) return null
 
   const segments = [
     { label: t.segCommission, value: entry.commission,        color: 'bg-violet-500' },
     { label: t.segDelivery,   value: entry.delivery,          color: 'bg-blue-500'   },
-    { label: t.segReturns,    value: entry.returns,           color: 'bg-red-500'    },
     { label: t.segAd,         value: entry.adSpend,           color: 'bg-amber-500'  },
     { label: t.segAcquiring,  value: entry.acquiring,         color: 'bg-cyan-500'   },
     { label: t.segTax,        value: entry.tax,               color: 'bg-pink-500'   },
@@ -386,7 +385,7 @@ export default function PayoutsView({ entries, from, to }: Props) {
   // the marketplace took. Neither can drift from the rows below them.
   const totalNet = withKnownNet.reduce((s, e) => s + e.netPayout, 0)
   const totalDeductions = withKnownNet.reduce(
-    (s, e) => s + e.commission + e.delivery + e.returns + e.adSpend + e.tax + e.acquiring
+    (s, e) => s + e.commission + e.delivery + e.adSpend + e.tax + e.acquiring
       + e.penalty + e.storageFee + e.otherDeductions, 0)
 
   function toggle(id: string) {
@@ -401,7 +400,7 @@ export default function PayoutsView({ entries, from, to }: Props) {
     [`${t.colGross} (so'm)`]:   e.grossRevenue,
     [`${t.colCommission} (so'm)`]: e.commission,
     [`${t.colDelivery} (so'm)`]: e.delivery,
-    [`${t.colReturns} (so'm)`]: e.returns,
+    [`${t.colOther} (so'm)`]: e.otherDeductions,
     [`${t.colAd} (so'm)`]:      e.adSpend,
     [`${t.colTax} (so'm)`]:     e.tax,
     [`${t.colNet} (so'm)`]:     e.netPayout,
@@ -555,7 +554,7 @@ export default function PayoutsView({ entries, from, to }: Props) {
                 <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colGross}</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colCommission}</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colDelivery}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colReturns}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colOther}</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colAd}</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colTax}</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
@@ -642,7 +641,7 @@ export default function PayoutsView({ entries, from, to }: Props) {
                             enough to signal that these are subtractions. */}
                         <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.commission > 0 ? '-' : ''}{fmtShort(entry.commission, lang)}</td>
                         <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.delivery > 0 ? '-' : ''}{fmtShort(entry.delivery, lang)}</td>
-                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.returns > 0 ? '-' : ''}{fmtShort(entry.returns, lang)}</td>
+                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.otherDeductions > 0 ? '-' : ''}{fmtShort(entry.otherDeductions, lang)}</td>
                         <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.adSpend > 0 ? '-' : ''}{fmtShort(entry.adSpend, lang)}</td>
                         <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.tax > 0 ? '-' : ''}{fmtShort(entry.tax, lang)}</td>
                         <td className="px-4 py-3.5 text-right">

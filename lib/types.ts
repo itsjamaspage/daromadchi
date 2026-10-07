@@ -369,7 +369,6 @@ export interface PayoutEntry {
   grossRevenue: number
   commission: number
   delivery: number
-  returns: number
   adSpend: number
   acquiring: number
   tax: number

@@ -89,8 +89,8 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       .groupBy(weekBucket(orders.ordered_at), orders.marketplace),
     // Per-product breakdown per period+marketplace. Aggregated in SQL so
     // 100 orders of the same SKU collapse to one row before it ever hits
-    // the Node side. Cancelled/returned excluded — those already show in
-    // the top-level "returns" column and would double-count here.
+    // the Node side. Cancelled/returned excluded — they don't contribute
+    // to payout revenue.
     db.select({
       period: weekBucket(orders.ordered_at).as('period'),
       marketplace: orders.marketplace,
@@ -158,26 +158,13 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   type Bucket = {
     revenue: number; realFee: number; realDelivery: number
     penalty: number; storageFee: number; additionalPayment: number
-    count: number; returnCount: number; returnAmount: number
-    // Actual min/max ordered_at across NON-CANCELLED orders in this
-    // bucket. Cancelled/returned orders are excluded so an empty payout
-    // period doesn't get a range from its refunded orders.
+    count: number
     firstOrderAt: Date | null; lastOrderAt: Date | null
-    // Marketplace order numbers (orders.order_id_external) contributing to this
-    // payout period — so a row can be cross-referenced with the seller cabinet.
     orderNumbers: string[]
   }
   const grouped = new Map<string, Bucket>()
 
   for (const row of orderRows) {
-    // Cancelled orders NEVER enter the payout pipeline — the buyer's
-    // money was refunded before the marketplace paid the seller, so
-    // they don't affect what gets deposited. Skip entirely (was
-    // previously counted as "Возвраты" which read as a payout
-    // deduction, but there's nothing to deduct because the money was
-    // never transferred). Only true returns — customer received the
-    // product and returned it — actually claw money back from a prior
-    // payout, and stay in returnAmount.
     if (row.status === 'cancelled') continue
 
     const d = row.ordered_at
@@ -191,23 +178,21 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
     const b = grouped.get(key) ?? {
       revenue: 0, realFee: 0, realDelivery: 0,
       penalty: 0, storageFee: 0, additionalPayment: 0,
-      count: 0, returnCount: 0, returnAmount: 0,
+      count: 0,
       firstOrderAt: null, lastOrderAt: null,
       orderNumbers: [],
     }
 
     if (row.status === 'returned') {
-      b.returnCount += 1
-      b.returnAmount += Number(row.revenue ?? 0)
+      // Returns are already accounted for inside settlement data (Yandex:
+      // negative Начисление rows reduce credit; Uzum: CANCELED rows are
+      // skipped entirely). Counting them here as a retail-price deduction
+      // was a phantom — it inflated "Удержано маркетплейсом" by a number
+      // that was never actually subtracted from the seller's payout.
+      // Skip returned orders: they contribute nothing to the payout.
     } else {
       b.revenue += Number(row.revenue ?? 0)
-      // money-guard-ok: a sum of the fees WE have on record, not a claim that
-      // the marketplace charged nothing. `estimated` below keys off this total
-      // being zero and substitutes a Unit-Economics percentage rather than
-      // letting an unreported fee pass as a real one.
       b.realFee += Number(row.marketplace_fee ?? 0)
-      // money-guard-ok: as above — how much delivery cost is on record for the
-      // period, which is what the estimate fallback needs to know.
       b.realDelivery += Number(row.delivery_cost ?? 0)
       b.penalty += Number(row.penalty ?? 0)
       b.storageFee += Number(row.storage_fee ?? 0)
@@ -349,8 +334,8 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         ))
       for (const r of settlementRows) {
         if (!r.period) continue
-        // Skip cancelled — Uzum sends them with sellerPrice > 0 too, and
-        // we already show cancellations in the returns column.
+        // Skip cancelled — Uzum sends them with sellerPrice > 0 too, but
+        // the seller receives nothing and pays nothing on these.
         if (r.status === 'CANCELED') continue
         const key = `${r.period}|uzum`
         const b = uzSettlementByKey.get(key) ?? { gross: 0, commission: 0, delivery: 0, net: 0, profitFallback: 0, itemCount: 0, statuses: new Set<string>(), orderNumbers: new Set<string>(), orderLines: new Map<string, { name: string | null; gross: number; commission: number; delivery: number; withdrawn: number; profit: number; statuses: Set<string> }>() }
@@ -452,9 +437,8 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           period: weekKey,
           marketplace: mp,
           grossRevenue: settled.credit || v.revenue,
-          commission: settled.commission, // "Поручение на продажу" — the real sales commission
+          commission: settled.commission,
           delivery: settled.delivery,
-          returns: v.returnAmount,
           adSpend: 0,
           acquiring: 0,
           tax: 0,
@@ -501,7 +485,6 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         grossRevenue: v.revenue,
         commission: 0,
         delivery: 0,
-        returns: v.returnAmount,
         adSpend: 0,
         acquiring: 0,
         tax: 0,
@@ -566,7 +549,6 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           grossRevenue: settled.gross || v.revenue,
           commission: settled.commission,
           delivery: settled.delivery,
-          returns: v.returnAmount,
           adSpend: 0,
           acquiring: 0,
           tax: 0,
@@ -618,7 +600,6 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       grossRevenue: v.revenue,
       commission,
       delivery,
-      returns: v.returnAmount,
       adSpend,
       acquiring,
       tax,
