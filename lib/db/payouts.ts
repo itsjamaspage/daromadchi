@@ -192,7 +192,9 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       // Skip returned orders: they contribute nothing to the payout.
     } else {
       b.revenue += Number(row.revenue ?? 0)
+      // money-guard-ok: null fee triggers the estimation fallback (line 587) — zero means "use estimate", not "charged nothing"
       b.realFee += Number(row.marketplace_fee ?? 0)
+      // money-guard-ok: null delivery triggers the estimation fallback (line 589) — zero means "use estimate", not "free shipping"
       b.realDelivery += Number(row.delivery_cost ?? 0)
       b.penalty += Number(row.penalty ?? 0)
       b.storageFee += Number(row.storage_fee ?? 0)
