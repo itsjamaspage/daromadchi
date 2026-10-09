@@ -92,6 +92,7 @@ export const GET = withErrorHandler(async () => {
       detail: body.slice(0, 300),
     })
   } catch (err) {
-    return NextResponse.json({ ok: false, error: `Tarmoq xatosi: ${String(err)}` })
+    const cause = err instanceof Error && err.cause ? ` (${String(err.cause)})` : ''
+    return NextResponse.json({ ok: false, error: `Tarmoq xatosi: ${String(err)}${cause}` })
   }
 })
