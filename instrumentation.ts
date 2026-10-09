@@ -1,5 +1,12 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    process.on('unhandledRejection', (reason) => {
+      console.error('[process] unhandledRejection — swallowed to prevent crash:', reason)
+    })
+    process.on('uncaughtException', (err) => {
+      console.error('[process] uncaughtException — swallowed to prevent crash:', err)
+    })
+
     const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
     if (!BOT_TOKEN) return
 

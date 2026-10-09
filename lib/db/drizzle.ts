@@ -4,7 +4,7 @@ import * as schema from './schema'
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 10,
+  max: 15,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000,
 })
