@@ -23,10 +23,8 @@ export default function SyncAlert({ alerts }: Props) {
   async function handleSync() {
     setSyncing(true)
     try {
-      await Promise.allSettled([
-        fetch('/api/uzum/sync', { method: 'POST' }),
-        fetch('/api/yandex/sync', { method: 'POST' }),
-      ])
+      await fetch('/api/uzum/sync', { method: 'POST' }).catch(() => {})
+      await fetch('/api/yandex/sync', { method: 'POST' }).catch(() => {})
       router.refresh()
     } finally {
       setSyncing(false)
@@ -48,6 +46,7 @@ export default function SyncAlert({ alerts }: Props) {
           <p key={i} className="text-xs font-medium" style={{ color: fg }}>
             <span className="font-semibold">{a.shopName}:</span>{' '}
             {a.status === 'error' ? d.syncAlertError : d.syncAlertPartial}
+            {a.message && <span className="block text-[10px] opacity-75 mt-0.5">{a.message}</span>}
           </p>
         ))}
       </div>

@@ -200,10 +200,8 @@ export default function SyncStatusClient({ shops, uzumDays, yandexDays, connecte
 
   async function handleSyncAll() {
     setSyncingAll(true)
-    await Promise.allSettled([
-      fetch('/api/uzum/sync', { method: 'POST' }),
-      fetch('/api/yandex/sync', { method: 'POST' }),
-    ])
+    await fetch('/api/uzum/sync', { method: 'POST' }).catch(() => {})
+    await fetch('/api/yandex/sync', { method: 'POST' }).catch(() => {})
     router.refresh()
     setSyncingAll(false)
   }
