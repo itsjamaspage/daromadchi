@@ -237,41 +237,23 @@ export function marketplaceFetch(url: string, init?: MarketplaceInit): Promise<R
   // Strip the non-standard `intent` field before handing the init to fetch().
   const fetchInit: MarketplaceInit = { ...init }
   delete fetchInit.intent
-  return fetchWithRetry(url, fetchInit)
+  return guardedFetch(url, fetchInit)
 }
 
-const MAX_RETRIES = 3
-const INITIAL_DELAY_MS = 2_000
-const REQUEST_TIMEOUT_MS = 30_000
+const FALLBACK_TIMEOUT_MS = 30_000
 
-function isTransient(status: number): boolean {
-  return status === 429 || status === 502 || status === 503 || status === 504
-}
-
-async function fetchWithRetry(url: string, init?: RequestInit): Promise<Response> {
-  let lastErr: unknown
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
-      const res = await fetch(url, { ...init, signal: init?.signal ?? controller.signal })
-      clearTimeout(timeout)
-      if (isTransient(res.status) && attempt < MAX_RETRIES) {
-        await sleep(INITIAL_DELAY_MS * 2 ** attempt)
-        continue
-      }
-      return res
-    } catch (err) {
-      lastErr = err
-      if (attempt < MAX_RETRIES) {
-        await sleep(INITIAL_DELAY_MS * 2 ** attempt)
-        continue
-      }
-    }
+async function guardedFetch(url: string, init?: RequestInit): Promise<Response> {
+  // Retry is the caller's job (uzum/client, yandex/client). The guard only
+  // validates the request and forwards it — no retry layer here.
+  // Add a timeout only when the caller didn't provide its own AbortSignal.
+  if (init?.signal) {
+    return fetch(url, init)
   }
-  throw lastErr
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), FALLBACK_TIMEOUT_MS)
+  try {
+    return await fetch(url, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timeout)
+  }
 }

@@ -75,7 +75,7 @@ async function probe(label: string, url: string, token: string): Promise<Probe> 
       status: 0,
       count: null,
       sample: null,
-      bodySnippet: String(err).slice(0, 300),
+      bodySnippet: (String(err) + (err instanceof Error && err.cause ? ` | cause: ${String(err.cause)}` : '')).slice(0, 400),
     }
   }
 }
