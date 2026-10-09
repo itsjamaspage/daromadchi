@@ -19,18 +19,31 @@ export class UzumApiError extends Error {
   }
 }
 
-// Exponential backoff for transient errors (429, 5xx). Rate limits (429) get a
-// longer wait than 5xx because Uzum's limiter needs real time to reset —
-// otherwise a throttled request fails and its orders are silently skipped.
+// Exponential backoff for transient errors (429, 5xx, network failures).
+// Rate limits (429) get a longer wait than 5xx because Uzum's limiter needs
+// real time to reset — otherwise a throttled request fails and its orders are
+// silently skipped. Network errors (DNS, timeout, connection refused) are also
+// retried since the Uzum API can be intermittently unreachable.
+function isNetworkError(err: unknown): boolean {
+  if (err instanceof TypeError) return true
+  if (err instanceof Error) {
+    const code = (err as NodeJS.ErrnoException).code
+    if (code === 'ECONNREFUSED' || code === 'ETIMEDOUT' || code === 'ECONNRESET'
+      || code === 'ENOTFOUND' || code === 'UND_ERR_CONNECT_TIMEOUT') return true
+    if (err.name === 'AbortError') return true
+  }
+  return false
+}
+
 async function withRetry<T>(fn: () => Promise<T>, retries = 4, baseMs = 600): Promise<T> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       return await fn()
     } catch (err) {
       const status = err instanceof UzumApiError ? err.status : 0
-      const retryable = status === 429 || status >= 500
+      const retryable = status === 429 || status >= 500 || isNetworkError(err)
       if (!retryable || attempt === retries) throw err
-      const base = status === 429 ? 2000 : baseMs
+      const base = status === 429 ? 2000 : isNetworkError(err) ? 1500 : baseMs
       await new Promise(r => setTimeout(r, base * 2 ** attempt))
     }
   }
@@ -64,6 +77,8 @@ function recordRateLimit(res: Response): void {
 
 // Auth: apiKey in Authorization header WITHOUT any prefix ("без префикса Bearer")
 // Per Uzum swagger securitySchemes.TokenAuth.description
+const REQUEST_TIMEOUT_MS = 30_000
+
 async function request<T>(
   path: string,
   token: string,
@@ -75,23 +90,30 @@ async function request<T>(
   // application/json can be rejected with the same generic 400 Uzum returns
   // for any malformed request, and that 400 used to be swallowed silently.
   const method = String(options?.method ?? 'GET').toUpperCase()
-  const res = await marketplaceFetch(`${UZUM_API_BASE}${path}`, {
-    ...options,
-    headers: {
-      Authorization: t,
-      Accept: 'application/json',
-      ...(method === 'GET' ? {} : { 'Content-Type': 'application/json' }),
-      ...options?.headers,
-    },
-    next: { revalidate: 0 },
-  })
-  recordRateLimit(res)
-  if (!res.ok) {
-    let body = ''
-    try { body = await res.text() } catch { /* ignore */ }
-    throw new UzumApiError(res.status, `Uzum API error: ${res.status} ${res.statusText} (${path})`, body)
+  const ac = new AbortController()
+  const timer = setTimeout(() => ac.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    const res = await marketplaceFetch(`${UZUM_API_BASE}${path}`, {
+      ...options,
+      signal: options?.signal ?? ac.signal,
+      headers: {
+        Authorization: t,
+        Accept: 'application/json',
+        ...(method === 'GET' ? {} : { 'Content-Type': 'application/json' }),
+        ...options?.headers,
+      },
+      next: { revalidate: 0 },
+    })
+    recordRateLimit(res)
+    if (!res.ok) {
+      let body = ''
+      try { body = await res.text() } catch { /* ignore */ }
+      throw new UzumApiError(res.status, `Uzum API error: ${res.status} ${res.statusText} (${path})`, body)
+    }
+    return res.json() as Promise<T>
+  } finally {
+    clearTimeout(timer)
   }
-  return res.json() as Promise<T>
 }
 
 // ─── Response shapes ──────────────────────────────────────────────────────────
