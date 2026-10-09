@@ -41,10 +41,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 4, baseMs = 600): Pr
       return await fn()
     } catch (err) {
       const status = err instanceof UzumApiError ? err.status : 0
-      const isAbort = err instanceof Error && err.name === 'AbortError'
       const retryable = status === 429 || status >= 500 || isNetworkError(err)
-      const maxRetries = isAbort ? 1 : retries
-      if (!retryable || attempt >= maxRetries) throw err
+      if (!retryable || attempt === retries) throw err
       const base = status === 429 ? 2000 : isNetworkError(err) ? 1500 : baseMs
       await new Promise(r => setTimeout(r, base * 2 ** attempt))
     }
@@ -79,7 +77,7 @@ function recordRateLimit(res: Response): void {
 
 // Auth: apiKey in Authorization header WITHOUT any prefix ("без префикса Bearer")
 // Per Uzum swagger securitySchemes.TokenAuth.description
-const REQUEST_TIMEOUT_MS = 60_000
+const REQUEST_TIMEOUT_MS = 30_000
 
 async function request<T>(
   path: string,

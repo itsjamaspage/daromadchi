@@ -48,7 +48,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, baseMs = 600): Pr
   throw new Error('unreachable')
 }
 
-const REQUEST_TIMEOUT_MS = 60_000
+const REQUEST_TIMEOUT_MS = 30_000
 
 async function request<T>(path: string, token: string, options?: RequestInit): Promise<T> {
   const ac = new AbortController()
