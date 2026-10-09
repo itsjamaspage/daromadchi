@@ -21,46 +21,64 @@ export class YandexApiError extends Error {
   }
 }
 
-// Exponential backoff for transient errors (429, 5xx)
+// Exponential backoff for transient errors (429, 5xx, network failures).
+function isNetworkError(err: unknown): boolean {
+  if (err instanceof TypeError) return true
+  if (err instanceof Error) {
+    const code = (err as NodeJS.ErrnoException).code
+    if (code === 'ECONNREFUSED' || code === 'ETIMEDOUT' || code === 'ECONNRESET'
+      || code === 'ENOTFOUND' || code === 'UND_ERR_CONNECT_TIMEOUT') return true
+    if (err.name === 'AbortError') return true
+  }
+  return false
+}
+
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, baseMs = 600): Promise<T> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       return await fn()
     } catch (err) {
       const status = err instanceof YandexApiError ? err.status : 0
-      const retryable = status === 429 || status >= 500
+      const retryable = status === 429 || status >= 500 || isNetworkError(err)
       if (!retryable || attempt === retries) throw err
-      await new Promise(r => setTimeout(r, baseMs * 2 ** attempt))
+      const base = isNetworkError(err) ? 1500 : baseMs
+      await new Promise(r => setTimeout(r, base * 2 ** attempt))
     }
   }
   throw new Error('unreachable')
 }
 
+const REQUEST_TIMEOUT_MS = 30_000
+
 async function request<T>(path: string, token: string, options?: RequestInit): Promise<T> {
-  const res = await marketplaceFetch(`${YANDEX_API_BASE}${path}`, {
-    ...options,
-    headers: {
-      'Api-Key': token,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      ...options?.headers,
-    },
-    next: { revalidate: 0 },
-  })
-  if (!res.ok) {
-    let body = ''
-    try { body = await res.text() } catch { /* ignore */ }
-    // Server-side log so the real error text (401/403 permissions, 400 bad
-    // param, 429 quota) shows up in pm2 logs even when the caller collapses
-    // the failure into a `debug.<field>=err` badge for the UI.
-    console.error(`[Yandex API] ${res.status} ${res.statusText} — ${path}\n${body.slice(0, 500)}`)
-    throw new YandexApiError(
-      res.status,
-      `Yandex API ${res.status} ${res.statusText} (${path})`,
-      body,
-    )
+  const ac = new AbortController()
+  const timer = setTimeout(() => ac.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    const res = await marketplaceFetch(`${YANDEX_API_BASE}${path}`, {
+      ...options,
+      signal: options?.signal ?? ac.signal,
+      headers: {
+        'Api-Key': token,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...options?.headers,
+      },
+      next: { revalidate: 0 },
+    })
+    if (!res.ok) {
+      let body = ''
+      try { body = await res.text() } catch { /* ignore */ }
+      console.error(`[Yandex API] ${res.status} ${res.statusText} — ${path}\n${body.slice(0, 500)}`)
+      throw new YandexApiError(
+        res.status,
+        `Yandex API ${res.status} ${res.statusText} (${path})`,
+        body,
+      )
+    }
+    return res.json() as Promise<T>
+  } finally {
+    clearTimeout(timer)
   }
-  return res.json() as Promise<T>
 }
 
 // ─── Response types ───────────────────────────────────────────────────────────
