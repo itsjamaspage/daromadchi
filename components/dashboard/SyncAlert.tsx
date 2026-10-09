@@ -45,10 +45,17 @@ export default function SyncAlert({ alerts }: Props) {
       <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: hasError ? '#ef4444' : '#f59e0b' }} />
       <div className="flex-1 min-w-0">
         {alerts.map((a, i) => (
-          <p key={i} className="text-xs font-medium" style={{ color: fg }}>
-            <span className="font-semibold">{a.shopName}:</span>{' '}
-            {a.status === 'error' ? d.syncAlertError : d.syncAlertPartial}
-          </p>
+          <div key={i}>
+            <p className="text-xs font-medium" style={{ color: fg }}>
+              <span className="font-semibold">{a.shopName}:</span>{' '}
+              {a.status === 'error' ? d.syncAlertError : d.syncAlertPartial}
+            </p>
+            {a.message && (
+              <p className="text-[10px] mt-0.5 opacity-70" style={{ color: fg }}>
+                {a.message}
+              </p>
+            )}
+          </div>
         ))}
       </div>
       <button
