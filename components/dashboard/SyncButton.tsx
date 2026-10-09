@@ -15,9 +15,11 @@ export default function SyncButton() {
   async function handleSync() {
     setState('syncing')
     try {
-      const r1 = await fetch('/api/uzum/sync', { method: 'POST' }).catch(() => null)
-      const r2 = await fetch('/api/yandex/sync', { method: 'POST' }).catch(() => null)
-      const allOk = r1?.ok && r2?.ok
+      const results = await Promise.allSettled([
+        fetch('/api/uzum/sync', { method: 'POST' }),
+        fetch('/api/yandex/sync', { method: 'POST' }),
+      ])
+      const allOk = results.every(r => r.status === 'fulfilled' && r.value.ok)
       setState(allOk ? 'ok' : 'err')
       if (allOk) {
         router.refresh()

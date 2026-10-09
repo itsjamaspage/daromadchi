@@ -23,8 +23,10 @@ export default function SyncAlert({ alerts }: Props) {
   async function handleSync() {
     setSyncing(true)
     try {
-      await fetch('/api/uzum/sync', { method: 'POST' }).catch(() => {})
-      await fetch('/api/yandex/sync', { method: 'POST' }).catch(() => {})
+      await Promise.allSettled([
+        fetch('/api/uzum/sync', { method: 'POST' }),
+        fetch('/api/yandex/sync', { method: 'POST' }),
+      ])
       router.refresh()
     } finally {
       setSyncing(false)
@@ -43,17 +45,10 @@ export default function SyncAlert({ alerts }: Props) {
       <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: hasError ? '#ef4444' : '#f59e0b' }} />
       <div className="flex-1 min-w-0">
         {alerts.map((a, i) => (
-          <div key={i}>
-            <p className="text-xs font-medium" style={{ color: fg }}>
-              <span className="font-semibold">{a.shopName}:</span>{' '}
-              {a.status === 'error' ? d.syncAlertError : d.syncAlertPartial}
-            </p>
-            {a.message && (
-              <p className="text-[10px] mt-0.5 opacity-70" style={{ color: fg }}>
-                {a.message}
-              </p>
-            )}
-          </div>
+          <p key={i} className="text-xs font-medium" style={{ color: fg }}>
+            <span className="font-semibold">{a.shopName}:</span>{' '}
+            {a.status === 'error' ? d.syncAlertError : d.syncAlertPartial}
+          </p>
         ))}
       </div>
       <button
