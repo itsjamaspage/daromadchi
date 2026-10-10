@@ -109,6 +109,7 @@ async function buildSalesSummary(
   // (name, colour key, seller SKU) and its order's marketplace + status.
   const rows = await db.select({
     orderId: ordersTable.id,
+    orderIdExternal: ordersTable.order_id_external,
     shop_id: ordersTable.shop_id,
     status: ordersTable.status,
     revenue: ordersTable.revenue,
@@ -179,7 +180,25 @@ async function buildSalesSummary(
   if (remaining > 0) lines.push(`… +${remaining}`)
 
   if (cancelled.length > 0) {
-    lines.push(`🚫 ${t.cancelled}: ${new Set(cancelled.map(c => c.orderId)).size}`)
+    const uniqueCancelled = new Map<string, typeof cancelled[number]>()
+    for (const c of cancelled) uniqueCancelled.set(c.orderId, c)
+    for (const c of [...uniqueCancelled.values()].slice(0, MAX_ITEMS)) {
+      const flag = MP_FLAG[mpByShop.get(c.shop_id) ?? 'uzum'] ?? ''
+      const name = nameOf(c)
+      const sku = skuOf(c)
+      const parts: string[] = [name || sku || '—']
+      const col = colorLabel(colorOf(c))
+      if (col) parts.push(col)
+      if (sku && sku !== (name ?? '')) parts.push(sku)
+      const linePrice = c.unitPrice != null
+        ? Number(c.unitPrice) * (Number(c.qty) || 1)
+        : (c.revenue != null ? Number(c.revenue) : null)
+      const priceStr = fmtPrice(linePrice)
+      let line = `${flag} ${parts.join(' · ')}`.trim()
+      if (priceStr) line += ` — ${priceStr}`
+      const orderNum = c.orderIdExternal ? ` №${c.orderIdExternal}` : ''
+      lines.push(`🚫${orderNum} ${line}`)
+    }
   }
 
   // Active orders exist but none carried a resolvable product (no items synced):

@@ -29,6 +29,9 @@ export const GET = withErrorHandler(async (req: Request) => {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
   }
 
+  const url = new URL(req.url)
+  const force = url.searchParams.get('force') === 'true'
+
   const nowUtcMin = new Date().getUTCHours() * 60 + new Date().getUTCMinutes()
   const uzMin     = (nowUtcMin + UZ_OFFSET_MIN) % (24 * 60)
   const uzHour    = Math.floor(uzMin / 60)
@@ -50,12 +53,14 @@ export const GET = withErrorHandler(async (req: Request) => {
   const sent: { userId: string; parts: string[] }[] = []
 
   for (const s of rows as SettingsRow[]) {
-    const sendTime = s.notif_send_time ?? '09:00'
-    const sendHour = parseInt(sendTime.split(':')[0] ?? '9', 10)
-    if (sendHour !== uzHour) continue
+    if (!force) {
+      const sendTime = s.notif_send_time ?? '09:00'
+      const sendHour = parseInt(sendTime.split(':')[0] ?? '9', 10)
+      if (sendHour !== uzHour) continue
 
-    const days = s.notif_send_days ?? [1, 2, 3, 4, 5, 6, 0]
-    if (!days.includes(uzDay)) continue
+      const days = s.notif_send_days ?? [1, 2, 3, 4, 5, 6, 0]
+      if (!days.includes(uzDay)) continue
+    }
 
     const msg = await buildDigestForUser(s, uzDay === 1)
     if (!msg) continue
@@ -64,5 +69,5 @@ export const GET = withErrorHandler(async (req: Request) => {
     sent.push({ userId: s.user_id, parts: msg.headers })
   }
 
-  return NextResponse.json({ ok: true, uzHour, uzDay, sent: sent.length, details: sent })
+  return NextResponse.json({ ok: true, uzHour, uzDay, forced: force, sent: sent.length, details: sent })
 })
