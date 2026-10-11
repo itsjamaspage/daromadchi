@@ -94,9 +94,78 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   }
 
   const probes: Probe[] = []
+  const params = req.nextUrl.searchParams
 
-  const businessId = req.nextUrl.searchParams.get('businessId')
-  const reportProbe = req.nextUrl.searchParams.get('reports') === '1'
+  // ── ?shipments=1 — probe first-mile shipments + order delivery details ──
+  if (params.get('shipments') === '1') {
+    const targetOrderId = params.get('orderId')?.trim() || null
+
+    // 1. Fetch the specific order if requested — full delivery/shipment details
+    let orderDetail: unknown = null
+    if (targetOrderId) {
+      const orderProbe = await probe(
+        `order ${targetOrderId}`,
+        `${YANDEX_API_BASE}/v2/campaigns/${campaignId}/orders/${targetOrderId}`,
+        token,
+      )
+      probes.push(orderProbe)
+      orderDetail = orderProbe.parsed
+    }
+
+    // 2. Probe first-mile shipments list (today ± 7 days)
+    const now = new Date()
+    const from = new Date(now)
+    from.setDate(from.getDate() - 3)
+    const to = new Date(now)
+    to.setDate(to.getDate() + 7)
+    const fmt = (d: Date) => d.toISOString().slice(0, 10)
+
+    probes.push(await probe(
+      `first-mile shipments (${fmt(from)} → ${fmt(to)})`,
+      `${YANDEX_API_BASE}/v2/campaigns/${campaignId}/first-mile/shipments?dateFrom=${fmt(from)}&dateTo=${fmt(to)}`,
+      token,
+    ))
+
+    // 3. Probe shipment requests (another Yandex URL shape for FBS)
+    probes.push(await probe(
+      'shipment requests',
+      `${YANDEX_API_BASE}/v2/campaigns/${campaignId}/shipments/reception/slots`,
+      token,
+    ))
+
+    // 4. If order specified, probe delivery labels + shipment info for that order
+    if (targetOrderId) {
+      probes.push(await probe(
+        `order ${targetOrderId} delivery labels`,
+        `${YANDEX_API_BASE}/v2/campaigns/${campaignId}/orders/${targetOrderId}/delivery/labels`,
+        token,
+      ))
+      probes.push(await probe(
+        `order ${targetOrderId} delivery shipments`,
+        `${YANDEX_API_BASE}/v2/campaigns/${campaignId}/orders/${targetOrderId}/delivery/shipments`,
+        token,
+      ))
+    }
+
+    // 5. Probe latest 10 orders for context (status/substatus)
+    probes.push(await probe(
+      'latest 10 orders',
+      `${YANDEX_API_BASE}/v2/campaigns/${campaignId}/orders?pageSize=10`,
+      token,
+    ))
+
+    return NextResponse.json({
+      ok: true,
+      hint: 'shipments=1 probes Yandex first-mile shipments, order delivery info, and label endpoints. Shows why an order may not appear in the shipments (otgruzki) section.',
+      campaignId,
+      targetOrderId,
+      orderDetail,
+      probes,
+    })
+  }
+
+  const businessId = params.get('businessId')
+  const reportProbe = params.get('reports') === '1'
 
   if (reportProbe) {
     // Probe every plausible report-generate path so we can identify
