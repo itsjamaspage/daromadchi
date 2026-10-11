@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { eq, and, isNotNull, sql } from 'drizzle-orm'
+import { eq, and, isNotNull, sql, desc } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, orders } from '@/lib/db'
-import { uzumSettlementOrders } from '@/lib/db/schema'
+import { uzumSettlementOrders, stockWriteLog } from '@/lib/db/schema'
 import { decrypt } from '@/lib/crypto'
 import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
 import { UZUM_API_BASE, fetchAllUzumSkuStocks, discoverUzumFboPaths } from '@/lib/uzum/client'
@@ -215,6 +215,28 @@ export const GET = withErrorHandler(async (req: Request) => {
   }
 
   const token = decrypt(shop.api_key_encrypted)
+
+  // ── ?stocklog=1 — last 5 stock_write_log rows for this shop ─────────────
+  if (new URL(req.url).searchParams.get('stocklog') === '1') {
+    const rows = await db.select({
+      identifier:    stockWriteLog.identifier,
+      sku:           stockWriteLog.sku,
+      quantity:      stockWriteLog.quantity,
+      status:        stockWriteLog.status,
+      http_status:   stockWriteLog.http_status,
+      reason:        stockWriteLog.reason,
+      error:         stockWriteLog.error,
+      request_body:  stockWriteLog.request_body,
+      response_body: stockWriteLog.response_body,
+      created_at:    stockWriteLog.created_at,
+    })
+      .from(stockWriteLog)
+      .where(eq(stockWriteLog.shop_id, shop.id))
+      .orderBy(desc(stockWriteLog.created_at))
+      .limit(5)
+
+    return NextResponse.json({ ok: true, shop_id: shop.id, count: rows.length, rows })
+  }
 
   // ── ?returns=1 — lightweight returns-endpoint probe ──────────────────────
   const returnsProbe = new URL(req.url).searchParams.get('returns') === '1'
