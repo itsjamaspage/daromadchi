@@ -390,10 +390,10 @@ async function syncFromYandexLocked(
         // Fall back to parsing the market SKU name / offer name only when
         // the attribute isn't available.
         const variantColor =
-          (shopSku ? offerCardColors.get(shopSku) : undefined)
+          resolveColor(shopSku)?.key
+          ?? (shopSku ? offerCardColors.get(shopSku) : undefined)
           ?? (marketSku ? offerCardColors.get(marketSku) : undefined)
           ?? resolveColor(e.mapping?.marketSkuName ?? e.offer.name)?.key
-          ?? resolveColor(shopSku)?.key
           ?? null
         return {
           shop_id: shopId,

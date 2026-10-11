@@ -39,11 +39,11 @@ function uzumSkuColor(sku: UzumSku): string | null {
     (x) => x.characteristicTitle?.ru === 'Цвет' || x.characteristicTitle?.uz === 'Rang',
   )
   return (
+    resolveColor(sku.sellerItemCode ?? sku.article)?.key ??
     resolveColor(c?.characteristicValue?.ru)?.key ??
     resolveColor(c?.characteristicValue?.uz)?.key ??
     resolveColor(sku.skuTitle)?.key ??
     resolveColor(sku.characteristics)?.key ??
-    resolveColor(sku.sellerItemCode ?? sku.article)?.key ??
     null
   )
 }
