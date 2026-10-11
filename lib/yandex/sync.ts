@@ -993,7 +993,7 @@ async function syncFromYandexLocked(
               const patch: Record<string, unknown> = {
                 marketplace_product_id: r.marketplace_product_id,
                 title: r.title,
-                sku: r.sku,
+                sku: sql`coalesce(nullif(${products.sku}, ''), ${r.sku})`,
                 category: r.category,
               }
               if (r.selling_price != null) patch.selling_price = String(r.selling_price)
@@ -1062,7 +1062,7 @@ async function syncFromYandexLocked(
                 const patch: Record<string, unknown> = {
                   marketplace_product_id: r.marketplace_product_id,
                   title: r.title,
-                  sku: r.sku,
+                  sku: sql`coalesce(nullif(${products.sku}, ''), ${r.sku})`,
                   category: r.category,
                 }
                 if (r.selling_price != null) patch.selling_price = String(r.selling_price)

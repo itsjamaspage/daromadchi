@@ -961,7 +961,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
             for (const r of toUpd) {
               await db.update(products).set({
                 title: r.title,
-                sku: r.sku,
+                sku: sql`coalesce(nullif(${products.sku}, ''), ${r.sku})`,
                 category: r.category,
                 selling_price: r.selling_price != null ? String(r.selling_price) : null,
                 stock_quantity: r.stock_quantity,
@@ -1040,7 +1040,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
               for (const r of toUpd) {
                 await db.update(products).set({
                   title: r.title,
-                  sku: r.sku,
+                  sku: sql`coalesce(nullif(${products.sku}, ''), ${r.sku})`,
                   category: r.category,
                   selling_price: r.selling_price != null ? String(r.selling_price) : null,
                   stock_quantity: r.stock_quantity,
