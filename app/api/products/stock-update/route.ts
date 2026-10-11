@@ -7,6 +7,8 @@ import { withErrorHandler } from '@/lib/api-handler'
 import { pushStock } from '@/lib/marketplace/stock-writer'
 import { readBackStock } from '@/lib/marketplace/stock-sync'
 import { backfillShopIdentifiers } from '@/lib/marketplace/identifier-backfill'
+import { decrypt } from '@/lib/crypto'
+import { fetchAllUzumSkuStocks } from '@/lib/uzum/client'
 import type { MarketplaceType } from '@/lib/types'
 
 export const runtime = 'nodejs'
@@ -84,6 +86,27 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     if (refreshed) product = refreshed
   }
 
+  let uzumFbsLinked: boolean | undefined
+  let uzumDbsLinked: boolean | undefined
+  if (marketplace === 'uzum' && product.market_barcode && shop.api_key_encrypted) {
+    const token = decrypt(shop.api_key_encrypted)
+    try {
+      const stocks = await fetchAllUzumSkuStocks(token)
+      const rec = stocks.find(s => String(s.barcode ?? '').trim() === product.market_barcode!.trim())
+      if (rec) {
+        if (rec.fbsLinked === false) {
+          return NextResponse.json({
+            ok: false,
+            status: 'skipped',
+            reason: 'Товар не привязан к FBS-складу в Uzum. Привяжите товар в кабинете продавца.',
+          }, { status: 400 })
+        }
+        uzumFbsLinked = rec.fbsLinked
+        uzumDbsLinked = rec.dbsLinked === true
+      }
+    } catch { /* best-effort: proceed with defaults if the read fails */ }
+  }
+
   const result = await pushStock({
     shop: {
       id: shop.id,
@@ -94,6 +117,8 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     sku: marketplace === 'yandex_market' ? product.market_sku : product.sku,
     barcode: product.market_barcode,
     uzumSkuId: marketplace === 'uzum' ? product.market_sku : null,
+    uzumFbsLinked,
+    uzumDbsLinked,
     quantity: Math.trunc(quantity),
     version: Date.now(),
     warehouseId: product.market_warehouse_id,
