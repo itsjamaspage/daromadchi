@@ -348,21 +348,27 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
     const res = await sendWithRetry(url, { method, headers, body, intent: 'stock-write' })
     let respText = ''
     try { respText = await res.text() } catch { /* ignore */ }
-    const status: StockWriteStatus = res.ok ? 'sent' : 'error'
-    // Compact, single-lined snippet of the marketplace's error body — the actual
-    // diagnostic for a 4xx (bad field, wrong DTO, unknown barcode, …). The full
-    // body still lands in response_body; this makes the audit `reason` column
-    // self-explanatory without a second lookup.
+    // Uzum can return HTTP 200 with business-level errors inside the body
+    // (e.g. { "payload": ..., "errors": ["..."] }). Treat that as an error.
+    let uzumBodyError = false
+    if (res.ok && marketplace === 'uzum' && respText) {
+      try {
+        const parsed = JSON.parse(respText)
+        if (Array.isArray(parsed?.errors) && parsed.errors.length > 0) {
+          uzumBodyError = true
+        }
+      } catch { /* not JSON — ignore */ }
+    }
+    const status: StockWriteStatus = res.ok && !uzumBodyError ? 'sent' : 'error'
     const bodySnippet = respText.replace(/\s+/g, ' ').trim().slice(0, 300)
-    // machineReason stays a stable, parseable code (`http_400`) — it's what the
-    // caller returns and what the notification/dedup path keys on, so a repeating
-    // failure keeps one identity. auditReason additionally carries the body.
-    const machineReason = res.ok ? undefined : `http_${res.status}`
-    const auditReason = res.ok
+    const machineReason = status === 'sent' ? undefined
+      : uzumBodyError ? 'uzum_body_error' : `http_${res.status}`
+    const auditReason = status === 'sent'
       ? 'ok'
+      : uzumBodyError ? `uzum_body_error: ${bodySnippet}`
       : bodySnippet ? `http_${res.status}: ${bodySnippet}` : `http_${res.status}`
-    if (!res.ok) {
-      logger.error('stock_write_http_error', { shopId: shop.id, marketplace, url, http: res.status, body: respText.slice(0, 500) })
+    if (!res.ok || uzumBodyError) {
+      logger.error('stock_write_http_error', { shopId: shop.id, marketplace, url, http: res.status, uzumBodyError, body: respText.slice(0, 500) })
     }
     const logId = await audit({
       ...base, dry_run: false, endpoint: url, method, identifier, warehouse_id: whId,

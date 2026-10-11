@@ -1,8 +1,8 @@
-// Parse a color from a product TITLE (never the SKU — SKUs are intentionally the
-// same across colors/markets, e.g. JMM99). Display-only. Substring match for safe
-// 3+ char Cyrillic stems; whole-word match for short/ambiguous Latin tokens (so
-// "oq" doesn't match random substrings). First match wins. Returns null when no
-// color word is present (e.g. the J16 earphones) — those rows just get no badge.
+// Parse a color from a product TITLE or seller article code. Substring match for
+// safe 3+ char stems (Cyrillic + common Latin abbreviations like "blk"/"wht");
+// whole-word match for short/ambiguous Latin tokens (so "oq" doesn't match random
+// substrings). First match wins. Returns null when no color word is present (e.g.
+// the J16 earphones) — those rows just get no badge.
 
 export type ColorKey =
   | 'black' | 'white' | 'blue' | 'red' | 'green' | 'gray'
@@ -18,19 +18,19 @@ type Rule = ProductColor & { stems: string[]; words: string[] }
 
 // Order matters: first match wins.
 const RULES: Rule[] = [
-  { key: 'black',  hex: '#111827',              stems: ['чёрн', 'черн'],       words: ['qora', 'black'] },
-  { key: 'white',  hex: '#ffffff', ring: true,  stems: ['бел'],                words: ['oq', 'oppoq', 'white'] },
-  { key: 'blue',   hex: '#2563eb',              stems: ['син', 'голуб'],       words: ["ko'k", 'kok', 'blue'] },
-  { key: 'red',    hex: '#dc2626',              stems: ['красн'],              words: ['qizil', 'red'] },
-  { key: 'green',  hex: '#16a34a',              stems: ['зелён', 'зелен'],     words: ['yashil', 'green'] },
-  { key: 'gray',   hex: '#9ca3af',              stems: ['серый', 'серебр'],    words: ['kulrang', 'gray', 'grey', 'silver'] },
-  { key: 'gold',   hex: '#d4af37',              stems: ['золот'],              words: ['tilla', 'gold'] },
-  { key: 'pink',   hex: '#ec4899',              stems: ['розов'],              words: ['pushti', 'pink'] },
-  { key: 'purple', hex: '#7c3aed',              stems: ['фиолет'],             words: ['binafsha', 'purple'] },
-  { key: 'yellow', hex: '#eab308',              stems: ['жёлт', 'желт'],       words: ['sariq', 'yellow'] },
-  { key: 'brown',  hex: '#78350f',              stems: ['коричн'],             words: ['jigarrang', 'brown'] },
-  { key: 'beige',  hex: '#d2b48c', ring: true,  stems: ['беж'],                words: ['bej', 'beige'] },
-  { key: 'orange', hex: '#ea580c',              stems: ['оранж', 'toq sariq'],  words: ['orange'] },
+  { key: 'black',  hex: '#111827',              stems: ['чёрн', 'черн', 'blk'],  words: ['qora', 'black'] },
+  { key: 'white',  hex: '#ffffff', ring: true,  stems: ['бел', 'wht'],           words: ['oq', 'oppoq', 'white'] },
+  { key: 'blue',   hex: '#2563eb',              stems: ['син', 'голуб', 'blu'],  words: ["ko'k", 'kok', 'blue'] },
+  { key: 'red',    hex: '#dc2626',              stems: ['красн'],                words: ['qizil', 'red'] },
+  { key: 'green',  hex: '#16a34a',              stems: ['зелён', 'зелен', 'grn'], words: ['yashil', 'green'] },
+  { key: 'gray',   hex: '#9ca3af',              stems: ['серый', 'серебр', 'gry'], words: ['kulrang', 'gray', 'grey', 'silver'] },
+  { key: 'gold',   hex: '#d4af37',              stems: ['золот', 'gld'],         words: ['tilla', 'gold'] },
+  { key: 'pink',   hex: '#ec4899',              stems: ['розов', 'pnk'],         words: ['pushti', 'pink'] },
+  { key: 'purple', hex: '#7c3aed',              stems: ['фиолет'],               words: ['binafsha', 'purple'] },
+  { key: 'yellow', hex: '#eab308',              stems: ['жёлт', 'желт'],         words: ['sariq', 'yellow'] },
+  { key: 'brown',  hex: '#78350f',              stems: ['коричн', 'brn'],        words: ['jigarrang', 'brown'] },
+  { key: 'beige',  hex: '#d2b48c', ring: true,  stems: ['беж'],                  words: ['bej', 'beige'] },
+  { key: 'orange', hex: '#ea580c',              stems: ['оранж', 'toq sariq'],   words: ['orange'] },
 ]
 
 // Localized color names — the badge shows the name in the current UI language.

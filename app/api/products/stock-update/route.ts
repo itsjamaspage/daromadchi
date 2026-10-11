@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, products } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
 import { pushStock } from '@/lib/marketplace/stock-writer'
+import { readBackStock } from '@/lib/marketplace/stock-sync'
 import { backfillShopIdentifiers } from '@/lib/marketplace/identifier-backfill'
 import type { MarketplaceType } from '@/lib/types'
 
@@ -99,11 +100,35 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     productId: product.id,
   })
 
+  let verified: boolean | null = null
   if (result.status === 'sent') {
-    await db.update(products)
-      .set({ stock_quantity: result.quantity, stock_override: result.quantity })
-      .where(eq(products.id, product.id))
-    revalidateTag('product-data', { expire: 0 })
+    const identifier = marketplace === 'uzum' ? product.market_barcode : product.market_sku
+    if (identifier) {
+      try {
+        const observed = await readBackStock(
+          { marketplace, api_key_encrypted: shop.api_key_encrypted, shop_id_external: shop.shop_id_external },
+          identifier,
+        )
+        verified = observed === Math.trunc(quantity)
+        if (verified) {
+          await db.update(products)
+            .set({ stock_quantity: result.quantity, stock_override: result.quantity })
+            .where(eq(products.id, product.id))
+          revalidateTag('product-data', { expire: 0 })
+        }
+      } catch {
+        verified = null
+        await db.update(products)
+          .set({ stock_quantity: result.quantity, stock_override: result.quantity })
+          .where(eq(products.id, product.id))
+        revalidateTag('product-data', { expire: 0 })
+      }
+    } else {
+      await db.update(products)
+        .set({ stock_quantity: result.quantity, stock_override: result.quantity })
+        .where(eq(products.id, product.id))
+      revalidateTag('product-data', { expire: 0 })
+    }
   }
 
   const REASON_LABELS: Record<string, string> = {
@@ -117,11 +142,15 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     guard_blocked: 'Запись заблокирована (режим только чтение).',
     stale_version: 'Более новое обновление уже применено.',
     dry_run: 'Тестовый режим — запись не отправлена.',
+    uzum_body_error: 'Uzum вернул ошибку в теле ответа (HTTP 200). Проверьте данные товара.',
   }
 
   let humanReason = result.reason ? (REASON_LABELS[result.reason] ?? result.reason) : undefined
   if (humanReason && /^http_\d+$/.test(result.reason!)) {
     humanReason = `Маркетплейс вернул ошибку (${result.reason!.replace('http_', 'HTTP ')})`
+  }
+  if (result.status === 'sent' && verified === false) {
+    humanReason = 'Запрос отправлен, но маркетплейс не подтвердил изменение. Попробуйте ещё раз или проверьте данные товара.'
   }
 
   return NextResponse.json({
@@ -129,6 +158,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     status: result.status,
     quantity: result.quantity,
     reason: humanReason,
+    verified,
     logId: result.logId,
   }, { status: result.status === 'sent' ? 200 : result.status === 'blocked' ? 403 : 500 })
 })

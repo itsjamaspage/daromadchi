@@ -393,6 +393,7 @@ async function syncFromYandexLocked(
           (shopSku ? offerCardColors.get(shopSku) : undefined)
           ?? (marketSku ? offerCardColors.get(marketSku) : undefined)
           ?? resolveColor(e.mapping?.marketSkuName ?? e.offer.name)?.key
+          ?? resolveColor(shopSku)?.key
           ?? null
         return {
           shop_id: shopId,
