@@ -32,6 +32,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
   const { marketplace, token, campaignId, businessId, shopName } = parsed.data
 
+  if (campaignId?.trim() && !/^\d+$/.test(campaignId.trim())) {
+    return NextResponse.json({ ok: false, error: 'Campaign ID должен быть числом. Скопируйте его из URL в Yandex Partner: campaignId=<число>.' }, { status: 400 })
+  }
   if (businessId?.trim() && !/^\d+$/.test(businessId.trim())) {
     return NextResponse.json({ ok: false, error: 'Business ID должен состоять только из цифр.' }, { status: 400 })
   }
