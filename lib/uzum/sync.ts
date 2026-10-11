@@ -43,6 +43,7 @@ function uzumSkuColor(sku: UzumSku): string | null {
     resolveColor(c?.characteristicValue?.uz)?.key ??
     resolveColor(sku.skuTitle)?.key ??
     resolveColor(sku.characteristics)?.key ??
+    resolveColor(sku.sellerItemCode ?? sku.article)?.key ??
     null
   )
 }

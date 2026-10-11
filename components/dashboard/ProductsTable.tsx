@@ -429,8 +429,12 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       if (data.ok) {
         setStockOptimistic(prev => new Map(prev).set(productId, qty))
         setEditingStockId(null)
-        setStockSuccess(true)
-        setTimeout(() => setStockSuccess(false), 3000)
+        if (data.verified === false) {
+          setStockError(data.reason ?? 'Запрос отправлен, но маркетплейс не подтвердил изменение.')
+        } else {
+          setStockSuccess(true)
+          setTimeout(() => setStockSuccess(false), 3000)
+        }
         router.refresh()
       } else {
         setStockError(data.reason ?? data.error ?? 'Error')

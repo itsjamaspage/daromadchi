@@ -255,6 +255,7 @@ function YandexCard({ shop, fulfillmentType }: { shop: Shop | null; userId: stri
 
   const hasKey      = !!shop?.api_key_encrypted
   const hasCampaign = !!shop?.shop_id_external
+  const storedCampaignId = shop?.shop_id_external ?? null
   const storedBusinessId = shop?.business_id ?? null
   const lastSync    = shop?.last_synced_at
     ? new Date(shop.last_synced_at).toLocaleString(lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ') : null
@@ -392,6 +393,7 @@ function YandexCard({ shop, fulfillmentType }: { shop: Shop | null; userId: stri
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
             placeholder={t.tokenPlaceholder}
+            autoComplete="off"
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
         </div>
@@ -404,9 +406,10 @@ function YandexCard({ shop, fulfillmentType }: { shop: Shop | null; userId: stri
             type="text"
             value={campaignId}
             onChange={e => setCampaignId(e.target.value)}
-            placeholder={t.campaignPlaceholder}
+            placeholder={storedCampaignId ?? t.campaignPlaceholder}
             inputMode="numeric"
             pattern="[0-9]*"
+            autoComplete="off"
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
           <p className="text-[var(--text-muted)] text-xs mt-1.5">{t.campaignIdHint}</p>
@@ -423,6 +426,7 @@ function YandexCard({ shop, fulfillmentType }: { shop: Shop | null; userId: stri
             placeholder={storedBusinessId ?? t.businessIdPlaceholder}
             inputMode="numeric"
             pattern="[0-9]*"
+            autoComplete="off"
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
           <p className="text-[var(--text-muted)] text-xs mt-1.5">{t.businessIdHint}</p>
