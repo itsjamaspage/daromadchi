@@ -9,6 +9,29 @@ const MP_FLAG: Record<string, string> = {
   yandex_market: '🟡YM',
 }
 
+interface ShopInfo {
+  marketplace: string
+  shop_id_external: string | null
+  business_id: string | null
+}
+type ShopInfoMap = Map<string, ShopInfo>
+
+function orderLink(info: ShopInfo | undefined, extId: string | null): string {
+  if (!extId) return ''
+  let url: string | null = null
+  if (info?.marketplace === 'uzum') {
+    url = `https://seller.uzum.uz/seller/orders/fbs/${extId}`
+  } else if (info?.marketplace === 'yandex_market') {
+    const biz = info.business_id
+    const campaign = info.shop_id_external
+    if (biz && campaign) {
+      url = `https://partner.market.yandex.ru/business/${biz}/orders?campaignId=${campaign}`
+    }
+  }
+  const label = `№${extId}`
+  return url ? `<a href="${url}">${label}</a>` : label
+}
+
 export interface DigestUser {
   user_id:               string
   notif_low_stock:       boolean
@@ -29,41 +52,50 @@ export async function buildDigestForUser(
   const lang = (s.notif_lang ?? 'uz') as NotifLang
   const t = notifT(lang)
 
-  const shopRows = await db.select({ id: shopsTable.id, marketplace: shopsTable.marketplace })
+  const shopRows = await db.select({
+    id: shopsTable.id,
+    marketplace: shopsTable.marketplace,
+    shop_id_external: shopsTable.shop_id_external,
+    business_id: shopsTable.business_id,
+  })
     .from(shopsTable)
     .where(eq(shopsTable.user_id, s.user_id))
   const shopIds = shopRows.map(r => r.id)
   if (shopIds.length === 0) return null
 
-  const mpByShop = new Map<string, string>(shopRows.map(r => [r.id, r.marketplace]))
+  const shopInfo: ShopInfoMap = new Map(shopRows.map(r => [r.id, {
+    marketplace: r.marketplace,
+    shop_id_external: r.shop_id_external,
+    business_id: r.business_id,
+  }]))
 
   const parts: string[] = []
 
   // ── Daily summary (yesterday's sales) ──
   if (s.notif_daily_summary) {
-    const day = await buildSalesSummary(shopIds, mpByShop, 1, lang)
+    const day = await buildSalesSummary(shopIds, shopInfo, 1, lang)
     if (day) parts.push(`${t.dailyTitle}\n` + day)
 
-    const today = await buildSalesSummary(shopIds, mpByShop, 0, lang)
+    const today = await buildSalesSummary(shopIds, shopInfo, 0, lang)
     if (today) parts.push(`${t.todayTitle}\n` + today)
   }
 
   // ── Weekly report (last 7 days, Mondays only) ──
   if (s.notif_weekly_report && includeWeekly) {
-    const week = await buildSalesSummary(shopIds, mpByShop, 7, lang)
+    const week = await buildSalesSummary(shopIds, shopInfo, 7, lang)
     if (week) parts.push(`${t.weeklyTitle(7)}\n` + week)
   }
 
   // ── Pending deliveries (FBS orders the seller must ship) ──
   if (s.notif_daily_summary) {
-    const pending = await buildPendingDeliveries(shopIds, mpByShop, lang)
+    const pending = await buildPendingDeliveries(shopIds, shopInfo, lang)
     if (pending) parts.push(pending)
   }
 
   // ── FBS stock update alerts (tell user to update other stores) ──
   if (s.notif_daily_summary) {
     try {
-      const stockUpdate = await buildFbsStockUpdateAlerts(shopIds, mpByShop, s.user_id, lang)
+      const stockUpdate = await buildFbsStockUpdateAlerts(shopIds, shopInfo, s.user_id, lang)
       if (stockUpdate) parts.push(stockUpdate)
     } catch { /* best-effort */ }
   }
@@ -93,7 +125,7 @@ function truncate(s: string, max: number): string {
  */
 async function buildSalesSummary(
   shopIds: string[],
-  mpByShop: Map<string, string>,
+  shopInfo: ShopInfoMap,
   days: number,
   lang: NotifLang,
 ): Promise<string | null> {
@@ -159,7 +191,7 @@ async function buildSalesSummary(
   const withProduct = active.filter(o => nameOf(o) || skuOf(o))
   const lines: string[] = []
   for (const o of withProduct.slice(0, MAX_ITEMS)) {
-    const flag = MP_FLAG[mpByShop.get(o.shop_id) ?? 'uzum'] ?? ''
+    const flag = MP_FLAG[shopInfo.get(o.shop_id)?.marketplace ?? 'uzum'] ?? ''
     const name = nameOf(o)
     const sku = skuOf(o)
     const parts: string[] = [name || sku || '—']
@@ -174,6 +206,8 @@ async function buildSalesSummary(
     const priceStr = fmtPrice(linePrice)
     let line = `${flag} ${parts.join(' · ')}`.trim()
     if (priceStr) line += ` — ${priceStr}`
+    const ref = orderLink(shopInfo.get(o.shop_id), o.orderIdExternal)
+    if (ref) line += ` ${ref}`
     lines.push(line)
   }
   const remaining = withProduct.length - Math.min(withProduct.length, MAX_ITEMS)
@@ -183,7 +217,7 @@ async function buildSalesSummary(
     const uniqueCancelled = new Map<string, typeof cancelled[number]>()
     for (const c of cancelled) uniqueCancelled.set(c.orderId, c)
     for (const c of [...uniqueCancelled.values()].slice(0, MAX_ITEMS)) {
-      const flag = MP_FLAG[mpByShop.get(c.shop_id) ?? 'uzum'] ?? ''
+      const flag = MP_FLAG[shopInfo.get(c.shop_id)?.marketplace ?? 'uzum'] ?? ''
       const name = nameOf(c)
       const sku = skuOf(c)
       const parts: string[] = [name || sku || '—']
@@ -196,7 +230,8 @@ async function buildSalesSummary(
       const priceStr = fmtPrice(linePrice)
       let line = `${flag} ${parts.join(' · ')}`.trim()
       if (priceStr) line += ` — ${priceStr}`
-      const orderNum = c.orderIdExternal ? ` №${c.orderIdExternal}` : ''
+      const ref = orderLink(shopInfo.get(c.shop_id), c.orderIdExternal)
+      const orderNum = ref ? ` ${ref}` : ''
       lines.push(`🚫${orderNum} ${line}`)
     }
   }
@@ -214,7 +249,7 @@ async function buildSalesSummary(
  */
 async function buildPendingDeliveries(
   shopIds: string[],
-  mpByShop: Map<string, string>,
+  shopInfo: ShopInfoMap,
   lang: NotifLang,
 ): Promise<string | null> {
   const t = notifT(lang)
@@ -224,6 +259,7 @@ async function buildPendingDeliveries(
   // and its price, instead of a bare per-marketplace count.
   const rows = await db.select({
     orderId: ordersTable.id,
+    orderIdExternal: ordersTable.order_id_external,
     shop_id: ordersTable.shop_id,
     fulfillment_type: ordersTable.fulfillment_type,
     revenue: ordersTable.revenue,
@@ -262,7 +298,7 @@ async function buildPendingDeliveries(
   const MAX_ITEMS = 30
   const lines: string[] = []
   for (const o of fbs.slice(0, MAX_ITEMS)) {
-    const flag = MP_FLAG[mpByShop.get(o.shop_id) ?? 'uzum'] ?? ''
+    const flag = MP_FLAG[shopInfo.get(o.shop_id)?.marketplace ?? 'uzum'] ?? ''
     // Prefer the identity snapshotted on the order item; fall back to the
     // joined product row.
     const name = (o.itemTitle ?? o.title ?? '').trim()
@@ -277,6 +313,8 @@ async function buildPendingDeliveries(
     const priceStr = fmtPrice(linePrice)
     let line = `${flag} ${seg.join(' · ')}`.trim()
     if (priceStr) line += ` — ${priceStr}`
+    const ref = orderLink(shopInfo.get(o.shop_id), o.orderIdExternal)
+    if (ref) line += ` ${ref}`
     lines.push(line)
   }
   const remaining = fbs.length - Math.min(fbs.length, MAX_ITEMS)
@@ -296,7 +334,7 @@ async function buildPendingDeliveries(
  */
 async function buildFbsStockUpdateAlerts(
   shopIds: string[],
-  mpByShop: Map<string, string>,
+  _shopInfo: ShopInfoMap,
   userId: string,
   lang: NotifLang,
 ): Promise<string | null> {
