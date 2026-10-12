@@ -1254,7 +1254,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
           const missing = allOrds.filter(o => !hasItems.has(o.id as string))
           if (missing.length > 0) {
             await db.insert(orderItems).values(missing.map(o => {
-              const qty = o.items_count || 1
+              const qty = o.items_count ?? 1
               const rev = Number(o.revenue ?? 0)
               return {
                 order_id: o.id as string,

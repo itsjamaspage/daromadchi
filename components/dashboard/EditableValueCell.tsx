@@ -129,7 +129,7 @@ export default function EditableValueCell({
     )
   }
 
-  const hasValue = shown !== null && shown > 0
+  const hasValue = shown !== null
   const showMixed = mixed && shown === null
   const label = showMixed
     ? <span className="opacity-70">{mixedLabel ?? '—'}</span>
