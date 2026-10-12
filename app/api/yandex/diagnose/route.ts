@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, desc } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops } from '@/lib/db'
+import { stockWriteLog } from '@/lib/db/schema'
 import { decrypt } from '@/lib/crypto'
 import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
 import { YANDEX_API_BASE, fetchCampaignInfo } from '@/lib/yandex/client'
@@ -288,6 +289,29 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       campaignId,
       probes,
     }, { status: 200 })
+  }
+
+  // ── ?stocklog=1 — last 5 stock_write_log rows for this Yandex shop ──
+  if (params.get('stocklog') === '1') {
+    const rows = await db.select({
+      identifier:    stockWriteLog.identifier,
+      sku:           stockWriteLog.sku,
+      warehouse_id:  stockWriteLog.warehouse_id,
+      quantity:      stockWriteLog.quantity,
+      status:        stockWriteLog.status,
+      http_status:   stockWriteLog.http_status,
+      reason:        stockWriteLog.reason,
+      error:         stockWriteLog.error,
+      request_body:  stockWriteLog.request_body,
+      response_body: stockWriteLog.response_body,
+      created_at:    stockWriteLog.created_at,
+    })
+      .from(stockWriteLog)
+      .where(eq(stockWriteLog.shop_id, shop.id))
+      .orderBy(desc(stockWriteLog.created_at))
+      .limit(5)
+
+    return NextResponse.json({ ok: true, shop_id: shop.id, count: rows.length, rows })
   }
 
   if (orderId) {
