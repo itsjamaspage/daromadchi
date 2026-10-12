@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo, useCallback, Fragment } from 'react'
-import { Check, X, Pencil, ChevronRight, ChevronDown } from 'lucide-react'
+import { useState, useMemo, useCallback, useRef, Fragment } from 'react'
+import { Check, X, Pencil, ChevronRight, ChevronDown, Loader2 } from 'lucide-react'
 import ExportButton from './ExportButton'
 import FilterBar from './FilterBar'
 import FulfillmentBadge from './FulfillmentBadge'
@@ -154,35 +154,47 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
   const FbsCell = ({ value, productId }: { value: number | null; productId?: string }) => {
     const isEditingThis = productId != null && editingStockId === productId
+    const isSavingThis = stockSaving && stockFeedbackId === productId
+    const showSuccessHere = stockSuccess && stockFeedbackId === productId && !isEditingThis
+    const showErrorHere = stockError && stockFeedbackId === productId && !isEditingThis
     if (isEditingThis) {
       return (
-        <td className="px-5 py-4" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-end gap-1">
+        <td className="px-5 py-3" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-end gap-1.5">
             <input
+              ref={stockInputRef}
               type="number"
               min={0}
               value={stockValue}
               onChange={e => setStockValue(e.target.value)}
-              className="w-16 px-2 py-1 rounded text-sm text-right tabular-nums border focus:outline-none"
+              onFocus={e => e.target.select()}
+              className="w-20 px-2.5 py-1.5 rounded-lg text-sm text-right tabular-nums border-2 focus:outline-none transition-colors"
               style={{ background: 'var(--bg-card)', borderColor: 'var(--c1)', color: 'var(--text-base)' }}
               autoFocus
+              disabled={isSavingThis}
               onKeyDown={e => {
                 if (e.key === 'Enter' && productId) handleStockSave(productId, Number(stockValue) || 0)
                 if (e.key === 'Escape') setEditingStockId(null)
               }}
             />
-            <button
-              onClick={() => productId && handleStockSave(productId, Number(stockValue) || 0)}
-              disabled={stockSaving}
-              className="w-6 h-6 rounded flex items-center justify-center"
-              style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981' }}>
-              <Check className="w-3.5 h-3.5" />
-            </button>
+            {isSavingThis ? (
+              <span className="w-7 h-7 flex items-center justify-center">
+                <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'var(--c1)' }} />
+              </span>
+            ) : (
+              <button
+                onClick={() => productId && handleStockSave(productId, Number(stockValue) || 0)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-[rgba(16,185,129,0.2)]"
+                style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981' }}>
+                <Check className="w-4 h-4" />
+              </button>
+            )}
             <button
               onClick={() => setEditingStockId(null)}
-              className="w-6 h-6 rounded flex items-center justify-center"
-              style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
-              <X className="w-3.5 h-3.5" />
+              disabled={isSavingThis}
+              className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-[rgba(128,128,128,0.12)]"
+              style={{ color: 'var(--text-muted)' }}>
+              <X className="w-4 h-4" />
             </button>
           </div>
         </td>
@@ -191,16 +203,31 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     return (
       <td className="px-5 py-4 text-right tabular-nums group/fbscell"
         style={{ color: value == null ? 'var(--text-muted)' : value > 0 ? 'var(--text-base)' : '#ef4444' }}>
-        <span className="inline-flex items-center gap-1 cursor-pointer" onClick={e => {
-          if (productId == null) return
-          e.stopPropagation()
-          setEditingStockId(productId)
-          setStockValue(value ? String(value) : '')
-          setStockError(null)
-        }}>
-          {value == null ? '—' : value}
-          {productId != null && <Pencil className="w-3 h-3 opacity-40 sm:opacity-0 sm:group-hover/fbscell:opacity-40 transition-opacity" style={{ color: 'var(--text-muted)' }} />}
-        </span>
+        {showSuccessHere ? (
+          <span className="inline-flex items-center gap-1 text-sm animate-[fadeIn_0.2s_ease-out]" style={{ color: '#10b981' }}>
+            <Check className="w-3.5 h-3.5" /> {value ?? 0}
+          </span>
+        ) : showErrorHere ? (
+          <span className="inline-flex items-center gap-1 cursor-pointer animate-[fadeIn_0.2s_ease-out]"
+            onClick={() => { setStockError(null); setStockFeedbackId(null) }}>
+            <X className="w-3 h-3 shrink-0" style={{ color: '#ef4444' }} />
+            <span className="text-xs max-w-[160px] truncate" style={{ color: '#ef4444' }} title={stockError!}>
+              {lang === 'ru' ? 'Ошибка' : lang === 'uz' ? 'Xatolik' : 'Error'}
+            </span>
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 cursor-pointer" onClick={e => {
+            if (productId == null) return
+            e.stopPropagation()
+            setEditingStockId(productId)
+            setStockValue(value != null ? String(value) : '')
+            setStockError(null)
+            setStockFeedbackId(null)
+          }}>
+            {value == null ? '—' : value}
+            {productId != null && <Pencil className="w-3 h-3 opacity-40 sm:opacity-0 sm:group-hover/fbscell:opacity-40 transition-opacity" style={{ color: 'var(--text-muted)' }} />}
+          </span>
+        )}
       </td>
     )
   }
@@ -223,6 +250,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const [stockOptimistic, setStockOptimistic] = useState<Map<string, number>>(new Map())
   const [stockError, setStockError] = useState<string | null>(null)
   const [stockSuccess, setStockSuccess] = useState(false)
+  const [stockFeedbackId, setStockFeedbackId] = useState<string | null>(null)
+  const stockInputRef = useRef<HTMLInputElement>(null)
   const tp = translations[lang]?.dashboard ?? translations.ru.dashboard
   const toggleGroup = useCallback((key: string) => {
     setOpenGroups(prev => {
@@ -419,6 +448,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     setStockSaving(true)
     setStockError(null)
     setStockSuccess(false)
+    setStockFeedbackId(productId)
     try {
       const res = await fetch('/api/products/stock-update', {
         method: 'POST',
@@ -433,7 +463,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         } else {
           setStockOptimistic(prev => new Map(prev).set(productId, qty))
           setStockSuccess(true)
-          setTimeout(() => setStockSuccess(false), 3000)
+          setTimeout(() => { setStockSuccess(false); setStockFeedbackId(null) }, 2500)
         }
         router.refresh()
       } else {
@@ -665,6 +695,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                       {variants.map((v, j) => {
                         const meta = v.color ? colorMetaFor(v.color) : null
                         const isEditingThis = editingStockId === v.id
+                        const isSavingThis = stockSaving && stockFeedbackId === v.id
+                        const showSuccessHere = stockSuccess && stockFeedbackId === v.id && !isEditingThis
+                        const showErrorHere = stockError && stockFeedbackId === v.id && !isEditingThis
                         return (
                           <div key={j} className="flex items-center gap-1.5 text-xs group/stock">
                             {meta && (
@@ -673,40 +706,62 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                             )}
                             {v.sku && <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>{v.sku}</span>}
                             {isEditingThis ? (
-                              <div className="ml-auto flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                              <div className="ml-auto flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
                                 <input
+                                  ref={stockInputRef}
                                   type="number"
                                   min={0}
                                   value={stockValue}
                                   onChange={e => setStockValue(e.target.value)}
-                                  className="w-14 px-1.5 py-0.5 rounded text-xs text-right tabular-nums border focus:outline-none"
+                                  onFocus={e => e.target.select()}
+                                  className="w-16 px-2 py-1 rounded-md text-xs text-right tabular-nums border-2 focus:outline-none transition-colors"
                                   style={{ background: 'var(--bg-card)', borderColor: 'var(--c1)', color: 'var(--text-base)' }}
                                   autoFocus
+                                  disabled={isSavingThis}
                                   onKeyDown={e => {
                                     if (e.key === 'Enter') handleStockSave(v.id, Number(stockValue) || 0)
                                     if (e.key === 'Escape') setEditingStockId(null)
                                   }}
                                 />
-                                <button
-                                  onClick={() => handleStockSave(v.id, Number(stockValue) || 0)}
-                                  disabled={stockSaving}
-                                  className="w-5 h-5 rounded flex items-center justify-center"
-                                  style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981' }}>
-                                  <Check className="w-3 h-3" />
-                                </button>
+                                {isSavingThis ? (
+                                  <span className="w-5 h-5 flex items-center justify-center">
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: 'var(--c1)' }} />
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={() => handleStockSave(v.id, Number(stockValue) || 0)}
+                                    className="w-5 h-5 rounded-md flex items-center justify-center transition-colors hover:bg-[rgba(16,185,129,0.2)]"
+                                    style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981' }}>
+                                    <Check className="w-3 h-3" />
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => setEditingStockId(null)}
-                                  className="w-5 h-5 rounded flex items-center justify-center"
-                                  style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
+                                  disabled={isSavingThis}
+                                  className="w-5 h-5 rounded-md flex items-center justify-center transition-colors hover:bg-[rgba(128,128,128,0.12)]"
+                                  style={{ color: 'var(--text-muted)' }}>
                                   <X className="w-3 h-3" />
                                 </button>
                               </div>
+                            ) : showSuccessHere ? (
+                              <span className="ml-auto inline-flex items-center gap-1 animate-[fadeIn_0.2s_ease-out]" style={{ color: '#10b981' }}>
+                                <Check className="w-3 h-3" /> <span className="tabular-nums font-medium">{v.stock ?? 0}</span>
+                              </span>
+                            ) : showErrorHere ? (
+                              <span className="ml-auto inline-flex items-center gap-1 cursor-pointer animate-[fadeIn_0.2s_ease-out]"
+                                onClick={() => { setStockError(null); setStockFeedbackId(null) }}>
+                                <X className="w-3 h-3 shrink-0" style={{ color: '#ef4444' }} />
+                                <span className="text-[10px] max-w-[120px] truncate" style={{ color: '#ef4444' }} title={stockError!}>
+                                  {lang === 'ru' ? 'Ошибка' : lang === 'uz' ? 'Xatolik' : 'Error'}
+                                </span>
+                              </span>
                             ) : (
                               <span className="ml-auto flex items-center gap-1 shrink-0" onClick={e => {
                                 e.stopPropagation()
                                 setEditingStockId(v.id)
-                                setStockValue(v.stock ? String(v.stock) : '')
+                                setStockValue(v.stock != null ? String(v.stock) : '')
                                 setStockError(null)
+                                setStockFeedbackId(null)
                               }}>
                                 <span className="tabular-nums font-medium"
                                   style={{ color: v.stock != null && v.stock > 0 ? 'var(--text-base)' : v.stock === 0 ? '#ef4444' : 'var(--text-muted)' }}>
@@ -804,22 +859,13 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         countLabel={d.productCount}
       />
 
-      {(stockError || stockSuccess) && (
+      {stockError && stockFeedbackId && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-[90vw] animate-[slideUpIn_0.25s_ease-out]">
-          {stockError && (
-            <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl border shadow-lg"
-              style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'var(--bg-card)', color: '#ef4444' }}>
-              <X className="w-4 h-4 shrink-0 cursor-pointer" onClick={() => setStockError(null)} />
-              {lang === 'ru' ? 'Ошибка обновления остатка' : lang === 'uz' ? 'Zaxirani yangilashda xatolik' : 'Stock update error'}: {stockError}
-            </div>
-          )}
-          {stockSuccess && (
-            <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl border shadow-lg"
-              style={{ borderColor: 'rgba(16,185,129,0.3)', background: 'var(--bg-card)', color: '#10b981' }}>
-              <Check className="w-4 h-4 shrink-0" />
-              {lang === 'ru' ? 'Остаток обновлён' : lang === 'uz' ? 'Zaxira yangilandi' : 'Stock updated'}
-            </div>
-          )}
+          <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl border shadow-lg"
+            style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'var(--bg-card)', color: '#ef4444' }}>
+            <X className="w-4 h-4 shrink-0 cursor-pointer" onClick={() => { setStockError(null); setStockFeedbackId(null) }} />
+            <span className="max-w-xs">{stockError}</span>
+          </div>
         </div>
       )}
 

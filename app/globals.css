@@ -315,6 +315,10 @@ h1, h2, h3, h4, h5, h6 {
   from { opacity: 0; transform: translateY(32px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 /* Tier tabs: the selected plan's detail panel drops into view, the way the
    reference carousel slides its content down. Scoped to this one class with its
    own reduced-motion guard — the stylesheet has no global
