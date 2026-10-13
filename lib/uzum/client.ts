@@ -424,6 +424,76 @@ export async function fetchUzumFbsStatusEnum(token: string): Promise<string[] | 
   }
 }
 
+// ─── Return invoices (GET /v1/shop/{shopId}/return) ─────────────────────────
+// Warehouse pickup dashboard: which items are waiting for the seller to collect.
+// Uzum holds returned/defected products at their warehouse (e.g. Sergeli) and
+// the seller has a time-slotted window to pick them up before storage fees kick in.
+
+export interface UzumReturnLite {
+  id: number
+  dateCreated: string
+  status: 'CREATED' | 'IN_TRANSIT' | 'READY_TO_PICK' | 'PICKED' | 'EXPIRED' | 'CANCELLED'
+  stock?: { title?: string; address?: string }
+  timeSlotReservation?: {
+    timeSlotId?: number
+    startTime?: string
+    endTime?: string
+    status?: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'EXPIRED'
+  }
+  paidStorage?: { startDate?: string; endDate?: string; dailyRate?: number }
+  type?: 'DEFECTED' | 'RETURN' | 'FBS'
+}
+
+export interface UzumReturnItem {
+  skuId: number
+  amount: number
+  packedAmount: number
+  skuTitle?: string
+  productTitle?: string
+  purchasePrice?: number
+}
+
+export interface UzumReturnDetail extends UzumReturnLite {
+  returnItems: UzumReturnItem[]
+}
+
+export async function fetchReturnInvoices(
+  token: string,
+  shopId: number,
+  page = 0,
+  size = 50,
+): Promise<UzumReturnLite[]> {
+  return withRetry(async () => {
+    const params = new URLSearchParams({ page: String(page), size: String(size) })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const j = await request<any>(`/v1/shop/${shopId}/return?${params}`, token)
+    if (Array.isArray(j)) return j
+    const arr = j?.payload ?? j?.data ?? j?.returns ?? j?.content
+    if (Array.isArray(arr)) return arr
+    for (const v of Object.values(j ?? {})) {
+      if (Array.isArray(v)) return v as UzumReturnLite[]
+    }
+    return []
+  })
+}
+
+export async function fetchReturnDetail(
+  token: string,
+  shopId: number,
+  returnId: number,
+): Promise<UzumReturnDetail | null> {
+  return withRetry(async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const j = await request<any>(`/v1/shop/${shopId}/return/${returnId}`, token)
+    const detail = j?.payload ?? j ?? null
+    if (!detail || typeof detail !== 'object') return null
+    return {
+      ...detail,
+      returnItems: Array.isArray(detail.returnItems) ? detail.returnItems : [],
+    } as UzumReturnDetail
+  })
+}
+
 // ─── FBS invoices (GET /v1/invoice) ──────────────────────────────────────────
 // Proven readable (HTTP 200) on an account whose fresh orders are hidden from
 // /v2/fbs/orders — a not-yet-shipped FBS order lives here. The response shape

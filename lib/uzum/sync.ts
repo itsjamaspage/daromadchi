@@ -1,5 +1,5 @@
 import { eq, ne, and, inArray, count, sql } from 'drizzle-orm'
-import { db, shops, products, orders, orderItems, syncDays } from '@/lib/db'
+import { db, shops, products, orders, orderItems, syncDays, returnInvoices, returnInvoiceItems } from '@/lib/db'
 import { clearShopData } from '@/lib/db/clear-shop-data'
 import { uzumStockQuantity } from './stock-reading'
 import { selectCancellationAlerts } from '@/lib/marketplace/cancellation-alert'
@@ -13,6 +13,8 @@ import {
   fetchUzumInvoices,
   discoverUzumFinancePaths,
   fetchUzumFinanceData,
+  fetchReturnInvoices,
+  fetchReturnDetail,
   UzumApiError,
   type UzumFbsOrder,
   type UzumFbsOrderItem,
@@ -1405,6 +1407,79 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
       }
     } catch (e) {
       debug.financeError = String(e).slice(0, 200)
+    }
+
+    // ── Return invoices (warehouse pickup tracking) ──────────────────────────
+    // Sync return invoices so the seller knows which items to collect from Uzum
+    // warehouses (Sergeli etc.). Best-effort: a failure here must not block the
+    // rest of the sync.
+    try {
+      let returnsSynced = 0
+      for (const uzumShopId of uzumShopIds) {
+        const returns = await fetchReturnInvoices(token, uzumShopId)
+        if (returns.length === 0) continue
+
+        for (const r of returns) {
+          const [row] = await db.insert(returnInvoices).values({
+            shop_id: shopId,
+            return_id_external: r.id,
+            status: r.status,
+            warehouse_name: r.stock?.title ?? null,
+            warehouse_address: r.stock?.address ?? null,
+            pickup_start: r.timeSlotReservation?.startTime ? new Date(r.timeSlotReservation.startTime) : null,
+            pickup_end: r.timeSlotReservation?.endTime ? new Date(r.timeSlotReservation.endTime) : null,
+            pickup_status: r.timeSlotReservation?.status ?? null,
+            storage_daily_rate: r.paidStorage?.dailyRate != null ? String(r.paidStorage.dailyRate) : null,
+            storage_start: r.paidStorage?.startDate ? new Date(r.paidStorage.startDate) : null,
+            storage_end: r.paidStorage?.endDate ? new Date(r.paidStorage.endDate) : null,
+            type: r.type ?? null,
+            date_created: r.dateCreated ? new Date(r.dateCreated) : null,
+            synced_at: new Date(),
+          }).onConflictDoUpdate({
+            target: [returnInvoices.shop_id, returnInvoices.return_id_external],
+            set: {
+              status: r.status,
+              warehouse_name: r.stock?.title ?? null,
+              warehouse_address: r.stock?.address ?? null,
+              pickup_start: r.timeSlotReservation?.startTime ? new Date(r.timeSlotReservation.startTime) : null,
+              pickup_end: r.timeSlotReservation?.endTime ? new Date(r.timeSlotReservation.endTime) : null,
+              pickup_status: r.timeSlotReservation?.status ?? null,
+              storage_daily_rate: r.paidStorage?.dailyRate != null ? String(r.paidStorage.dailyRate) : null,
+              storage_start: r.paidStorage?.startDate ? new Date(r.paidStorage.startDate) : null,
+              storage_end: r.paidStorage?.endDate ? new Date(r.paidStorage.endDate) : null,
+              type: r.type ?? null,
+              synced_at: new Date(),
+            },
+          }).returning({ id: returnInvoices.id })
+
+          if (!row) continue
+
+          // Fetch detail for items on non-terminal invoices
+          if (r.status !== 'PICKED' && r.status !== 'CANCELLED') {
+            try {
+              const detail = await fetchReturnDetail(token, uzumShopId, r.id)
+              if (detail?.returnItems?.length) {
+                await db.delete(returnInvoiceItems).where(eq(returnInvoiceItems.return_invoice_id, row.id))
+                await db.insert(returnInvoiceItems).values(
+                  detail.returnItems.map(item => ({
+                    return_invoice_id: row.id,
+                    sku_id_external: item.skuId,
+                    sku_title: item.skuTitle ?? null,
+                    product_title: item.productTitle ?? null,
+                    amount: item.amount ?? 0,
+                    packed_amount: item.packedAmount ?? 0,
+                    purchase_price: item.purchasePrice != null ? String(item.purchasePrice) : null,
+                  })),
+                )
+              }
+            } catch { /* detail fetch is best-effort */ }
+          }
+          returnsSynced++
+        }
+      }
+      if (returnsSynced > 0) debug.returnInvoicesSynced = String(returnsSynced)
+    } catch (e) {
+      debug.returnInvoicesError = String(e).slice(0, 200)
     }
 
     // ── Update sync metadata ──────────────────────────────────────────────────
