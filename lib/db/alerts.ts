@@ -30,50 +30,49 @@ export const getStockAlerts = cache(async function getStockAlerts(): Promise<Sto
     shopInfo.set(s.id, { marketplace: s.marketplace, warehouseId: s.warehouse_id })
   }
 
-  const productRows = await db.select({
-    id: products.id,
-    title: products.title,
-    sku: products.sku,
-    stock_quantity: products.stock_quantity,
-    physical_stock: products.physical_stock,
-    shop_id: products.shop_id,
-    fulfillment_type: products.fulfillment_type,
-    variant_group_key: products.variant_group_key,
-    variant_color: products.variant_color,
-  }).from(products).where(and(
-    inArray(products.shop_id, shopIds),
-    // Archived listings aren't sellable stock — exclude them so a dead/archived
-    // product (e.g. a discontinued SKU) never surfaces as a "critical" alert.
-    // Matches computeStockGroups, which already filters is_archived.
-    eq(products.is_archived, false),
-  ))
-
-  if (productRows.length === 0) return []
-
   const since30 = new Date()
   since30.setDate(since30.getDate() - 30)
-  const productIds = productRows.map(p => p.id)
 
-  const salesMap = new Map<string, number>()
-  const inTransitMap = new Map<string, number>()
-  try {
-    const salesRows = await db.select({
+  const [productRows, salesRows] = await Promise.all([
+    db.select({
+      id: products.id,
+      title: products.title,
+      sku: products.sku,
+      stock_quantity: products.stock_quantity,
+      physical_stock: products.physical_stock,
+      shop_id: products.shop_id,
+      fulfillment_type: products.fulfillment_type,
+      variant_group_key: products.variant_group_key,
+      variant_color: products.variant_color,
+    }).from(products).where(and(
+      inArray(products.shop_id, shopIds),
+      eq(products.is_archived, false),
+    )),
+    db.select({
       product_id: orderItems.product_id,
       total_qty: sql<number>`COALESCE(SUM(${orderItems.quantity}), 0)`,
       in_transit: sql<number>`COALESCE(SUM(CASE WHEN ${orders.status} IN ('pending','confirmed') THEN ${orderItems.quantity} ELSE 0 END), 0)`,
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
+      .innerJoin(products, eq(orderItems.product_id, products.id))
       .where(and(
-        inArray(orderItems.product_id, productIds),
+        inArray(products.shop_id, shopIds),
+        eq(products.is_archived, false),
         gte(orders.ordered_at, since30),
       ))
       .groupBy(orderItems.product_id)
-    for (const row of salesRows) {
-      if (!row.product_id) continue
-      salesMap.set(row.product_id, row.total_qty)
-      if (row.in_transit > 0) inTransitMap.set(row.product_id, row.in_transit)
-    }
-  } catch { /* best-effort */ }
+      .catch(() => [] as { product_id: string | null; total_qty: number; in_transit: number }[]),
+  ])
+
+  if (productRows.length === 0) return []
+
+  const salesMap = new Map<string, number>()
+  const inTransitMap = new Map<string, number>()
+  for (const row of salesRows) {
+    if (!row.product_id) continue
+    salesMap.set(row.product_id, row.total_qty)
+    if (row.in_transit > 0) inTransitMap.set(row.product_id, row.in_transit)
+  }
 
   // Group by normalized SKU (same rule as lib/db/products.ts) so shared
   // listings across marketplaces surface a consistent "physical total".

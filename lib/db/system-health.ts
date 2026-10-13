@@ -75,19 +75,22 @@ export async function getSystemHealth(): Promise<SystemHealth> {
        ORDER BY s.marketplace, s.name
     `),
     db.execute(sql`
-      SELECT s.marketplace, p.sku, p.physical_stock,
-             (SELECT max(p2.physical_stock)
-                FROM products p2 JOIN shops s2 ON s2.id = p2.shop_id
-               WHERE s2.id IN (${idList})
-                 AND p2.sku = p.sku) AS group_max
-        FROM products p JOIN shops s ON s.id = p.shop_id
+      WITH sku_max AS (
+        SELECT p.sku, max(p.physical_stock) AS group_max
+          FROM products p
+         WHERE p.shop_id IN (${idList})
+           AND p.is_archived = false
+           AND p.physical_stock IS NOT NULL
+         GROUP BY p.sku
+      )
+      SELECT s.marketplace, p.sku, p.physical_stock, sm.group_max
+        FROM products p
+        JOIN shops s ON s.id = p.shop_id
+        JOIN sku_max sm ON sm.sku = p.sku
        WHERE p.shop_id IN (${idList})
          AND p.is_archived = false
          AND p.physical_stock IS NOT NULL
-         AND p.physical_stock < (SELECT max(p2.physical_stock)
-                                   FROM products p2 JOIN shops s2 ON s2.id = p2.shop_id
-                                  WHERE s2.id IN (${idList})
-                                    AND p2.sku = p.sku)
+         AND p.physical_stock < sm.group_max
        ORDER BY p.sku, s.marketplace
     `),
     userId
