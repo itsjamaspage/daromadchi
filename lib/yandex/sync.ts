@@ -694,10 +694,7 @@ async function syncFromYandexLocked(
           }]),
       )
 
-      // Skip orders first seen already cancelled — these are auto-cancelled by
-      // Yandex (buyer never paid, payment failed) and the seller never needed to
-      // act on them. The API returns them but the seller panel hides them.
-      const toInsert = orderRows.filter(r => !existingOrderMap.has(r.order_id_external) && r.status !== 'cancelled')
+      const toInsert = orderRows.filter(r => !existingOrderMap.has(r.order_id_external))
       const toUpdate = orderRows.filter(r => existingOrderMap.has(r.order_id_external))
       ordersInserted = toInsert.length
 

@@ -1155,6 +1155,44 @@ export const suggestedProductGroups = pgTable('suggested_product_groups', {
   index('suggested_product_groups_user_status_idx').on(t.user_id, t.status),
 ])
 
+/* ── 33. return_invoices ────────────────────────────────────────────────────── */
+// Return invoices from Uzum warehouses (Sergeli etc.). Tracks items the seller
+// needs to pick up, their pickup window, and storage fees.
+
+export const returnInvoices = pgTable('return_invoices', {
+  id:                  uuid('id').primaryKey().defaultRandom(),
+  shop_id:             uuid('shop_id').notNull().references(() => shops.id, { onDelete: 'cascade' }),
+  return_id_external:  integer('return_id_external').notNull(),
+  status:              text('status').notNull().default('CREATED'),
+  warehouse_name:      text('warehouse_name'),
+  warehouse_address:   text('warehouse_address'),
+  pickup_start:        timestamp('pickup_start', { withTimezone: true }),
+  pickup_end:          timestamp('pickup_end', { withTimezone: true }),
+  pickup_status:       text('pickup_status'),
+  storage_daily_rate:  numeric('storage_daily_rate', { precision: 14, scale: 2 }),
+  storage_start:       timestamp('storage_start', { withTimezone: true }),
+  storage_end:         timestamp('storage_end', { withTimezone: true }),
+  type:                text('type'),
+  date_created:        timestamp('date_created', { withTimezone: true }),
+  synced_at:           timestamp('synced_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('return_invoices_shop_ext_unique').on(t.shop_id, t.return_id_external),
+  index('return_invoices_shop_status_idx').on(t.shop_id, t.status),
+])
+
+export const returnInvoiceItems = pgTable('return_invoice_items', {
+  id:                uuid('id').primaryKey().defaultRandom(),
+  return_invoice_id: uuid('return_invoice_id').notNull().references(() => returnInvoices.id, { onDelete: 'cascade' }),
+  sku_id_external:   integer('sku_id_external').notNull(),
+  sku_title:         text('sku_title'),
+  product_title:     text('product_title'),
+  amount:            integer('amount').notNull().default(0),
+  packed_amount:     integer('packed_amount').notNull().default(0),
+  purchase_price:    numeric('purchase_price', { precision: 14, scale: 2 }),
+}, (t) => [
+  index('return_invoice_items_invoice_idx').on(t.return_invoice_id),
+])
+
 /* ── 34. stock_ledger ─────────────────────────────────────────────────────── */
 // Event-sourced on-hand ledger for the FBS shared pool. Root-cause fix: nothing
 // ever debited products.physical_stock on a sale — it only mirrored each
