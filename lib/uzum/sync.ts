@@ -732,10 +732,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
         .from(orders).where(and(eq(orders.shop_id, shopId), inArray(orders.order_id_external, extIds)))
       const existingOrdMap = new Map(existingOrds.map(o => [o.order_id_external, o.id]))
 
-      // Skip orders first seen already cancelled — auto-cancelled by the
-      // marketplace (buyer never paid, etc.). The seller never needed to act
-      // on them and the marketplace panel hides them.
-      const toInsOrd = orderRows.filter(r => !existingOrdMap.has(r.order_id_external) && r.status !== 'cancelled')
+      const toInsOrd = orderRows.filter(r => !existingOrdMap.has(r.order_id_external))
       const toUpdOrd = orderRows.filter(r => existingOrdMap.has(r.order_id_external))
       ordersInserted = toInsOrd.length
 
