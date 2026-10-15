@@ -312,9 +312,9 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
       const r = find(i)
       const ex = byRoot.get(r)
       if (!ex) {
-        byRoot.set(r, { key: `grp:${r}`, title: p.title, sku: p.sku, variant_color: p.variant_color, qty: p.qty_sold, revenue: p.revenue, marketplaces: new Set(p.marketplace ? [p.marketplace] : []), colors: [], colorSet: new Set(p.variant_color ? [p.variant_color] : []), repRevenue: p.revenue })
+        byRoot.set(r, { key: `grp:${r}`, title: p.title, sku: p.sku, variant_color: p.variant_color, qty: p.qty_sold + p.qty_in_transit, revenue: p.revenue, marketplaces: new Set(p.marketplace ? [p.marketplace] : []), colors: [], colorSet: new Set(p.variant_color ? [p.variant_color] : []), repRevenue: p.revenue })
       } else {
-        ex.qty += p.qty_sold
+        ex.qty += p.qty_sold + p.qty_in_transit
         ex.revenue += p.revenue
         if (p.marketplace) ex.marketplaces.add(p.marketplace)
         if (p.variant_color) ex.colorSet.add(p.variant_color)

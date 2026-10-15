@@ -229,12 +229,7 @@ const _fetchProductSales = unstable_cache(
       qty_in_transit: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} in ('pending','confirmed')), 0)`.as('qty_in_transit'),
       qty_cancelled: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'cancelled'), 0)`.as('qty_cancelled'),
       qty_returned: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'returned'), 0)`.as('qty_returned'),
-      // Revenue = COMPLETED sales only (delivered). Excludes cancelled/returned
-      // AND still-in-process (pending/confirmed), matching the delivered-only
-      // rule. qty_sold below already resolves to delivered units on its own
-      // (its broader filter minus qty_in_transit = delivered), so only the
-      // money figure needed tightening here.
-      revenue: sql<number>`coalesce(sum(${orderItems.quantity} * ${orderItems.price_per_unit}) filter (where ${orders.status} = 'delivered'), 0)`.as('revenue'),
+      revenue: sql<number>`coalesce(sum(${orderItems.quantity} * ${orderItems.price_per_unit}) filter (where ${orders.status} not in ('cancelled','returned')), 0)`.as('revenue'),
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .leftJoin(products, eq(orderItems.product_id, products.id))

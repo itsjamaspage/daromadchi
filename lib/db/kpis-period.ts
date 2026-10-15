@@ -28,20 +28,20 @@ import { sumEconomics, marginAfterCommission } from '@/lib/money/order-economics
 
 export async function fetchPeriodKpis(shopIds: string[], since: Date | null, until: Date | null) {
   // Orders KPI counts EVERY order received (a cancelled order still happened);
-  // money figures recognize revenue on DELIVERY only — accrual basis, matching
-  // the P&L page (Finding 1). An in-transit or pending order has not earned
-  // anything yet, and a cancelled/returned order never will.
+  // revenue counts all non-cancelled/non-returned orders (including in-transit)
+  // so a seller sees what they sold, not just what was delivered. Profit stays
+  // delivered-only via loadOrderInputs.
   const conditions = [
     inArray(orders.shop_id, shopIds),
   ]
   if (since) conditions.push(gte(orders.ordered_at, since))
   if (until) conditions.push(lte(orders.ordered_at, until))
 
-  // COGS aggregated over DELIVERED orders in the same period so the Dashboard's
-  // Чистая прибыль matches P&L / Payouts' "after everything" figure.
+  // COGS aggregated over DELIVERED orders (via loadOrderInputs) so the
+  // profit figure matches P&L / Payouts.
   const [orderAgg, unitAgg, missingCostAgg] = await Promise.all([
     db.select({
-      total_revenue: sql<number>`coalesce(sum(${orders.revenue}::numeric) filter (where ${orders.status} = 'delivered'), 0)`,
+      total_revenue: sql<number>`coalesce(sum(${orders.revenue}::numeric) filter (where ${orders.status} not in ('cancelled','returned')), 0)`,
       total_orders: sql<number>`count(*)`,
       cancelled_orders: sql<number>`count(*) filter (where ${orders.status} = 'cancelled')`,
       // Returned orders. Counted as ORDERS, not units, and that is a limit of the
@@ -69,7 +69,7 @@ export async function fetchPeriodKpis(shopIds: string[], since: Date | null, unt
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .leftJoin(products, eq(orderItems.product_id, products.id))
-      .where(and(...conditions, sql`${orders.status} = 'delivered'`, sql`${products.cost_price} is null`)),
+      .where(and(...conditions, sql`${orders.status} not in ('cancelled','returned')`, sql`${products.cost_price} is null`)),
   ])
 
   const revenue = Number(orderAgg[0]?.total_revenue ?? 0)
