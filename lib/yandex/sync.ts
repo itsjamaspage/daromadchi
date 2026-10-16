@@ -1128,10 +1128,12 @@ async function syncFromYandexLocked(
         .from(products).where(eq(products.shop_id, shopId))
       const skuMap = new Map<string, string>()
       const titleMap = new Map<string, string>()
+      const productSkuById = new Map<string, string>()
       for (const p of dbProducts) {
         if (p.sku) skuMap.set(p.sku as string, p.id as string)
         if (p.marketplace_product_id) skuMap.set(p.marketplace_product_id as string, p.id as string)
         if (p.title) titleMap.set(p.title as string, p.id as string)
+        if (p.sku) productSkuById.set(p.id as string, p.sku as string)
       }
       for (const [shopSku, marketSkuStr] of shopSkuToMarketSku) {
         const shopSkuStr = String(shopSku)
@@ -1163,8 +1165,18 @@ async function syncFromYandexLocked(
           const offerIdStr = String(it.offerId)
           let productId = skuMap.get(offerIdStr) ?? null
           if (!productId && it.offerName) {
-            productId = titleMap.get(it.offerName) ?? null
-            if (productId) titleMatchBackfill.set(productId, offerIdStr)
+            const candidate = titleMap.get(it.offerName) ?? null
+            if (candidate) {
+              const existingSku = productSkuById.get(candidate)
+              // Accept the title match only when the SKUs don't contradict:
+              // if both the order item and the product carry distinct SKUs and
+              // they disagree, the match is wrong (e.g. colour variants that
+              // share a title but differ by SKU suffix).
+              if (!offerIdStr || !existingSku || existingSku === offerIdStr) {
+                productId = candidate
+                titleMatchBackfill.set(productId, offerIdStr)
+              }
+            }
           }
           itemRows.push({
             order_id:       dbOrderId,
