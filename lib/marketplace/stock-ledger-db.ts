@@ -111,6 +111,48 @@ export async function appendOrderDriven(
 }
 
 /**
+ * Append a manual stock edit to the ledger — the seller changed the ostatok via
+ * the inline editor. Unlike appendManualCredit (drift adoption, increases only),
+ * this handles both positive AND negative deltas so a seller can lower stock too.
+ * A delta of 0 is a no-op.
+ */
+export async function appendManualStockEdit(
+  userId: string,
+  matchKey: string,
+  delta: number,
+  note: string,
+): Promise<void> {
+  if (delta === 0) return
+  await db.insert(stockLedger).values({
+    user_id: userId, match_key: matchKey, delta, reason: 'manual',
+    order_id_external: null, marketplace: null, note,
+  })
+}
+
+/**
+ * Read ledger events for a single match key (cheaper than the full-user read
+ * when only one group is needed, e.g. a manual stock edit).
+ */
+export async function readLedgerEventsForKey(
+  userId: string,
+  matchKey: string,
+): Promise<LedgerEvent[]> {
+  const rows = await db.select({
+    delta: stockLedger.delta,
+    reason: stockLedger.reason,
+    order_id_external: stockLedger.order_id_external,
+  }).from(stockLedger).where(and(
+    eq(stockLedger.user_id, userId),
+    eq(stockLedger.match_key, matchKey),
+  ))
+  return rows.map(r => ({
+    delta: r.delta,
+    reason: r.reason as LedgerReason,
+    orderIdExternal: r.order_id_external,
+  }))
+}
+
+/**
  * Append a manual drift credit (spec §5). Increases only — the caller computes
  * the delta with `driftCredit` (0 when there is nothing to adopt) and this is a
  * hard no-op for anything ≤ 0, so a decrease can never reach the ledger here.

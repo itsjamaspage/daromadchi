@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidateTag } from 'next/cache'
 import { eq, and, inArray } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
-import { db, shops, products } from '@/lib/db'
+import { db, shops, products, productGroupMerges } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
 import { pushStock } from '@/lib/marketplace/stock-writer'
 import { backfillShopIdentifiers } from '@/lib/marketplace/identifier-backfill'
 import { decrypt } from '@/lib/crypto'
 import { fetchAllUzumSkuStocks } from '@/lib/uzum/client'
+import { buildKeyResolver, matchKeyForProduct } from '@/lib/db/group-key'
+import { readLedgerEventsForKey, isSeeded, appendManualStockEdit } from '@/lib/marketplace/stock-ledger-db'
+import { ledgerOnHand } from '@/lib/marketplace/stock-ledger'
+import { syncStockSyncGroups } from '@/lib/marketplace/stock-sync'
+import { logger } from '@/lib/logger'
 import type { MarketplaceType } from '@/lib/types'
 
 export const runtime = 'nodejs'
@@ -125,9 +130,59 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   })
 
   if (result.status === 'sent') {
+    const newQty = result.quantity
+
+    // Update this product: stock_quantity, stock_override, AND physical_stock.
+    // physical_stock is the pool the automated sync uses — without updating it,
+    // the next sync run computes MAX(stale physical_stock) and reverts the edit.
     await db.update(products)
-      .set({ stock_quantity: result.quantity, stock_override: result.quantity })
+      .set({ stock_quantity: newQty, stock_override: newQty, physical_stock: newQty })
       .where(eq(products.id, product.id))
+
+    // Propagate to same-group siblings and adjust the ledger so the automated
+    // sync never overwrites this manual edit.
+    const mergeRows = await db.select({
+      source_key: productGroupMerges.source_key,
+      target_key: productGroupMerges.target_key,
+    }).from(productGroupMerges).where(eq(productGroupMerges.user_id, user.id))
+    const resolveKey = buildKeyResolver(mergeRows)
+    const matchKey = matchKeyForProduct(product.sku, product.id, resolveKey)
+
+    // Update physical_stock on all group siblings (same SKU, other shops) so
+    // MAX(physical_stock) across the group reflects the new value.
+    const allUserProducts = await db.select({ id: products.id, sku: products.sku })
+      .from(products)
+      .where(inArray(products.shop_id, shopIds))
+    const siblingIds = allUserProducts
+      .filter(p => p.id !== product.id && matchKeyForProduct(p.sku, p.id, resolveKey) === matchKey)
+      .map(p => p.id)
+    if (siblingIds.length > 0) {
+      await db.update(products)
+        .set({ physical_stock: newQty })
+        .where(inArray(products.id, siblingIds))
+    }
+
+    // Adjust the ledger: for FBS groups the sync uses on_hand (not physical_stock),
+    // so the ledger must also reflect the manual edit.
+    const events = await readLedgerEventsForKey(user.id, matchKey)
+    if (isSeeded(events)) {
+      const currentOnHand = ledgerOnHand(events)
+      const delta = newQty - currentOnHand
+      if (delta !== 0) {
+        await appendManualStockEdit(
+          user.id, matchKey, delta,
+          `manual_edit qty=${newQty} prev_on_hand=${currentOnHand}`,
+        )
+      }
+    }
+
+    // Fire-and-forget: run a targeted sync for this group to push the new value
+    // to the other marketplace immediately (instead of waiting for the next cron).
+    syncStockSyncGroups({ userId: user.id, onlyMatchKey: matchKey })
+      .catch(err => logger.warn('manual_edit_cross_sync_failed', {
+        productId: product.id, error: String(err).slice(0, 200),
+      }))
+
     revalidateTag('product-data', { expire: 0 })
   }
 
