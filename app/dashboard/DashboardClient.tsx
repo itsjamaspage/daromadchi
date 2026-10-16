@@ -286,7 +286,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
   // additionally covers rows that carry no variant_group_key. Rows with neither
   // key stay individual. Sorted by revenue so it's actually "top", capped at 5.
   const topProducts = useMemo(() => {
-    type Row = { key: string; title: string; sku: string | null; variant_color: string | null; qty: number; revenue: number; marketplaces: Set<MarketplaceType>; colors: string[] }
+    type Row = { key: string; title: string; sku: string | null; variant_color: string | null; qty: number; cancelled: number; revenue: number; marketplaces: Set<MarketplaceType>; colors: string[] }
     const norm = (s: string | null) => { const t = s?.trim().toLowerCase(); return t && t.length ? t : null }
 
     // Union-find over row indices: union any two rows sharing a SKU or a group.
@@ -312,9 +312,10 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
       const r = find(i)
       const ex = byRoot.get(r)
       if (!ex) {
-        byRoot.set(r, { key: `grp:${r}`, title: p.title, sku: p.sku, variant_color: p.variant_color, qty: p.qty_sold + p.qty_in_transit, revenue: p.revenue, marketplaces: new Set(p.marketplace ? [p.marketplace] : []), colors: [], colorSet: new Set(p.variant_color ? [p.variant_color] : []), repRevenue: p.revenue })
+        byRoot.set(r, { key: `grp:${r}`, title: p.title, sku: p.sku, variant_color: p.variant_color, qty: p.qty_sold + p.qty_in_transit, cancelled: p.qty_cancelled, revenue: p.revenue, marketplaces: new Set(p.marketplace ? [p.marketplace] : []), colors: [], colorSet: new Set(p.variant_color ? [p.variant_color] : []), repRevenue: p.revenue })
       } else {
         ex.qty += p.qty_sold + p.qty_in_transit
+        ex.cancelled += p.qty_cancelled
         ex.revenue += p.revenue
         if (p.marketplace) ex.marketplaces.add(p.marketplace)
         if (p.variant_color) ex.colorSet.add(p.variant_color)
@@ -322,7 +323,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
       }
     })
     return [...byRoot.values()]
-      .map((r): Row => ({ key: r.key, title: r.title, sku: r.sku, variant_color: r.variant_color, qty: r.qty, revenue: r.revenue, marketplaces: r.marketplaces, colors: [...r.colorSet] }))
+      .map((r): Row => ({ key: r.key, title: r.title, sku: r.sku, variant_color: r.variant_color, qty: r.qty, cancelled: r.cancelled, revenue: r.revenue, marketplaces: r.marketplaces, colors: [...r.colorSet] }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
   }, [productSales])
@@ -672,9 +673,13 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                         </p>
                       </td>
                       <td className="py-3 pr-4 text-right">
-                        <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-medium text-xs`}>{formatSum(p.revenue)}</span>
+                        {p.qty === 0 && p.revenue === 0 && p.cancelled > 0
+                          ? <span className={`${isDark ? 'text-red-400' : 'text-red-600'} font-medium text-xs`}>{t.status.cancelled}</span>
+                          : <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-medium text-xs`}>{formatSum(p.revenue)}</span>}
                       </td>
-                      <td className="py-3 text-right text-[var(--text-dim)] text-xs">{p.qty}</td>
+                      <td className="py-3 text-right text-[var(--text-dim)] text-xs">
+                        {p.qty === 0 && p.revenue === 0 && p.cancelled > 0 ? '' : p.qty}
+                      </td>
                     </tr>
                   ))
                   : [...allProducts].sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0)).slice(0, 5).map(p => (
