@@ -458,13 +458,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       const data = await res.json()
       if (data.ok) {
         setEditingStockId(null)
-        if (data.verified === false) {
-          setStockError(data.reason ?? 'Запрос отправлен, но маркетплейс не подтвердил изменение.')
-        } else {
-          setStockOptimistic(prev => new Map(prev).set(productId, qty))
-          setStockSuccess(true)
-          setTimeout(() => { setStockSuccess(false); setStockFeedbackId(null) }, 2500)
-        }
+        setStockOptimistic(prev => new Map(prev).set(productId, qty))
+        setStockSuccess(true)
+        setTimeout(() => { setStockSuccess(false); setStockFeedbackId(null) }, 2500)
         router.refresh()
       } else {
         setStockError(data.reason ?? data.error ?? 'Error')
