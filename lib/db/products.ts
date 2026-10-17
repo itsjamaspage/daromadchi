@@ -323,7 +323,7 @@ const _fetchProductSales = unstable_cache(
   // Bump cache tag when the row shape changes so a redeploy with an
   // in-memory `unstable_cache` doesn't serve v6 rows missing the two
   // new variant fields.
-  ['product-sales-v12'],
+  ['product-sales-v13'],
   { revalidate: 30, tags: ['product-data'] },
 )
 

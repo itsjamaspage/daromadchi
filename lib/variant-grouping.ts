@@ -12,10 +12,12 @@
 //   2. Bridge across marketplaces by shared normalised SKU (so
 //      uzum:<X> + yandex:<Y> collapse when both listings carry the
 //      same SKU).
-//   3. NULL variant_group_key ⇒ row emits as a flat entry, never as
-//      part of a group. Same treatment as an orphan row (product_id
-//      NULL after zombie cleanup) — protects the "Удалённый товар"
-//      case from ever being absorbed into a variant parent.
+//   3. NULL variant_group_key ⇒ the row gets a synthetic key
+//      `sku:<normalised>` and participates in the SKU bridge like
+//      any keyed row. This merges single-variant cross-listings
+//      (NAM90 on Uzum + Yandex) and also absorbs a keyless row
+//      into a keyed group when they share a SKU (e.g. Yandex listing
+//      without marketModelName + Uzum listing with a group key).
 //   4. A parent forms only when ≥2 rows land in one component;
 //      singletons stay flat so the table doesn't sprout meaningless
 //      chevrons.
@@ -69,24 +71,40 @@ export function groupByVariant<T extends Groupable>(
   }
 
   // SKU bridge: keys co-occurring on one normalised SKU are the same product.
+  // A keyless row gets a synthetic `sku:<norm>` key so it participates in
+  // the bridge — this handles Yandex listings without marketModelName being
+  // absorbed into the same group as their Uzum counterpart.
   const keysBySku = new Map<string, string[]>()
   for (const p of linkable) {
-    if (!p.variant_group_key) continue
     const nk = normSku(p.sku)
     if (!nk) continue
+    let key: string
+    if (p.variant_group_key) {
+      key = p.variant_group_key
+    } else {
+      key = `sku:${nk}`
+      if (!uf.has(key)) uf.set(key, key)
+    }
     const list = keysBySku.get(nk)
     if (list) {
-      if (!list.includes(p.variant_group_key)) list.push(p.variant_group_key)
+      if (!list.includes(key)) list.push(key)
     } else {
-      keysBySku.set(nk, [p.variant_group_key])
+      keysBySku.set(nk, [key])
     }
   }
   for (const keys of keysBySku.values()) {
     for (let j = 1; j < keys.length; j++) union(keys[0], keys[j])
   }
 
-  const parentKeyOf = (p: T): string | null =>
-    p.variant_group_key ? find(p.variant_group_key) : null
+  const parentKeyOf = (p: T): string | null => {
+    if (p.variant_group_key) return find(p.variant_group_key)
+    const nk = normSku(p.sku)
+    if (nk) {
+      const sk = `sku:${nk}`
+      if (uf.has(sk)) return find(sk)
+    }
+    return null
+  }
 
   const countByParent = new Map<string, number>()
   for (const p of rows) {
