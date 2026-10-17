@@ -313,19 +313,20 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
       const hasSales = p.qty_sold > 0 || p.qty_in_transit > 0 || p.revenue > 0
       const ex = byRoot.get(r)
       if (!ex) {
-        byRoot.set(r, { key: `grp:${r}`, title: p.title, sku: p.sku, variant_color: p.variant_color, qty: p.qty_sold + p.qty_in_transit, cancelled: p.qty_cancelled, revenue: p.revenue, marketplaces: new Set(p.marketplace ? [p.marketplace] : []), colors: [], order_ids: [], colorSet: new Set(hasSales && p.variant_color ? [p.variant_color] : []), orderIdSet: new Set(p.order_ids ?? []), repRevenue: p.revenue })
+        byRoot.set(r, { key: `grp:${r}`, title: p.title, sku: p.sku, variant_color: p.variant_color, qty: p.qty_sold + p.qty_in_transit, cancelled: p.qty_cancelled, revenue: p.revenue, marketplaces: new Set(p.marketplace ? [p.marketplace] : []), colors: [], order_ids: [], colorSet: new Set(hasSales && p.variant_color ? [p.variant_color] : []), orderIdSet: new Set(hasSales ? (p.order_ids ?? []) : []), repRevenue: p.revenue })
       } else {
         ex.qty += p.qty_sold + p.qty_in_transit
         ex.cancelled += p.qty_cancelled
         ex.revenue += p.revenue
         if (p.marketplace) ex.marketplaces.add(p.marketplace)
         if (hasSales && p.variant_color) ex.colorSet.add(p.variant_color)
-        for (const oid of (p.order_ids ?? [])) ex.orderIdSet.add(oid)
+        if (hasSales) for (const oid of (p.order_ids ?? [])) ex.orderIdSet.add(oid)
         if (p.revenue > ex.repRevenue) { ex.repRevenue = p.revenue; ex.title = p.title; ex.sku = p.sku; ex.variant_color = p.variant_color }
       }
     })
     return [...byRoot.values()]
       .map((r): Row => ({ key: r.key, title: r.title, sku: r.sku, variant_color: r.variant_color, qty: r.qty, cancelled: r.cancelled, revenue: r.revenue, marketplaces: r.marketplaces, colors: [...r.colorSet], order_ids: [...r.orderIdSet] }))
+      .filter(r => r.qty > 0 || r.revenue > 0)
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
   }, [productSales])
@@ -674,18 +675,16 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                             : <VariantColorChip colorKey={p.variant_color} lang={lang} />}
                         </p>
                         {p.order_ids.length > 0 && (
-                          <p className="text-[var(--text-muted)] text-[10px] mt-0.5 truncate" title={p.order_ids.join(', ')}>
-                            #{p.order_ids.join(', #')}
+                          <p className="text-[var(--text-muted)] text-[10px] mt-0.5">
+                            #{p.order_ids[0]}
                           </p>
                         )}
                       </td>
                       <td className="py-3 pr-4 text-right">
-                        {p.qty === 0 && p.revenue === 0 && p.cancelled > 0
-                          ? <span className={`${isDark ? 'text-red-400' : 'text-red-600'} font-medium text-xs`}>{t.status.cancelled}</span>
-                          : <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-medium text-xs`}>{formatSum(p.revenue)}</span>}
+                        <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-medium text-xs`}>{formatSum(p.revenue)}</span>
                       </td>
                       <td className="py-3 text-right text-[var(--text-dim)] text-xs">
-                        {p.qty === 0 && p.revenue === 0 && p.cancelled > 0 ? '' : p.qty}
+                        {p.qty}
                       </td>
                     </tr>
                   ))

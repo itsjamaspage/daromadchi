@@ -231,7 +231,7 @@ const _fetchProductSales = unstable_cache(
       qty_cancelled: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'cancelled'), 0)`.as('qty_cancelled'),
       qty_returned: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'returned'), 0)`.as('qty_returned'),
       revenue: sql<number>`coalesce(sum(${orderItems.quantity} * ${orderItems.price_per_unit}) filter (where ${orders.status} not in ('cancelled','returned')), 0)`.as('revenue'),
-      order_ids: sql<string[]>`array_agg(distinct ${orders.order_id_external}) filter (where ${orders.order_id_external} is not null)`.as('order_ids'),
+      order_ids: sql<string[]>`array_agg(distinct ${orders.order_id_external}) filter (where ${orders.order_id_external} is not null and ${orders.status} not in ('cancelled','returned'))`.as('order_ids'),
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .leftJoin(products, eq(orderItems.product_id, products.id))
@@ -323,7 +323,7 @@ const _fetchProductSales = unstable_cache(
   // Bump cache tag when the row shape changes so a redeploy with an
   // in-memory `unstable_cache` doesn't serve v6 rows missing the two
   // new variant fields.
-  ['product-sales-v11'],
+  ['product-sales-v12'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
