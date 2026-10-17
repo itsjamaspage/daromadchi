@@ -185,6 +185,7 @@ export interface ProductSalesRow {
   // marketplace, so grouping by it never fragments a row. NULL only on the
   // orphan/hard-deleted case (filtered out of the sold list anyway).
   marketplace: MarketplaceType | null
+  order_ids: string[]
 }
 
 const _fetchProductSales = unstable_cache(
@@ -230,6 +231,7 @@ const _fetchProductSales = unstable_cache(
       qty_cancelled: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'cancelled'), 0)`.as('qty_cancelled'),
       qty_returned: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'returned'), 0)`.as('qty_returned'),
       revenue: sql<number>`coalesce(sum(${orderItems.quantity} * ${orderItems.price_per_unit}) filter (where ${orders.status} not in ('cancelled','returned')), 0)`.as('revenue'),
+      order_ids: sql<string[]>`array_agg(distinct ${orders.order_id_external}) filter (where ${orders.order_id_external} is not null)`.as('order_ids'),
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .leftJoin(products, eq(orderItems.product_id, products.id))
@@ -277,6 +279,7 @@ const _fetchProductSales = unstable_cache(
             variant_group_key: p.variant_group_key ?? null,
             variant_color: p.variant_color ?? null,
             marketplace: mpByShop.get(p.shop_id) ?? null,
+            order_ids: [],
           })
         }
       }
@@ -312,6 +315,7 @@ const _fetchProductSales = unstable_cache(
         qty_cancelled: Number(r.qty_cancelled),
         qty_returned: Number(r.qty_returned),
         revenue: Number(r.revenue),
+        order_ids: r.order_ids ?? [],
       }
     })
     return [...mapped, ...extraRows]
@@ -319,7 +323,7 @@ const _fetchProductSales = unstable_cache(
   // Bump cache tag when the row shape changes so a redeploy with an
   // in-memory `unstable_cache` doesn't serve v6 rows missing the two
   // new variant fields.
-  ['product-sales-v10'],
+  ['product-sales-v11'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
