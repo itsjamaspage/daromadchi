@@ -286,7 +286,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
   // additionally covers rows that carry no variant_group_key. Rows with neither
   // key stay individual. Sorted by revenue so it's actually "top", capped at 5.
   const topProducts = useMemo(() => {
-    type Row = { key: string; title: string; sku: string | null; variant_color: string | null; qty: number; cancelled: number; revenue: number; marketplaces: Set<MarketplaceType>; colors: string[] }
+    type Row = { key: string; title: string; sku: string | null; variant_color: string | null; qty: number; cancelled: number; revenue: number; marketplaces: Set<MarketplaceType>; colors: string[]; order_ids: string[] }
     const norm = (s: string | null) => { const t = s?.trim().toLowerCase(); return t && t.length ? t : null }
 
     // Union-find over row indices: union any two rows sharing a SKU or a group.
@@ -307,23 +307,25 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
     // as if that variant sold the whole quantity — see the multi-colour marker
     // in the render. colorSet holds resolved colour keys; a cross-listing of the
     // SAME colour on two marketplaces stays single-colour and keeps its chip.
-    const byRoot = new Map<number, Row & { repRevenue: number; colorSet: Set<string> }>()
+    const byRoot = new Map<number, Row & { repRevenue: number; colorSet: Set<string>; orderIdSet: Set<string> }>()
     productSales.forEach((p, i) => {
       const r = find(i)
+      const hasSales = p.qty_sold > 0 || p.qty_in_transit > 0 || p.revenue > 0
       const ex = byRoot.get(r)
       if (!ex) {
-        byRoot.set(r, { key: `grp:${r}`, title: p.title, sku: p.sku, variant_color: p.variant_color, qty: p.qty_sold + p.qty_in_transit, cancelled: p.qty_cancelled, revenue: p.revenue, marketplaces: new Set(p.marketplace ? [p.marketplace] : []), colors: [], colorSet: new Set(p.variant_color ? [p.variant_color] : []), repRevenue: p.revenue })
+        byRoot.set(r, { key: `grp:${r}`, title: p.title, sku: p.sku, variant_color: p.variant_color, qty: p.qty_sold + p.qty_in_transit, cancelled: p.qty_cancelled, revenue: p.revenue, marketplaces: new Set(p.marketplace ? [p.marketplace] : []), colors: [], order_ids: [], colorSet: new Set(hasSales && p.variant_color ? [p.variant_color] : []), orderIdSet: new Set(p.order_ids ?? []), repRevenue: p.revenue })
       } else {
         ex.qty += p.qty_sold + p.qty_in_transit
         ex.cancelled += p.qty_cancelled
         ex.revenue += p.revenue
         if (p.marketplace) ex.marketplaces.add(p.marketplace)
-        if (p.variant_color) ex.colorSet.add(p.variant_color)
+        if (hasSales && p.variant_color) ex.colorSet.add(p.variant_color)
+        for (const oid of (p.order_ids ?? [])) ex.orderIdSet.add(oid)
         if (p.revenue > ex.repRevenue) { ex.repRevenue = p.revenue; ex.title = p.title; ex.sku = p.sku; ex.variant_color = p.variant_color }
       }
     })
     return [...byRoot.values()]
-      .map((r): Row => ({ key: r.key, title: r.title, sku: r.sku, variant_color: r.variant_color, qty: r.qty, cancelled: r.cancelled, revenue: r.revenue, marketplaces: r.marketplaces, colors: [...r.colorSet] }))
+      .map((r): Row => ({ key: r.key, title: r.title, sku: r.sku, variant_color: r.variant_color, qty: r.qty, cancelled: r.cancelled, revenue: r.revenue, marketplaces: r.marketplaces, colors: [...r.colorSet], order_ids: [...r.orderIdSet] }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
   }, [productSales])
@@ -671,6 +673,11 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                             ? <VariantGroupChip colors={p.colors} lang={lang} />
                             : <VariantColorChip colorKey={p.variant_color} lang={lang} />}
                         </p>
+                        {p.order_ids.length > 0 && (
+                          <p className="text-[var(--text-muted)] text-[10px] mt-0.5 truncate" title={p.order_ids.join(', ')}>
+                            #{p.order_ids.join(', #')}
+                          </p>
+                        )}
                       </td>
                       <td className="py-3 pr-4 text-right">
                         {p.qty === 0 && p.revenue === 0 && p.cancelled > 0
