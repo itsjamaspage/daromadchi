@@ -77,3 +77,16 @@ test('a null-key row stays flat even when a bridge row shares its SKU', () => {
   const orphan = out.find(i => i.type === 'flat' && i.row.id === 'o1')
   assert.ok(orphan, 'orphan row must render flat, never absorbed into a parent')
 })
+
+// Single-variant products cross-listed on two marketplaces (both carry the same
+// SKU, neither has a variant_group_key) should merge into one parent row.
+test('keyless rows sharing a normalised SKU merge into one parent', () => {
+  const out = groupByVariant([
+    row('uz1', 'NAM90', null),
+    row('ym1', 'NAM90', null),
+  ])
+  assert.equal(out.length, 1)
+  assert.equal(out[0].type, 'parent')
+  if (out[0].type !== 'parent') return
+  assert.deepEqual(out[0].children.map(c => c.id).sort(), ['uz1', 'ym1'])
+})
