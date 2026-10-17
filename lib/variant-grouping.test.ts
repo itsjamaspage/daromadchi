@@ -67,15 +67,31 @@ test('omitting the bridge leaves existing callers byte-identical', () => {
   assert.deepEqual(groupByVariant(rows), groupByVariant(rows, []))
 })
 
-// A NULL group key means "never group" — the orphan/'Удалённый товар' rule.
-// The bridge must not give such a row a way in through a shared SKU.
-test('a null-key row stays flat even when a bridge row shares its SKU', () => {
+// A keyless row sharing a SKU with a keyed row is absorbed into the keyed
+// group — same physical product, the keyless listing just lacks a group key
+// (e.g. Yandex without marketModelName).
+test('a null-key row sharing a SKU with a keyed row merges into a parent', () => {
   const out = groupByVariant(
     [row('o1', 'JMBLK', null), row('p1', 'JMBLK', 'uzum:M9')],
     ALL_LISTINGS,
   )
-  const orphan = out.find(i => i.type === 'flat' && i.row.id === 'o1')
-  assert.ok(orphan, 'orphan row must render flat, never absorbed into a parent')
+  assert.equal(out.length, 1)
+  assert.equal(out[0].type, 'parent')
+  if (out[0].type !== 'parent') return
+  assert.deepEqual(out[0].children.map(c => c.id).sort(), ['o1', 'p1'])
+})
+
+// Sneakers scenario: Uzum always sets a variant_group_key, Yandex may not
+// (missing marketModelName). They share the seller article SKU and must merge.
+test('keyed Uzum + keyless Yandex sharing a SKU merge into one parent', () => {
+  const out = groupByVariant([
+    row('uzSneaker', 'NAM90', 'uzum:55555'),
+    row('ymSneaker', 'NAM90', null),
+  ])
+  assert.equal(out.length, 1)
+  assert.equal(out[0].type, 'parent')
+  if (out[0].type !== 'parent') return
+  assert.deepEqual(out[0].children.map(c => c.id).sort(), ['uzSneaker', 'ymSneaker'])
 })
 
 // Single-variant products cross-listed on two marketplaces (both carry the same
