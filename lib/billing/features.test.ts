@@ -70,21 +70,24 @@ describe('biznes behaves as an ordinary paid tier', () => {
   it('a biznes plan is never "on trial"', () => {
     assert.equal(isOnTrial({ ...biznes, trialEndsAt: soon(5) }, NOW), false)
   })
-  it('grandfathering still wins over everything, including biznes', () => {
+  it('grandfathering does NOT bypass plan expiry — a lapsed biznes is gated', () => {
     const grandfathered: EntitlementInput = { ...lapsedBiznes, isGrandfathered: true }
-    for (const f of GATED) assert.equal(hasFeature(grandfathered, f, NOW), true, f)
+    for (const f of GATED) assert.equal(hasFeature(grandfathered, f, NOW), false, f)
   })
 })
 
-describe('grandfathering is checked FIRST', () => {
-  // The whole point: an old-price account must not be gated by a rule written
-  // after they subscribed — even if every other signal says "free".
+describe('grandfathering does NOT bypass entitlement', () => {
   const grandfathered: EntitlementInput = {
     plan: 'free', planExpiresAt: ago(400), trialEndsAt: ago(400), isGrandfathered: true,
   }
-  it('overrides a lapsed plan and an expired trial', () => {
+  it('a grandfathered account with an expired plan loses gated features', () => {
+    for (const f of FREE_FOREVER) assert.equal(hasFeature(grandfathered, f, NOW), true, f)
+    for (const f of GATED) assert.equal(hasFeature(grandfathered, f, NOW), false, f)
+  })
+  it('a grandfathered account with an active paid plan keeps everything', () => {
+    const activePaid: EntitlementInput = { ...grandfathered, plan: 'pro', planExpiresAt: soon(30) }
     for (const f of [...FREE_FOREVER, ...GATED]) {
-      assert.equal(hasFeature(grandfathered, f, NOW), true, f)
+      assert.equal(hasFeature(activePaid, f, NOW), true, f)
     }
   })
   it('is not granted by default', () => {

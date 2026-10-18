@@ -5,9 +5,14 @@ import { dashT } from '@/lib/dashT'
 import AbcXyzClient from './AbcXyzClient'
 import Link from 'next/link'
 import { Settings } from 'lucide-react'
+import { currentUserAccess } from '@/lib/billing/current-user-access'
+import FeatureLock from '@/components/dashboard/FeatureLock'
 
 export default async function AbcXyzPage() {
   const lang = await getLang()
+  const access = await currentUserAccess('analytics')
+  if (!access.allowed) return <FeatureLock lang={lang} feature="analytics" hadTrial={access.trialEnded} />
+
   const t = dashT[lang].abcxyz
 
   const [products, variability] = await Promise.all([

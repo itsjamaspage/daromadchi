@@ -67,7 +67,11 @@ export interface EntitlementInput {
   plan: string | null
   planExpiresAt: Date | string | null
   trialEndsAt: Date | string | null
-  /** Old-price accounts keep full access permanently. */
+  /**
+   * Old-price accounts — keeps their agreed price on renewal and protects them
+   * from lifecycle deletion, but does NOT bypass plan/trial entitlement on its
+   * own. A grandfathered account with an expired plan is treated as free.
+   */
   isGrandfathered?: boolean | null
 }
 
@@ -105,17 +109,16 @@ export function computeEffectivePlan(input: EntitlementInput, now: Date = new Da
 /**
  * May this account use `feature` right now?
  *
- * Order matters: grandfathering is checked FIRST, before any plan or trial
- * logic, so an old-price account can never be gated by a rule written later.
+ * isGrandfathered is NOT checked here — it governs pricing and lifecycle
+ * protection, not feature access. A grandfathered account whose paid plan has
+ * expired is treated as free, like any other expired account.
  */
 export function hasFeature(input: EntitlementInput, feature: Feature, now: Date = new Date()): boolean {
-  if (input.isGrandfathered) return true
   if (FREE_FOREVER.has(feature)) return true
 
   const effective = computeEffectivePlan(input, now)
   if (PAID_PLANS.has(effective)) return true
 
-  // Free and out of trial: only the permanent set, already returned above.
   return TRIAL_FEATURES.has(feature) && isOnTrial(input, now)
 }
 
