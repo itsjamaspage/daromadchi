@@ -1227,3 +1227,31 @@ export const stockLedger = pgTable('stock_ledger', {
   index('stock_ledger_user_key_idx').on(t.user_id, t.match_key),
   index('stock_ledger_created_at_idx').on(t.created_at),
 ])
+
+/* ── 35. renewal_attempts ──────────────────────────────────────────────────── */
+// Audit trail for every auto-renewal attempt — success, failure, dry-run, skip.
+// One row per attempt. Pairs with the payment row the renewal creates (when it
+// gets that far) but survives independently: a dry-run or skip has no payment.
+// This is how the diagnose endpoint reports whether Atmos token charges actually
+// work, and what error they return when they don't.
+export const renewalAttempts = pgTable('renewal_attempts', {
+  id:                   uuid('id').primaryKey().defaultRandom(),
+  subscription_id:      uuid('subscription_id').notNull(),
+  user_id:              uuid('user_id'),
+  payment_id:           uuid('payment_id'),
+  plan:                 text('plan').notNull(),
+  interval:             text('interval').notNull(),
+  amount_tiyin:         integer('amount_tiyin'),
+  dry_run:              boolean('dry_run').default(false).notNull(),
+  // charged | failed | dry_run | skipped_bad_plan | skipped_no_amount
+  outcome:              text('outcome').notNull(),
+  atmos_transaction_id: text('atmos_transaction_id'),
+  error:                text('error'),
+  // 'cron' (batch renewal) | 'manual' (renew-one endpoint)
+  source:               text('source').default('cron').notNull(),
+  created_at:           timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index('renewal_attempts_subscription_id_idx').on(t.subscription_id),
+  index('renewal_attempts_outcome_idx').on(t.outcome),
+  index('renewal_attempts_created_at_idx').on(t.created_at),
+])
