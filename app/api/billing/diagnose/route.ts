@@ -209,6 +209,11 @@ export async function GET() {
   `)
   const activeSubRows = (activeSubs.rows ?? activeSubs) as Array<Record<string, unknown>>
 
+  // 9. Best candidate for renewal test — active sub with card bound.
+  const renewCandidate = activeSubRows.find(
+    (s) => s.has_card === true && (s.status === 'active' || s.status === 'past_due') && s.agreed_amount_tiyin,
+  ) as Record<string, unknown> | undefined
+
   // 7. ATMOS connectivity check — config present + OAuth token works?
   let atmosCheck: Record<string, unknown>
   try {
@@ -304,5 +309,23 @@ export async function GET() {
     '7_atmos_connectivity': atmosCheck,
 
     '8_active_subscriptions': activeSubRows,
+
+    '9_renewal_test': renewCandidate
+      ? {
+          ready: true,
+          subscription_id: renewCandidate.id,
+          plan: renewCandidate.plan,
+          interval: renewCandidate.interval,
+          agreed_amount_tiyin: renewCandidate.agreed_amount_tiyin,
+          card_last4: renewCandidate.card_last4,
+          status: renewCandidate.status,
+          dry_run_fetch: `fetch('/api/billing/renew-one',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription_id:'${renewCandidate.id}'})}).then(r=>r.json()).then(console.log)`,
+          live_charge_fetch: `fetch('/api/billing/renew-one',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription_id:'${renewCandidate.id}',confirm:true})}).then(r=>r.json()).then(console.log)`,
+        }
+      : {
+          ready: false,
+          reason: 'No active/past_due subscription with card bound and agreed_amount_tiyin. Cards bound: ' +
+            activeSubRows.filter((s) => s.has_card === true).length + '/' + activeSubRows.length,
+        },
   })
 }
