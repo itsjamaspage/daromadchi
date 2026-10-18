@@ -9,7 +9,9 @@ import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
 import ArchivedTabs from '@/components/dashboard/ArchivedTabs'
 import Pagination from '@/components/dashboard/Pagination'
 import LastSyncedServer from '@/components/dashboard/LastSyncedServer'
-import { getT } from '@/lib/server-i18n'
+import { getT, getLang } from '@/lib/server-i18n'
+import { currentUserAccess } from '@/lib/billing/current-user-access'
+import FeatureLock from '@/components/dashboard/FeatureLock'
 import type { MarketplaceType } from '@/lib/types'
 
 const PAGE_SIZE = 50
@@ -20,6 +22,9 @@ interface Props {
 }
 
 export default async function ProductsPage({ searchParams }: Props) {
+  const [lang, access] = await Promise.all([getLang(), currentUserAccess('products')])
+  if (!access.allowed) return <FeatureLock lang={lang} feature="products" hadTrial={access.trialEnded} />
+
   const params = await searchParams
   const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1)
   const mp = (VALID_MARKETPLACES as readonly string[]).includes(params.mp ?? '')

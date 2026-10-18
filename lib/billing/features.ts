@@ -31,16 +31,16 @@ export type Feature =
   | 'unit_economics'
 
 /**
- * Features a FREE account keeps forever. Everything else is trial-then-gated.
- * A permanent free user still sees revenue and profit on the dashboard — that is
- * the hook, and it is deliberate.
+ * Features a FREE account keeps forever. Only marketplace connection stays
+ * free so a new seller can connect their store before subscribing.
  */
 const FREE_FOREVER: ReadonlySet<Feature> = new Set<Feature>([
-  'dashboard', 'products', 'orders', 'marketplaces',
+  'marketplaces',
 ])
 
 /** Features a free account gets only while its trial is running. */
 const TRIAL_FEATURES: ReadonlySet<Feature> = new Set<Feature>([
+  'dashboard', 'products', 'orders',
   'analytics', 'stock_sync', 'finances', 'unit_economics',
 ])
 

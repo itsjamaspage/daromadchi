@@ -52,9 +52,9 @@ async function seedShop(userId: string, active = true) {
   })
 }
 
-/** The four capabilities a paid plan unlocks, and the four Free keeps forever. */
-const GATED = ['analytics', 'stock_sync', 'finances', 'unit_economics'] as const
-const FREE_FOREVER = ['dashboard', 'products', 'orders', 'marketplaces'] as const
+/** Only marketplace connection stays free; everything else is trial-then-gated. */
+const GATED = ['dashboard', 'products', 'orders', 'analytics', 'stock_sync', 'finances', 'unit_economics'] as const
+const FREE_FOREVER = ['marketplaces'] as const
 
 // Teardown at module level, not per suite: a suite-scoped `after` closes the
 // pool while later suites still need it.
