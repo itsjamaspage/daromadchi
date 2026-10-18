@@ -87,9 +87,10 @@ export async function POST(req: Request) {
   } catch (err) {
     await db.update(payments).set({ status: 'failed', atmos_status: 'failed', updated_at: new Date() })
       .where(eq(payments.id, paymentId)).catch(() => {})
-    logger.error('atmos_bindinit_failed', { paymentId, error: String(err).slice(0, 300) })
+    const errStr = String(err).slice(0, 500)
+    logger.error('atmos_bindinit_failed', { paymentId, error: errStr })
     if (err instanceof AtmosConfigError) return NextResponse.json({ ok: false, error: 'atmos_not_configured' }, { status: 503 })
     const code = err instanceof AtmosApiError ? (err.code || 'bind_failed') : 'bind_failed'
-    return NextResponse.json({ ok: false, error: code }, { status: 502 })
+    return NextResponse.json({ ok: false, error: code, debug: errStr }, { status: 502 })
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth/session'
+import { getConfig, AtmosConfigError } from '@/lib/billing/atmos'
 
 const RENEW_WINDOW_MS = 24 * 60 * 60 * 1000
 
@@ -190,6 +191,36 @@ export async function GET() {
   `)
   const recentAttemptRows = recentAttempts.rows ?? recentAttempts
 
+  // 7. ATMOS connectivity check — config present + OAuth token works?
+  let atmosCheck: Record<string, unknown>
+  try {
+    const cfg = getConfig()
+    atmosCheck = {
+      config_loaded: true,
+      base_url: cfg.baseUrl,
+      store_id: cfg.storeId,
+      consumer_key_set: !!cfg.consumerKey,
+      consumer_secret_set: !!cfg.consumerSecret,
+      callback_api_key_set: !!cfg.callbackApiKey,
+    }
+    // Try to acquire an OAuth token to confirm credentials work.
+    const basic = Buffer.from(`${cfg.consumerKey}:${cfg.consumerSecret}`).toString('base64')
+    const tokenRes = await fetch(`${cfg.baseUrl}/token?grant_type=client_credentials`, {
+      method: 'POST',
+      headers: { Authorization: `Basic ${basic}`, 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+      body: 'grant_type=client_credentials',
+    })
+    const tokenJson = (await tokenRes.json().catch(() => ({}))) as Record<string, unknown>
+    atmosCheck.token_http_status = tokenRes.status
+    atmosCheck.token_ok = tokenRes.ok && !!tokenJson.access_token
+    if (!tokenRes.ok) atmosCheck.token_error = JSON.stringify(tokenJson).slice(0, 300)
+  } catch (err) {
+    atmosCheck = {
+      config_loaded: !(err instanceof AtmosConfigError),
+      error: String(err).slice(0, 300),
+    }
+  }
+
   return NextResponse.json({
     generated_at: now.toISOString(),
     read_only: true,
@@ -251,5 +282,7 @@ export async function GET() {
         created_at: r.created_at,
       })),
     },
+
+    '7_atmos_connectivity': atmosCheck,
   })
 }
