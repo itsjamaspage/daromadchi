@@ -21,7 +21,7 @@
  * morning for the rest of their life.
  */
 import 'server-only'
-import { and, eq, isNotNull, isNull, lt, gt, ne, sql, desc } from 'drizzle-orm'
+import { and, eq, isNotNull, isNull, lt, gt, ne, or, sql, desc } from 'drizzle-orm'
 import { db, users, userSettings, userNotices } from '@/lib/db'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { TRIAL_DAYS } from '@/lib/billing/features'
@@ -179,6 +179,9 @@ export async function dispatchTierNudges(now: Date = new Date()): Promise<NudgeS
   const reminderAt = new Date(now.getTime() + TRIAL_REMINDER_DAYS * DAY_MS)
 
   // ── trial ending ──────────────────────────────────────────────────────────
+  // Grandfathered accounts keep full access permanently — telling them the trial
+  // is ending would be a false alarm.
+  const notGrandfathered = or(eq(users.is_grandfathered, false), isNull(users.is_grandfathered))
   const ending = await db.select({
     id: users.id, trialEndsAt: users.trial_ends_at,
     chatId: userSettings.telegram_chat_id, lang: userSettings.notif_lang,
@@ -186,6 +189,7 @@ export async function dispatchTierNudges(now: Date = new Date()): Promise<NudgeS
     .leftJoin(userSettings, eq(userSettings.user_id, users.id))
     .where(and(
       eq(users.plan, 'free'),
+      notGrandfathered,
       isNotNull(users.trial_ends_at),
       gt(users.trial_ends_at, now),
       lt(users.trial_ends_at, reminderAt),
@@ -206,6 +210,7 @@ export async function dispatchTierNudges(now: Date = new Date()): Promise<NudgeS
     .leftJoin(userSettings, eq(userSettings.user_id, users.id))
     .where(and(
       eq(users.plan, 'free'),
+      notGrandfathered,
       isNotNull(users.trial_ends_at),
       lt(users.trial_ends_at, now),
     ))

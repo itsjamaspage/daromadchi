@@ -1,8 +1,13 @@
 import { RotateCcw } from 'lucide-react'
-import { getT } from '@/lib/server-i18n'
+import { getT, getLang } from '@/lib/server-i18n'
+import { currentUserAccess } from '@/lib/billing/current-user-access'
+import FeatureLock from '@/components/dashboard/FeatureLock'
 import ReturnsClient from './ReturnsClient'
 
 export default async function ReturnsPage() {
+  const [lang, access] = await Promise.all([getLang(), currentUserAccess('analytics')])
+  if (!access.allowed) return <FeatureLock lang={lang} feature="analytics" hadTrial={access.trialEnded} />
+
   const t = await getT()
   const d = t.dashboard
 

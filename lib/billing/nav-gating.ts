@@ -18,7 +18,7 @@ export async function lockedNavKeys(userId: string | null): Promise<string[]> {
   const entitlement = await loadEntitlement(userId)
   const locked: string[] = []
 
-  if (!hasFeature(entitlement, 'analytics')) locked.push('analytics')
+  if (!hasFeature(entitlement, 'analytics')) locked.push('analytics', 'returns')
   if (!hasFeature(entitlement, 'unit_economics')) locked.push('unitEconomics')
   if (!hasFeature(entitlement, 'stock_sync')) locked.push('stocks')
 
