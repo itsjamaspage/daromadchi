@@ -191,6 +191,24 @@ export async function GET() {
   `)
   const recentAttemptRows = recentAttempts.rows ?? recentAttempts
 
+  // 8. Active subscriptions with card tokens (for renew-one testing).
+  const activeSubs = await db.execute<{
+    id: string; user_id: string; plan: string; interval: string;
+    status: string; autorenew: boolean; has_card: boolean;
+    card_last4: string | null; agreed_amount_tiyin: number | null;
+    current_period_end: string | null; created_at: string;
+  }>(sql`
+    SELECT
+      s.id, s.user_id, s.plan, s.interval, s.status, s.autorenew,
+      (s.card_token_encrypted IS NOT NULL) AS has_card,
+      s.card_last4, s.agreed_amount_tiyin, s.current_period_end, s.created_at
+    FROM subscriptions s
+    WHERE s.status IN ('active', 'past_due', 'pending')
+    ORDER BY s.created_at DESC
+    LIMIT 10
+  `)
+  const activeSubRows = (activeSubs.rows ?? activeSubs) as Array<Record<string, unknown>>
+
   // 7. ATMOS connectivity check — config present + OAuth token works?
   let atmosCheck: Record<string, unknown>
   try {
@@ -284,5 +302,7 @@ export async function GET() {
     },
 
     '7_atmos_connectivity': atmosCheck,
+
+    '8_active_subscriptions': activeSubRows,
   })
 }
