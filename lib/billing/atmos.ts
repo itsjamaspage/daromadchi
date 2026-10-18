@@ -141,7 +141,8 @@ async function authedPost<T = Record<string, unknown>>(path: string, body: unkno
   }
   const json = (await res.json().catch(() => null)) as T | null
   if (!res.ok || json == null) {
-    throw new AtmosApiError('api_failed', `${path} failed (HTTP ${res.status})`, res.status)
+    const hint = json ? JSON.stringify(json).slice(0, 300) : '(no body)'
+    throw new AtmosApiError('api_failed', `${path} failed (HTTP ${res.status}): ${hint}`, res.status)
   }
   return json
 }
