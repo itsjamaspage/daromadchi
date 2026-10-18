@@ -14,6 +14,14 @@
  * and cron jobs share one implementation.
  */
 
+/**
+ * Platform owner(s) — always have full access regardless of plan or trial.
+ * Checked inside hasFeature so every gate in the app respects it.
+ */
+const OWNER_EMAILS: ReadonlySet<string> = new Set([
+  'jkhakimjonov8@gmail.com',
+])
+
 /** Plans a seller can hold. Wider than the users.plan enum, which has only the first three. */
 export type Plan = 'free' | 'pro' | 'pro_plus' | 'biznes' | 'enterprise'
 
@@ -73,6 +81,8 @@ export interface EntitlementInput {
    * own. A grandfathered account with an expired plan is treated as free.
    */
   isGrandfathered?: boolean | null
+  /** The account's email — used only to identify platform owners. */
+  email?: string | null
 }
 
 function toDate(v: Date | string | null | undefined): Date | null {
@@ -114,6 +124,7 @@ export function computeEffectivePlan(input: EntitlementInput, now: Date = new Da
  * expired is treated as free, like any other expired account.
  */
 export function hasFeature(input: EntitlementInput, feature: Feature, now: Date = new Date()): boolean {
+  if (input.email && OWNER_EMAILS.has(input.email)) return true
   if (FREE_FOREVER.has(feature)) return true
 
   const effective = computeEffectivePlan(input, now)

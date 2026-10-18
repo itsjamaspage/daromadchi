@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { eq, and, inArray, sql } from 'drizzle-orm'
+import { eq, and, inArray } from 'drizzle-orm'
 import { db, returnInvoices, returnInvoiceItems, shops } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth/session'
 import { withErrorHandler } from '@/lib/api-handler'
@@ -21,9 +21,7 @@ export const GET = withErrorHandler(async () => {
 
   const allInvoices = await db.select()
     .from(returnInvoices)
-    .where(
-      sql`shop_id = ANY(string_to_array(${shopIds.join(',')}, ',')::uuid[])`,
-    )
+    .where(inArray(returnInvoices.shop_id, shopIds))
 
   if (allInvoices.length === 0) {
     return NextResponse.json({ returns: [] })
@@ -32,9 +30,7 @@ export const GET = withErrorHandler(async () => {
   const invoiceIds = allInvoices.map(i => i.id)
   const items = await db.select()
     .from(returnInvoiceItems)
-    .where(
-      sql`return_invoice_id = ANY(string_to_array(${invoiceIds.join(',')}, ',')::uuid[])`,
-    )
+    .where(inArray(returnInvoiceItems.return_invoice_id, invoiceIds))
 
   const itemsByInvoice = new Map<string, (typeof items)[number][]>()
   for (const item of items) {

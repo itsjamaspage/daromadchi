@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Package, MapPin, Clock, DollarSign, AlertTriangle, CheckCircle, XCircle, Truck, RotateCcw } from 'lucide-react'
+import { useEffect, useState, useReducer } from 'react'
+import { Package, MapPin, Clock, DollarSign, AlertTriangle, CheckCircle, XCircle, Truck, RotateCcw, RefreshCw } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 
@@ -97,15 +97,24 @@ export default function ReturnsClient() {
   const d = translations[lang].dashboard
   const [returns, setReturns] = useState<ReturnInvoice[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [tab, setTab] = useState<TabFilter>('all')
+  const [retryKey, bumpRetry] = useReducer((n: number) => n + 1, 0)
+  const handleRetry = () => { setLoading(true); setError(false); bumpRetry() }
 
   useEffect(() => {
-    fetch('/api/returns')
-      .then(r => r.json())
+    const ctrl = new AbortController()
+    const timeout = setTimeout(() => ctrl.abort(), 15_000)
+    fetch('/api/returns', { signal: ctrl.signal })
+      .then(r => {
+        if (!r.ok) throw new Error(String(r.status))
+        return r.json()
+      })
       .then(data => setReturns(data.returns ?? []))
-      .catch(() => setReturns([]))
-      .finally(() => setLoading(false))
-  }, [])
+      .catch(() => { setReturns([]); setError(true) })
+      .finally(() => { clearTimeout(timeout); setLoading(false) })
+    return () => { clearTimeout(timeout); ctrl.abort() }
+  }, [retryKey])
 
   if (loading) {
     return (
@@ -113,6 +122,26 @@ export default function ReturnsClient() {
         {[1, 2, 3].map(i => (
           <div key={i} className="h-28 bg-[var(--bg-card2)] rounded-xl border border-[var(--border)]" />
         ))}
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-[var(--bg-card2)] border border-[var(--border)] flex items-center justify-center mb-4">
+          <AlertTriangle className="w-8 h-8 text-[var(--text-muted)]" />
+        </div>
+        <p className="text-lg font-medium text-[var(--text-base)]">
+          {lang === 'ru' ? 'Не удалось загрузить возвраты' : lang === 'uz' ? 'Qaytarishlarni yuklab bo\'lmadi' : 'Failed to load returns'}
+        </p>
+        <button
+          onClick={handleRetry}
+          className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-opacity hover:opacity-80 btn-primary"
+        >
+          <RefreshCw className="w-4 h-4" />
+          {lang === 'ru' ? 'Повторить' : lang === 'uz' ? 'Qayta urinish' : 'Retry'}
+        </button>
       </div>
     )
   }
