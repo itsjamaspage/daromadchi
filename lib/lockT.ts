@@ -16,6 +16,9 @@ function tr(ru: string, uz: string, en: string): Tr {
 
 /** The gateable surfaces, named as the seller sees them in the sidebar. */
 export const lockedFeatureT: Partial<Record<Feature, Tr>> = {
+  dashboard:      tr('Дашборд', 'Boshqaruv paneli', 'Dashboard'),
+  products:       tr('Товары', 'Tovarlar', 'Products'),
+  orders:         tr('Заказы', 'Buyurtmalar', 'Orders'),
   analytics:      tr('Аналитика', 'Tahlil', 'Analytics'),
   stock_sync:     tr('Склад', 'Ombor', 'Stock sync'),
   finances:       tr('Финансы и выплаты', "Moliya va to'lovlar", 'Finances & payouts'),

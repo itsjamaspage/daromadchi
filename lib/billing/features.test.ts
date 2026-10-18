@@ -10,8 +10,8 @@ const NOW = new Date('2026-08-18T12:00:00Z')
 const soon = (days: number) => new Date(NOW.getTime() + days * 86_400_000)
 const ago  = (days: number) => new Date(NOW.getTime() - days * 86_400_000)
 
-const FREE_FOREVER: Feature[] = ['dashboard', 'products', 'orders', 'marketplaces']
-const GATED: Feature[] = ['analytics', 'stock_sync', 'finances', 'unit_economics']
+const FREE_FOREVER: Feature[] = ['marketplaces']
+const GATED: Feature[] = ['dashboard', 'products', 'orders', 'analytics', 'stock_sync', 'finances', 'unit_economics']
 
 const freeNoTrial:   EntitlementInput = { plan: 'free', planExpiresAt: null, trialEndsAt: ago(1) }
 const freeOnTrial:   EntitlementInput = { plan: 'free', planExpiresAt: null, trialEndsAt: soon(5) }
@@ -20,12 +20,12 @@ const paidPro:       EntitlementInput = { plan: 'pro',  planExpiresAt: soon(30),
 const lapsedPro:     EntitlementInput = { plan: 'pro',  planExpiresAt: ago(1),   trialEndsAt: null }
 
 describe('free forever vs trial-then-gated', () => {
-  it('a free account past its trial keeps dashboard, products, orders, marketplaces', () => {
+  it('a free account past its trial keeps only marketplace connection', () => {
     for (const f of FREE_FOREVER) {
       assert.equal(hasFeature(freeNoTrial, f, NOW), true, f)
     }
   })
-  it('...and loses analytics, stock sync, finances, unit economics', () => {
+  it('...and loses everything else', () => {
     for (const f of GATED) {
       assert.equal(hasFeature(freeNoTrial, f, NOW), false, f)
     }

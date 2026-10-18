@@ -11,6 +11,9 @@ import WelcomePopup from '@/components/dashboard/WelcomePopup'
 import type { MarketplaceType } from '@/lib/types'
 import { startOfIsoWeek, endOfIsoWeek, localDateStr, shopWeekBounds } from '@/lib/period-week'
 import { inclusiveDays } from '@/lib/kpi-windows'
+import { getLang } from '@/lib/server-i18n'
+import { currentUserAccess } from '@/lib/billing/current-user-access'
+import FeatureLock from '@/components/dashboard/FeatureLock'
 
 function parseDays(v: string | undefined): number {
   if (v === '1')     return 1
@@ -86,6 +89,9 @@ interface Props {
 }
 
 export default async function DashboardPage({ searchParams }: Props) {
+  const [lang, access] = await Promise.all([getLang(), currentUserAccess('dashboard')])
+  if (!access.allowed) return <FeatureLock lang={lang} feature="dashboard" hadTrial={access.trialEnded} />
+
   const params             = await searchParams
   const explicitDays       = params?.days
   let   from               = params?.from
