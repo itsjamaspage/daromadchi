@@ -28,7 +28,7 @@ export type Interval = 'monthly' | 'annual'
 // carries the amount it was sold at in agreed_amount_tiyin, and the renewal cron
 // charges that.
 export const PLAN_PRICES_TIYIN: Record<PlanKey, { monthly: number; annualPerMonth: number }> = {
-  pro:      { monthly: 15_000_000, annualPerMonth: 12_500_000 }, // 150 000 / 125 000 so'm
+  pro:      { monthly: 1_000_000, annualPerMonth: 800_000 }, // TEMP 10 000/8 000 so'm for testing (was 150 000/125 000)
   pro_plus: { monthly: 25_000_000, annualPerMonth: 22_500_000 }, // 250 000 / 225 000 so'm
   biznes:   { monthly: 50_000_000, annualPerMonth: 45_000_000 }, // 500 000 / 450 000 so'm
 }
