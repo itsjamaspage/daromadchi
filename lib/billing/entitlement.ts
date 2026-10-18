@@ -34,13 +34,14 @@ import { eq } from 'drizzle-orm'
 import { db, users } from '@/lib/db'
 import { hasFeature, type EntitlementInput, type Feature } from './features'
 
-/** Load the four fields entitlement depends on. Nothing else is selected. */
+/** Load the fields entitlement depends on. Nothing else is selected. */
 export async function loadEntitlement(userId: string): Promise<EntitlementInput> {
   const [row] = await db.select({
     plan: users.plan,
     plan_expires_at: users.plan_expires_at,
     trial_ends_at: users.trial_ends_at,
     is_grandfathered: users.is_grandfathered,
+    email: users.email,
   }).from(users).where(eq(users.id, userId))
 
   return {
@@ -48,6 +49,7 @@ export async function loadEntitlement(userId: string): Promise<EntitlementInput>
     planExpiresAt: row?.plan_expires_at ?? null,
     trialEndsAt: row?.trial_ends_at ?? null,
     isGrandfathered: row?.is_grandfathered ?? false,
+    email: row?.email ?? null,
   }
 }
 
