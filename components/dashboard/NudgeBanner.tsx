@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { X, Clock, Lock, TrendingUp } from 'lucide-react'
 import { useLang } from '@/app/providers'
@@ -32,8 +33,9 @@ export default function NudgeBanner({ kind, detail }: NudgeProps) {
   const { lang } = useLang()
   const t = (k: keyof typeof nudgeT) => nudgeT[k][lang]
   const [hidden, setHidden] = useState(false)
+  const pathname = usePathname()
 
-  if (hidden) return null
+  if (hidden || pathname === '/dashboard/billing') return null
 
   function dismiss() {
     setHidden(true)
