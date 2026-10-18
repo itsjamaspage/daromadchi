@@ -24,7 +24,7 @@
 import 'server-only'
 import { randomUUID } from 'crypto'
 import { and, eq, lt, isNotNull, inArray } from 'drizzle-orm'
-import { db, payments, subscriptions, users } from '@/lib/db'
+import { db, payments, subscriptions, users, renewalAttempts } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { decrypt } from '@/lib/crypto'
 import { chargeBoundCard } from '@/lib/billing/recurring'
@@ -52,6 +52,8 @@ export interface RenewalOptions {
   dryRun?: boolean
   charge?: ChargeFn
   decryptToken?: (encrypted: string) => string
+  /** Where this run was triggered from — logged in renewal_attempts. */
+  source?: 'cron' | 'manual'
 }
 
 export interface RenewalSummary {
@@ -73,6 +75,7 @@ export async function runBillingRenewal(opts: RenewalOptions = {}): Promise<Rene
   const dryRun = opts.dryRun ?? false
   const charge = opts.charge ?? chargeBoundCard
   const decryptToken = opts.decryptToken ?? decrypt
+  const source = opts.source ?? 'cron'
   const dueBefore = new Date(now.getTime() + RENEW_WINDOW_MS)
 
   const due = await db.select({
@@ -98,7 +101,14 @@ export async function runBillingRenewal(opts: RenewalOptions = {}): Promise<Rene
     // Every plan checkout can sell must also RENEW. Naming pro and pro_plus by
     // hand here meant a paying Biznes subscriber was silently never charged
     // again and dropped to free at period end.
-    if (!isPlanKey(s.plan)) { skipped++; continue }
+    if (!isPlanKey(s.plan)) {
+      await db.insert(renewalAttempts).values({
+        subscription_id: s.id, user_id: s.userId, plan: s.plan,
+        interval: s.interval ?? 'monthly', dry_run: dryRun,
+        outcome: 'skipped_bad_plan', source,
+      }).catch(() => {})
+      skipped++; continue
+    }
     const interval: Interval = s.interval === 'annual' ? 'annual' : 'monthly'
     // Charge WHAT THEY AGREED TO, never the live PLAN_PRICES_TIYIN. Deriving the
     // amount from config means any later price edit silently reprices existing
@@ -133,6 +143,10 @@ export async function runBillingRenewal(opts: RenewalOptions = {}): Promise<Rene
       })
     }
     if (amountTiyin == null || amountTiyin <= 0) {
+      await db.insert(renewalAttempts).values({
+        subscription_id: s.id, user_id: s.userId, plan: s.plan,
+        interval, dry_run: dryRun, outcome: 'skipped_no_amount', source,
+      }).catch(() => {})
       noAgreedAmount++
       logger.error('billing_renew_skipped_no_agreed_amount', {
         subscriptionId: s.id, userId: s.userId, plan: s.plan, interval,
@@ -142,6 +156,11 @@ export async function runBillingRenewal(opts: RenewalOptions = {}): Promise<Rene
     const periodMonths = planPeriodMonths(interval)
 
     if (dryRun) {
+      await db.insert(renewalAttempts).values({
+        subscription_id: s.id, user_id: s.userId, plan: s.plan,
+        interval, amount_tiyin: amountTiyin, dry_run: true,
+        outcome: 'dry_run', source,
+      }).catch(() => {})
       logger.info('billing_renew_dryrun', { subscriptionId: s.id, plan: s.plan, amountTiyin, chargingNewPrice })
       continue
     }
@@ -159,6 +178,11 @@ export async function runBillingRenewal(opts: RenewalOptions = {}): Promise<Rene
       }).returning({ id: payments.id })
       paymentId = p.id
     } catch (err) {
+      await db.insert(renewalAttempts).values({
+        subscription_id: s.id, user_id: s.userId, plan: s.plan,
+        interval, amount_tiyin: amountTiyin, dry_run: false,
+        outcome: 'failed', error: `payment persist: ${String(err).slice(0, 300)}`, source,
+      }).catch(() => {})
       logger.error('billing_renew_persist_failed', { subscriptionId: s.id, error: String(err).slice(0, 200) })
       failed++; continue
     }
@@ -174,10 +198,11 @@ export async function runBillingRenewal(opts: RenewalOptions = {}): Promise<Rene
       // existing expiry (applyAtmosPaymentSuccess bases the new period on the later
       // of now / current expiry).
       await applyAtmosPaymentSuccess({ paymentId, transactionId, source: 'return' })
-      // Promote AFTER the charge succeeded. Moving the agreed price on the
-      // strength of an attempt would leave a seller agreed to a number they
-      // never actually paid; a failed charge keeps the old price and the notice
-      // standing, and the next run tries again.
+      await db.insert(renewalAttempts).values({
+        subscription_id: s.id, user_id: s.userId, payment_id: paymentId,
+        plan: s.plan, interval, amount_tiyin: amountTiyin, dry_run: false,
+        outcome: 'charged', atmos_transaction_id: transactionId, source,
+      }).catch(() => {})
       if (chargingNewPrice) await promotePendingAmount(s.id, now)
       charged++
     } catch (err) {
@@ -190,6 +215,11 @@ export async function runBillingRenewal(opts: RenewalOptions = {}): Promise<Rene
         await db.update(users).set({ plan: 'free', updated_at: now }).where(eq(users.id, s.userId))
         downgraded++
       }
+      await db.insert(renewalAttempts).values({
+        subscription_id: s.id, user_id: s.userId, payment_id: paymentId,
+        plan: s.plan, interval, amount_tiyin: amountTiyin, dry_run: false,
+        outcome: 'failed', error: String(err).slice(0, 500), source,
+      }).catch(() => {})
       failed++
       logger.warn('billing_renew_charge_failed', { subscriptionId: s.id, error: String(err).slice(0, 200) })
     }

@@ -165,6 +165,31 @@ export async function GET() {
     (lapsedPaidResult.rows ?? lapsedPaidResult)[0]?.count ?? 0,
   )
 
+  // 6. Renewal attempts log — real evidence of what the system tried.
+  const attemptCountResult = await db.execute<{ outcome: string; count: string }>(sql`
+    SELECT outcome, COUNT(*)::text AS count
+    FROM renewal_attempts
+    GROUP BY outcome
+    ORDER BY count DESC
+  `)
+  const attemptCounts = (attemptCountResult.rows ?? attemptCountResult) as Array<{ outcome: string; count: string }>
+  const attemptsByOutcome: Record<string, number> = {}
+  for (const r of attemptCounts) attemptsByOutcome[r.outcome] = Number(r.count)
+
+  const recentAttempts = await db.execute<{
+    id: string; subscription_id: string; plan: string; interval: string;
+    amount_tiyin: number | null; dry_run: boolean; outcome: string;
+    atmos_transaction_id: string | null; error: string | null;
+    source: string; created_at: string
+  }>(sql`
+    SELECT id, subscription_id, plan, interval, amount_tiyin, dry_run,
+           outcome, atmos_transaction_id, error, source, created_at
+    FROM renewal_attempts
+    ORDER BY created_at DESC
+    LIMIT 10
+  `)
+  const recentAttemptRows = recentAttempts.rows ?? recentAttempts
+
   return NextResponse.json({
     generated_at: now.toISOString(),
     read_only: true,
@@ -208,6 +233,23 @@ export async function GET() {
     '5_downgrade_impact': {
       users_free_with_past_due_subscription: downgradeCount,
       users_free_with_any_card_bound_subscription: lapsedPaidCount,
+    },
+
+    '6_renewal_attempts': {
+      by_outcome: attemptsByOutcome,
+      total: Object.values(attemptsByOutcome).reduce((a, b) => a + b, 0),
+      recent_10: (recentAttemptRows as Array<Record<string, unknown>>).map((r) => ({
+        id: r.id,
+        subscription_id: r.subscription_id,
+        plan: r.plan,
+        amount_tiyin: r.amount_tiyin,
+        dry_run: r.dry_run,
+        outcome: r.outcome,
+        atmos_transaction_id: r.atmos_transaction_id,
+        error: r.error ? String(r.error).slice(0, 300) : null,
+        source: r.source,
+        created_at: r.created_at,
+      })),
     },
   })
 }
