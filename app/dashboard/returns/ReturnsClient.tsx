@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useReducer } from 'react'
 import { Package, MapPin, Clock, DollarSign, AlertTriangle, CheckCircle, XCircle, Truck, RotateCcw, RefreshCw } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
@@ -99,10 +99,10 @@ export default function ReturnsClient() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [tab, setTab] = useState<TabFilter>('all')
+  const [retryKey, bumpRetry] = useReducer((n: number) => n + 1, 0)
+  const handleRetry = () => { setLoading(true); setError(false); bumpRetry() }
 
-  const loadReturns = useCallback(() => {
-    setLoading(true)
-    setError(false)
+  useEffect(() => {
     const ctrl = new AbortController()
     const timeout = setTimeout(() => ctrl.abort(), 15_000)
     fetch('/api/returns', { signal: ctrl.signal })
@@ -114,9 +114,7 @@ export default function ReturnsClient() {
       .catch(() => { setReturns([]); setError(true) })
       .finally(() => { clearTimeout(timeout); setLoading(false) })
     return () => { clearTimeout(timeout); ctrl.abort() }
-  }, [])
-
-  useEffect(() => loadReturns(), [loadReturns])
+  }, [retryKey])
 
   if (loading) {
     return (
@@ -138,7 +136,7 @@ export default function ReturnsClient() {
           {lang === 'ru' ? 'Не удалось загрузить возвраты' : lang === 'uz' ? 'Qaytarishlarni yuklab bo\'lmadi' : 'Failed to load returns'}
         </p>
         <button
-          onClick={loadReturns}
+          onClick={handleRetry}
           className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-opacity hover:opacity-80 btn-primary"
         >
           <RefreshCw className="w-4 h-4" />
