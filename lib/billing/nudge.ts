@@ -179,8 +179,8 @@ export async function dispatchTierNudges(now: Date = new Date()): Promise<NudgeS
   const reminderAt = new Date(now.getTime() + TRIAL_REMINDER_DAYS * DAY_MS)
 
   // ── trial ending ──────────────────────────────────────────────────────────
-  // Grandfathered accounts keep full access permanently — telling them the trial
-  // is ending would be a false alarm.
+  // Grandfathered accounts with an active paid plan keep access — telling them the
+  // trial is ending would be confusing, since their access comes from the plan.
   const notGrandfathered = or(eq(users.is_grandfathered, false), isNull(users.is_grandfathered))
   const ending = await db.select({
     id: users.id, trialEndsAt: users.trial_ends_at,

@@ -124,9 +124,14 @@ describe('entitlement — what the database says a seller may use', () => {
     }
   })
 
-  it('a grandfathered account is never gated, whatever its plan says', async () => {
+  it('a grandfathered account with an expired plan is gated like any other free account', async () => {
     const id = await seedUser({ plan: 'free', trialEndsAt: ago(90), grandfathered: true })
-    for (const f of GATED) assert.equal(await userHasFeature(id, f), true, `${f} for a grandfathered account`)
+    for (const f of GATED) assert.equal(await userHasFeature(id, f), false, `${f} must be gated even when grandfathered`)
+  })
+
+  it('a grandfathered account with an active paid plan keeps everything', async () => {
+    const id = await seedUser({ plan: 'pro', planExpiresAt: ahead(30), trialEndsAt: ago(90), grandfathered: true })
+    for (const f of GATED) assert.equal(await userHasFeature(id, f), true, `${f} for a grandfathered paid account`)
     assert.deepEqual(await lockedNavKeys(id), [])
   })
 
