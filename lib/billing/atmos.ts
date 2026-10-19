@@ -52,6 +52,8 @@ export interface AtmosConfig {
   consumerKey: string
   consumerSecret: string
   callbackApiKey: string
+  /** Separate API key for the hosted card-bind callback (Visa/MC flow). */
+  bindCallbackApiKey: string
   serviceIkpu: string
   successUrl: string
   /** Source-IP allowlist for the callback. Default OFF in DEV until confirmed. */
@@ -71,8 +73,9 @@ export function getConfig(): AtmosConfig {
     storeId:        req('ATMOS_STORE_ID'),
     consumerKey:    req('ATMOS_CONSUMER_KEY'),
     consumerSecret: req('ATMOS_CONSUMER_SECRET'),
-    callbackApiKey: req('ATMOS_CALLBACK_API_KEY'),
-    serviceIkpu:    req('ATMOS_SERVICE_IKPU'),
+    callbackApiKey:     req('ATMOS_CALLBACK_API_KEY'),
+    bindCallbackApiKey: process.env.ATMOS_BIND_CALLBACK_API_KEY?.trim() || '',
+    serviceIkpu:        req('ATMOS_SERVICE_IKPU'),
     successUrl:     req('ATMOS_SUCCESS_URL'),
     // Toggleable; defaults OFF so DEV/sandbox works before ATMOS confirms the range.
     ipAllowlistEnabled: /^(1|true|on|yes)$/i.test(process.env.ATMOS_CALLBACK_IP_ALLOWLIST?.trim() || ''),
@@ -373,14 +376,154 @@ export function isCallbackIpAllowed(ip: string | null, cfg: AtmosConfig = getCon
   return !!ip && ipInAnyCidr(ip, cfg.callbackCidr)
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TODO(Phase 2 — recurring, DO NOT BUILD YET):
-// Silent renewals will use the hosted card-binding flow to get a REUSABLE card
-// token without any PAN ever touching our servers:
-//   POST `${BASE}/checkout/card-bind/create`  → returns a checkout.atmos.uz/bind
-//   URL; the customer binds their card on ATMOS's hosted page; we receive a card
-//   token we can later charge non-interactively. Still PCI-safe (no PAN here).
-// Persist the token encrypted (subscriptions.card_token_encrypted, reserved) and
-// charge on schedule. Get single hosted-checkout payments working end-to-end
-// FIRST — this block is a placeholder only.
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Hosted card-binding (Visa / Mastercard) ─────────────────────────────────
+//
+// UzCard/Humo cards bind via the direct /partner/bind-card/* flow above.
+// Visa and Mastercard domestic cards require a DIFFERENT ATMOS endpoint:
+//   POST /checkout/card-bind/create → ATMOS hosted page where the user enters
+//   card + OTP → callback to us with { api_key, card_id } → we respond 200
+//   { status: 1, message: "Успешно" } → user redirected to success_url.
+//
+// Charging a card_id-bound card uses the MPS flow, not the merchant/pay flow:
+//   POST /mps/pay/transaction/pre-create  → { payload: { id } }
+//   POST /mps/pay/transaction/create/bind → instant charge (no OTP)
+
+export interface HostedBindCreateParams {
+  requestId: string
+  account: string
+  successUrl: string
+}
+
+export interface HostedBindCreateResult {
+  paymentId: string
+  token: string
+  url: string
+  raw: Record<string, unknown>
+}
+
+export async function hostedBindCreate(p: HostedBindCreateParams): Promise<HostedBindCreateResult> {
+  const cfg = getConfig()
+  const json = await authedPost<Record<string, unknown>>('/checkout/card-bind/create', {
+    request_id: p.requestId,
+    store_id: Number(cfg.storeId),
+    account: String(p.account),
+    success_url: p.successUrl,
+  })
+  assertAtmosOk(json, 'card-bind/create')
+  const paymentId = pickDeep(json, ['payment_id', 'paymentId'])
+  const token = pickDeep(json, ['token'])
+  const url = pickDeep(json, ['url', 'checkout_url', 'bind_url'])
+  if (!paymentId || !url) {
+    throw new AtmosApiError('bad_response', 'card-bind/create returned no payment_id or url')
+  }
+  return { paymentId, token: token ?? '', url, raw: json }
+}
+
+// ── MPS charging (for card_id-bound cards) ──────────────────────────────────
+
+export interface MpsPreCreateParams {
+  amountTiyin: number
+  extId: string
+  account: string
+  invoiceId?: string
+}
+
+export interface MpsPreCreateResult {
+  transactionId: string
+  raw: Record<string, unknown>
+}
+
+export async function mpsPreCreate(p: MpsPreCreateParams): Promise<MpsPreCreateResult> {
+  const cfg = getConfig()
+  const json = await authedPost<Record<string, unknown>>('/mps/pay/transaction/pre-create', {
+    amount: p.amountTiyin,
+    ext_id: p.extId,
+    store_id: Number(cfg.storeId),
+    account: p.account,
+    invoice_id: p.invoiceId ?? p.extId,
+    ofd_items: [{
+      items_id: '1',
+      code: cfg.serviceIkpu,
+      name: 'Daromadchi — obuna',
+      amount: p.amountTiyin,
+      quantity: 1,
+      details: { name: 'quantity', values: '1' },
+    }],
+  })
+  const payload = asRecord(json.payload ?? json.data ?? json)
+  const tid = pickString(payload, ['id', 'transaction_id']) ?? pickDeep(json, ['id', 'transaction_id'])
+  if (!tid) throw new AtmosApiError('bad_response', 'mps/pre-create returned no transaction id')
+  return { transactionId: String(tid), raw: json }
+}
+
+export interface MpsCreateBindParams {
+  cardId: string
+  amountTiyin: number
+  transactionId: string
+  clientIp?: string
+}
+
+export interface MpsCreateBindResult {
+  transactionId: string
+  resultCode: string
+  raw: Record<string, unknown>
+}
+
+export async function mpsCreateBind(p: MpsCreateBindParams): Promise<MpsCreateBindResult> {
+  const json = await authedPost<Record<string, unknown>>('/mps/pay/transaction/create/bind', {
+    card_id: Number(p.cardId),
+    amount: p.amountTiyin,
+    transaction_id: Number(p.transactionId),
+    client_ip_addr: p.clientIp ?? '127.0.0.1',
+  })
+  const payload = asRecord(json.payload ?? json.data ?? json)
+  const resultCode = pickString(payload, ['result_code', 'resultCode']) ?? ''
+  const tid = pickString(payload, ['id', 'transaction_id']) ?? p.transactionId
+  if (resultCode && resultCode.toLowerCase() !== 'approved') {
+    throw new AtmosApiError(resultCode, `MPS charge declined: ${resultCode}`)
+  }
+  return { transactionId: String(tid), resultCode, raw: json }
+}
+
+// ── Card details (lookup by card_id) ────────────────────────────────────────
+
+export interface CardDetails {
+  cardId: string
+  cardType: string | null
+  panMasked: string | null
+  raw: Record<string, unknown>
+}
+
+async function authedGet<T = Record<string, unknown>>(path: string): Promise<T> {
+  const cfg = getConfig()
+  const send = (bearer: string) => fetch(`${cfg.baseUrl}${path}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${bearer}`,
+      Accept: 'application/json',
+    },
+  })
+  let token = await getToken()
+  let res = await send(token)
+  if (res.status === 401) {
+    token = await getToken(true)
+    res = await send(token)
+  }
+  const json = (await res.json().catch(() => null)) as T | null
+  if (!res.ok || json == null) {
+    const hint = json ? JSON.stringify(json).slice(0, 300) : '(no body)'
+    throw new AtmosApiError('api_failed', `${path} failed (HTTP ${res.status}): ${hint}`, res.status)
+  }
+  return json
+}
+
+export async function getCardDetails(cardId: string): Promise<CardDetails> {
+  const json = await authedGet<Record<string, unknown>>(`/mps/pay/card/${cardId}`)
+  const payload = asRecord(json.payload ?? json.data ?? json)
+  return {
+    cardId: String(cardId),
+    cardType: pickString(payload, ['card_type', 'cardType']) ?? null,
+    panMasked: pickString(payload, ['pan', 'card_number', 'masked_pan']) ?? null,
+    raw: json,
+  }
+}
