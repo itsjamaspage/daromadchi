@@ -67,7 +67,8 @@ export async function POST(req: Request) {
   const successUrl = `${baseSuccessUrl}?account=${encodeURIComponent(paymentId)}`
 
   try {
-    const result = await hostedBindCreate({ requestId, account: paymentId, successUrl })
+    const itemName = `Daromadchi — obuna (${plan}, ${periodMonths} oy)`
+    const result = await hostedBindCreate({ requestId, account: paymentId, successUrl, amountTiyin: amountTiyin, itemName })
 
     // Store the ATMOS payment_id so the callback / return page can cross-check.
     await db.update(payments).set({
