@@ -256,7 +256,8 @@ function UpgradeModal({ current, highlight, initialInterval, lang, d, derivedTie
       })
       const data = await res.json().catch(() => ({}))
       if (res.ok && data?.url) {
-        window.location.href = data.url
+        window.open(data.url, '_blank')
+        setHostedBindBusy(false)
       } else {
         setErr(data?.error === 'atmos_not_configured' ? b.errUnavailable : b.errGeneric)
         setHostedBindBusy(false)
