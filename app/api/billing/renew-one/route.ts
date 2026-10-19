@@ -15,7 +15,7 @@ import { randomUUID } from 'crypto'
 import { db, subscriptions, payments, renewalAttempts } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth/session'
 import { decrypt } from '@/lib/crypto'
-import { chargeBoundCard } from '@/lib/billing/recurring'
+import { chargeBoundCard, chargeBoundCardMps } from '@/lib/billing/recurring'
 import { isPlanKey, tiyinToSom, planPeriodMonths, type Interval } from '@/lib/billing/plans'
 import { renewalAmountTiyin, pendingAmountIsChargeable, promotePendingAmount } from '@/lib/billing/price-notice'
 import { applyAtmosPaymentSuccess } from '@/lib/billing/activate'
@@ -57,12 +57,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'subscription not found' }, { status: 404 })
   }
 
+  const hasCardToken = !!sub.card_token_encrypted
+  const hasCardId = !!sub.card_id
+  const chargeMethod = hasCardToken ? 'token' : hasCardId ? 'mps' : null
+
   const issues: string[] = []
   if (!['active', 'past_due'].includes(sub.status)) {
     issues.push(`status is '${sub.status}' — must be active or past_due`)
   }
-  if (!sub.card_token_encrypted) {
-    issues.push('no card token bound')
+  if (!chargeMethod) {
+    issues.push('no card token or card_id bound')
   }
   if (!isPlanKey(sub.plan)) {
     issues.push(`plan '${sub.plan}' is not a recognized plan key`)
@@ -118,6 +122,7 @@ export async function POST(req: NextRequest) {
         interval,
         charging_new_price: chargingNewPrice,
         card_last4: sub.card_last4,
+        charge_method: chargeMethod,
       },
     })
   }
@@ -143,12 +148,20 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const token = decrypt(sub.card_token_encrypted as string)
-    const { transactionId } = await chargeBoundCard(account, amountTiyin!, token,
-      async (txnId) => {
-        await db.update(payments).set({ atmos_payment_id: txnId, updated_at: now })
-          .where(eq(payments.id, paymentId)).catch(() => {})
-      })
+    let transactionId: string
+    const onCreated = async (txnId: string) => {
+      await db.update(payments).set({ atmos_payment_id: txnId, updated_at: now })
+        .where(eq(payments.id, paymentId)).catch(() => {})
+    }
+
+    if (chargeMethod === 'token') {
+      const token = decrypt(sub.card_token_encrypted as string)
+      const res = await chargeBoundCard(account, amountTiyin!, token, onCreated)
+      transactionId = res.transactionId
+    } else {
+      const res = await chargeBoundCardMps(account, amountTiyin!, sub.card_id!, onCreated)
+      transactionId = res.transactionId
+    }
 
     await applyAtmosPaymentSuccess({ paymentId, transactionId, source: 'return' })
     if (chargingNewPrice) await promotePendingAmount(sub.id, now)

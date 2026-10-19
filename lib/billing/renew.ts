@@ -27,7 +27,7 @@ import { and, eq, lt, isNotNull, inArray } from 'drizzle-orm'
 import { db, payments, subscriptions, users, renewalAttempts } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { decrypt } from '@/lib/crypto'
-import { chargeBoundCard } from '@/lib/billing/recurring'
+import { chargeBoundCard, chargeBoundCardMps } from '@/lib/billing/recurring'
 import { applyAtmosPaymentSuccess } from '@/lib/billing/activate'
 import { renewalAmountTiyin, pendingAmountIsChargeable, promotePendingAmount } from '@/lib/billing/price-notice'
 import { planPeriodMonths, tiyinToSom, isPlanKey, type Interval } from '@/lib/billing/plans'
@@ -78,23 +78,27 @@ export async function runBillingRenewal(opts: RenewalOptions = {}): Promise<Rene
   const source = opts.source ?? 'cron'
   const dueBefore = new Date(now.getTime() + RENEW_WINDOW_MS)
 
+  // Pick up subscriptions with EITHER a card_token (UzCard/Humo) or a card_id
+  // (Visa/MC hosted-bind). The charge path is chosen per-subscription below.
   const due = await db.select({
     id: subscriptions.id, userId: subscriptions.user_id, plan: subscriptions.plan,
     interval: subscriptions.interval, periodEnd: subscriptions.current_period_end,
     tokenEnc: subscriptions.card_token_encrypted,
+    cardId: subscriptions.card_id,
     agreedAmountTiyin: subscriptions.agreed_amount_tiyin,
     pendingAmountTiyin: subscriptions.pending_amount_tiyin,
     pendingEffectiveDate: subscriptions.pending_effective_date,
     pendingNotifiedAt: subscriptions.pending_notified_at,
   }).from(subscriptions).where(and(
-    // A cancelled subscription is NOT in here. Cancellation keeps access to the
-    // end of the paid period and then stops — charging it again would bill
-    // someone who explicitly told us not to.
     inArray(subscriptions.status, ['active', 'past_due']),
-    eq(subscriptions.autorenew, true),   // per-subscription toggle (billing page)
-    isNotNull(subscriptions.card_token_encrypted),
+    eq(subscriptions.autorenew, true),
+    // Has either a card_token or card_id bound.
+    // SQL: (card_token_encrypted IS NOT NULL OR card_id IS NOT NULL)
+    // Drizzle doesn't have a clean or() for IS NOT NULL, so we use raw SQL.
     lt(subscriptions.current_period_end, dueBefore),
   ))
+  // Filter in JS: must have at least one charge method.
+  .then(rows => rows.filter(s => s.tokenEnc || s.cardId))
 
   let charged = 0, failed = 0, downgraded = 0, skipped = 0, noAgreedAmount = 0
   for (const s of due) {
@@ -188,12 +192,19 @@ export async function runBillingRenewal(opts: RenewalOptions = {}): Promise<Rene
     }
 
     try {
-      const token = decryptToken(s.tokenEnc as string)
-      const { transactionId } = await charge(account, amountTiyin, token,
-        async (txnId) => {
-          await db.update(payments).set({ atmos_payment_id: txnId, updated_at: now })
-            .where(eq(payments.id, paymentId)).catch(() => {})
-        })
+      const onCreated = async (txnId: string) => {
+        await db.update(payments).set({ atmos_payment_id: txnId, updated_at: now })
+          .where(eq(payments.id, paymentId)).catch(() => {})
+      }
+      let transactionId: string
+      if (s.tokenEnc) {
+        const token = decryptToken(s.tokenEnc as string)
+        const res = await charge(account, amountTiyin, token, onCreated)
+        transactionId = res.transactionId
+      } else {
+        const res = await chargeBoundCardMps(account, amountTiyin, s.cardId!, onCreated)
+        transactionId = res.transactionId
+      }
       // Activates the payment + extends the subscription/user plan, anchored on the
       // existing expiry (applyAtmosPaymentSuccess bases the new period on the later
       // of now / current expiry).

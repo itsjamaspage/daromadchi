@@ -1,30 +1,35 @@
 /**
  * ATMOS billing callback (Step 5) — server-to-server, PUBLIC (no auth).
  *
- * ATMOS finalizes a charge ONLY when we reply HTTP 200 with exactly
- * {"status":1,"message":"Успешно"}. Anything else ({"status":0,...}) rejects it.
+ * Handles TWO callback shapes:
  *
- * Order of operations:
- *   1. Log the FULL raw body (jsonb) before any processing.
- *   2. (Toggleable) source-IP allowlist — default OFF in DEV.
- *   3. Confirm the classic callback shape; unknown shape ⇒ log + status 0.
- *   4. Verify sign == md5(store_id+transaction_id+account+amount+api_key)
- *      (constant-time, isolated in lib/billing/atmos.ts).
- *   5. Look up the payment by `account`; idempotent re-ack if already SUCCESS.
- *   6. Cross-check the real status via getInvoiceStatus() (defense in depth).
- *   7. Activate idempotently (at-most-once guard in lib/billing/activate.ts).
+ * A) PAYMENT callback (charge settled):
+ *    { store_id, transaction_id, transaction_time, amount, account, sign }
+ *    ATMOS finalizes the charge ONLY when we reply HTTP 200 with exactly
+ *    {"status":1,"message":"Успешно"}. Anything else rejects it.
+ *
+ * B) HOSTED BIND callback (card bound via Visa/MC flow):
+ *    { api_key, card_id }
+ *    ATMOS reports a successful card binding. We verify api_key matches our
+ *    configured bind callback key, store the card_id on the subscription,
+ *    and charge via MPS.
+ *
+ * Distinction: bind callbacks carry `api_key` + `card_id` without `sign`;
+ * payment callbacks carry `sign` without `api_key`.
  */
 
 import { NextResponse } from 'next/server'
-import { eq } from 'drizzle-orm'
-import { db, payments } from '@/lib/db'
+import { eq, desc, and } from 'drizzle-orm'
+import { db, payments, subscriptions } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import {
   getConfig, verifyCallbackSign, computeCallbackSign, getInvoiceStatus,
   clientIpFromForwarded, isCallbackIpAllowed, AtmosConfigError,
+  getCardDetails, mpsPreCreate, mpsCreateBind,
 } from '@/lib/billing/atmos'
 import { applyAtmosPaymentSuccess } from '@/lib/billing/activate'
 import { tiyinToSom } from '@/lib/billing/plans'
+import { timingSafeEqual } from 'crypto'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -32,10 +37,15 @@ export const dynamic = 'force-dynamic'
 const ACCEPT = { status: 1, message: 'Успешно' }
 function reject(message: string, log?: Record<string, unknown>) {
   const response = { status: 0, message }
-  // TEMP verbose: always log the EXACT body we send back on a reject, so a failed
-  // real payment shows precisely what ATMOS received from us.
   logger.warn('atmos_callback_rejected', { response, ...(log ?? {}) })
   return NextResponse.json(response, { status: 200 })
+}
+
+function constantTimeEq(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  try {
+    return timingSafeEqual(Buffer.from(a), Buffer.from(b))
+  } catch { return false }
 }
 
 export async function POST(req: Request) {
@@ -66,6 +76,173 @@ export async function POST(req: Request) {
     return reject('forbidden_ip', { ip })
   }
 
+  // ── Route: bind callback vs payment callback ──
+  // Bind callbacks carry { api_key, card_id } — no `sign` field.
+  const hasApiKey = typeof body?.api_key === 'string'
+  const hasCardId = body?.card_id != null
+  const hasSign = typeof body?.sign === 'string'
+
+  if (hasApiKey && hasCardId && !hasSign) {
+    return handleBindCallback(body!, cfg)
+  }
+
+  // ── Classic payment callback ──
+  return handlePaymentCallback(body, rawText, cfg)
+}
+
+// ── Hosted bind callback handler ──────────────────────────────────────────────
+
+async function handleBindCallback(
+  body: Record<string, unknown>,
+  cfg: ReturnType<typeof getConfig>,
+) {
+  const apiKey = String(body.api_key)
+  const cardId = String(body.card_id)
+
+  logger.info('atmos_bind_callback', { cardId, hasApiKey: true })
+
+  // Verify the api_key matches our configured bind callback key.
+  if (!cfg.bindCallbackApiKey) {
+    logger.error('atmos_bind_callback_no_key_configured', {})
+    return reject('not_configured')
+  }
+  if (!constantTimeEq(apiKey, cfg.bindCallbackApiKey)) {
+    logger.warn('atmos_bind_callback_bad_key', { cardId })
+    return reject('bad_api_key')
+  }
+
+  // Find the most recent pending subscription that is waiting for a bind.
+  // The hosted bind flow creates a subscription + payment in 'pending' state
+  // before redirecting. We find the latest one that has no card yet.
+  const [sub] = await db.select({
+    id: subscriptions.id,
+    userId: subscriptions.user_id,
+    plan: subscriptions.plan,
+    interval: subscriptions.interval,
+    status: subscriptions.status,
+    card_id: subscriptions.card_id,
+    agreed_amount_tiyin: subscriptions.agreed_amount_tiyin,
+  }).from(subscriptions)
+    .where(and(
+      eq(subscriptions.status, 'pending'),
+    ))
+    .orderBy(desc(subscriptions.created_at))
+    .limit(1)
+
+  if (!sub) {
+    logger.warn('atmos_bind_callback_no_pending_sub', { cardId })
+    return reject('no_pending_subscription')
+  }
+
+  // Idempotency: if this subscription already has this card_id, re-ack.
+  if (sub.card_id === cardId) {
+    logger.info('atmos_bind_callback_idempotent', { subscriptionId: sub.id, cardId })
+    return NextResponse.json(ACCEPT, { status: 200 })
+  }
+
+  // Fetch card details from ATMOS for display.
+  let cardType: string | null = null
+  let panMasked: string | null = null
+  try {
+    const details = await getCardDetails(cardId)
+    cardType = details.cardType
+    panMasked = details.panMasked
+    logger.info('atmos_bind_callback_card_details', { cardId, cardType, panMasked })
+  } catch (err) {
+    logger.warn('atmos_bind_callback_card_details_failed', { cardId, error: String(err).slice(0, 200) })
+  }
+
+  const last4 = panMasked ? panMasked.replace(/\D/g, '').slice(-4) || null : null
+
+  // Store the card_id on the subscription (NO card_token for hosted-bind cards).
+  try {
+    await db.update(subscriptions).set({
+      card_id: cardId,
+      card_last4: last4,
+      card_holder: cardType,
+      updated_at: new Date(),
+    }).where(eq(subscriptions.id, sub.id))
+  } catch (err) {
+    logger.error('atmos_bind_callback_store_failed', { subscriptionId: sub.id, error: String(err).slice(0, 200) })
+    return reject('store_failed')
+  }
+
+  // Find the associated payment to charge via MPS.
+  const [pay] = await db.select({
+    id: payments.id,
+    account: payments.account,
+    amountTiyin: payments.amount_tiyin,
+    atmosStatus: payments.atmos_status,
+  }).from(payments)
+    .where(eq(payments.subscription_id, sub.id))
+    .orderBy(desc(payments.created_at))
+    .limit(1)
+
+  if (!pay || !pay.amountTiyin) {
+    logger.warn('atmos_bind_callback_no_payment', { subscriptionId: sub.id, cardId })
+    // Card is bound — ack so ATMOS commits the binding. Charge happens on return.
+    logger.info('atmos_bind_callback_response', { subscriptionId: sub.id, cardId, outcome: 'bound_no_charge' })
+    return NextResponse.json(ACCEPT, { status: 200 })
+  }
+
+  // Already settled — idempotent ack.
+  if (pay.atmosStatus === 'success') {
+    logger.info('atmos_bind_callback_already_settled', { paymentId: pay.id })
+    return NextResponse.json(ACCEPT, { status: 200 })
+  }
+
+  // Charge via MPS (card_id-based charge for Visa/MC).
+  try {
+    const pre = await mpsPreCreate({
+      amountTiyin: pay.amountTiyin,
+      extId: pay.id,
+      account: String(pay.account),
+    })
+
+    await db.update(payments).set({
+      atmos_payment_id: pre.transactionId, updated_at: new Date(),
+    }).where(eq(payments.id, pay.id)).catch(() => {})
+
+    const charge = await mpsCreateBind({
+      cardId,
+      amountTiyin: pay.amountTiyin,
+      transactionId: pre.transactionId,
+    })
+
+    await applyAtmosPaymentSuccess({
+      paymentId: pay.id,
+      transactionId: charge.transactionId,
+      rawPayload: body,
+      source: 'callback',
+    })
+
+    logger.info('atmos_bind_callback_charged', {
+      subscriptionId: sub.id, paymentId: pay.id,
+      transactionId: charge.transactionId, cardId,
+    })
+  } catch (err) {
+    // Card is bound but charge failed. Ack the bind (so card stays bound),
+    // mark payment failed. The return page or a retry can charge later.
+    logger.error('atmos_bind_callback_charge_failed', {
+      subscriptionId: sub.id, paymentId: pay.id,
+      error: String(err).slice(0, 300),
+    })
+    await db.update(payments).set({
+      status: 'failed', atmos_status: 'failed', updated_at: new Date(),
+    }).where(eq(payments.id, pay.id)).catch(() => {})
+  }
+
+  logger.info('atmos_bind_callback_response', { subscriptionId: sub.id, cardId, outcome: 'accepted' })
+  return NextResponse.json(ACCEPT, { status: 200 })
+}
+
+// ── Classic payment callback handler ──────────────────────────────────────────
+
+async function handlePaymentCallback(
+  body: Record<string, unknown> | null,
+  rawText: string,
+  cfg: ReturnType<typeof getConfig>,
+) {
   // 3. Confirm the classic callback shape. Unknown shape ⇒ do NOT guess.
   const storeId = body?.store_id
   const transactionId = body?.transaction_id
@@ -89,13 +266,11 @@ export async function POST(req: Request) {
     storeId: String(storeId),
     transactionId: transactionIdStr,
     account: accountStr,
-    amount: amount as string | number,   // byte-identical to what ATMOS sent
+    amount: amount as string | number,
     apiKey: cfg.callbackApiKey,
   }
   const computedSign = computeCallbackSign(signParts)
   const okSign = verifyCallbackSign(sign, signParts)
-  // TEMP verbose: log received vs computed sign. Both are MD5 HASHES (the API key
-  // itself is never logged), so a mismatch is diagnosable straight from the logs.
   logger.info('atmos_callback_sign', {
     account: accountStr, transactionId: transactionIdStr,
     storeId: String(storeId), amount: String(amount),
@@ -110,7 +285,6 @@ export async function POST(req: Request) {
     atmosPaymentId: payments.atmos_payment_id,
     amountTiyin: payments.amount_tiyin,
   }).from(payments).where(eq(payments.account, accountStr))
-  // TEMP verbose: log whether the account resolved to a real payment row.
   logger.info('atmos_callback_lookup', {
     account: accountStr, found: !!pay, atmosStatus: pay?.atmosStatus ?? null,
   })
@@ -122,23 +296,14 @@ export async function POST(req: Request) {
     return NextResponse.json(ACCEPT, { status: 200 })
   }
 
-  // Advisory amount check (sign already binds amount; the real gate is the
-  // getInvoiceStatus cross-check below). Warn if it matches neither tiyin nor so'm.
+  // Advisory amount check.
   const amountNum = Number(amount)
   const expectTiyin = pay.amountTiyin ?? -1
   if (amountNum !== expectTiyin && amountNum !== tiyinToSom(expectTiyin)) {
     logger.warn('atmos_callback_amount_advisory', { account: accountStr, got: amountNum, expectTiyin })
   }
 
-  // 6. Advisory status re-query — NON-blocking (was the deadlock).
-  //
-  // ATMOS finalizes the charge based on OUR ack, so AT CALLBACK TIME invoice/get
-  // can still read "pending" (they're waiting for us). Gating the ack on "paid"
-  // here rejected legitimate payments → "billing tizimida xato". The MD5 sign
-  // already authenticates ATMOS and binds the amount, so we ACK on
-  // sign+account+amount and only LOG the cross-check for observability. The log
-  // captures the exact state string ATMOS returns so we can re-tighten this into
-  // a precise gate later if we choose.
+  // 6. Advisory status re-query — NON-blocking.
   if (pay.atmosPaymentId) {
     try {
       const st = await getInvoiceStatus(pay.atmosPaymentId)
@@ -147,10 +312,6 @@ export async function POST(req: Request) {
       logger.warn('atmos_callback_status_check_failed', { account: accountStr, error: String(err).slice(0, 200) })
     }
   } else {
-    // Not an error: the cross-check is advisory and the sign+account already
-    // authenticate this callback. atmos_payment_id is normally persisted before
-    // pay/apply (bind-confirm / renewal), so this only happens if the callback
-    // wins the race with that write — activation below still proceeds. Info, not warn.
     logger.info('atmos_callback_no_atmos_payment_id_yet', { account: accountStr })
   }
 
@@ -171,7 +332,6 @@ export async function POST(req: Request) {
     return reject('settle_failed', { account: accountStr })
   }
 
-  // TEMP verbose: log the EXACT body we send back on the accept path too.
   logger.info('atmos_callback_response', { account: accountStr, response: ACCEPT, outcome: 'accepted' })
   return NextResponse.json(ACCEPT, { status: 200 })
 }
