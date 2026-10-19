@@ -54,6 +54,8 @@ const BT: Record<Lang, Record<string, string>> = {
     cancelledOver: "To'langan davr tugadi.",
     resumePlan: 'Tarifni qayta tiklash',
     resumeErrOver: "To'langan davr tugagan — yangi tarifni tanlang.",
+    cancelDone: 'Tarif bekor qilindi',
+    resumeDone: 'Tarif qayta tiklandi',
     priceNoticeTitle: "Tarif narxi o'zgaradi",
     priceNoticeFrom: 'dan boshlab:',
     priceNoticeBody: "Bu sanagacha yangi narx yechilmaydi. Agar sizga to'g'ri kelmasa, quyida tarifni bekor qilishingiz mumkin — to'lovlar to'xtaydi, kirish esa to'langan davr oxirigacha saqlanadi.",
@@ -96,6 +98,8 @@ const BT: Record<Lang, Record<string, string>> = {
     cancelledOver: 'Your paid period has ended.',
     resumePlan: 'Resume plan',
     resumeErrOver: 'The paid period is over — choose a plan instead.',
+    cancelDone: 'Plan cancelled',
+    resumeDone: 'Plan resumed',
     priceNoticeTitle: 'Your plan price is changing',
     priceNoticeFrom: 'From',
     priceNoticeBody: 'Nothing is charged at the new price before that date. If it does not suit you, cancel below — charging stops and your access runs to the end of the period you have paid for.',
@@ -144,6 +148,8 @@ const BT: Record<Lang, Record<string, string>> = {
     cancelledOver: 'Оплаченный период закончился.',
     resumePlan: 'Возобновить тариф',
     resumeErrOver: 'Оплаченный период закончился — выберите тариф заново.',
+    cancelDone: 'Тариф отменён',
+    resumeDone: 'Тариф возобновлён',
     priceNoticeTitle: 'Изменение цены тарифа',
     priceNoticeFrom: 'С',
     priceNoticeBody: 'До этой даты списаний по новой цене не будет. Если она вам не подходит, отмените тариф ниже — списания прекратятся, а доступ сохранится до конца оплаченного периода.',
@@ -638,6 +644,7 @@ function statusBadge(status: PaymentRecord['status'], d: T, failedLabel: string)
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function BillingClient({ billing, initialPlan, initialInterval }: { billing: BillingInfo; initialPlan?: PlanKey; initialInterval?: Interval }) {
+  const router = useRouter()
   const { lang } = useLang()
   const l = (lang in BT ? lang : 'uz') as Lang
   const b = BT[l]
@@ -653,6 +660,7 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [cancelBusy, setCancelBusy] = useState(false)
   const [cancelError, setCancelError] = useState<string | null>(null)
+  const [cancelSuccess, setCancelSuccess] = useState<string | null>(null)
 
   function openPlanChooser() {
     setModalHighlight(undefined)
@@ -683,10 +691,10 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
         setCancelError(data?.error === 'period_over' ? b.resumeErrOver : b.errGeneric)
         return
       }
-      // Reload rather than patch local state: the plan card, the card panel and
-      // the auto-renew toggle all read from the server's billing snapshot, and
-      // a hand-maintained copy of that is how they drift apart.
-      window.location.reload()
+      setShowCancelConfirm(false)
+      setCancelSuccess(action === 'cancel' ? b.cancelDone : b.resumeDone)
+      setTimeout(() => setCancelSuccess(null), 3000)
+      router.refresh()
     } catch {
       setCancelError(b.errGeneric)
     } finally {
@@ -947,6 +955,14 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {cancelSuccess && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-5 py-3 rounded-xl shadow-lg border border-emerald-500/20 bg-[var(--bg-card2)]"
+          style={{ animation: 'fadeIn .2s ease-out' }}>
+          <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <span className="text-sm font-medium text-[var(--text-base)]">{cancelSuccess}</span>
         </div>
       )}
     </div>
