@@ -34,6 +34,9 @@ import { createHash, timingSafeEqual } from 'crypto'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+// Temporary debug: store last callback payload in memory for /api/billing/atmos/diag
+export const _debugLastCallback: { ts: string; body: unknown }[] = []
+
 const ACCEPT = { status: 1, message: 'Успешно' }
 function reject(message: string, log?: Record<string, unknown>) {
   const response = { status: 0, message }
@@ -55,9 +58,17 @@ export async function POST(req: Request) {
   try {
     body = rawText ? (JSON.parse(rawText) as Record<string, unknown>) : null
   } catch {
-    body = null
+    // Fallback: ATMOS may POST form-encoded data instead of JSON.
+    try {
+      const params = new URLSearchParams(rawText)
+      if (params.has('store_id') || params.has('card_id') || params.has('api_key')) {
+        body = Object.fromEntries(params.entries())
+      }
+    } catch { /* not form-encoded either */ }
   }
   logger.info('atmos_callback_raw', { raw: body ?? rawText })
+  _debugLastCallback.unshift({ ts: new Date().toISOString(), body: body ?? rawText })
+  if (_debugLastCallback.length > 10) _debugLastCallback.length = 10
 
   // Config (needed for sign + cross-check). Missing config ⇒ cannot verify.
   let cfg
@@ -102,14 +113,23 @@ async function handleBindCallback(
   const paymentId = String(body.payment_id ?? '')
   const sign = typeof body.sign === 'string' ? body.sign : ''
 
-  logger.info('atmos_bind_callback', { cardId, account, hasApiKey: !!apiKey, hasSign: !!sign })
+  logger.info('atmos_bind_callback', { cardId, account, hasApiKey: !!apiKey, hasSign: !!sign, fullBody: body })
 
   // Verify sign: MD5(store_id + account + payment_id + card_id + api_key)
+  // ATMOS may use the api_key from the body, the payment callback key, or the
+  // separate bind key — try all known candidates.
   if (sign) {
-    const expected = createHash('md5')
-      .update(`${storeId}${account}${paymentId}${cardId}${cfg.callbackApiKey}`)
-      .digest('hex')
-    if (!constantTimeEq(sign.toLowerCase(), expected.toLowerCase())) {
+    const candidates = [apiKey, cfg.callbackApiKey]
+    if (cfg.bindCallbackApiKey) candidates.push(cfg.bindCallbackApiKey)
+    const signLower = sign.toLowerCase()
+    const matched = candidates.some(key => {
+      if (!key) return false
+      const h = createHash('md5')
+        .update(`${storeId}${account}${paymentId}${cardId}${key}`)
+        .digest('hex')
+      return constantTimeEq(signLower, h.toLowerCase())
+    })
+    if (!matched) {
       logger.warn('atmos_bind_callback_bad_sign', { cardId, account })
       return reject('bad_sign')
     }
