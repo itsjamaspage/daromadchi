@@ -112,8 +112,6 @@ async function handleBindCallback(
   }
 
   // Find the most recent pending subscription that is waiting for a bind.
-  // The hosted bind flow creates a subscription + payment in 'pending' state
-  // before redirecting. We find the latest one that has no card yet.
   const [sub] = await db.select({
     id: subscriptions.id,
     userId: subscriptions.user_id,
@@ -140,31 +138,50 @@ async function handleBindCallback(
     return NextResponse.json(ACCEPT, { status: 200 })
   }
 
-  // Fetch card details from ATMOS for display.
-  let cardType: string | null = null
-  let panMasked: string | null = null
-  try {
-    const details = await getCardDetails(cardId)
-    cardType = details.cardType
-    panMasked = details.panMasked
-    logger.info('atmos_bind_callback_card_details', { cardId, cardType, panMasked })
-  } catch (err) {
-    logger.warn('atmos_bind_callback_card_details_failed', { cardId, error: String(err).slice(0, 200) })
-  }
-
-  const last4 = panMasked ? panMasked.replace(/\D/g, '').slice(-4) || null : null
-
-  // Store the card_id on the subscription (NO card_token for hosted-bind cards).
+  // Store the card_id on the subscription immediately (no outbound calls).
   try {
     await db.update(subscriptions).set({
       card_id: cardId,
-      card_last4: last4,
-      card_holder: cardType,
       updated_at: new Date(),
     }).where(eq(subscriptions.id, sub.id))
   } catch (err) {
     logger.error('atmos_bind_callback_store_failed', { subscriptionId: sub.id, error: String(err).slice(0, 200) })
     return reject('store_failed')
+  }
+
+  // Respond to ATMOS immediately — it has a short timeout.
+  // The heavy work (card details, MPS charge, activation) runs after the
+  // response is sent. The return page also re-queries and can pick up the
+  // charge if this background work hasn't finished yet.
+  logger.info('atmos_bind_callback_response', { subscriptionId: sub.id, cardId, outcome: 'accepted' })
+
+  chargeAfterBind(sub, cardId, body).catch(err => {
+    logger.error('atmos_bind_background_charge_failed', {
+      subscriptionId: sub.id, cardId,
+      error: String(err).slice(0, 300),
+    })
+  })
+
+  return NextResponse.json(ACCEPT, { status: 200 })
+}
+
+async function chargeAfterBind(
+  sub: { id: string; userId: string; plan: string; interval: string; agreed_amount_tiyin: number | null },
+  cardId: string,
+  rawBody: Record<string, unknown>,
+) {
+  // Fetch card details from ATMOS for display.
+  try {
+    const details = await getCardDetails(cardId)
+    const last4 = details.panMasked ? details.panMasked.replace(/\D/g, '').slice(-4) || null : null
+    await db.update(subscriptions).set({
+      card_last4: last4,
+      card_holder: details.cardType,
+      updated_at: new Date(),
+    }).where(eq(subscriptions.id, sub.id))
+    logger.info('atmos_bind_bg_card_details', { cardId, cardType: details.cardType, last4 })
+  } catch (err) {
+    logger.warn('atmos_bind_bg_card_details_failed', { cardId, error: String(err).slice(0, 200) })
   }
 
   // Find the associated payment to charge via MPS.
@@ -179,16 +196,13 @@ async function handleBindCallback(
     .limit(1)
 
   if (!pay || !pay.amountTiyin) {
-    logger.warn('atmos_bind_callback_no_payment', { subscriptionId: sub.id, cardId })
-    // Card is bound — ack so ATMOS commits the binding. Charge happens on return.
-    logger.info('atmos_bind_callback_response', { subscriptionId: sub.id, cardId, outcome: 'bound_no_charge' })
-    return NextResponse.json(ACCEPT, { status: 200 })
+    logger.info('atmos_bind_bg_no_payment', { subscriptionId: sub.id, cardId })
+    return
   }
 
-  // Already settled — idempotent ack.
   if (pay.atmosStatus === 'success') {
-    logger.info('atmos_bind_callback_already_settled', { paymentId: pay.id })
-    return NextResponse.json(ACCEPT, { status: 200 })
+    logger.info('atmos_bind_bg_already_settled', { paymentId: pay.id })
+    return
   }
 
   // Charge via MPS (card_id-based charge for Visa/MC).
@@ -212,18 +226,16 @@ async function handleBindCallback(
     await applyAtmosPaymentSuccess({
       paymentId: pay.id,
       transactionId: charge.transactionId,
-      rawPayload: body,
+      rawPayload: rawBody,
       source: 'callback',
     })
 
-    logger.info('atmos_bind_callback_charged', {
+    logger.info('atmos_bind_bg_charged', {
       subscriptionId: sub.id, paymentId: pay.id,
       transactionId: charge.transactionId, cardId,
     })
   } catch (err) {
-    // Card is bound but charge failed. Ack the bind (so card stays bound),
-    // mark payment failed. The return page or a retry can charge later.
-    logger.error('atmos_bind_callback_charge_failed', {
+    logger.error('atmos_bind_bg_charge_failed', {
       subscriptionId: sub.id, paymentId: pay.id,
       error: String(err).slice(0, 300),
     })
@@ -231,9 +243,6 @@ async function handleBindCallback(
       status: 'failed', atmos_status: 'failed', updated_at: new Date(),
     }).where(eq(payments.id, pay.id)).catch(() => {})
   }
-
-  logger.info('atmos_bind_callback_response', { subscriptionId: sub.id, cardId, outcome: 'accepted' })
-  return NextResponse.json(ACCEPT, { status: 200 })
 }
 
 // ── Classic payment callback handler ──────────────────────────────────────────

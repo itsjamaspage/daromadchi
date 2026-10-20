@@ -392,8 +392,6 @@ export interface HostedBindCreateParams {
   requestId: string
   account: string
   successUrl: string
-  amountTiyin: number
-  itemName: string
 }
 
 export interface HostedBindCreateResult {
@@ -410,15 +408,6 @@ export async function hostedBindCreate(p: HostedBindCreateParams): Promise<Hoste
     store_id: Number(cfg.storeId),
     account: String(p.account),
     success_url: p.successUrl,
-    amount: p.amountTiyin,
-    items: [{
-      items_id: '1',
-      code: cfg.serviceIkpu,
-      name: p.itemName,
-      amount: p.amountTiyin,
-      quantity: 1,
-      details: { name: 'quantity', values: '1' },
-    }],
   })
   assertAtmosOk(json, 'card-bind/create')
   const paymentId = pickDeep(json, ['payment_id', 'paymentId'])
