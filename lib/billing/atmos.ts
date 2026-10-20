@@ -403,11 +403,13 @@ export interface HostedBindCreateResult {
 
 export async function hostedBindCreate(p: HostedBindCreateParams): Promise<HostedBindCreateResult> {
   const cfg = getConfig()
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://daromadchi.uz').replace(/\/$/, '')
   const json = await authedPost<Record<string, unknown>>('/checkout/card-bind/create', {
     request_id: p.requestId,
     store_id: Number(cfg.storeId),
     account: String(p.account),
     success_url: p.successUrl,
+    callback_url: `${appUrl}/api/billing/atmos/callback`,
   })
   assertAtmosOk(json, 'card-bind/create')
   const paymentId = pickDeep(json, ['payment_id', 'paymentId'])
