@@ -29,7 +29,7 @@ import {
 } from '@/lib/billing/atmos'
 import { applyAtmosPaymentSuccess } from '@/lib/billing/activate'
 import { tiyinToSom } from '@/lib/billing/plans'
-import { timingSafeEqual } from 'crypto'
+import { createHash, timingSafeEqual } from 'crypto'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -77,12 +77,11 @@ export async function POST(req: Request) {
   }
 
   // ── Route: bind callback vs payment callback ──
-  // Bind callbacks carry { api_key, card_id } — no `sign` field.
+  // Bind callbacks carry { api_key, card_id } (and may also include sign).
   const hasApiKey = typeof body?.api_key === 'string'
   const hasCardId = body?.card_id != null
-  const hasSign = typeof body?.sign === 'string'
 
-  if (hasApiKey && hasCardId && !hasSign) {
+  if (hasApiKey && hasCardId) {
     return handleBindCallback(body!, cfg)
   }
 
@@ -96,22 +95,44 @@ async function handleBindCallback(
   body: Record<string, unknown>,
   cfg: ReturnType<typeof getConfig>,
 ) {
-  const apiKey = String(body.api_key)
-  const cardId = String(body.card_id)
+  const apiKey = String(body.api_key ?? '')
+  const cardId = String(body.card_id ?? '')
+  const storeId = String(body.store_id ?? '')
+  const account = String(body.account ?? '')
+  const paymentId = String(body.payment_id ?? '')
+  const sign = typeof body.sign === 'string' ? body.sign : ''
 
-  logger.info('atmos_bind_callback', { cardId, hasApiKey: true })
+  logger.info('atmos_bind_callback', { cardId, account, hasApiKey: !!apiKey, hasSign: !!sign })
 
-  // Verify the api_key matches our configured bind callback key.
-  if (!cfg.bindCallbackApiKey) {
-    logger.error('atmos_bind_callback_no_key_configured', {})
-    return reject('not_configured')
+  // Verify sign: MD5(store_id + account + payment_id + card_id + api_key)
+  if (sign) {
+    const expected = createHash('md5')
+      .update(`${storeId}${account}${paymentId}${cardId}${cfg.callbackApiKey}`)
+      .digest('hex')
+    if (!constantTimeEq(sign.toLowerCase(), expected.toLowerCase())) {
+      logger.warn('atmos_bind_callback_bad_sign', { cardId, account })
+      return reject('bad_sign')
+    }
+  } else if (cfg.bindCallbackApiKey) {
+    if (!constantTimeEq(apiKey, cfg.bindCallbackApiKey)) {
+      logger.warn('atmos_bind_callback_bad_key', { cardId })
+      return reject('bad_api_key')
+    }
   }
-  if (!constantTimeEq(apiKey, cfg.bindCallbackApiKey)) {
-    logger.warn('atmos_bind_callback_bad_key', { cardId })
-    return reject('bad_api_key')
-  }
 
-  // Find the most recent pending subscription that is waiting for a bind.
+  // Look up the payment by account (== our internal payment id).
+  const [pay] = account
+    ? await db.select({
+        id: payments.id,
+        subscriptionId: payments.subscription_id,
+      }).from(payments).where(eq(payments.account, account))
+    : []
+
+  // Find the subscription — either via the payment's subscription_id or fallback.
+  const subWhere = pay?.subscriptionId
+    ? eq(subscriptions.id, pay.subscriptionId)
+    : eq(subscriptions.status, 'pending')
+
   const [sub] = await db.select({
     id: subscriptions.id,
     userId: subscriptions.user_id,
@@ -121,14 +142,12 @@ async function handleBindCallback(
     card_id: subscriptions.card_id,
     agreed_amount_tiyin: subscriptions.agreed_amount_tiyin,
   }).from(subscriptions)
-    .where(and(
-      eq(subscriptions.status, 'pending'),
-    ))
+    .where(subWhere)
     .orderBy(desc(subscriptions.created_at))
     .limit(1)
 
   if (!sub) {
-    logger.warn('atmos_bind_callback_no_pending_sub', { cardId })
+    logger.warn('atmos_bind_callback_no_pending_sub', { cardId, account })
     return reject('no_pending_subscription')
   }
 
