@@ -11,6 +11,7 @@ import { eq, desc, and } from 'drizzle-orm'
 import { db, payments, subscriptions } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth/session'
 import { getConfig, AtmosConfigError } from '@/lib/billing/atmos'
+import { _debugLastCallback } from '../callback/route'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -81,6 +82,9 @@ export async function GET() {
     provider: p.provider,
     created_at: p.created_at,
   }))
+
+  // 5. Last callback attempts (in-memory debug capture)
+  diag.lastCallbacks = _debugLastCallback
 
   return NextResponse.json(diag)
 }
