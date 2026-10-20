@@ -58,7 +58,13 @@ export async function POST(req: Request) {
   try {
     body = rawText ? (JSON.parse(rawText) as Record<string, unknown>) : null
   } catch {
-    body = null
+    // Fallback: ATMOS may POST form-encoded data instead of JSON.
+    try {
+      const params = new URLSearchParams(rawText)
+      if (params.has('store_id') || params.has('card_id') || params.has('api_key')) {
+        body = Object.fromEntries(params.entries())
+      }
+    } catch { /* not form-encoded either */ }
   }
   logger.info('atmos_callback_raw', { raw: body ?? rawText })
   _debugLastCallback.unshift({ ts: new Date().toISOString(), body: body ?? rawText })
