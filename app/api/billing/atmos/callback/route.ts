@@ -88,11 +88,11 @@ export async function POST(req: Request) {
   }
 
   // ── Route: bind callback vs payment callback ──
-  // Bind callbacks carry { api_key, card_id } (and may also include sign).
-  const hasApiKey = typeof body?.api_key === 'string'
+  // Bind callbacks carry { card_id } (api_key may or may not be present).
+  // Payment callbacks carry { transaction_id, amount } without card_id.
   const hasCardId = body?.card_id != null
 
-  if (hasApiKey && hasCardId) {
+  if (hasCardId) {
     return handleBindCallback(body!, cfg)
   }
 
