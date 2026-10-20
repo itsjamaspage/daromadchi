@@ -110,11 +110,20 @@ async function handleBindCallback(
   logger.info('atmos_bind_callback', { cardId, account, hasApiKey: !!apiKey, hasSign: !!sign, fullBody: body })
 
   // Verify sign: MD5(store_id + account + payment_id + card_id + api_key)
+  // ATMOS may use the api_key from the body, the payment callback key, or the
+  // separate bind key — try all known candidates.
   if (sign) {
-    const expected = createHash('md5')
-      .update(`${storeId}${account}${paymentId}${cardId}${cfg.callbackApiKey}`)
-      .digest('hex')
-    if (!constantTimeEq(sign.toLowerCase(), expected.toLowerCase())) {
+    const candidates = [apiKey, cfg.callbackApiKey]
+    if (cfg.bindCallbackApiKey) candidates.push(cfg.bindCallbackApiKey)
+    const signLower = sign.toLowerCase()
+    const matched = candidates.some(key => {
+      if (!key) return false
+      const h = createHash('md5')
+        .update(`${storeId}${account}${paymentId}${cardId}${key}`)
+        .digest('hex')
+      return constantTimeEq(signLower, h.toLowerCase())
+    })
+    if (!matched) {
       logger.warn('atmos_bind_callback_bad_sign', { cardId, account })
       return reject('bad_sign')
     }
