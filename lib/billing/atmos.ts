@@ -452,6 +452,7 @@ export async function mpsPreCreate(p: MpsPreCreateParams): Promise<MpsPreCreateR
       details: { name: 'quantity', values: '1' },
     }],
   })
+  logger.info('atmos_mps_pre_create_response', { amount: p.amountTiyin, account: p.account, raw: json })
   const payload = asRecord(json.payload ?? json.data ?? json)
   const tid = pickString(payload, ['id', 'transaction_id']) ?? pickDeep(json, ['id', 'transaction_id'])
   if (!tid) throw new AtmosApiError('bad_response', 'mps/pre-create returned no transaction id')
@@ -478,10 +479,14 @@ export async function mpsCreateBind(p: MpsCreateBindParams): Promise<MpsCreateBi
     transaction_id: Number(p.transactionId),
     client_ip_addr: p.clientIp ?? '127.0.0.1',
   })
+  logger.info('atmos_mps_create_bind_response', { cardId: p.cardId, amount: p.amountTiyin, raw: json })
   const payload = asRecord(json.payload ?? json.data ?? json)
   const resultCode = pickString(payload, ['result_code', 'resultCode']) ?? ''
   const tid = pickString(payload, ['id', 'transaction_id']) ?? p.transactionId
-  if (resultCode && resultCode.toLowerCase() !== 'approved') {
+  if (!resultCode) {
+    throw new AtmosApiError('no_result_code', 'MPS charge returned no result_code — charge not confirmed')
+  }
+  if (resultCode.toLowerCase() !== 'approved') {
     throw new AtmosApiError(resultCode, `MPS charge declined: ${resultCode}`)
   }
   return { transactionId: String(tid), resultCode, raw: json }
