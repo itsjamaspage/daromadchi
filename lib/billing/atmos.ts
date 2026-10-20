@@ -17,6 +17,7 @@
  */
 
 import 'server-only'
+import { logger } from '@/lib/logger'
 import {
   verifyCallbackSign, atmosCallbackSignPayload, computeCallbackSign,
   ipInCidr, ipInAnyCidr, ipv4ToInt, clientIpFromForwarded, type CallbackSignParts,
