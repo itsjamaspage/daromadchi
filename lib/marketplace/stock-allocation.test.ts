@@ -16,6 +16,7 @@ function member(over: Partial<SyncMember>): SyncMember {
     // pre-physical_stock behaviour every existing test relies on.
     physicalStock: over.physicalStock ?? null,
     pending: over.pending ?? 0,
+    createdPending: over.createdPending ?? 0,
     sku: over.sku ?? 'JMJ16BEG',
   }
 }
@@ -501,7 +502,7 @@ describe('decidePush — a repeat is not a write', () => {
   const plan = (target: number, listed: number): PlannedWrite => ({
     member: {
       productId: 'p', shopId: 's', marketplace: 'uzum', apiMode: 'stock_sync',
-      priority: 0, listedStock: listed, physicalStock: listed, pending: 0, sku: 'PBGRY',
+      priority: 0, listedStock: listed, physicalStock: listed, pending: 0, createdPending: 0, sku: 'PBGRY',
     },
     target,
     willWrite: target !== listed,

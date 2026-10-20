@@ -98,6 +98,12 @@ export interface SyncMember {
    *  CREATED, Yandex UNPAID/PLACING/RESERVED) are excluded so they don't draw
    *  down stock. See RESERVING_RAW_STATUSES. */
   pending: number
+  /** CREATED/unpaid order units on THIS listing only. Excluded from cross-store
+   *  `pending` (unpaid drafts must not phantom-stockout siblings), but subtracted
+   *  from this member's OWN write target to prevent same-store overselling.
+   *  A Uzum CREATED order hasn't been paid yet, but the listing must decrease so
+   *  a second buyer doesn't order the same unit. */
+  createdPending: number
   sku: string | null
 }
 
@@ -269,6 +275,12 @@ export function planStockWrites(members: SyncMember[], mode: OversellMode, onHan
     // Yandex re-raise 0→1 to match Uzum). The backstop still applies for
     // lock_last_unit / partition.
     if (mode !== 'off' && m.pending > 0 && target > m.listedStock) target = m.listedStock
+    // Same-store oversell prevention: CREATED orders are excluded from the
+    // group-level `pending` (unpaid drafts must not phantom-stockout siblings),
+    // but THIS member's own CREATED orders must draw down its own target —
+    // otherwise the listing stays high while a buyer's order is waiting for
+    // seller acceptance, and another buyer can order the same unit.
+    if (m.createdPending > 0) target = Math.max(0, target - m.createdPending)
     return { member: m, target, willWrite: target !== m.listedStock }
   })
   return { available, plans }

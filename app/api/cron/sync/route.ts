@@ -10,6 +10,8 @@ import { decrypt } from '@/lib/crypto'
 import { withErrorHandler } from '@/lib/api-handler'
 import { sendSellerMessageTo } from '@/lib/telegram-seller'
 import type { NotifStrings } from '@/lib/notif-i18n'
+import { syncStockSyncGroups } from '@/lib/marketplace/stock-sync'
+import { userHasFeature } from '@/lib/billing/entitlement'
 import { reconcilePhysicalStock } from '@/lib/marketplace/physical-stock'
 import { refreshUzumStock, refreshYandexStock } from '@/lib/marketplace/stock-refresh'
 import { notifyManualStockUpdates } from '@/lib/marketplace/manual-stock-notify'
@@ -259,6 +261,8 @@ export const GET = withErrorHandler(async (req: Request) => {
   // First-ever syncs (last_synced_at null) are backfills, not new orders.
   const ordersByUser = new Map<string, { marketplace: string; name: string | null; lines: string[] }[]>()
   const cancelsByUser = new Map<string, { marketplace: string; name: string | null; lines: string[] }[]>()
+  const acceptedByUser = new Map<string, { marketplace: string; name: string | null; lines: string[] }[]>()
+  const usersWithNewCreated = new Set<string>()
   for (const r of results) {
     const shop = shopsToSync.find(s => s.id === r.shopId)
     // The first-ever sync of a shop is a backfill, not a stream of events —
@@ -271,6 +275,7 @@ export const GET = withErrorHandler(async (req: Request) => {
       const list = ordersByUser.get(shop.user_id) ?? []
       list.push({ marketplace: shop.marketplace, name: shop.name, lines: newOrders })
       ordersByUser.set(shop.user_id, list)
+      if (shop.marketplace === 'uzum') usersWithNewCreated.add(shop.user_id)
     }
 
     const cancelled = (r.cancelledOrders as string[] | undefined) ?? []
@@ -278,6 +283,13 @@ export const GET = withErrorHandler(async (req: Request) => {
       const list = cancelsByUser.get(shop.user_id) ?? []
       list.push({ marketplace: shop.marketplace, name: shop.name, lines: cancelled })
       cancelsByUser.set(shop.user_id, list)
+    }
+
+    const accepted = (r.acceptedOrders as string[] | undefined) ?? []
+    if (accepted.length > 0) {
+      const list = acceptedByUser.get(shop.user_id) ?? []
+      list.push({ marketplace: shop.marketplace, name: shop.name, lines: accepted })
+      acceptedByUser.set(shop.user_id, list)
     }
   }
 
@@ -343,6 +355,68 @@ export const GET = withErrorHandler(async (req: Request) => {
     }
   }
 
+  // ── Uzum stock auto-update on new CREATED orders ──
+  // When a new Uzum order appears (CREATED), immediately run stock-sync so the
+  // listing quantity drops before another buyer can order the same unit. Gated
+  // on stock_sync feature. The stock-sync cron also runs independently, but
+  // this is the fast path triggered by the order itself.
+  const stockSyncRuns: Record<string, unknown>[] = []
+  for (const userId of usersWithNewCreated) {
+    try {
+      if (!(await userHasFeature(userId, 'stock_sync'))) continue
+      const r = await syncStockSyncGroups({ userId })
+      stockSyncRuns.push({ userId, groupsConsidered: r.groupsConsidered, writesPlanned: r.writesPlanned })
+    } catch (err) {
+      stockSyncRuns.push({ userId, error: String(err).slice(0, 200) })
+    }
+  }
+  // Also re-run stock-sync for users whose orders were just accepted (CREATED→PACKING),
+  // to re-verify stock now that the order is committed.
+  for (const userId of acceptedByUser.keys()) {
+    if (usersWithNewCreated.has(userId)) continue
+    try {
+      if (!(await userHasFeature(userId, 'stock_sync'))) continue
+      const r = await syncStockSyncGroups({ userId })
+      stockSyncRuns.push({ userId, accepted: true, groupsConsidered: r.groupsConsidered, writesPlanned: r.writesPlanned })
+    } catch (err) {
+      stockSyncRuns.push({ userId, accepted: true, error: String(err).slice(0, 200) })
+    }
+  }
+
+  // ── "Order received, stock updating" + "Order accepted, stock verified" alerts ──
+  if (usersWithNewCreated.size > 0 || acceptedByUser.size > 0) {
+    const alertSettingsRows = await db.select({
+      user_id: userSettings.user_id,
+      telegram_chat_id: userSettings.telegram_chat_id,
+      notif_new_orders: userSettings.notif_new_orders,
+      notif_lang: userSettings.notif_lang,
+    }).from(userSettings)
+      .where(isNotNull(userSettings.telegram_chat_id))
+
+    for (const s of alertSettingsRows) {
+      if (!s.notif_new_orders || !s.telegram_chat_id) continue
+
+      if (usersWithNewCreated.has(s.user_id)) {
+        const run = stockSyncRuns.find(r => (r as { userId: string }).userId === s.user_id && !(r as { accepted?: boolean }).accepted)
+        const writesPlanned = (run as { writesPlanned?: number } | undefined)?.writesPlanned ?? 0
+        if (writesPlanned > 0) {
+          await sendSellerMessageTo(s.telegram_chat_id, s.notif_lang, (T) =>
+            `${T.orderReceivedStockTitle}\n\n${T.orderReceivedStockFooter}\n\nhttps://daromadchi.uz/dashboard/products`,
+          )
+        }
+      }
+
+      const userAccepted = acceptedByUser.get(s.user_id)
+      if (userAccepted && userAccepted.length > 0) {
+        const lines = userAccepted.flatMap(a => a.lines).slice(0, 10)
+        await sendSellerMessageTo(s.telegram_chat_id, s.notif_lang, (T) => {
+          const body = lines.map(l => `   ${l}`).join('\n')
+          return `${T.orderAcceptedStockTitle}\n\n${body}\n\n${T.orderAcceptedStockFooter}\n\nhttps://daromadchi.uz/dashboard/products`
+        })
+      }
+    }
+  }
+
   // Invalidate cached product/order pages if anything actually synced, so
   // dashboards show fresh numbers on the next request.
   if (results.some(r => r.ok)) {
@@ -372,5 +446,5 @@ export const GET = withErrorHandler(async (req: Request) => {
     }
   }
 
-  return NextResponse.json({ ok: true, synced: results.length, heavy: heavyCount, productRefreshed: productCount, stockRefreshed: stockCount, results })
+  return NextResponse.json({ ok: true, synced: results.length, heavy: heavyCount, productRefreshed: productCount, stockRefreshed: stockCount, stockSyncRuns: stockSyncRuns.length > 0 ? stockSyncRuns : undefined, results })
 })

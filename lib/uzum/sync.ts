@@ -237,6 +237,9 @@ export interface SyncResult {
   /** Display lines for orders we ANNOUNCED that have since been cancelled —
    *  see lib/marketplace/cancellation-alert.ts. */
   cancelledOrders?: string[]
+  /** Display lines for orders that transitioned from CREATED to a committed
+   *  status (PACKING+). Triggers the "order accepted, stock verified" alert. */
+  acceptedOrders?: string[]
   productsUpserted: number
   campaignsUpserted: number
   // False on a lightweight orders-only tick (product pull skipped, last_synced_at
@@ -292,6 +295,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
   let ordersInserted = 0
   const newOrders: string[] = []
   const cancelledOrders: string[] = []
+  const acceptedOrders: string[] = []
 
   try {
     // ── Products: resolve shop(s), then pull product/SKU data ─────────────────
@@ -730,6 +734,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
         cancel_alert_sent_at: orders.cancel_alert_sent_at,
         // Write-once guard for the reserving-time physical_stock snapshot below.
         reserved_stock_snapshot: orders.reserved_stock_snapshot,
+        marketplace_status: orders.marketplace_status,
       })
         .from(orders).where(and(eq(orders.shop_id, shopId), inArray(orders.order_id_external, extIds)))
       const existingOrdMap = new Map(existingOrds.map(o => [o.order_id_external, o.id]))
@@ -823,6 +828,23 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
       }
       debug.ordersCancelAlerted = String(cancelledOrders.length)
 
+      // ── CREATED→PACKING transition detection ──────────────────────────────
+      // An order moving from CREATED to PACKING means the seller accepted it
+      // (or Uzum auto-accepted). The stock-sync cron already decreased stock
+      // when the order first appeared as CREATED; now we re-verify. The cron
+      // route sends the "order accepted, stock verified" Telegram notification.
+      const existingStatusMap = new Map(
+        existingOrds
+          .filter(o => o.order_id_external != null)
+          .map(o => [o.order_id_external as string, o.marketplace_status]),
+      )
+      for (const r of toUpdOrd) {
+        const prev = existingStatusMap.get(r.order_id_external)
+        if (prev === 'CREATED' && r.marketplace_status != null && r.marketplace_status !== 'CREATED') {
+          acceptedOrders.push(formatOrderLine(r.order_id_external, r.revenue, rawByExtId.get(r.order_id_external) ?? [], prodInfo))
+        }
+      }
+
       if (toInsOrd.length > 0) {
         for (let i = 0; i < toInsOrd.length; i += 500) {
           await db.insert(orders).values(toInsOrd.slice(i, i + 500).map(r => ({
@@ -899,6 +921,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
         ordersInserted,
         newOrders,
         cancelledOrders,
+        acceptedOrders,
         heavy: false,
         debug,
       }
@@ -1528,6 +1551,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
       ordersInserted,
       newOrders,
       cancelledOrders,
+      acceptedOrders,
       details: warnings.length ? warnings.join(' | ') : undefined,
       debug,
     }
