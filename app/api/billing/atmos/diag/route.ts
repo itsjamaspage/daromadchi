@@ -57,6 +57,7 @@ export async function GET() {
     id: s.id,
     isCurrentUser: s.userId === user.id,
     hasCardId: !!s.card_id,
+    cardIdPrefix: s.card_id ? s.card_id.slice(0, 6) + '...' : null,
     plan: s.plan,
     created_at: s.created_at,
   }))
@@ -67,7 +68,10 @@ export async function GET() {
     status: payments.status,
     atmos_status: payments.atmos_status,
     atmos_payment_id: payments.atmos_payment_id,
+    amount_tiyin: payments.amount_tiyin,
     provider: payments.provider,
+    raw_callback: payments.raw_callback,
+    subscription_id: payments.subscription_id,
     created_at: payments.created_at,
   }).from(payments)
     .where(eq(payments.user_id, user.id))
@@ -79,7 +83,11 @@ export async function GET() {
     status: p.status,
     atmosStatus: p.atmos_status,
     hasAtmosPaymentId: !!p.atmos_payment_id,
+    amountTiyin: p.amount_tiyin,
     provider: p.provider,
+    subscriptionId: p.subscription_id,
+    chargeError: (p.raw_callback as Record<string, unknown>)?._chargeError ?? null,
+    chargeFailedAt: (p.raw_callback as Record<string, unknown>)?._chargeFailedAt ?? null,
     created_at: p.created_at,
   }))
 
