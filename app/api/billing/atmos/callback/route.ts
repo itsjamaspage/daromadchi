@@ -245,12 +245,15 @@ async function chargeAfterBind(
   }
 
   // Charge via MPS (card_id-based charge for Visa/MC).
+  let preRaw: Record<string, unknown> | undefined
+  let chargeRaw: Record<string, unknown> | undefined
   try {
     const pre = await mpsPreCreate({
       amountTiyin: pay.amountTiyin,
       extId: pay.id,
       account: String(pay.account),
     })
+    preRaw = pre.raw
 
     await db.update(payments).set({
       atmos_payment_id: pre.transactionId, updated_at: new Date(),
@@ -261,6 +264,7 @@ async function chargeAfterBind(
       amountTiyin: pay.amountTiyin,
       transactionId: pre.transactionId,
     })
+    chargeRaw = charge.raw
 
     await applyAtmosPaymentSuccess({
       paymentId: pay.id,
@@ -274,13 +278,19 @@ async function chargeAfterBind(
       transactionId: charge.transactionId, cardId,
     })
   } catch (err) {
-    const errStr = String(err).slice(0, 300)
+    const errStr = String(err).slice(0, 500)
     logger.error('atmos_bind_bg_charge_failed', {
       subscriptionId: sub.id, paymentId: pay.id, error: errStr,
+      mpsPreCreateRaw: preRaw, mpsCreateBindRaw: chargeRaw,
     })
     await db.update(payments).set({
       status: 'failed', atmos_status: 'failed', updated_at: new Date(),
-      raw_callback: { _chargeError: errStr, _chargeFailedAt: new Date().toISOString() },
+      raw_callback: {
+        _chargeError: errStr,
+        _chargeFailedAt: new Date().toISOString(),
+        _mpsPreCreateRaw: preRaw ? JSON.stringify(preRaw).slice(0, 500) : null,
+        _mpsCreateBindRaw: chargeRaw ? JSON.stringify(chargeRaw).slice(0, 500) : null,
+      },
     }).where(eq(payments.id, pay.id)).catch(() => {})
   }
 }
