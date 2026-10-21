@@ -488,13 +488,14 @@ export async function mpsCreateBind(p: MpsCreateBindParams): Promise<MpsCreateBi
     ?? pickDeep(json, ['result_code', 'resultCode'])
     ?? ''
   const tid = pickString(payload, ['id', 'transaction_id']) ?? pickDeep(json, ['id', 'transaction_id']) ?? p.transactionId
-  if (!resultCode) {
-    throw new AtmosApiError('no_result_code', `MPS charge returned no result_code — raw: ${JSON.stringify(json).slice(0, 500)}`)
-  }
-  if (resultCode.toLowerCase() !== 'approved') {
+  if (resultCode && resultCode.toLowerCase() !== 'approved') {
     throw new AtmosApiError(resultCode, `MPS charge declined: ${resultCode}`)
   }
-  return { transactionId: String(tid), resultCode, raw: json }
+  const { code } = atmosResultCode(json)
+  if (!resultCode && !code) {
+    throw new AtmosApiError('no_result', `MPS charge returned no status — raw: ${JSON.stringify(json).slice(0, 500)}`)
+  }
+  return { transactionId: String(tid), resultCode: resultCode || code, raw: json }
 }
 
 // ── Card details (lookup by card_id) ────────────────────────────────────────
