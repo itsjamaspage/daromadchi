@@ -229,6 +229,7 @@ async function chargeAfterBind(
     account: payments.account,
     amountTiyin: payments.amount_tiyin,
     atmosStatus: payments.atmos_status,
+    rawCallback: payments.raw_callback,
   }).from(payments)
     .where(eq(payments.subscription_id, sub.id))
     .orderBy(desc(payments.created_at))
@@ -259,10 +260,12 @@ async function chargeAfterBind(
       atmos_payment_id: pre.transactionId, updated_at: new Date(),
     }).where(eq(payments.id, pay.id)).catch(() => {})
 
+    const storedIp = (pay.rawCallback as Record<string, unknown>)?._clientIp
     const charge = await mpsCreateBind({
       cardId,
       amountTiyin: pay.amountTiyin,
       transactionId: pre.transactionId,
+      clientIp: typeof storedIp === 'string' ? storedIp : undefined,
     })
     chargeRaw = charge.raw
 
@@ -283,9 +286,11 @@ async function chargeAfterBind(
       subscriptionId: sub.id, paymentId: pay.id, error: errStr,
       mpsPreCreateRaw: preRaw, mpsCreateBindRaw: chargeRaw,
     })
+    const existingCallback = (pay.rawCallback as Record<string, unknown>) ?? {}
     await db.update(payments).set({
       status: 'failed', atmos_status: 'failed', updated_at: new Date(),
       raw_callback: {
+        ...existingCallback,
         _chargeError: errStr,
         _chargeFailedAt: new Date().toISOString(),
         _mpsPreCreateRaw: preRaw ? JSON.stringify(preRaw).slice(0, 500) : null,
