@@ -52,6 +52,7 @@ const BT: Record<Lang, Record<string, string>> = {
     cancelledUntil: 'Faol:',
     cancelledThenFree: 'gacha, keyin Bepul',
     cancelledOver: "To'langan davr tugadi.",
+    nowFree: "Hozir Bepul tarifdasiz.",
     resumePlan: 'Tarifni qayta tiklash',
     resumeErrOver: "To'langan davr tugagan — yangi tarifni tanlang.",
     cancelDone: 'Tarif bekor qilindi',
@@ -96,6 +97,7 @@ const BT: Record<Lang, Record<string, string>> = {
     cancelledUntil: 'Active until',
     cancelledThenFree: ', then Free',
     cancelledOver: 'Your paid period has ended.',
+    nowFree: "You're now on the Free plan.",
     resumePlan: 'Resume plan',
     resumeErrOver: 'The paid period is over — choose a plan instead.',
     cancelDone: 'Plan cancelled',
@@ -146,6 +148,7 @@ const BT: Record<Lang, Record<string, string>> = {
     cancelledUntil: 'Активен до',
     cancelledThenFree: ', затем Бесплатный',
     cancelledOver: 'Оплаченный период закончился.',
+    nowFree: 'Сейчас вы на Бесплатном тарифе.',
     resumePlan: 'Возобновить тариф',
     resumeErrOver: 'Оплаченный период закончился — выберите тариф заново.',
     cancelDone: 'Тариф отменён',
@@ -768,7 +771,10 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
                 <span className="text-xs text-[var(--text-muted)]">{b.cancelledOver}</span>
               )}
             </div>
-            {billing.plan !== 'free' && (
+            {cancelledAndExpired && (
+              <p className="text-sm text-[var(--text-muted)] mt-1">{b.nowFree}</p>
+            )}
+            {billing.plan !== 'free' && !cancelledAndExpired && (
               <p className="text-[var(--text-base)] font-bold text-xl">{PLAN_PRICES[billing.plan]}<span className="text-[var(--text-muted)] font-normal text-sm">{d.billingPerMonth}</span></p>
             )}
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
