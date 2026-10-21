@@ -482,11 +482,14 @@ export async function mpsCreateBind(p: MpsCreateBindParams): Promise<MpsCreateBi
     client_ip_addr: p.clientIp ?? '127.0.0.1',
   })
   logger.info('atmos_mps_create_bind_response', { cardId: p.cardId, amount: p.amountTiyin, raw: json })
+  assertAtmosOk(json, 'mps/create-bind')
   const payload = asRecord(json.payload ?? json.data ?? json)
-  const resultCode = pickString(payload, ['result_code', 'resultCode']) ?? ''
-  const tid = pickString(payload, ['id', 'transaction_id']) ?? p.transactionId
+  const resultCode = pickString(payload, ['result_code', 'resultCode'])
+    ?? pickDeep(json, ['result_code', 'resultCode'])
+    ?? ''
+  const tid = pickString(payload, ['id', 'transaction_id']) ?? pickDeep(json, ['id', 'transaction_id']) ?? p.transactionId
   if (!resultCode) {
-    throw new AtmosApiError('no_result_code', 'MPS charge returned no result_code — charge not confirmed')
+    throw new AtmosApiError('no_result_code', `MPS charge returned no result_code — raw: ${JSON.stringify(json).slice(0, 500)}`)
   }
   if (resultCode.toLowerCase() !== 'approved') {
     throw new AtmosApiError(resultCode, `MPS charge declined: ${resultCode}`)
