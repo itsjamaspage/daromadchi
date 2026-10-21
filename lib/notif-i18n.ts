@@ -119,6 +119,12 @@ export interface NotifStrings {
   oversellNoLaterOrder: string
   oversellRateLimited: (used: number, max: number, mp: string) => string
   oversellCancelling: (mp: string) => string
+  orderReceivedStockTitle: string
+  orderReceivedStockBody: (product: string, newQty: number) => string
+  orderReceivedStockFooter: string
+  orderAcceptedStockTitle: string
+  orderAcceptedStockBody: (product: string, currentQty: number) => string
+  orderAcceptedStockFooter: string
   deliverTo: string
   deliverBy: string
   fromMarket: string
@@ -197,6 +203,12 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     oversellNoLaterOrder:  "Bekor qilish uchun ochiq buyurtma topilmadi — qo'lda tekshiring.",
     oversellRateLimited:   (used, max, mp) => `🚫 Avtomatik bekor qilish chegarasi (${used}/${max} shu soatda). Bekor QILINMADI — ${mp} uchun qo'lda bekor qiling.`,
     oversellCancelling:    (mp) => `🤖 Keyingi buyurtma bekor qilinmoqda (${mp}, sabab OUT_OF_STOCK).`,
+    orderReceivedStockTitle: '📦 <b>Buyurtma keldi — qoldiq yangilanmoqda</b>',
+    orderReceivedStockBody: (product, newQty) => `• ${product} → <b>${newQty}</b> dona`,
+    orderReceivedStockFooter: "Buyurtmani qabul qilganingizda qoldiqni qayta tekshiramiz.",
+    orderAcceptedStockTitle: '✅ <b>Buyurtma qabul qilindi — qoldiq tekshirildi</b>',
+    orderAcceptedStockBody: (product, currentQty) => `• ${product} — hozirgi qoldiq: <b>${currentQty}</b> dona`,
+    orderAcceptedStockFooter: "Qoldiq to'g'ri ekanligini tasdiqladik.",
     deliverTo:      'PVZ ga',
     deliverBy:      'gacha',
     fromMarket:     'dan',
@@ -273,6 +285,12 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     oversellNoLaterOrder:  'Не найден открытый заказ для автоотмены — проверьте вручную.',
     oversellRateLimited:   (used, max, mp) => `🚫 Достигнут лимит автоотмены (${used}/${max} за час). НЕ отменяем автоматически — отмените ${mp} вручную.`,
     oversellCancelling:    (mp) => `🤖 Отменяем поздний заказ (${mp}, причина OUT_OF_STOCK).`,
+    orderReceivedStockTitle: '📦 <b>Заказ получен — обновляем остатки</b>',
+    orderReceivedStockBody: (product, newQty) => `• ${product} → <b>${newQty}</b> шт`,
+    orderReceivedStockFooter: 'Когда вы примете заказ, мы перепроверим остатки.',
+    orderAcceptedStockTitle: '✅ <b>Заказ принят — остатки проверены</b>',
+    orderAcceptedStockBody: (product, currentQty) => `• ${product} — текущий остаток: <b>${currentQty}</b> шт`,
+    orderAcceptedStockFooter: 'Остатки актуальны.',
     deliverTo:      'в ПВЗ',
     deliverBy:      'до',
     fromMarket:     'из',
@@ -349,6 +367,12 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     oversellNoLaterOrder:  'No open order found to auto-cancel — please check manually.',
     oversellRateLimited:   (used, max, mp) => `🚫 Auto-cancel rate limit reached (${used}/${max} this hour). NOT auto-cancelling — use one-click cancel for ${mp}.`,
     oversellCancelling:    (mp) => `🤖 Auto-cancelling the later order (${mp}, reason OUT_OF_STOCK).`,
+    orderReceivedStockTitle: '📦 <b>Order received — updating stock</b>',
+    orderReceivedStockBody: (product, newQty) => `• ${product} → <b>${newQty}</b> pcs`,
+    orderReceivedStockFooter: "Once you accept the order, we'll re-verify the stock.",
+    orderAcceptedStockTitle: '✅ <b>Order accepted — stock verified</b>',
+    orderAcceptedStockBody: (product, currentQty) => `• ${product} — current stock: <b>${currentQty}</b> pcs`,
+    orderAcceptedStockFooter: 'Stock is up to date.',
     deliverTo:      'to PVZ',
     deliverBy:      'by',
     fromMarket:     'from',

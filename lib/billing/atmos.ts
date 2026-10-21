@@ -454,6 +454,7 @@ export async function mpsPreCreate(p: MpsPreCreateParams): Promise<MpsPreCreateR
     }],
   })
   logger.info('atmos_mps_pre_create_response', { amount: p.amountTiyin, account: p.account, raw: json })
+  assertAtmosOk(json, 'mps/pre-create')
   const payload = asRecord(json.payload ?? json.data ?? json)
   const tid = pickString(payload, ['id', 'transaction_id']) ?? pickDeep(json, ['id', 'transaction_id'])
   if (!tid) throw new AtmosApiError('bad_response', 'mps/pre-create returned no transaction id')

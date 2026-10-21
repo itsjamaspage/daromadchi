@@ -141,7 +141,7 @@ async function loadGroups(userId: string): Promise<{
   const groups = new Map<string, SyncGroup>()
   if (shopIds.length === 0) return { shopsById, groups }
 
-  const [prodRows, pendingRows, reservingRows, mergeRows, orderStatusRows, baselineRows] = await Promise.all([
+  const [prodRows, pendingRows, reservingRows, mergeRows, orderStatusRows, baselineRows, createdPendingRows] = await Promise.all([
     db.select({
       id: products.id,
       shop_id: products.shop_id,
@@ -208,6 +208,17 @@ async function loadGroups(userId: string): Promise<{
     db.select({ match_key: productLinks.match_key, total_physical_stock: productLinks.total_physical_stock })
       .from(productLinks)
       .where(and(eq(productLinks.user_id, userId), isNotNull(productLinks.total_physical_stock), isNotNull(productLinks.baseline_at))),
+    // CREATED order units per product — same-store oversell prevention. CREATED
+    // orders are unpaid drafts excluded from cross-store `pending` (they'd
+    // phantom-stockout siblings), but on the member's OWN marketplace the listing
+    // must decrease so a second buyer can't order the same unit.
+    db.select({
+      product_id: orderItems.product_id,
+      qty: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`.as('created_qty'),
+    }).from(orderItems)
+      .innerJoin(orders, eq(orderItems.order_id, orders.id))
+      .where(and(inArray(orders.shop_id, shopIds), eq(orders.marketplace_status, 'CREATED')))
+      .groupBy(orderItems.product_id),
   ])
 
   const resolveKey = buildKeyResolver(mergeRows)
@@ -234,6 +245,7 @@ async function loadGroups(userId: string): Promise<{
     orderAccum.set(key, perOrder)
   }
   const pendingByProduct = new Map(pendingRows.map(r => [r.product_id, Number(r.qty)]))
+  const createdPendingByProduct = new Map(createdPendingRows.map(r => [r.product_id, Number(r.qty)]))
   // product_id → reserving order ids on it (product_id can be null when a Yandex
   // line never linked to a products row — those are un-attributable, exactly as
   // the pending sum drops them, so nothing over-counts).
@@ -270,6 +282,7 @@ async function loadGroups(userId: string): Promise<{
       listedStock: p.stock_quantity,
       physicalStock: p.physical_stock,
       pending: pendingByProduct.get(p.id) ?? 0,
+      createdPending: createdPendingByProduct.get(p.id) ?? 0,
       sku: p.sku,
     })
   }

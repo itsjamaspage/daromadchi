@@ -274,12 +274,13 @@ async function chargeAfterBind(
       transactionId: charge.transactionId, cardId,
     })
   } catch (err) {
+    const errStr = String(err).slice(0, 300)
     logger.error('atmos_bind_bg_charge_failed', {
-      subscriptionId: sub.id, paymentId: pay.id,
-      error: String(err).slice(0, 300),
+      subscriptionId: sub.id, paymentId: pay.id, error: errStr,
     })
     await db.update(payments).set({
       status: 'failed', atmos_status: 'failed', updated_at: new Date(),
+      raw_callback: { _chargeError: errStr, _chargeFailedAt: new Date().toISOString() },
     }).where(eq(payments.id, pay.id)).catch(() => {})
   }
 }

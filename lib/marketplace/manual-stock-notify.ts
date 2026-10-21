@@ -125,6 +125,7 @@ async function loadUserGroups(userId: string): Promise<Map<string, LoadedGroup>>
       listedStock: p.stock_quantity,
       physicalStock: p.physical_stock,
       pending: pendingByProduct.get(p.id) ?? 0,
+      createdPending: 0,
       sku: p.sku,
     }
     let g = groups.get(key)

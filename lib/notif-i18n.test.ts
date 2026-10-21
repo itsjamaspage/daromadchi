@@ -35,6 +35,7 @@ const CALLS: Record<string, unknown[]> = {
   restoreActionDetail: ['Yandex Market', 2, 1], restoreActionCta: ['Yandex Market', 2],
   restoreActionCtaMulti: ['Yandex Market'], restoreInfoDetail: ['Yandex Market', 2],
   restoreInfoNoteMulti: ['Yandex Market'], restoreLine: ['JMWHT', 2, 1], restoreMpGroup: ['Yandex Market'],
+  orderReceivedStockBody: ['M9 (JMWHT)', 3], orderAcceptedStockBody: ['M9 (JMWHT)', 2],
 }
 
 function render(key: string, lang: NotifLang): string {
