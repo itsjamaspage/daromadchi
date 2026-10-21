@@ -86,6 +86,7 @@ export async function GET() {
     amountTiyin: p.amount_tiyin,
     provider: p.provider,
     subscriptionId: p.subscription_id,
+    clientIp: (p.raw_callback as Record<string, unknown>)?._clientIp ?? null,
     chargeError: (p.raw_callback as Record<string, unknown>)?._chargeError ?? null,
     chargeFailedAt: (p.raw_callback as Record<string, unknown>)?._chargeFailedAt ?? null,
     mpsPreCreateRaw: (p.raw_callback as Record<string, unknown>)?._mpsPreCreateRaw ?? null,

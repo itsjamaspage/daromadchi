@@ -17,6 +17,7 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { logger } from '@/lib/logger'
 import { planAmountTiyin, planPeriodMonths, tiyinToSom, isPlanKey, type Interval } from '@/lib/billing/plans'
 import { hostedBindCreate, AtmosConfigError, AtmosApiError } from '@/lib/billing/atmos'
+import { clientIpFromForwarded } from '@/lib/billing/atmos-verify'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -40,6 +41,7 @@ export async function POST(req: Request) {
   const periodMonths = planPeriodMonths(interval)
   const paymentId = randomUUID()
   const requestId = randomUUID()
+  const clientIp = clientIpFromForwarded(req.headers.get('x-forwarded-for'), req.headers.get('x-real-ip'))
 
   // Persist the intent BEFORE calling ATMOS (account must exist for the callback).
   let subscriptionId: string
@@ -56,6 +58,7 @@ export async function POST(req: Request) {
       amount: String(tiyinToSom(amountTiyin)), amount_tiyin: amountTiyin,
       status: 'pending', atmos_status: 'created', request_id: requestId,
       account: paymentId, subscription_id: subscriptionId,
+      raw_callback: clientIp ? { _clientIp: clientIp } : null,
     })
   } catch (err) {
     logger.error('atmos_hosted_bind_persist_failed', { userId: user.id, error: String(err).slice(0, 300) })
