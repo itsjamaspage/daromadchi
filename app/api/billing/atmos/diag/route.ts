@@ -88,6 +88,8 @@ export async function GET() {
     subscriptionId: p.subscription_id,
     chargeError: (p.raw_callback as Record<string, unknown>)?._chargeError ?? null,
     chargeFailedAt: (p.raw_callback as Record<string, unknown>)?._chargeFailedAt ?? null,
+    mpsPreCreateRaw: (p.raw_callback as Record<string, unknown>)?._mpsPreCreateRaw ?? null,
+    mpsCreateBindRaw: (p.raw_callback as Record<string, unknown>)?._mpsCreateBindRaw ?? null,
     created_at: p.created_at,
   }))
 
