@@ -5,8 +5,8 @@ import { COLOR_LABELS, type ColorKey, type BadgeLang } from '@/lib/products/reso
 import { notifT, type NotifLang } from '@/lib/notif-i18n'
 
 const MP_FLAG: Record<string, string> = {
-  uzum:          '🟣UZ',
-  yandex_market: '🟡YM',
+  uzum:          'UZ',
+  yandex_market: 'YM',
 }
 
 interface ShopInfo {
@@ -187,6 +187,11 @@ async function buildSalesSummary(
   const skuOf   = (o: typeof active[number]) => (o.itemSku ?? o.sku ?? '').trim()
   const colorOf = (o: typeof active[number]) => o.itemColor ?? o.color
 
+  // Count items per order so we only fall back to revenue when there's 1 item
+  // (revenue is order-level — using it per item overstates multi-item orders).
+  const itemsPerOrder = new Map<string, number>()
+  for (const r of rows) itemsPerOrder.set(r.orderId, (itemsPerOrder.get(r.orderId) ?? 0) + 1)
+
   const MAX_ITEMS = 30
   const withProduct = active.filter(o => nameOf(o) || skuOf(o))
   const lines: string[] = []
@@ -197,12 +202,10 @@ async function buildSalesSummary(
     const parts: string[] = [name || sku || '—']
     const c = colorLabel(colorOf(o))
     if (c) parts.push(c)
-    // Only append the SKU when it isn't already the name we showed.
     if (sku && sku !== (name ?? '')) parts.push(sku)
-    // Price: this item's line total (unit price × qty), else the order revenue.
     const linePrice = o.unitPrice != null
       ? Number(o.unitPrice) * (Number(o.qty) || 1)
-      : (o.revenue != null ? Number(o.revenue) : null)
+      : ((itemsPerOrder.get(o.orderId) ?? 0) === 1 && o.revenue != null ? Number(o.revenue) : null)
     const priceStr = fmtPrice(linePrice)
     let line = `${flag} ${parts.join(' · ')}`.trim()
     if (priceStr) line += ` — ${priceStr}`
@@ -226,13 +229,13 @@ async function buildSalesSummary(
       if (sku && sku !== (name ?? '')) parts.push(sku)
       const linePrice = c.unitPrice != null
         ? Number(c.unitPrice) * (Number(c.qty) || 1)
-        : (c.revenue != null ? Number(c.revenue) : null)
+        : ((itemsPerOrder.get(c.orderId) ?? 0) === 1 && c.revenue != null ? Number(c.revenue) : null)
       const priceStr = fmtPrice(linePrice)
       let line = `${flag} ${parts.join(' · ')}`.trim()
       if (priceStr) line += ` — ${priceStr}`
       const ref = orderLink(shopInfo.get(c.shop_id), c.orderIdExternal)
       const orderNum = ref ? ` ${ref}` : ''
-      lines.push(`🚫${orderNum} ${line}`)
+      lines.push(`${orderNum} ${line}`)
     }
   }
 
