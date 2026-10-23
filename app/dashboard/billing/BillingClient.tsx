@@ -60,12 +60,6 @@ const BT: Record<Lang, Record<string, string>> = {
     priceNoticeTitle: "Tarif narxi o'zgaradi",
     priceNoticeFrom: 'dan boshlab:',
     priceNoticeBody: "Bu sanagacha yangi narx yechilmaydi. Agar sizga to'g'ri kelmasa, quyida tarifni bekor qilishingiz mumkin — to'lovlar to'xtaydi, kirish esa to'langan davr oxirigacha saqlanadi.",
-    chooseCardType: "To'lov usulini tanlang",
-    localCard: 'UzCard / Humo',
-    localCardDesc: "O'zbekiston mahalliy kartalari",
-    intlCard: 'Visa / Mastercard',
-    intlCardDesc: 'Xalqaro kartalar',
-    redirectNote: "Xavfsiz to'lov sahifasiga yo'naltirilasiz",
   },
   en: {
     cardStep: 'Card details', cardNumber: 'Card number', expiry: 'Expiry (MM/YY)',
@@ -105,23 +99,11 @@ const BT: Record<Lang, Record<string, string>> = {
     priceNoticeTitle: 'Your plan price is changing',
     priceNoticeFrom: 'From',
     priceNoticeBody: 'Nothing is charged at the new price before that date. If it does not suit you, cancel below — charging stops and your access runs to the end of the period you have paid for.',
-    chooseCardType: 'Choose payment method',
-    localCard: 'UzCard / Humo',
-    localCardDesc: 'Local Uzbekistan cards',
-    intlCard: 'Visa / Mastercard',
-    intlCardDesc: 'International cards',
-    redirectNote: 'You will be redirected to a secure payment page',
   },
   ru: {
     cardStep: 'Данные карты', cardNumber: 'Номер карты', expiry: 'Срок (ММ/ГГ)',
     pay: 'Оформить подписку', processing: 'Обработка…',
     secureNote: 'Номер карты не сохраняется — используется только для безопасной оплаты.',
-    chooseCardType: 'Выберите способ оплаты',
-    localCard: 'UzCard / Humo',
-    localCardDesc: 'Местные карты Узбекистана',
-    intlCard: 'Visa / Mastercard',
-    intlCardDesc: 'Международные карты',
-    redirectNote: 'Вы будете перенаправлены на безопасную страницу оплаты',
     otpStep: 'Введите код из SMS', otpDesc: 'Код отправлен на телефон, привязанный к карте',
     confirm: 'Подтвердить', resend: 'Отправить код повторно', resendIn: 'Отправить снова',
     successStep: 'Оплата прошла успешно!', successDesc: 'Ваш тариф активирован.', done: 'Готово',
@@ -237,7 +219,7 @@ function UpgradeModal({ current, highlight, initialInterval, lang, d, derivedTie
   // Opened straight on a plan (via ?plan=) still lands on the confirm step first,
   // so the user always sees the exact amount (and, for yearly, the once-a-year
   // total) before any card details or charge.
-  const [step, setStep] = useState<'choose' | 'confirm' | 'cardType' | 'card' | 'otp' | 'success'>(highlight ? 'confirm' : 'choose')
+  const [step, setStep] = useState<'choose' | 'confirm' | 'card' | 'otp' | 'success'>(highlight ? 'confirm' : 'choose')
   const [plan, setPlan] = useState<PlanType | null>(highlight ?? null)
   const [billingInterval, setBillingInterval] = useState<Interval>(initialInterval ?? 'monthly')
   const [cardNumber, setCardNumber] = useState('')
@@ -247,29 +229,6 @@ function UpgradeModal({ current, highlight, initialInterval, lang, d, derivedTie
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [resendLeft, setResendLeft] = useState(0)
-  const [hostedBindBusy, setHostedBindBusy] = useState(false)
-
-  async function startHostedBind() {
-    if (!plan || hostedBindBusy) return
-    setHostedBindBusy(true); setErr(null)
-    try {
-      const res = await fetch('/api/billing/atmos/hosted-bind', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, interval: billingInterval }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (res.ok && data?.url) {
-        window.open(data.url, '_blank')
-        setHostedBindBusy(false)
-      } else {
-        setErr(data?.error === 'atmos_not_configured' ? b.errUnavailable : b.errGeneric)
-        setHostedBindBusy(false)
-      }
-    } catch {
-      setErr(b.errGeneric)
-      setHostedBindBusy(false)
-    }
-  }
 
   // Resend countdown on the OTP step.
   useEffect(() => {
@@ -332,7 +291,7 @@ function UpgradeModal({ current, highlight, initialInterval, lang, d, derivedTie
     setBusy(false)
   }
 
-  const title = step === 'confirm' ? b.confirmTitle : step === 'cardType' ? b.chooseCardType : step === 'card' ? b.cardStep : step === 'otp' ? b.otpStep : step === 'success' ? b.successStep : d.billingChangePlanTitle
+  const title = step === 'confirm' ? b.confirmTitle : step === 'card' ? b.cardStep : step === 'otp' ? b.otpStep : step === 'success' ? b.successStep : d.billingChangePlanTitle
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -345,8 +304,8 @@ function UpgradeModal({ current, highlight, initialInterval, lang, d, derivedTie
                 <ArrowLeft className="w-4 h-4" />
               </button>
             )}
-            {(step === 'card' || step === 'cardType') && (
-              <button onClick={() => { setStep(step === 'card' ? 'cardType' : 'confirm'); setErr(null) }} className="text-[var(--text-muted)] hover:text-[var(--text-base)] p-0.5" aria-label={b.back}>
+            {step === 'card' && (
+              <button onClick={() => { setStep('confirm'); setErr(null) }} className="text-[var(--text-muted)] hover:text-[var(--text-base)] p-0.5" aria-label={b.back}>
                 <ArrowLeft className="w-4 h-4" />
               </button>
             )}
@@ -416,42 +375,13 @@ function UpgradeModal({ current, highlight, initialInterval, lang, d, derivedTie
                   </p>
                 )}
               </div>
-              <button type="button" onClick={() => { setErr(null); setStep('cardType') }}
+              <button type="button" onClick={() => { setErr(null); setStep('card') }}
                 className="w-full btn-primary text-sm font-semibold py-2.5 rounded-xl">
                 {b.continue}
               </button>
             </div>
           )
         })()}
-
-        {/* Step: choose card type (UzCard/Humo vs Visa/MC) */}
-        {step === 'cardType' && plan && (
-          <div className="p-6 space-y-4">
-            <p className="text-sm text-[var(--text-muted)] text-center">{b.chooseCardType}</p>
-            <div className="grid grid-cols-2 gap-3">
-              <button type="button" onClick={() => { setErr(null); setStep('card') }}
-                className="flex flex-col items-center gap-2 p-5 rounded-xl border border-[var(--border2)] bg-[var(--bg-input)] hover:border-[var(--c1)] transition-colors">
-                <CreditCard className="w-6 h-6 text-[var(--text-base)]" />
-                <span className="text-sm font-semibold text-[var(--text-base)]">{b.localCard}</span>
-                <span className="text-[11px] text-[var(--text-muted)]">{b.localCardDesc}</span>
-              </button>
-              <button type="button" onClick={startHostedBind} disabled={hostedBindBusy}
-                className="flex flex-col items-center gap-2 p-5 rounded-xl border border-[var(--border2)] bg-[var(--bg-input)] hover:border-[var(--c1)] transition-colors disabled:opacity-60">
-                {hostedBindBusy ? (
-                  <Loader2 className="w-6 h-6 animate-spin text-[var(--text-muted)]" />
-                ) : (
-                  <CreditCard className="w-6 h-6 text-[var(--text-base)]" />
-                )}
-                <span className="text-sm font-semibold text-[var(--text-base)]">{b.intlCard}</span>
-                <span className="text-[11px] text-[var(--text-muted)]">{b.intlCardDesc}</span>
-              </button>
-            </div>
-            {err && <p className="text-xs text-red-400 text-center">{err}</p>}
-            <p className="flex items-center justify-center gap-1.5 text-[11px] text-[var(--text-muted)]">
-              <Lock className="w-3 h-3 flex-shrink-0" /> {b.redirectNote}
-            </p>
-          </div>
-        )}
 
         {/* Step: card details */}
         {step === 'card' && plan && (

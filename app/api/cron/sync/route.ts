@@ -17,6 +17,7 @@ import { refreshUzumStock, refreshYandexStock } from '@/lib/marketplace/stock-re
 import { notifyManualStockUpdates } from '@/lib/marketplace/manual-stock-notify'
 import { notifyCancelRestore } from '@/lib/marketplace/cancel-restore-alert'
 import { runLedgerShadow, ledgerShadowEnabled } from '@/lib/marketplace/ledger-shadow'
+import { backfillProductCategories } from '@/lib/categories/backfill'
 import { logger } from '@/lib/logger'
 import { computeEffectivePlan } from '@/lib/billing/features'
 
@@ -415,6 +416,15 @@ export const GET = withErrorHandler(async (req: Request) => {
         })
       }
     }
+  }
+
+  // Backfill categories for existing products with null category.
+  // Idempotent: once all products are categorized, the query returns 0 rows.
+  try {
+    const backfilled = await backfillProductCategories()
+    if (backfilled > 0) logger.info('category_backfill', { updated: backfilled })
+  } catch (err) {
+    logger.warn('category_backfill_failed', { error: String(err).slice(0, 200) })
   }
 
   // Invalidate cached product/order pages if anything actually synced, so
