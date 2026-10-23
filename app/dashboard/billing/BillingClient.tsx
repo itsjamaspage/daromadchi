@@ -23,7 +23,7 @@ type Lang = 'uz' | 'en' | 'ru'
 // rather than threaded through the large shared i18n file.
 const BT: Record<Lang, Record<string, string>> = {
   uz: {
-    cardStep: "Karta ma'lumotlari", cardNumber: 'Karta raqami', expiry: 'Muddati (OO/YY)',
+    cardStep: "UzCard / Humo karta ma'lumotlari", cardNumber: 'Karta raqami', expiry: 'Muddati (OO/YY)',
     pay: "Obuna bo'lish", processing: 'Bajarilmoqda…',
     secureNote: "Karta raqami saqlanmaydi — faqat xavfsiz to'lov uchun.",
     otpStep: 'SMS kodni kiriting', otpDesc: "Kartaga bog'langan telefonga kod yuborildi",
@@ -62,7 +62,7 @@ const BT: Record<Lang, Record<string, string>> = {
     priceNoticeBody: "Bu sanagacha yangi narx yechilmaydi. Agar sizga to'g'ri kelmasa, quyida tarifni bekor qilishingiz mumkin — to'lovlar to'xtaydi, kirish esa to'langan davr oxirigacha saqlanadi.",
   },
   en: {
-    cardStep: 'Card details', cardNumber: 'Card number', expiry: 'Expiry (MM/YY)',
+    cardStep: 'UzCard / Humo card details', cardNumber: 'Card number', expiry: 'Expiry (MM/YY)',
     pay: 'Subscribe', processing: 'Processing…',
     secureNote: 'Your card number is never stored — used only for secure payment.',
     otpStep: 'Enter the SMS code', otpDesc: 'A code was sent to the phone linked to the card',
@@ -101,7 +101,7 @@ const BT: Record<Lang, Record<string, string>> = {
     priceNoticeBody: 'Nothing is charged at the new price before that date. If it does not suit you, cancel below — charging stops and your access runs to the end of the period you have paid for.',
   },
   ru: {
-    cardStep: 'Данные карты', cardNumber: 'Номер карты', expiry: 'Срок (ММ/ГГ)',
+    cardStep: 'Данные карты UzCard / Humo', cardNumber: 'Номер карты', expiry: 'Срок (ММ/ГГ)',
     pay: 'Оформить подписку', processing: 'Обработка…',
     secureNote: 'Номер карты не сохраняется — используется только для безопасной оплаты.',
     otpStep: 'Введите код из SMS', otpDesc: 'Код отправлен на телефон, привязанный к карте',
