@@ -80,12 +80,18 @@ export function ipInAnyCidr(ip: string, cidrList: string): boolean {
   return cidrs.some(cidr => ipInCidr(ip, cidr))
 }
 
-// Real client IP from behind the reverse proxy: leftmost X-Forwarded-For entry,
-// falling back to a directly-observed address.
+const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
+
+// Real client IP from behind the reverse proxy: first non-loopback
+// X-Forwarded-For entry, falling back to x-real-ip / direct address.
 export function clientIpFromForwarded(xff: string | null | undefined, fallback?: string | null): string | null {
   if (xff) {
-    const first = xff.split(',')[0]?.trim()
-    if (first) return first
+    for (const part of xff.split(',')) {
+      const ip = part.trim()
+      if (ip && !LOOPBACK.has(ip)) return ip
+    }
   }
-  return fallback?.trim() || null
+  const fb = fallback?.trim()
+  if (fb && !LOOPBACK.has(fb)) return fb
+  return null
 }

@@ -269,6 +269,26 @@ async function chargeAfterBind(
     })
     chargeRaw = charge.raw
 
+    if (charge.threeDsRedirect) {
+      const existingCb = (pay.rawCallback as Record<string, unknown>) ?? {}
+      await db.update(payments).set({
+        atmos_status: 'pending', updated_at: new Date(),
+        raw_callback: {
+          ...existingCb,
+          _3dsRedirectUri: charge.threeDsRedirect.redirectUri,
+          _3dsMpsExtId: charge.threeDsRedirect.mpsExtId,
+          _3dsTransactionId: charge.transactionId,
+          _3dsRequiredAt: new Date().toISOString(),
+        },
+      }).where(eq(payments.id, pay.id)).catch(() => {})
+      logger.info('atmos_bind_bg_3ds_required', {
+        subscriptionId: sub.id, paymentId: pay.id,
+        redirectUri: charge.threeDsRedirect.redirectUri,
+        transactionId: charge.transactionId,
+      })
+      return
+    }
+
     await applyAtmosPaymentSuccess({
       paymentId: pay.id,
       transactionId: charge.transactionId,

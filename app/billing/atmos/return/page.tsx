@@ -2,7 +2,7 @@
  * ATMOS return page (Step 4) — where ATMOS redirects the browser after the
  * hosted checkout (ATMOS_SUCCESS_URL).
  *
- * We do NOT mark anything paid off this redirect. We look up the user's payment,
+ * We do NOT mark anything paid off this redirect. We look up the user’s payment,
  * re-query the authoritative status via getInvoiceStatus(), and — only if ATMOS
  * confirms SUCCESS — activate idempotently through the same at-most-once guard
  * the callback uses. Then we show success / pending / failed.
@@ -14,13 +14,13 @@ import { and, desc, eq } from 'drizzle-orm'
 import { db, payments } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth/session'
 import { logger } from '@/lib/logger'
-import { getInvoiceStatus } from '@/lib/billing/atmos'
+import { getInvoiceStatus, getMpsTransactionStatus } from '@/lib/billing/atmos'
 import { applyAtmosPaymentSuccess } from '@/lib/billing/activate'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-type View = 'success' | 'pending' | 'failed' | 'none'
+type View = 'success' | 'pending' | 'failed' | 'none' | 'threeds'
 
 export default async function AtmosReturnPage({
   searchParams,
@@ -33,8 +33,6 @@ export default async function AtmosReturnPage({
   const sp = await searchParams
   const account = typeof sp.account === 'string' ? sp.account : undefined
 
-  // The payment to reflect: the one named by ?account (scoped to this user), else
-  // the user's most recent ATMOS payment.
   const where = account
     ? and(eq(payments.user_id, user.id), eq(payments.account, account))
     : eq(payments.user_id, user.id)
@@ -43,12 +41,14 @@ export default async function AtmosReturnPage({
     atmosStatus: payments.atmos_status,
     atmosPaymentId: payments.atmos_payment_id,
     plan: payments.plan,
+    rawCallback: payments.raw_callback,
   }).from(payments)
     .where(and(where, eq(payments.provider, 'atmos')))
     .orderBy(desc(payments.created_at))
     .limit(1)
 
   let view: View = 'none'
+  let threeDsUrl: string | null = null
 
   if (!pay) {
     view = 'none'
@@ -56,31 +56,59 @@ export default async function AtmosReturnPage({
     view = 'success'
   } else if (pay.atmosStatus === 'failed' || pay.atmosStatus === 'cancelled') {
     view = 'failed'
-  } else if (pay.atmosPaymentId && (['created', 'pending'] as const).includes(pay.atmosStatus)) {
-    // Re-query the authoritative status and settle idempotently on SUCCESS.
-    try {
-      const st = await getInvoiceStatus(pay.atmosPaymentId)
-      if (st.paid) {
-        await applyAtmosPaymentSuccess({ paymentId: pay.id, rawPayload: st.raw, source: 'return' })
-        view = 'success'
-      } else {
+  } else if (pay.atmosStatus === 'pending' || pay.atmosStatus === 'created') {
+    const cb = pay.rawCallback as Record<string, unknown> | null
+    const redirectUri = typeof cb?._3dsRedirectUri === 'string' ? cb._3dsRedirectUri : null
+    const mpsTransactionId = typeof cb?._3dsTransactionId === 'string' ? cb._3dsTransactionId : null
+
+    if (redirectUri && !sp['3ds_done']) {
+      view = 'threeds'
+      threeDsUrl = redirectUri
+    } else if (mpsTransactionId) {
+      try {
+        const st = await getMpsTransactionStatus(mpsTransactionId)
+        logger.info('atmos_return_mps_status', { paymentId: pay.id, paid: st.paid, state: st.state })
+        if (st.paid) {
+          await applyAtmosPaymentSuccess({ paymentId: pay.id, transactionId: mpsTransactionId, rawPayload: st.raw, source: 'return' })
+          view = 'success'
+        } else {
+          view = 'pending'
+        }
+      } catch (err) {
+        logger.warn('atmos_return_mps_status_failed', { paymentId: pay.id, error: String(err).slice(0, 200) })
         view = 'pending'
       }
-    } catch (err) {
-      logger.warn('atmos_return_status_check_failed', { paymentId: pay.id, error: String(err).slice(0, 200) })
+    } else if (pay.atmosPaymentId) {
+      try {
+        const st = await getInvoiceStatus(pay.atmosPaymentId)
+        if (st.paid) {
+          await applyAtmosPaymentSuccess({ paymentId: pay.id, rawPayload: st.raw, source: 'return' })
+          view = 'success'
+        } else {
+          view = 'pending'
+        }
+      } catch (err) {
+        logger.warn('atmos_return_status_check_failed', { paymentId: pay.id, error: String(err).slice(0, 200) })
+        view = 'pending'
+      }
+    } else {
       view = 'pending'
     }
   } else {
     view = 'pending'
   }
 
-  const COPY: Record<View, { title: string; body: string; tone: string }> = {
+  if (view === 'threeds' && threeDsUrl) {
+    redirect(threeDsUrl)
+  }
+
+  const COPY: Record<Exclude<View, 'threeds'>, { title: string; body: string; tone: string }> = {
     success: { title: 'To‘lov muvaffaqiyatli', body: 'Obunangiz faollashtirildi. Rahmat!', tone: 'text-emerald-400' },
     pending: { title: 'To‘lov qayta ishlanmoqda', body: 'To‘lovingiz tekshirilmoqda. Bu bir necha daqiqa vaqt olishi mumkin.', tone: 'text-amber-400' },
     failed:  { title: 'To‘lov amalga oshmadi', body: 'To‘lov yakunlanmadi. Iltimos, qaytadan urinib ko‘ring.', tone: 'text-red-400' },
     none:    { title: 'To‘lov topilmadi', body: 'Sizda kutilayotgan to‘lov mavjud emas.', tone: 'text-[var(--text-muted)]' },
   }
-  const c = COPY[view]
+  const c = COPY[view as Exclude<View, 'threeds'>]
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--bg)]">
