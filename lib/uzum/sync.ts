@@ -1,5 +1,6 @@
 import { eq, ne, and, inArray, count, sql } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, syncDays, returnInvoices, returnInvoiceItems } from '@/lib/db'
+import { resolveWithFallback } from '@/lib/categories/resolve'
 import { clearShopData } from '@/lib/db/clear-shop-data'
 import { uzumStockQuantity } from './stock-reading'
 import { selectCancellationAlerts } from '@/lib/marketplace/cancellation-alert'
@@ -360,13 +361,17 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
               || (card.photos?.[0]?.photoKey ? `https://images.uzum.uz/${card.photos[0].photoKey}/t_product_540_high.jpg` : null)
               || null
             const skuList = card.skuList ?? []
+            const rawCategory = card.category ?? null
+            const inferredCategory = rawCategory
+              || resolveWithFallback(null, card.title)?.name_ru
+              || null
             if (skuList.length === 0) {
               productRows.push({
                 shop_id: shopId,
                 marketplace_product_id: String(card.productId),
                 title: stripTitleColor(card.title || 'Mahsulot'),
                 sku: String(card.productId),
-                category: card.category ?? null,
+                category: inferredCategory,
                 selling_price: null,
                 cost_price: null,
                 stock_quantity: 0,
@@ -390,7 +395,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
                 marketplace_product_id: String(sku.skuId),
                 title: stripTitleColor(rawTitle),
                 sku: sku.sellerItemCode || sku.article || String(sku.skuId),
-                category: card.category ?? null,
+                category: inferredCategory,
                 selling_price: sku.price ?? null,
                 cost_price: sku.purchasePrice || null,
                 stock_quantity: uzumStockQuantity(sku),

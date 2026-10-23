@@ -16,6 +16,7 @@ import { RESERVING_RAW_STATUSES } from '@/lib/marketplace/stock-allocation'
 import { ORDER_STATUS_LOOKBACK_DAYS } from '@/lib/marketplace/reserved-display'
 import { isYandexFulfillmentRequired, isYandexSellerFulfilled } from '@/lib/marketplace/fulfillment-statuses'
 import { selectCancellationAlerts } from '@/lib/marketplace/cancellation-alert'
+import { resolveWithFallback } from '@/lib/categories/resolve'
 import { withShopLock } from '@/lib/db/shop-lock'
 
 /**
@@ -380,6 +381,7 @@ async function syncFromYandexLocked(
           || e.offer.marketCategoryName?.trim()
           || e.mapping?.marketCategoryName?.trim()
           || e.mapping?.categoryName?.trim()
+          || resolveWithFallback(null, e.offer.name)?.name_ru
           || null
         // Variants of one parent share the same mapping.marketModelName (verified:
         // JMWHT and JMBLK match; JMJ16BEG differs). String equality groups them.
