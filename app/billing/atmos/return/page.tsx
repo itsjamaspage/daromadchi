@@ -11,10 +11,10 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { and, desc, eq } from 'drizzle-orm'
-import { db, payments } from '@/lib/db'
+import { db, payments, subscriptions } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth/session'
 import { logger } from '@/lib/logger'
-import { getInvoiceStatus, getMpsTransactionStatus } from '@/lib/billing/atmos'
+import { getInvoiceStatus, getMpsTransactionStatus, mpsPreCreate, mpsCreateBind } from '@/lib/billing/atmos'
 import { applyAtmosPaymentSuccess } from '@/lib/billing/activate'
 
 export const runtime = 'nodejs'
@@ -38,8 +38,11 @@ export default async function AtmosReturnPage({
     : eq(payments.user_id, user.id)
   const [pay] = await db.select({
     id: payments.id,
+    account: payments.account,
     atmosStatus: payments.atmos_status,
     atmosPaymentId: payments.atmos_payment_id,
+    amountTiyin: payments.amount_tiyin,
+    subscriptionId: payments.subscription_id,
     plan: payments.plan,
     rawCallback: payments.raw_callback,
   }).from(payments)
@@ -78,21 +81,75 @@ export default async function AtmosReturnPage({
         logger.warn('atmos_return_mps_status_failed', { paymentId: pay.id, error: String(err).slice(0, 200) })
         view = 'pending'
       }
-    } else if (pay.atmosPaymentId) {
-      try {
-        const st = await getInvoiceStatus(pay.atmosPaymentId)
-        if (st.paid) {
-          await applyAtmosPaymentSuccess({ paymentId: pay.id, rawPayload: st.raw, source: 'return' })
-          view = 'success'
+    } else {
+      // No MPS charge recorded yet — check if the card was bound and retry.
+      const chargeError = typeof cb?._chargeError === 'string' ? cb._chargeError : null
+      let retried = false
+
+      if (!chargeError && pay.subscriptionId && pay.amountTiyin) {
+        const [sub] = await db.select({ card_id: subscriptions.card_id })
+          .from(subscriptions).where(eq(subscriptions.id, pay.subscriptionId)).limit(1)
+
+        if (sub?.card_id) {
+          logger.info('atmos_return_charge_retry', { paymentId: pay.id, cardId: sub.card_id })
+          try {
+            const pre = await mpsPreCreate({ amountTiyin: pay.amountTiyin, extId: pay.id, account: String(pay.account) })
+            await db.update(payments).set({ atmos_payment_id: pre.transactionId, updated_at: new Date() })
+              .where(eq(payments.id, pay.id)).catch(() => {})
+
+            const charge = await mpsCreateBind({
+              cardId: sub.card_id, amountTiyin: pay.amountTiyin, transactionId: pre.transactionId,
+            })
+
+            if (charge.threeDsRedirect) {
+              await db.update(payments).set({
+                atmos_status: 'pending', updated_at: new Date(),
+                raw_callback: {
+                  ...(cb ?? {}),
+                  _3dsRedirectUri: charge.threeDsRedirect.redirectUri,
+                  _3dsMpsExtId: charge.threeDsRedirect.mpsExtId,
+                  _3dsTransactionId: charge.transactionId,
+                  _3dsRequiredAt: new Date().toISOString(),
+                  _chargeRetrySource: 'return',
+                },
+              }).where(eq(payments.id, pay.id)).catch(() => {})
+              view = 'threeds'
+              threeDsUrl = charge.threeDsRedirect.redirectUri
+              retried = true
+            } else {
+              await applyAtmosPaymentSuccess({ paymentId: pay.id, transactionId: charge.transactionId, rawPayload: charge.raw, source: 'return' })
+              view = 'success'
+              retried = true
+            }
+          } catch (err) {
+            const errStr = String(err).slice(0, 500)
+            logger.error('atmos_return_charge_retry_failed', { paymentId: pay.id, error: errStr })
+            await db.update(payments).set({
+              raw_callback: { ...(cb ?? {}), _chargeError: errStr, _chargeFailedAt: new Date().toISOString(), _chargeRetrySource: 'return' },
+              updated_at: new Date(),
+            }).where(eq(payments.id, pay.id)).catch(() => {})
+          }
+        }
+      }
+
+      if (!retried) {
+        if (pay.atmosPaymentId) {
+          try {
+            const st = await getInvoiceStatus(pay.atmosPaymentId)
+            if (st.paid) {
+              await applyAtmosPaymentSuccess({ paymentId: pay.id, rawPayload: st.raw, source: 'return' })
+              view = 'success'
+            } else {
+              view = 'pending'
+            }
+          } catch (err) {
+            logger.warn('atmos_return_status_check_failed', { paymentId: pay.id, error: String(err).slice(0, 200) })
+            view = 'pending'
+          }
         } else {
           view = 'pending'
         }
-      } catch (err) {
-        logger.warn('atmos_return_status_check_failed', { paymentId: pay.id, error: String(err).slice(0, 200) })
-        view = 'pending'
       }
-    } else {
-      view = 'pending'
     }
   } else {
     view = 'pending'

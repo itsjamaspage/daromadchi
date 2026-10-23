@@ -18,7 +18,7 @@
  * payment callbacks carry `sign` without `api_key`.
  */
 
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { eq, desc, and } from 'drizzle-orm'
 import { db, payments, subscriptions } from '@/lib/db'
 import { logger } from '@/lib/logger'
@@ -189,16 +189,18 @@ async function handleBindCallback(
   }
 
   // Respond to ATMOS immediately — it has a short timeout.
-  // The heavy work (card details, MPS charge, activation) runs after the
-  // response is sent. The return page also re-queries and can pick up the
-  // charge if this background work hasn't finished yet.
+  // Use Next.js after() so the MPS charge survives serverless function teardown.
   logger.info('atmos_bind_callback_response', { subscriptionId: sub.id, cardId, outcome: 'accepted' })
 
-  chargeAfterBind(sub, cardId, body).catch(err => {
-    logger.error('atmos_bind_background_charge_failed', {
-      subscriptionId: sub.id, cardId,
-      error: String(err).slice(0, 300),
-    })
+  after(async () => {
+    try {
+      await chargeAfterBind(sub, cardId, body)
+    } catch (err) {
+      logger.error('atmos_bind_background_charge_failed', {
+        subscriptionId: sub.id, cardId,
+        error: String(err).slice(0, 300),
+      })
+    }
   })
 
   return NextResponse.json(ACCEPT, { status: 200 })
