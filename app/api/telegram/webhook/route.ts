@@ -104,8 +104,8 @@ function botT(lang: string | null | undefined) {
 }
 
 const MKT_NAMES: Record<string, string> = {
-  uzum:          '🟣 Uzum Market',
-  yandex_market: '🟡 Yandex Market',
+  uzum:          'UZ Uzum Market',
+  yandex_market: 'YM Yandex Market',
 }
 
 const WELCOME_UNLINKED: Record<string, string> = {
