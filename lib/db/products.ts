@@ -447,6 +447,12 @@ const _fetchCategoryRevenue = unstable_cache(
             name_ru = resolved.name_ru
             name_uz = resolved.name_uz
             name_en = resolved.name_en
+          } else if (r.raw_category === 'Uncategorized') {
+            key = '_uncategorized'
+            name = 'Без категории'
+            name_ru = 'Без категории'
+            name_uz = 'Kategoriyasiz'
+            name_en = 'No category'
           } else {
             key = r.raw_category
             name = r.raw_category
@@ -489,7 +495,8 @@ const _fetchCategoryRevenue = unstable_cache(
 
       for (const r of rows) {
         const resolved = resolveCanonical(r.raw_category)
-        const key = resolved ? `t:${resolved.canonical_id}` : r.raw_category
+        const isUncat = r.raw_category === 'Uncategorized'
+        const key = resolved ? `t:${resolved.canonical_id}` : isUncat ? '_uncategorized' : r.raw_category
         const existing = merged.get(key)
         if (existing) {
           existing.revenue += Number(r.revenue)
@@ -497,10 +504,10 @@ const _fetchCategoryRevenue = unstable_cache(
           existing.costMissing += Number(r.cost_missing)
         } else {
           merged.set(key, {
-            name: resolved?.name_ru ?? r.raw_category,
-            name_ru: resolved?.name_ru,
-            name_uz: resolved?.name_uz,
-            name_en: resolved?.name_en,
+            name: resolved?.name_ru ?? (isUncat ? 'Без категории' : r.raw_category),
+            name_ru: resolved?.name_ru ?? (isUncat ? 'Без категории' : undefined),
+            name_uz: resolved?.name_uz ?? (isUncat ? 'Kategoriyasiz' : undefined),
+            name_en: resolved?.name_en ?? (isUncat ? 'No category' : undefined),
             revenue: Number(r.revenue),
             profit: Number(r.profit),
             costMissing: Number(r.cost_missing),
