@@ -365,6 +365,21 @@ export async function getInvoiceStatus(paymentId: string): Promise<NormalizedInv
   return normalizeInvoiceStatus(json)
 }
 
+/** Check MPS transaction status after 3DS completion. Tries the MPS-specific
+ *  endpoint first, falls back to the generic invoice/get. */
+export async function getMpsTransactionStatus(transactionId: string): Promise<NormalizedInvoiceStatus> {
+  try {
+    const json = await authedPost<Record<string, unknown>>('/mps/pay/transaction/status', {
+      transaction_id: Number(transactionId),
+    })
+    logger.info('atmos_mps_transaction_status', { transactionId, raw: json })
+    return normalizeInvoiceStatus(json)
+  } catch (err) {
+    logger.warn('atmos_mps_transaction_status_fallback', { transactionId, error: String(err).slice(0, 200) })
+    return getInvoiceStatus(transactionId)
+  }
+}
+
 // ── Callback signature + source-IP allowlist ─────────────────────────────────
 //
 // The MD5 sign verifier and CIDR matcher are the pure helpers imported/re-exported
@@ -429,6 +444,8 @@ export interface MpsPreCreateParams {
   extId: string
   account: string
   invoiceId?: string
+  callbackUrl?: string
+  successUrl?: string
 }
 
 export interface MpsPreCreateResult {
@@ -438,12 +455,17 @@ export interface MpsPreCreateResult {
 
 export async function mpsPreCreate(p: MpsPreCreateParams): Promise<MpsPreCreateResult> {
   const cfg = getConfig()
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://daromadchi.uz').replace(/\/$/, '')
+  const callbackUrl = p.callbackUrl ?? `${appUrl}/api/billing/atmos/callback`
+  const successUrl = p.successUrl ?? `${appUrl}/billing/atmos/return?account=${encodeURIComponent(p.account)}&3ds_done=1`
   const json = await authedPost<Record<string, unknown>>('/mps/pay/transaction/pre-create', {
     amount: p.amountTiyin,
     ext_id: p.extId,
     store_id: Number(cfg.storeId),
     account: p.account,
     invoice_id: p.invoiceId ?? p.extId,
+    callback_url: callbackUrl,
+    success_url: successUrl,
     ofd_items: [{
       items_id: '1',
       code: cfg.serviceIkpu,
@@ -472,6 +494,10 @@ export interface MpsCreateBindResult {
   transactionId: string
   resultCode: string
   raw: Record<string, unknown>
+  threeDsRedirect?: {
+    redirectUri: string
+    mpsExtId: string
+  }
 }
 
 export async function mpsCreateBind(p: MpsCreateBindParams): Promise<MpsCreateBindResult> {
@@ -484,6 +510,16 @@ export async function mpsCreateBind(p: MpsCreateBindParams): Promise<MpsCreateBi
   logger.info('atmos_mps_create_bind_response', { cardId: p.cardId, amount: p.amountTiyin, raw: json })
   assertAtmosOk(json, 'mps/create-bind')
   const payload = asRecord(json.payload ?? json.data ?? json)
+
+  const redirectUri = pickString(payload, ['redirect_uri', 'redirectUri', 'redirect_url'])
+    ?? pickDeep(json, ['redirect_uri', 'redirectUri', 'redirect_url'])
+  if (redirectUri) {
+    const tid = pickString(payload, ['id', 'transaction_id']) ?? pickDeep(json, ['id', 'transaction_id']) ?? p.transactionId
+    const extId = pickString(payload, ['ext_id', 'extId', 'mps_ext_id']) ?? pickDeep(json, ['ext_id', 'extId', 'mps_ext_id']) ?? ''
+    logger.info('atmos_mps_create_bind_3ds_required', { cardId: p.cardId, redirectUri, transactionId: tid })
+    return { transactionId: String(tid), resultCode: '3DS_REQUIRED', raw: json, threeDsRedirect: { redirectUri, mpsExtId: extId } }
+  }
+
   const resultCode = pickString(payload, ['result_code', 'resultCode'])
     ?? pickDeep(json, ['result_code', 'resultCode'])
     ?? ''
