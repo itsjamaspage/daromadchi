@@ -3,1162 +3,1005 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daromadchi System Architecture</title>
+  <title>Daromadchi Architecture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-primary: #0f172a;
-      --bg-secondary: #1e293b;
-      --bg-card: rgba(30,41,59,0.9);
-      --border-subtle: rgba(100,116,139,0.3);
-      --text-primary: #f1f5f9;
-      --text-secondary: #cbd5e1;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
-      --accent-blue: #0ea5e9;
-      --accent-cyan: #06b6d4;
-      --accent-purple: #a855f7;
-      --accent-indigo: #6366f1;
-      --accent-green: #10b981;
-      --accent-amber: #f59e0b;
-      --accent-red: #ef4444;
-      --accent-pink: #ec4899;
-      --accent-teal: #14b8a6;
-      --accent-sky: #38bdf8;
+      --bg: #0a0e1a;
+      --bg-surface: #111827;
+      --bg-card: #1a2035;
+      --bg-card-hover: #1f2847;
+      --border: rgba(99,102,241,0.15);
+      --border-hover: rgba(99,102,241,0.4);
+      --fg: #e2e8f0;
+      --fg-secondary: #94a3b8;
+      --fg-muted: #64748b;
+      --fg-dim: #475569;
+      --accent: #818cf8;
+      --accent-bright: #a5b4fc;
+      --blue: #60a5fa;
+      --cyan: #22d3ee;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --red: #f87171;
+      --pink: #f472b6;
+      --purple: #c084fc;
+      --teal: #2dd4bf;
+      --indigo: #818cf8;
+      --sidebar-w: 260px;
+      --header-h: 64px;
     }
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
+    html { scroll-behavior: smooth; scroll-padding-top: 80px; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: linear-gradient(135deg, var(--bg-primary) 0%, #1a1f3a 100%);
-      color: var(--text-primary);
-      min-height: 100vh;
-    }
-
-    .canvas-area {
-      padding: 24px;
-      max-width: 1600px;
-      margin: 0 auto;
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      overflow-x: hidden;
     }
 
     /* ── Header ── */
-    .page-header {
-      text-align: center;
-      margin-bottom: 28px;
+    .site-header {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--header-h);
+      background: rgba(10,14,26,0.92); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100; display: flex; align-items: center; padding: 0 24px; gap: 16px;
     }
-    .page-title {
-      font-size: 32px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan), var(--accent-purple));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 6px;
+    .hamburger {
+      display: none; background: none; border: none; color: var(--fg);
+      font-size: 22px; cursor: pointer; padding: 6px; border-radius: 6px;
     }
-    .page-subtitle {
-      color: var(--text-muted);
-      font-size: 14px;
+    .hamburger:hover { background: rgba(255,255,255,0.06); }
+    .logo {
+      font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 18px;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--indigo), var(--cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
-
-    /* ── Tabs ── */
-    .tab-bar {
-      display: flex;
-      gap: 4px;
-      background: rgba(30,41,59,0.6);
-      border: 1.5px solid var(--border-subtle);
-      border-radius: 12px;
-      padding: 4px;
-      margin-bottom: 28px;
-      overflow-x: auto;
+    .logo-sub {
+      font-size: 11px; color: var(--fg-muted); font-weight: 500;
+      margin-left: 12px; letter-spacing: 0.5px;
     }
-    .tab-btn {
-      flex: 1;
-      min-width: 140px;
-      padding: 12px 20px;
-      border: none;
-      background: transparent;
-      color: var(--text-muted);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      border-radius: 8px;
-      transition: all 0.25s;
-      white-space: nowrap;
+    .search-box {
+      margin-left: auto; position: relative; width: 280px;
     }
-    .tab-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
-    .tab-btn.active {
-      background: linear-gradient(135deg, rgba(14,165,233,0.2), rgba(6,182,212,0.15));
-      color: var(--accent-blue);
-      border: 1px solid rgba(14,165,233,0.3);
+    .search-box input {
+      width: 100%; padding: 8px 12px 8px 36px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--fg); font-size: 13px; font-family: inherit;
+      outline: none; transition: border-color 0.2s;
     }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    /* ── Info Bar ── */
-    .info-bar {
-      background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(51,65,85,0.7));
-      border: 1.5px solid rgba(14,165,233,0.3);
-      border-radius: 12px;
-      padding: 20px 24px;
-      margin-bottom: 24px;
-    }
-    .info-title {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: var(--accent-blue);
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    .info-text {
-      font-size: 13px;
-      line-height: 1.7;
-      color: var(--text-secondary);
+    .search-box input:focus { border-color: var(--accent); }
+    .search-box input::placeholder { color: var(--fg-dim); }
+    .search-box::before {
+      content: '\2315'; position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--fg-dim); font-size: 16px; pointer-events: none;
     }
 
-    /* ── Legend ── */
-    .legend {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      font-size: 12px;
-      margin-top: 14px;
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed; top: var(--header-h); left: 0; bottom: 0;
+      width: var(--sidebar-w); background: rgba(17,24,39,0.95);
+      border-right: 1px solid var(--border);
+      overflow-y: auto; padding: 16px 0; z-index: 90;
+      scrollbar-width: thin; scrollbar-color: var(--fg-dim) transparent;
     }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--text-muted);
-      cursor: pointer;
-      padding: 4px 10px;
-      border-radius: 6px;
-      border: 1.5px solid transparent;
-      transition: all 0.25s;
-      user-select: none;
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--fg-dim); border-radius: 4px; }
+    .nav-group { margin-bottom: 8px; }
+    .nav-group-label {
+      padding: 6px 20px; font-size: 10px; text-transform: uppercase;
+      letter-spacing: 1.5px; font-weight: 700; color: var(--fg-dim);
     }
-    .legend-item:hover { background: rgba(255,255,255,0.05); }
-    .legend-item.active {
-      color: var(--text-primary);
-      border-color: rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.08);
+    .nav-link {
+      display: block; padding: 6px 20px 6px 28px; font-size: 13px;
+      color: var(--fg-muted); text-decoration: none; transition: all 0.15s;
+      border-left: 2px solid transparent;
     }
-    .legend-dot {
-      width: 12px; height: 12px; border-radius: 3px; border: 2px solid;
+    .nav-link:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
+    .nav-link.active {
+      color: var(--accent-bright); border-left-color: var(--accent);
+      background: rgba(129,140,248,0.06);
     }
-    .legend-dot.client   { background: rgba(14,165,233,0.2); border-color: #0ea5e9; }
-    .legend-dot.auth     { background: rgba(168,85,247,0.2); border-color: #a855f7; }
-    .legend-dot.dashboard{ background: rgba(6,182,212,0.2); border-color: #06b6d4; }
-    .legend-dot.api      { background: rgba(99,102,241,0.2); border-color: #6366f1; }
-    .legend-dot.data     { background: rgba(16,185,129,0.2); border-color: #10b981; }
-    .legend-dot.external { background: rgba(245,158,11,0.2); border-color: #f59e0b; }
-    .legend-dot.infra    { background: rgba(59,130,246,0.2); border-color: #3b82f6; }
-    .legend-dot.billing  { background: rgba(236,72,153,0.2); border-color: #ec4899; }
 
-    /* ── Section / Cards ── */
-    .section { margin-bottom: 20px; }
-    .section.dimmed { display: none; }
-    .flow-arrow { text-align: center; padding: 6px 0; color: #475569; font-size: 18px; letter-spacing: 4px; }
-    .flow-arrow.dimmed { display: none; }
-
-    .section-label {
-      font-size: 11px; text-transform: uppercase; letter-spacing: 2px;
-      font-weight: 700; margin-bottom: 10px; padding-left: 4px;
+    /* ── Main ── */
+    .main {
+      margin-left: var(--sidebar-w); margin-top: var(--header-h);
+      padding: 32px 40px 80px; max-width: 1100px;
     }
-    .section-label.client-label   { color: #0ea5e9; }
-    .section-label.auth-label     { color: #a855f7; }
-    .section-label.dashboard-label{ color: #06b6d4; }
-    .section-label.api-label      { color: #6366f1; }
-    .section-label.data-label     { color: #10b981; }
-    .section-label.external-label { color: #f59e0b; }
-    .section-label.infra-label    { color: #3b82f6; }
-    .section-label.billing-label  { color: #ec4899; }
 
-    .cards-row { display: grid; gap: 10px; }
-    .cards-row.cols-2 { grid-template-columns: repeat(2,1fr); }
-    .cards-row.cols-3 { grid-template-columns: repeat(3,1fr); }
-    .cards-row.cols-4 { grid-template-columns: repeat(4,1fr); }
-    .cards-row.cols-5 { grid-template-columns: repeat(5,1fr); }
-    .cards-row.cols-6 { grid-template-columns: repeat(6,1fr); }
+    /* ── Section ── */
+    .section { margin-bottom: 56px; }
+    .section-anchor { display: block; position: relative; top: -80px; visibility: hidden; }
+    .section-title {
+      font-size: 24px; font-weight: 800; letter-spacing: -0.5px;
+      margin-bottom: 8px; display: flex; align-items: center; gap: 10px;
+    }
+    .section-title .dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .section-desc {
+      font-size: 14px; color: var(--fg-secondary); margin-bottom: 24px;
+      max-width: 720px; line-height: 1.7;
+    }
 
+    /* ── Cards Grid ── */
+    .cards { display: grid; gap: 12px; }
+    .cards.c2 { grid-template-columns: repeat(2,1fr); }
+    .cards.c3 { grid-template-columns: repeat(3,1fr); }
+    .cards.c4 { grid-template-columns: repeat(4,1fr); }
     .card {
-      background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(51,65,85,0.6));
-      border: 1.5px solid var(--border-subtle);
-      border-radius: 8px;
-      padding: 12px 14px;
-      cursor: pointer;
-      transition: all 0.25s;
-      position: relative;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px; transition: all 0.2s; cursor: default;
     }
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 24px rgba(0,0,0,0.4);
-    }
-
-    .card.client-card    { border-color: rgba(14,165,233,0.4); }
-    .card.client-card:hover { border-color: #0ea5e9; box-shadow: 0 0 20px rgba(14,165,233,0.2); }
-    .card.auth-card      { border-color: rgba(168,85,247,0.4); }
-    .card.auth-card:hover { border-color: #a855f7; box-shadow: 0 0 20px rgba(168,85,247,0.2); }
-    .card.dashboard-card { border-color: rgba(6,182,212,0.4); }
-    .card.dashboard-card:hover { border-color: #06b6d4; box-shadow: 0 0 20px rgba(6,182,212,0.2); }
-    .card.api-card       { border-color: rgba(99,102,241,0.4); }
-    .card.api-card:hover { border-color: #6366f1; box-shadow: 0 0 20px rgba(99,102,241,0.2); }
-    .card.data-card      { border-color: rgba(16,185,129,0.4); }
-    .card.data-card:hover { border-color: #10b981; box-shadow: 0 0 20px rgba(16,185,129,0.2); }
-    .card.external-card  { border-color: rgba(245,158,11,0.4); }
-    .card.external-card:hover { border-color: #f59e0b; box-shadow: 0 0 20px rgba(245,158,11,0.2); }
-    .card.infra-card     { border-color: rgba(59,130,246,0.4); }
-    .card.infra-card:hover { border-color: #3b82f6; box-shadow: 0 0 20px rgba(59,130,246,0.2); }
-    .card.billing-card   { border-color: rgba(236,72,153,0.4); }
-    .card.billing-card:hover { border-color: #ec4899; box-shadow: 0 0 20px rgba(236,72,153,0.2); }
-
+    .card:hover { border-color: var(--border-hover); background: var(--bg-card-hover); transform: translateY(-1px); }
     .card-name {
-      font-size: 13px; font-weight: 700;
-      font-family: ui-monospace, monospace; margin-bottom: 4px;
+      font-family: 'JetBrains Mono', monospace; font-size: 13px;
+      font-weight: 600; margin-bottom: 4px;
     }
-    .card.client-card .card-name    { color: #0ea5e9; }
-    .card.auth-card .card-name      { color: #a855f7; }
-    .card.dashboard-card .card-name { color: #06b6d4; }
-    .card.api-card .card-name       { color: #6366f1; }
-    .card.data-card .card-name      { color: #10b981; }
-    .card.external-card .card-name  { color: #f59e0b; }
-    .card.infra-card .card-name     { color: #3b82f6; }
-    .card.billing-card .card-name   { color: #ec4899; }
-
-    .card-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
-    .card-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
+    .card-desc { font-size: 12px; color: var(--fg-secondary); line-height: 1.5; }
+    .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
     .tag {
-      padding: 1px 5px;
-      background: rgba(100,116,139,0.15);
-      border: 1px solid rgba(100,116,139,0.25);
-      border-radius: 3px; font-size: 9px;
-      color: var(--text-muted); font-family: ui-monospace, monospace;
+      padding: 2px 7px; background: rgba(129,140,248,0.08);
+      border: 1px solid rgba(129,140,248,0.15); border-radius: 4px;
+      font-size: 10px; font-family: 'JetBrains Mono', monospace;
+      color: var(--fg-muted); white-space: nowrap;
     }
-    .status-dot {
-      display: inline-block; width: 7px; height: 7px;
-      border-radius: 50%; margin-right: 5px; vertical-align: middle;
-    }
-    .status-dot.green  { background: #10b981; box-shadow: 0 0 6px rgba(16,185,129,0.5); }
-    .status-dot.yellow { background: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,0.5); }
 
-    /* ── Detail Panel ── */
-    .detail-panel {
-      position: fixed; right: -500px; top: 0; width: 500px; height: 100vh;
-      background: rgba(15,23,42,0.98);
-      border-left: 2px solid rgba(14,165,233,0.5);
-      overflow-y: auto; transition: right 0.35s; backdrop-filter: blur(10px);
-      z-index: 10000; box-shadow: -20px 0 60px rgba(0,0,0,0.8);
+    /* ── Flow Diagram ── */
+    .flow-box {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; margin-bottom: 16px; overflow-x: auto;
     }
-    .detail-panel.active { right: 0; }
-    .detail-header {
-      padding: 24px; border-bottom: 2px solid rgba(14,165,233,0.3);
-      background: linear-gradient(135deg, rgba(14,165,233,0.1), rgba(51,65,85,0.3));
-      display: flex; justify-content: space-between; align-items: flex-start;
+    .flow-label {
+      font-size: 15px; font-weight: 700; margin-bottom: 2px;
     }
-    .detail-title {
-      font-size: 20px; font-weight: 800;
-      font-family: ui-monospace, monospace; color: var(--accent-blue); margin-bottom: 6px;
-    }
-    .close-btn {
-      background: none; border: none; color: var(--text-dim); font-size: 28px;
-      cursor: pointer; padding: 0; width: 32px; height: 32px;
-      display: flex; align-items: center; justify-content: center;
-      border-radius: 6px; flex-shrink: 0;
-    }
-    .close-btn:hover { color: var(--text-primary); background: rgba(14,165,233,0.2); }
-    .detail-content { padding: 24px; }
-    .detail-section { margin-bottom: 20px; }
-    .detail-label {
-      font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;
-      color: var(--accent-blue); margin-bottom: 10px; font-weight: 700;
-    }
-    .detail-value { font-size: 13px; line-height: 1.6; color: var(--text-secondary); }
-    .conn-item {
-      background: rgba(6,182,212,0.1); padding: 10px;
-      border-left: 3px solid var(--accent-cyan); border-radius: 4px;
-      margin-bottom: 8px; font-size: 12px;
-    }
-    .conn-name { color: var(--accent-cyan); font-weight: 700; margin-bottom: 2px; }
-    .conn-desc { color: var(--text-secondary); font-size: 11px; }
-
-    /* ── Payment Flows ── */
-    .flow-diagram {
-      background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(51,65,85,0.4));
-      border: 1.5px solid rgba(236,72,153,0.25);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 20px;
-      overflow-x: auto;
-    }
-    .flow-title {
-      font-size: 16px; font-weight: 700; color: var(--accent-pink);
-      margin-bottom: 4px;
-    }
-    .flow-subtitle {
-      font-size: 12px; color: var(--text-muted); margin-bottom: 20px;
-    }
+    .flow-sublabel { font-size: 12px; color: var(--fg-muted); margin-bottom: 20px; }
     .flow-steps {
       display: flex; align-items: flex-start; gap: 0;
-      flex-wrap: nowrap; min-width: fit-content; padding-bottom: 8px;
+      min-width: fit-content; padding-bottom: 4px;
     }
     .flow-step {
       display: flex; flex-direction: column; align-items: center;
-      min-width: 130px; max-width: 160px; text-align: center;
+      text-align: center; min-width: 120px; max-width: 150px;
     }
-    .step-icon {
-      width: 48px; height: 48px; border-radius: 12px;
+    .step-num {
+      width: 40px; height: 40px; border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 20px; margin-bottom: 8px; font-weight: 700;
+      font-size: 16px; font-weight: 700; margin-bottom: 8px;
       border: 2px solid;
     }
-    .step-icon.pink { background: rgba(236,72,153,0.15); border-color: rgba(236,72,153,0.5); color: var(--accent-pink); }
-    .step-icon.blue { background: rgba(14,165,233,0.15); border-color: rgba(14,165,233,0.5); color: var(--accent-blue); }
-    .step-icon.green { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.5); color: var(--accent-green); }
-    .step-icon.amber { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.5); color: var(--accent-amber); }
-    .step-icon.purple { background: rgba(168,85,247,0.15); border-color: rgba(168,85,247,0.5); color: var(--accent-purple); }
-    .step-icon.indigo { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.5); color: var(--accent-indigo); }
-    .step-icon.red { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.5); color: var(--accent-red); }
-    .step-icon.teal { background: rgba(20,184,166,0.15); border-color: rgba(20,184,166,0.5); color: var(--accent-teal); }
-
-    .step-label {
-      font-size: 11px; font-weight: 700; color: var(--text-primary);
-      margin-bottom: 3px; line-height: 1.3;
-    }
-    .step-detail { font-size: 10px; color: var(--text-muted); line-height: 1.3; }
+    .step-num.blue   { background: rgba(96,165,250,0.12); border-color: rgba(96,165,250,0.4); color: var(--blue); }
+    .step-num.pink   { background: rgba(244,114,182,0.12); border-color: rgba(244,114,182,0.4); color: var(--pink); }
+    .step-num.green  { background: rgba(52,211,153,0.12); border-color: rgba(52,211,153,0.4); color: var(--green); }
+    .step-num.amber  { background: rgba(251,191,36,0.12); border-color: rgba(251,191,36,0.4); color: var(--amber); }
+    .step-num.purple { background: rgba(192,132,252,0.12); border-color: rgba(192,132,252,0.4); color: var(--purple); }
+    .step-num.indigo { background: rgba(129,140,248,0.12); border-color: rgba(129,140,248,0.4); color: var(--indigo); }
+    .step-num.red    { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.4); color: var(--red); }
+    .step-num.teal   { background: rgba(45,212,191,0.12); border-color: rgba(45,212,191,0.4); color: var(--teal); }
+    .step-num.cyan   { background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.4); color: var(--cyan); }
+    .step-title { font-size: 11px; font-weight: 700; color: var(--fg); margin-bottom: 3px; line-height: 1.3; }
+    .step-detail { font-size: 10px; color: var(--fg-muted); line-height: 1.3; }
     .step-file {
-      font-size: 9px; color: var(--text-dim); font-family: ui-monospace, monospace;
+      font-size: 9px; color: var(--fg-dim); font-family: 'JetBrains Mono', monospace;
       margin-top: 4px; word-break: break-all;
     }
-    .flow-connector {
-      display: flex; align-items: center; padding-top: 12px; min-width: 36px;
-      color: var(--text-dim); font-size: 16px; justify-content: center;
+    .flow-arrow {
+      display: flex; align-items: center; padding-top: 8px;
+      color: var(--fg-dim); font-size: 14px; min-width: 28px; justify-content: center;
     }
 
     /* ── State Machine ── */
-    .state-machine {
-      background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(51,65,85,0.4));
-      border: 1.5px solid rgba(16,185,129,0.25);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 20px;
+    .sm-box {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; margin-bottom: 16px;
     }
-    .sm-title { font-size: 16px; font-weight: 700; color: var(--accent-green); margin-bottom: 4px; }
-    .sm-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
-
-    .state-grid {
-      display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
-      margin-bottom: 16px;
-    }
+    .sm-title { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+    .sm-subtitle { font-size: 12px; color: var(--fg-muted); margin-bottom: 20px; }
+    .state-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 16px; }
     .state-node {
-      padding: 10px 16px; border-radius: 10px;
-      border: 2px solid; text-align: center; min-width: 100px;
-      transition: all 0.2s;
+      padding: 10px 16px; border-radius: 10px; border: 2px solid;
+      text-align: center; min-width: 100px; transition: transform 0.15s;
     }
-    .state-node:hover { transform: scale(1.05); }
-    .state-node.pending  { border-color: rgba(245,158,11,0.5); background: rgba(245,158,11,0.1); }
-    .state-node.active   { border-color: rgba(16,185,129,0.5); background: rgba(16,185,129,0.1); }
-    .state-node.past-due { border-color: rgba(239,68,68,0.5); background: rgba(239,68,68,0.1); }
-    .state-node.cancelled{ border-color: rgba(100,116,139,0.5); background: rgba(100,116,139,0.1); }
-    .state-node.free     { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.1); }
-
-    .state-name { font-size: 12px; font-weight: 700; color: var(--text-primary); }
-    .state-desc { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
-
+    .state-node:hover { transform: scale(1.04); }
+    .state-node.s-pending  { border-color: rgba(251,191,36,0.4); background: rgba(251,191,36,0.06); }
+    .state-node.s-active   { border-color: rgba(52,211,153,0.4); background: rgba(52,211,153,0.06); }
+    .state-node.s-past-due { border-color: rgba(248,113,113,0.4); background: rgba(248,113,113,0.06); }
+    .state-node.s-cancelled{ border-color: rgba(100,116,139,0.4); background: rgba(100,116,139,0.06); }
+    .state-node.s-free     { border-color: rgba(129,140,248,0.4); background: rgba(129,140,248,0.06); }
+    .state-name { font-size: 12px; font-weight: 700; }
+    .state-desc { font-size: 10px; color: var(--fg-muted); margin-top: 2px; }
     .transition-list { margin-top: 12px; }
     .transition-item {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 12px; border-radius: 6px;
-      background: rgba(100,116,139,0.08);
-      margin-bottom: 6px; font-size: 11px;
+      display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+      border-radius: 6px; background: rgba(255,255,255,0.02); margin-bottom: 4px;
+      font-size: 11px;
     }
-    .transition-arrow { color: var(--accent-cyan); font-weight: 700; font-size: 14px; min-width: 24px; text-align: center; }
-    .transition-from { color: var(--accent-amber); font-weight: 600; min-width: 70px; }
-    .transition-to { color: var(--accent-green); font-weight: 600; min-width: 70px; }
-    .transition-trigger { color: var(--text-muted); flex: 1; }
+    .t-from { color: var(--amber); font-weight: 600; min-width: 70px; }
+    .t-arrow { color: var(--cyan); font-weight: 700; min-width: 20px; text-align: center; }
+    .t-to { color: var(--green); font-weight: 600; min-width: 70px; }
+    .t-trigger { color: var(--fg-muted); flex: 1; }
 
-    /* ── Constants Table ── */
-    .const-table {
+    /* ── Module Grid ── */
+    .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 12px; }
+    .mod-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px; transition: all 0.2s;
+    }
+    .mod-card:hover { border-color: var(--border-hover); transform: translateY(-1px); }
+    .mod-path {
+      font-family: 'JetBrains Mono', monospace; font-size: 12px;
+      font-weight: 600; margin-bottom: 6px;
+    }
+    .mod-desc { font-size: 11px; color: var(--fg-secondary); line-height: 1.5; }
+    .mod-exports { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 3px; }
+
+    /* ── Table ── */
+    .data-table {
       width: 100%; border-collapse: collapse; font-size: 12px;
-      margin-top: 12px;
     }
-    .const-table th {
+    .data-table th {
       text-align: left; padding: 8px 12px; font-size: 10px;
-      text-transform: uppercase; letter-spacing: 1px;
-      color: var(--accent-blue); border-bottom: 1.5px solid var(--border-subtle);
+      text-transform: uppercase; letter-spacing: 1px; color: var(--accent);
+      border-bottom: 1px solid var(--border); font-weight: 700;
     }
-    .const-table td {
-      padding: 8px 12px; border-bottom: 1px solid rgba(100,116,139,0.15);
-      color: var(--text-secondary);
+    .data-table td {
+      padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.03);
+      color: var(--fg-secondary); vertical-align: top;
     }
-    .const-table td:first-child {
-      font-family: ui-monospace, monospace; color: var(--accent-cyan);
-      font-weight: 600; white-space: nowrap;
+    .data-table td:first-child {
+      font-family: 'JetBrains Mono', monospace; color: var(--cyan);
+      font-weight: 500; white-space: nowrap;
     }
-    .const-table tr:hover td { background: rgba(255,255,255,0.03); }
+    .data-table tr:hover td { background: rgba(255,255,255,0.02); }
 
-    /* ── Module Map ── */
-    .module-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 12px;
+    /* ── Callout ── */
+    .callout {
+      padding: 12px 16px; border-radius: 8px; font-size: 12px;
+      line-height: 1.6; margin-top: 16px; border-left: 3px solid;
     }
-    .module-card {
-      background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(51,65,85,0.5));
-      border: 1.5px solid rgba(236,72,153,0.2);
-      border-radius: 10px;
-      padding: 16px;
-      transition: all 0.25s;
-    }
-    .module-card:hover {
-      border-color: rgba(236,72,153,0.5);
-      box-shadow: 0 4px 20px rgba(236,72,153,0.1);
-      transform: translateY(-2px);
-    }
-    .module-path {
-      font-size: 11px; font-family: ui-monospace, monospace;
-      color: var(--accent-pink); font-weight: 600; margin-bottom: 6px;
-    }
-    .module-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
-    .module-exports {
-      margin-top: 8px; display: flex; flex-wrap: wrap; gap: 3px;
-    }
-    .module-exports .tag { border-color: rgba(236,72,153,0.3); }
+    .callout.danger { background: rgba(248,113,113,0.06); border-color: var(--red); color: var(--fg-secondary); }
+    .callout.success { background: rgba(52,211,153,0.06); border-color: var(--green); color: var(--fg-secondary); }
+    .callout.info { background: rgba(96,165,250,0.06); border-color: var(--blue); color: var(--fg-secondary); }
+    .callout.warn { background: rgba(251,191,36,0.06); border-color: var(--amber); color: var(--fg-secondary); }
+    .callout strong { color: var(--fg); }
 
-    /* ── Tier Table ── */
-    .tier-row {
-      display: grid; grid-template-columns: 100px 1fr 100px 100px;
-      gap: 1px; margin-bottom: 1px;
-    }
-    .tier-row.header { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-blue); font-weight: 700; }
-    .tier-cell {
-      padding: 10px 14px; background: rgba(30,41,59,0.6);
-      font-size: 12px; color: var(--text-secondary);
-    }
-    .tier-cell:first-child { font-weight: 700; color: var(--accent-cyan); }
-    .tier-row:first-child .tier-cell { border-radius: 6px 6px 0 0; }
-    .tier-row:last-child .tier-cell { border-radius: 0 0 6px 6px; }
+    /* ── Cols ── */
+    .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-    /* ── Section Dividers ── */
-    .section-divider {
-      display: flex; align-items: center; gap: 16px;
-      margin: 32px 0 20px;
+    /* ── Divider ── */
+    .divider {
+      display: flex; align-items: center; gap: 16px; margin: 32px 0 20px;
     }
-    .section-divider::before, .section-divider::after {
+    .divider::before, .divider::after {
       content: ''; flex: 1; height: 1px;
-      background: linear-gradient(90deg, transparent, var(--border-subtle), transparent);
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
     }
-    .section-divider-text {
-      font-size: 12px; text-transform: uppercase; letter-spacing: 3px;
-      font-weight: 700; color: var(--text-dim); white-space: nowrap;
+    .divider span {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 2px;
+      font-weight: 700; color: var(--fg-dim); white-space: nowrap;
     }
+
+    /* ── Highlight ── */
+    .highlight { display: none; }
+    .section.search-match .highlight { display: block; }
 
     /* ── Responsive ── */
-    @media (max-width: 1200px) {
-      .cards-row.cols-6, .cards-row.cols-5 { grid-template-columns: repeat(3,1fr); }
-      .module-grid { grid-template-columns: repeat(2,1fr); }
+    @media (max-width: 1024px) {
+      .sidebar { transform: translateX(-100%); transition: transform 0.25s; }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; padding: 24px 16px 80px; }
+      .hamburger { display: block; }
+      .cards.c4, .cards.c3 { grid-template-columns: repeat(2,1fr); }
+      .mod-grid { grid-template-columns: 1fr; }
+      .cols-2 { grid-template-columns: 1fr; }
+      .search-box { width: 200px; }
     }
-    @media (max-width: 800px) {
-      .cards-row.cols-6, .cards-row.cols-5, .cards-row.cols-4,
-      .cards-row.cols-3 { grid-template-columns: repeat(2,1fr); }
-      .tab-bar { flex-wrap: nowrap; }
-      .tier-row { grid-template-columns: 1fr 1fr; }
-      .module-grid { grid-template-columns: 1fr; }
-      .detail-panel { width: 100vw; right: -100vw; }
-      .flow-steps { min-width: 700px; }
-    }
-    @media (max-width: 500px) {
-      .cards-row.cols-6, .cards-row.cols-5, .cards-row.cols-4,
-      .cards-row.cols-3, .cards-row.cols-2 { grid-template-columns: 1fr; }
+    @media (max-width: 600px) {
+      .cards.c4, .cards.c3, .cards.c2 { grid-template-columns: 1fr; }
+      .search-box { width: 160px; }
+      .logo-sub { display: none; }
     }
   </style>
 </head>
 <body>
-  <div class="canvas-area">
-    <div class="page-header">
-      <div class="page-title">DAROMADCHI ARCHITECTURE</div>
-      <div class="page-subtitle">Multi-marketplace seller dashboard &middot; Payments &amp; Billing &middot; 70+ API routes &middot; 39 DB tables</div>
-    </div>
 
-    <!-- Tab Navigation -->
-    <div class="tab-bar">
-      <button class="tab-btn active" data-tab="overview">System Overview</button>
-      <button class="tab-btn" data-tab="payments">Payments &amp; Billing</button>
-      <button class="tab-btn" data-tab="subscription">Subscription Lifecycle</button>
-      <button class="tab-btn" data-tab="entitlement">Entitlement &amp; Tiers</button>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <!--  TAB 1: SYSTEM OVERVIEW                                                -->
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <div class="tab-content active" id="tab-overview">
-      <div class="info-bar">
-        <div class="info-title">Daromadchi — Multi-Marketplace Seller Dashboard</div>
-        <div class="info-text">
-          Syncs orders, inventory, and stock across <strong>Uzum Market and Yandex Market</strong>.
-          Web dashboard + Chrome Extension for seller analytics.
-          Marketplace integrations are <strong>read-only by default</strong>; the one exception is the opt-in, per-shop Stock-sync mode, which writes only the stock quantity (ostatok) through a single audited writer after the seller consents.
-          Auth via NextAuth (Auth.js) v5 — Credentials + bcrypt, optional Google OAuth, JWT sessions, email verification. Self-hosted on a Hetzner VPS (Finland / Helsinki).
-        </div>
-        <div class="legend" id="legendFilter">
-          <div class="legend-item" data-filter="client"><div class="legend-dot client"></div>Client</div>
-          <div class="legend-item" data-filter="auth"><div class="legend-dot auth"></div>Auth</div>
-          <div class="legend-item" data-filter="dashboard"><div class="legend-dot dashboard"></div>Dashboard</div>
-          <div class="legend-item" data-filter="api"><div class="legend-dot api"></div>API</div>
-          <div class="legend-item" data-filter="data"><div class="legend-dot data"></div>Data</div>
-          <div class="legend-item" data-filter="external"><div class="legend-dot external"></div>External</div>
-          <div class="legend-item" data-filter="infra"><div class="legend-dot infra"></div>Infra</div>
-        </div>
-      </div>
-
-      <!-- CLIENT -->
-      <div class="section" data-category="client">
-        <div class="section-label client-label">Client Layer</div>
-        <div class="cards-row cols-3">
-          <div class="card client-card" data-id="web-app"><div class="card-name"><span class="status-dot green"></span>Web App</div><div class="card-desc">Next.js 16 dashboard — daromadchi.uz. Landing, login, pricing, 20+ dashboard pages. Multi-language (UZ/RU/EN).</div><div class="card-tags"><span class="tag">React 19</span><span class="tag">Next.js 16</span><span class="tag">TypeScript</span><span class="tag">Tailwind</span></div></div>
-          <div class="card client-card" data-id="chrome-ext"><div class="card-name"><span class="status-dot green"></span>Chrome Extension</div><div class="card-desc">Manifest v3. Injects cost/margin overlays on Uzum and Yandex Market product pages; syncs auth token from the web app.</div><div class="card-tags"><span class="tag">Manifest v3</span><span class="tag">Service Workers</span><span class="tag">Content Scripts</span></div></div>
-          <div class="card client-card" data-id="telegram-bot"><div class="card-name"><span class="status-dot green"></span>Telegram Bot</div><div class="card-desc">User notifications: daily/weekly digest, stock &amp; order alerts. Account linking via deep links. Preference management.</div><div class="card-tags"><span class="tag">Bot API</span><span class="tag">Webhooks</span><span class="tag">Deep Links</span></div></div>
-        </div>
-      </div>
-      <div class="flow-arrow">&#9660; &#9660; &#9660;</div>
-
-      <!-- AUTH -->
-      <div class="section" data-category="auth">
-        <div class="section-label auth-label">Authentication &amp; Security</div>
-        <div class="cards-row cols-4">
-          <div class="card auth-card" data-id="nextauth"><div class="card-name"><span class="status-dot green"></span>NextAuth v5</div><div class="card-desc">Credentials + bcrypt, optional Google OAuth, 30-day JWT sessions. Blocks unverified emails.</div><div class="card-tags"><span class="tag">JWT</span><span class="tag">bcryptjs</span><span class="tag">Credentials</span><span class="tag">Google OAuth</span></div></div>
-          <div class="card auth-card" data-id="email-verify"><div class="card-name"><span class="status-dot green"></span>Email Verification</div><div class="card-desc">6-digit code on signup via SMTP. 10-min expiry. Rate-limited resend.</div><div class="card-tags"><span class="tag">Nodemailer</span><span class="tag">SMTP</span></div></div>
-          <div class="card auth-card" data-id="rate-limit"><div class="card-name"><span class="status-dot green"></span>Rate Limiting</div><div class="card-desc">Per-IP rate limits: signup 10/hr, plus per-endpoint limits. In-memory Map.</div><div class="card-tags"><span class="tag">IP-based</span><span class="tag">In-memory</span></div></div>
-          <div class="card auth-card" data-id="readonly-guard"><div class="card-name"><span class="status-dot green"></span>Marketplace Egress Guard</div><div class="card-desc">Read-only by default. Whitelisted POST-for-read; the only write exceptions are stock-write (ostatok) and order-cancel allowlists.</div><div class="card-tags"><span class="tag">Guard</span><span class="tag">Allowlist</span></div></div>
-        </div>
-      </div>
-      <div class="flow-arrow">&#9660; &#9660; &#9660;</div>
-
-      <!-- DASHBOARD -->
-      <div class="section" data-category="dashboard">
-        <div class="section-label dashboard-label">Dashboard Pages (20+)</div>
-        <div class="cards-row cols-6">
-          <div class="card dashboard-card" data-id="pg-analytics"><div class="card-name">Analytics</div><div class="card-desc">Revenue, orders, profit KPIs</div></div>
-          <div class="card dashboard-card" data-id="pg-orders"><div class="card-name">Orders</div><div class="card-desc">Order history, filtering, status</div></div>
-          <div class="card dashboard-card" data-id="pg-products"><div class="card-name">Products</div><div class="card-desc">Product catalog, cost price</div></div>
-          <div class="card dashboard-card" data-id="pg-stocks"><div class="card-name">Stocks</div><div class="card-desc">Cross-marketplace stock, alerts</div></div>
-          <div class="card dashboard-card" data-id="pg-pnl"><div class="card-name">P&amp;L</div><div class="card-desc">Profit &amp; loss breakdown</div></div>
-          <div class="card dashboard-card" data-id="pg-unit-econ"><div class="card-name">Unit Economics</div><div class="card-desc">Per-unit cost analysis</div></div>
-          <div class="card dashboard-card" data-id="pg-payouts"><div class="card-name">Payouts</div><div class="card-desc">Settlement / payout tracking</div></div>
-          <div class="card dashboard-card" data-id="pg-billing"><div class="card-name">Billing</div><div class="card-desc">Plan &amp; payment management</div></div>
-          <div class="card dashboard-card" data-id="pg-alerts"><div class="card-name">Alerts</div><div class="card-desc">Custom alert rules</div></div>
-          <div class="card dashboard-card" data-id="pg-notifications"><div class="card-name">Notifications</div><div class="card-desc">Telegram preferences</div></div>
-          <div class="card dashboard-card" data-id="pg-keywords"><div class="card-name">Keywords</div><div class="card-desc">Keyword research</div></div>
-          <div class="card dashboard-card" data-id="pg-reviews"><div class="card-name">Reviews</div><div class="card-desc">Customer review monitoring</div></div>
-          <div class="card dashboard-card" data-id="pg-sync"><div class="card-name">Data Sync</div><div class="card-desc">Manual sync triggers</div></div>
-          <div class="card dashboard-card" data-id="pg-settings"><div class="card-name">Settings</div><div class="card-desc">Shop tokens, profile, prefs</div></div>
-          <div class="card dashboard-card" data-id="pg-team"><div class="card-name">Team</div><div class="card-desc">Multi-user team access</div></div>
-          <div class="card dashboard-card" data-id="pg-referral"><div class="card-name">Referral</div><div class="card-desc">Referral program</div></div>
-          <div class="card dashboard-card" data-id="pg-account"><div class="card-name">Account</div><div class="card-desc">Account &amp; deletion</div></div>
-          <div class="card dashboard-card" data-id="pg-search"><div class="card-name">Search Phrases</div><div class="card-desc">Search query analytics</div></div>
-        </div>
-      </div>
-      <div class="flow-arrow">&#9660; &#9660; &#9660;</div>
-
-      <!-- API -->
-      <div class="section" data-category="api">
-        <div class="section-label api-label">API Routes (70+ endpoints)</div>
-        <div class="cards-row cols-4">
-          <div class="card api-card" data-id="api-auth"><div class="card-name">Auth APIs</div><div class="card-desc">signup, verify-email, resend-code, reset-password, delete-account (admin)</div><div class="card-tags"><span class="tag">7 routes</span></div></div>
-          <div class="card api-card" data-id="api-sync"><div class="card-name">Marketplace Sync</div><div class="card-desc">uzum/sync, yandex/sync, refresh-settlements. Read-only.</div><div class="card-tags"><span class="tag">read-only</span></div></div>
-          <div class="card api-card" data-id="api-stock-sync"><div class="card-name">Stock-sync APIs</div><div class="card-desc">The sanctioned ostatok-only write path, fully audited.</div><div class="card-tags"><span class="tag">opt-in</span><span class="tag">audited</span></div></div>
-          <div class="card api-card" data-id="api-billing"><div class="card-name">Billing APIs</div><div class="card-desc">ATMOS checkout, card binding, callback, auto-renew, expiry, cancel.</div><div class="card-tags"><span class="tag">10 routes</span></div></div>
-          <div class="card api-card" data-id="api-extension"><div class="card-name">Extension APIs</div><div class="card-desc">Bearer-token endpoints for the Chrome extension.</div><div class="card-tags"><span class="tag">Bearer token</span></div></div>
-          <div class="card api-card" data-id="api-telegram"><div class="card-name">Telegram APIs</div><div class="card-desc">link, disconnect, status, prefs, webhook.</div><div class="card-tags"><span class="tag">webhook</span></div></div>
-          <div class="card api-card" data-id="api-cron"><div class="card-name">Cron Jobs</div><div class="card-desc">sync (5min), stock-sync (5min), digest (hourly), expire-plans (daily), billing-renew (daily).</div><div class="card-tags"><span class="tag">5 jobs</span></div></div>
-          <div class="card api-card" data-id="api-data"><div class="card-name">Data APIs</div><div class="card-desc">alerts, settings, products, warehouses, unit-economics, stock-groups.</div><div class="card-tags"><span class="tag">CRUD</span></div></div>
-        </div>
-      </div>
-      <div class="flow-arrow">&#9660; &#9660; &#9660;</div>
-
-      <!-- DATA -->
-      <div class="section" data-category="data">
-        <div class="section-label data-label">Data Layer</div>
-        <div class="cards-row cols-3">
-          <div class="card data-card" data-id="postgresql"><div class="card-name"><span class="status-dot green"></span>PostgreSQL 17</div><div class="card-desc">39 tables — users, shops, products, orders, payments, subscriptions, stock audit. Self-hosted on VPS.</div><div class="card-tags"><span class="tag">Drizzle ORM</span><span class="tag">39 tables</span></div></div>
-          <div class="card data-card" data-id="drizzle"><div class="card-name"><span class="status-dot green"></span>Drizzle ORM</div><div class="card-desc">Type-safe SQL, schema-first. SQL migrations applied on deploy.</div><div class="card-tags"><span class="tag">TypeScript</span><span class="tag">Schema</span></div></div>
-          <div class="card data-card" data-id="encryption"><div class="card-name"><span class="status-dot green"></span>Encryption</div><div class="card-desc">AES-256-CBC for marketplace API keys and ATMOS card tokens at rest.</div><div class="card-tags"><span class="tag">AES-256-CBC</span></div></div>
-        </div>
-      </div>
-      <div class="flow-arrow">&#9660; &#9660; &#9660;</div>
-
-      <!-- EXTERNAL -->
-      <div class="section" data-category="external">
-        <div class="section-label external-label">External Services</div>
-        <div class="cards-row cols-5">
-          <div class="card external-card" data-id="uzum"><div class="card-name">Uzum Market</div><div class="card-desc">Uzbekistan marketplace — orders, products, stock, settlements sync</div><div class="card-tags"><span class="tag">REST API</span><span class="tag">read-only</span></div></div>
-          <div class="card external-card" data-id="yandex"><div class="card-name">Yandex Market</div><div class="card-desc">Marketplace — orders, offers, stocks, settlements sync</div><div class="card-tags"><span class="tag">REST API</span><span class="tag">read-only</span></div></div>
-          <div class="card external-card" data-id="atmos"><div class="card-name"><span class="status-dot green"></span>ATMOS</div><div class="card-desc">Uzbek payment aggregator. Card binding + 3-call token charge + S2S callback. UzCard/Humo direct, Visa/MC hosted.</div><div class="card-tags"><span class="tag">payments</span><span class="tag">integrated</span></div></div>
-          <div class="card external-card" data-id="google"><div class="card-name">Google</div><div class="card-desc">Optional OAuth sign-in, consent-gated GA4 analytics</div><div class="card-tags"><span class="tag">OAuth 2.0</span><span class="tag">GA4</span></div></div>
-          <div class="card external-card" data-id="smtp"><div class="card-name">SMTP Email</div><div class="card-desc">Verification codes, password resets, deletion-request notice</div><div class="card-tags"><span class="tag">Nodemailer</span></div></div>
-        </div>
-      </div>
-      <div class="flow-arrow">&#9660; &#9660; &#9660;</div>
-
-      <!-- INFRA -->
-      <div class="section" data-category="infra">
-        <div class="section-label infra-label">Infrastructure &amp; Deployment</div>
-        <div class="cards-row cols-4">
-          <div class="card infra-card" data-id="hetzner"><div class="card-name"><span class="status-dot green"></span>Hetzner VPS</div><div class="card-desc">Ubuntu, Finland (Helsinki). Single host: app + PostgreSQL + Nginx.</div><div class="card-tags"><span class="tag">Finland</span><span class="tag">Self-hosted</span></div></div>
-          <div class="card infra-card" data-id="nginx"><div class="card-name"><span class="status-dot green"></span>Nginx</div><div class="card-desc">Reverse proxy, SSL termination</div><div class="card-tags"><span class="tag">SSL</span></div></div>
-          <div class="card infra-card" data-id="pm2"><div class="card-name"><span class="status-dot green"></span>PM2</div><div class="card-desc">Process manager — auto-restart, logs</div><div class="card-tags"><span class="tag">Node.js</span></div></div>
-          <div class="card infra-card" data-id="github-ci"><div class="card-name"><span class="status-dot green"></span>GitHub Actions</div><div class="card-desc">Lint, TypeCheck, Build, Deploy via SSH</div><div class="card-tags"><span class="tag">CI/CD</span></div></div>
-          <div class="card infra-card" data-id="deploy"><div class="card-name"><span class="status-dot green"></span>Deploy Pipeline</div><div class="card-desc">Push to main &rarr; SSH &rarr; build &rarr; migrate &rarr; pm2 restart</div><div class="card-tags"><span class="tag">SSH</span></div></div>
-          <div class="card infra-card" data-id="cron-scheduler"><div class="card-name"><span class="status-dot green"></span>Cron Scheduler</div><div class="card-desc">VPS crontab: sync 5min, digest hourly, expire daily</div><div class="card-tags"><span class="tag">crontab</span></div></div>
-          <div class="card infra-card" data-id="backups"><div class="card-name"><span class="status-dot green"></span>DB Backups</div><div class="card-desc">Nightly pg_dump, 14 rotated, local-only</div><div class="card-tags"><span class="tag">pg_dump</span></div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <!--  TAB 2: PAYMENTS & BILLING                                             -->
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <div class="tab-content" id="tab-payments">
-      <div class="info-bar" style="border-color: rgba(236,72,153,0.3);">
-        <div class="info-title" style="color: var(--accent-pink);">Payment System — ATMOS Integration</div>
-        <div class="info-text">
-          Daromadchi uses <strong>ATMOS</strong> (Uzbek payment aggregator) for all subscription charges. Money is integer <strong>tiyin</strong> (1 so'm = 100 tiyin). Two card flows: <strong>UzCard/Humo</strong> (direct card-binding, 3-call token charge) and <strong>Visa/Mastercard</strong> (hosted binding via MPS). Amount is ALWAYS derived server-side from <code>PLAN_PRICES_TIYIN</code> — never trusted from the client. ATMOS has no native recurring, so auto-renewal is a custom cron that charges stored card tokens.
-        </div>
-      </div>
-
-      <!-- ── FLOW 1: Hosted Checkout (Invoice) ── -->
-      <div class="flow-diagram">
-        <div class="flow-title">Flow 1: Hosted Checkout (Invoice)</div>
-        <div class="flow-subtitle">Seller clicks "Pay" &rarr; redirected to ATMOS hosted page &rarr; pays on ATMOS's site &rarr; callback settles</div>
-        <div class="flow-steps">
-          <div class="flow-step"><div class="step-icon blue">1</div><div class="step-label">Seller Clicks Pay</div><div class="step-detail">Selects plan + interval in BillingClient.tsx</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon pink">2</div><div class="step-label">POST /api/billing/atmos/create</div><div class="step-detail">Derives amount from PLAN_PRICES_TIYIN. Persists pending payment + subscription BEFORE calling ATMOS.</div><div class="step-file">atmos/create/route.ts</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon amber">3</div><div class="step-label">ATMOS createInvoice()</div><div class="step-detail">Creates hosted invoice. Returns { url, paymentId, token }.</div><div class="step-file">lib/billing/atmos.ts</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon blue">4</div><div class="step-label">Redirect to ATMOS</div><div class="step-detail">Browser opens ATMOS hosted page. Card entry happens on ATMOS domain — PAN never reaches our server.</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon green">5</div><div class="step-label">S2S Callback</div><div class="step-detail">ATMOS POST to /api/billing/atmos/callback with { store_id, transaction_id, amount, account, sign }.</div><div class="step-file">atmos/callback/route.ts</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon purple">6</div><div class="step-label">Verify &amp; Activate</div><div class="step-detail">MD5 signature verified (constant-time). applyAtmosPaymentSuccess() — at-most-once via conditional UPDATE.</div><div class="step-file">lib/billing/activate.ts</div></div>
-        </div>
-      </div>
-
-      <!-- ── FLOW 2: Direct Card Binding (UzCard/Humo) ── -->
-      <div class="flow-diagram">
-        <div class="flow-title">Flow 2: Direct Card Binding (UzCard / Humo)</div>
-        <div class="flow-subtitle">Seller enters card in-app modal &rarr; SMS OTP &rarr; card bound &rarr; first charge &rarr; subscription active. PAN is transit-only, never stored.</div>
-        <div class="flow-steps">
-          <div class="flow-step"><div class="step-icon blue">1</div><div class="step-label">Card Entry</div><div class="step-detail">Seller enters PAN + expiry in the in-app modal. Card number is NEVER stored or logged.</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon pink">2</div><div class="step-label">bind-init</div><div class="step-detail">POST /api/billing/atmos/bind-init. Persists pending payment + subscription. Calls ATMOS bindCardInit() — sends SMS OTP.</div><div class="step-file">atmos/bind-init/route.ts</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon amber">3</div><div class="step-label">SMS OTP</div><div class="step-detail">ATMOS sends OTP to cardholder phone. Seller enters the code in the app.</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon pink">4</div><div class="step-label">bind-confirm</div><div class="step-detail">POST /api/billing/atmos/bind-confirm. Confirms OTP &rarr; gets reusable card token. Token stored ENCRYPTED (AES-256-CBC).</div><div class="step-file">atmos/bind-confirm/route.ts</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon indigo">5</div><div class="step-label">First Charge</div><div class="step-detail">3-call ATMOS sequence: payCreate &rarr; payPreApply(token) &rarr; payApply(OTP="111111"). Token payments use literal "111111" OTP.</div><div class="step-file">lib/billing/recurring.ts</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon green">6</div><div class="step-label">Activate</div><div class="step-detail">applyAtmosPaymentSuccess(). At-most-once guard. Sets payment=SUCCESS, subscription=active, extends user plan.</div><div class="step-file">lib/billing/activate.ts</div></div>
-        </div>
-      </div>
-
-      <!-- ── FLOW 3: Hosted Card Binding (Visa/MC) ── -->
-      <div class="flow-diagram">
-        <div class="flow-title">Flow 3: Hosted Card Binding (Visa / Mastercard)</div>
-        <div class="flow-subtitle">Seller redirected to ATMOS hosted card-bind page &rarr; card bound via callback &rarr; MPS charge in background</div>
-        <div class="flow-steps">
-          <div class="flow-step"><div class="step-icon blue">1</div><div class="step-label">Initiate</div><div class="step-detail">POST /api/billing/atmos/hosted-bind. Persists intent. Calls hostedBindCreate().</div><div class="step-file">atmos/hosted-bind/route.ts</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon amber">2</div><div class="step-label">ATMOS Hosted Page</div><div class="step-detail">Seller enters card on ATMOS's domain. PAN never reaches our server.</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon green">3</div><div class="step-label">Bind Callback</div><div class="step-detail">ATMOS POSTs { card_id, api_key } to /api/billing/atmos/callback. Verified via sign or api_key match.</div><div class="step-file">atmos/callback/route.ts</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon indigo">4</div><div class="step-label">MPS Charge</div><div class="step-detail">Background: mpsPreCreate() &rarr; mpsCreateBind(cardId). May require 3DS redirect. 2-call MPS sequence.</div><div class="step-file">lib/billing/recurring.ts</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon purple">5</div><div class="step-label">Activate</div><div class="step-detail">applyAtmosPaymentSuccess(). Same idempotent path as all other flows.</div><div class="step-file">lib/billing/activate.ts</div></div>
-        </div>
-      </div>
-
-      <!-- ── FLOW 4: Auto-Renewal ── -->
-      <div class="flow-diagram">
-        <div class="flow-title">Flow 4: Auto-Renewal (Cron)</div>
-        <div class="flow-subtitle">Daily cron finds subscriptions expiring within 24h &rarr; charges stored card token/id &rarr; extends subscription. Flag-gated: BILLING_AUTORENEW_ENABLED.</div>
-        <div class="flow-steps">
-          <div class="flow-step"><div class="step-icon teal">1</div><div class="step-label">Cron Trigger</div><div class="step-detail">GET /api/cron/billing-renew. Auth'd via CRON_SECRET. Checks BILLING_AUTORENEW_DISABLED kill-switch.</div><div class="step-file">cron/billing-renew/route.ts</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon pink">2</div><div class="step-label">Find Due Subs</div><div class="step-detail">status IN (active, past_due) AND autorenew=true AND period_end &lt; now+24h AND has card_token or card_id.</div><div class="step-file">lib/billing/renew.ts</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon amber">3</div><div class="step-label">Determine Amount</div><div class="step-detail">Charges agreed_amount_tiyin (NEVER live config prices). Staged price change only if notified &ge;14 days ago AND effective date passed.</div><div class="step-file">lib/billing/price-notice.ts</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon indigo">4</div><div class="step-label">Charge Card</div><div class="step-detail">UzCard/Humo: chargeBoundCard() (3-call). Visa/MC: chargeBoundCardMps() (2-call). Fresh payment row per attempt.</div><div class="step-file">lib/billing/recurring.ts</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon green">5</div><div class="step-label">Success</div><div class="step-detail">applyAtmosPaymentSuccess(). If staged price was charged, promotePendingAmount() makes it the new agreed price.</div></div>
-          <div class="flow-connector">|</div>
-          <div class="flow-step"><div class="step-icon red">5b</div><div class="step-label">Failure</div><div class="step-detail">Sets subscription to past_due. If overdue &gt;3 days (GRACE_MS): downgrades user to free but KEEPS card token.</div></div>
-        </div>
-      </div>
-
-      <!-- ── FLOW 5: S2S Callback Verification ── -->
-      <div class="flow-diagram">
-        <div class="flow-title">Flow 5: Server-to-Server Callback Verification</div>
-        <div class="flow-subtitle">ATMOS POSTs to /api/billing/atmos/callback — public endpoint, no auth. Two callback shapes: payment (charge settled) and bind (card bound).</div>
-        <div class="flow-steps">
-          <div class="flow-step"><div class="step-icon amber">1</div><div class="step-label">ATMOS POST</div><div class="step-detail">Raw body logged FIRST, before any processing. JSON or form-encoded fallback.</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon red">2</div><div class="step-label">IP Allowlist</div><div class="step-detail">Optional source-IP check against ATMOS_CALLBACK_CIDR. Supports comma-separated CIDR list for multiple ATMOS networks.</div><div class="step-file">lib/billing/atmos-verify.ts</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon purple">3</div><div class="step-label">Route: Bind vs Pay</div><div class="step-detail">card_id present &rarr; bind callback. Otherwise &rarr; payment callback.</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon pink">4</div><div class="step-label">Verify Signature</div><div class="step-detail">Payment: MD5(store_id + txn_id + account + amount + api_key). Constant-time comparison via timingSafeEqual().</div><div class="step-file">lib/billing/atmos-verify.ts</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon green">5</div><div class="step-label">Activate</div><div class="step-detail">Lookup payment by account. Idempotent: already SUCCESS &rarr; re-ack. Otherwise applyAtmosPaymentSuccess().</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon teal">6</div><div class="step-label">Reply</div><div class="step-detail">Must reply HTTP 200 with exactly {"status":1,"message":"&#1059;&#1089;&#1087;&#1077;&#1096;&#1085;&#1086;"}. Anything else rejects the payment.</div></div>
-        </div>
-      </div>
-
-      <div class="section-divider"><span class="section-divider-text">Billing Module Map</span></div>
-
-      <!-- ── Module Map ── -->
-      <div class="module-grid">
-        <div class="module-card">
-          <div class="module-path">lib/billing/plans.ts</div>
-          <div class="module-desc">Single source of truth for prices. PLAN_PRICES_TIYIN: pro 150,000/125,000, pro_plus 250,000/225,000, biznes 500,000/450,000 so'm. All money is integer tiyin (1 so'm = 100 tiyin).</div>
-          <div class="module-exports"><span class="tag">PLAN_PRICES_TIYIN</span><span class="tag">planAmountTiyin()</span><span class="tag">somToTiyin()</span><span class="tag">tiyinToSom()</span><span class="tag">isPlanKey()</span><span class="tag">formatSomFromTiyin()</span></div>
-        </div>
-        <div class="module-card">
-          <div class="module-path">lib/billing/atmos.ts</div>
-          <div class="module-desc">ATMOS API client. OAuth token cache (client_credentials, 5min refresh margin, 401 retry). Two card flows: direct (UzCard/Humo) and MPS (Visa/MC). Config from 10 env vars.</div>
-          <div class="module-exports"><span class="tag">createInvoice()</span><span class="tag">bindCardInit()</span><span class="tag">bindCardConfirm()</span><span class="tag">payCreate()</span><span class="tag">payPreApply()</span><span class="tag">payApply()</span><span class="tag">hostedBindCreate()</span><span class="tag">mpsPreCreate()</span><span class="tag">mpsCreateBind()</span></div>
-        </div>
-        <div class="module-card">
-          <div class="module-path">lib/billing/atmos-verify.ts</div>
-          <div class="module-desc">Pure, dependency-free callback verification. MD5 signature check (constant-time). IPv4 CIDR matching for IP allowlist. No env, no network — fully unit-testable.</div>
-          <div class="module-exports"><span class="tag">verifyCallbackSign()</span><span class="tag">computeCallbackSign()</span><span class="tag">ipInCidr()</span><span class="tag">ipInAnyCidr()</span><span class="tag">clientIpFromForwarded()</span></div>
-        </div>
-        <div class="module-card">
-          <div class="module-path">lib/billing/activate.ts</div>
-          <div class="module-desc">THE ONE PLACE payment &rarr; SUCCESS + subscription activation. At-most-once via conditional UPDATE gated on non-final atmos_status. Extends from later of now / current expiry. Self-heals agreed_amount_tiyin via COALESCE.</div>
-          <div class="module-exports"><span class="tag">applyAtmosPaymentSuccess()</span></div>
-        </div>
-        <div class="module-card">
-          <div class="module-path">lib/billing/recurring.ts</div>
-          <div class="module-desc">Card-charging wrappers. UzCard/Humo: 3-call sequence (payCreate &rarr; payPreApply &rarr; payApply with OTP "111111"). Visa/MC: 2-call MPS sequence (mpsPreCreate &rarr; mpsCreateBind).</div>
-          <div class="module-exports"><span class="tag">chargeBoundCard()</span><span class="tag">chargeBoundCardMps()</span></div>
-        </div>
-        <div class="module-card">
-          <div class="module-path">lib/billing/renew.ts</div>
-          <div class="module-desc">Auto-renewal engine. Charges agreed_amount_tiyin (NEVER live config). 24h window, 3-day grace. Injectable charge/decrypt/now for testing. DRY-RUN by default.</div>
-          <div class="module-exports"><span class="tag">runBillingRenewal()</span><span class="tag">RENEW_WINDOW_MS</span><span class="tag">GRACE_MS</span></div>
-        </div>
-        <div class="module-card">
-          <div class="module-path">lib/billing/cancel.ts</div>
-          <div class="module-desc">Cancel sets status='cancelled', autorenew=false. Keeps access until period end. NEVER touches users.plan or plan_expires_at. Resume possible while period active.</div>
-          <div class="module-exports"><span class="tag">cancelPlan()</span><span class="tag">resumePlan()</span><span class="tag">getCancellationState()</span></div>
-        </div>
-        <div class="module-card">
-          <div class="module-path">lib/billing/price-notice.ts</div>
-          <div class="module-desc">Staged price change pipeline: STAGED &rarr; NOTIFIED (&ge;14 days before effective date via Telegram) &rarr; CHARGED (on renewal). Undelivered notice = increase never takes effect.</div>
-          <div class="module-exports"><span class="tag">stagePriceChange()</span><span class="tag">pendingAmountIsChargeable()</span><span class="tag">renewalAmountTiyin()</span><span class="tag">promotePendingAmount()</span><span class="tag">dispatchDuePriceNotices()</span></div>
-        </div>
-        <div class="module-card">
-          <div class="module-path">lib/billing/entitlement.ts</div>
-          <div class="module-desc">Server-side feature gate. Loads plan, expiry, trial from DB. Combines with pure hasFeature() check. NEVER reads users.derived_tier — only users.plan (what was paid).</div>
-          <div class="module-exports"><span class="tag">loadEntitlement()</span><span class="tag">userHasFeature()</span></div>
-        </div>
-        <div class="module-card">
-          <div class="module-path">lib/billing/features.ts</div>
-          <div class="module-desc">Pure feature gating. Owner emails always have full access. 14-day trial. Features: dashboard, products, orders, analytics, stock_sync, finances, unit_economics. FREE_FOREVER: only 'marketplaces'.</div>
-          <div class="module-exports"><span class="tag">hasFeature()</span><span class="tag">computeEffectivePlan()</span><span class="tag">TRIAL_DAYS=14</span><span class="tag">OWNER_EMAILS</span></div>
-        </div>
-        <div class="module-card">
-          <div class="module-path">lib/billing/tiers.ts</div>
-          <div class="module-desc">Turnover &rarr; tier assignment. Pure, no DB. Bands: Free &lt;12M, Pro &ge;12M, Pro+ &ge;50M, Biznes &ge;120M, Enterprise &ge;180M so'm/30d. NEAR_CEILING_FRACTION = 0.9.</div>
-          <div class="module-exports"><span class="tag">assignTier()</span><span class="tag">TURNOVER_BANDS</span><span class="tag">ENTERPRISE_POPUP_THRESHOLD</span></div>
-        </div>
-        <div class="module-card">
-          <div class="module-path">lib/billing/tier-pricing.ts</div>
-          <div class="module-desc">Display prices derived from PLAN_PRICES_TIYIN. Enterprise returns null ("contact us"). Every figure equals what ATMOS charges — display must equal charge.</div>
-          <div class="module-exports"><span class="tag">tierPriceTiyin()</span><span class="tag">isSelfServe()</span><span class="tag">tierCheckoutHref()</span></div>
-        </div>
-      </div>
-
-      <div class="section-divider"><span class="section-divider-text">API Routes</span></div>
-
-      <div class="cards-row cols-3" style="margin-bottom: 20px;">
-        <div class="card billing-card" data-id="route-create"><div class="card-name">POST /atmos/create</div><div class="card-desc">Hosted checkout initiation. Derives amount server-side, persists intent BEFORE calling ATMOS, returns { url } for redirect.</div><div class="card-tags"><span class="tag">auth'd</span><span class="tag">invoice</span></div></div>
-        <div class="card billing-card" data-id="route-bind-init"><div class="card-name">POST /atmos/bind-init</div><div class="card-desc">Direct card-binding step 1. Validates plan, persists intent, calls bindCardInit() which sends SMS OTP. Returns bindTxnId.</div><div class="card-tags"><span class="tag">auth'd</span><span class="tag">UzCard/Humo</span></div></div>
-        <div class="card billing-card" data-id="route-bind-confirm"><div class="card-name">POST /atmos/bind-confirm</div><div class="card-desc">Step 2. Confirms OTP &rarr; card token. Token encrypted at rest. Charges the first period via chargeBoundCard(). Activates.</div><div class="card-tags"><span class="tag">auth'd</span><span class="tag">first charge</span></div></div>
-        <div class="card billing-card" data-id="route-hosted-bind"><div class="card-name">POST /atmos/hosted-bind</div><div class="card-desc">Visa/MC hosted card-binding. Persists intent, calls hostedBindCreate(), returns redirect URL. Callback charges via MPS.</div><div class="card-tags"><span class="tag">auth'd</span><span class="tag">Visa/MC</span></div></div>
-        <div class="card billing-card" data-id="route-callback"><div class="card-name">POST /atmos/callback</div><div class="card-desc">PUBLIC S2S callback. Two shapes: payment (sign-verified) and bind (api_key or sign verified). Settles payments idempotently.</div><div class="card-tags"><span class="tag">public</span><span class="tag">S2S</span></div></div>
-        <div class="card billing-card" data-id="route-cancel"><div class="card-name">POST /billing/cancel</div><div class="card-desc">Cancel or resume. action='cancel' stops renewal, keeps access to period end. action='resume' undoes cancellation while active.</div><div class="card-tags"><span class="tag">auth'd</span></div></div>
-        <div class="card billing-card" data-id="route-autorenew"><div class="card-name">POST /billing/autorenew</div><div class="card-desc">Toggle auto-renew on/off. Card token kept either way — can re-enable without re-entering card.</div><div class="card-tags"><span class="tag">auth'd</span></div></div>
-        <div class="card billing-card" data-id="route-expire"><div class="card-name">GET /billing/expire-plans</div><div class="card-desc">Daily cron. Downgrades lapsed plans to free. Also: recompute derived tiers, dispatch price notices, tier nudges, account lifecycle.</div><div class="card-tags"><span class="tag">cron</span><span class="tag">daily</span></div></div>
-        <div class="card billing-card" data-id="route-renew"><div class="card-name">GET /cron/billing-renew</div><div class="card-desc">Daily renewal cron. Calls runBillingRenewal(). Flag-gated by BILLING_AUTORENEW_ENABLED. Kill-switch: BILLING_AUTORENEW_DISABLED.</div><div class="card-tags"><span class="tag">cron</span><span class="tag">daily</span></div></div>
-        <div class="card billing-card" data-id="route-renew-one"><div class="card-name">POST /billing/renew-one</div><div class="card-desc">Owner-only single-sub renewal. Test harness for proving ATMOS token charges work. Defaults to DRY-RUN; confirm:true for real charge.</div><div class="card-tags"><span class="tag">owner-only</span><span class="tag">test</span></div></div>
-      </div>
-
-      <div class="section-divider"><span class="section-divider-text">Key Constants &amp; Config</span></div>
-
-      <div style="overflow-x: auto;">
-        <table class="const-table">
-          <tr><th>Constant / Env Var</th><th>Value</th><th>Purpose</th></tr>
-          <tr><td>PLAN_PRICES_TIYIN.pro</td><td>monthly: 15,000,000 tiyin (150,000 so'm)<br>annualPerMonth: 12,500,000 tiyin (125,000 so'm)</td><td>Pro plan pricing — source of truth</td></tr>
-          <tr><td>PLAN_PRICES_TIYIN.pro_plus</td><td>monthly: 25,000,000 tiyin (250,000 so'm)<br>annualPerMonth: 22,500,000 tiyin (225,000 so'm)</td><td>Pro+ plan pricing — source of truth</td></tr>
-          <tr><td>PLAN_PRICES_TIYIN.biznes</td><td>monthly: 50,000,000 tiyin (500,000 so'm)<br>annualPerMonth: 45,000,000 tiyin (450,000 so'm)</td><td>Biznes plan pricing — source of truth</td></tr>
-          <tr><td>TIYIN_PER_SOM</td><td>100</td><td>Conversion factor: 1 so'm = 100 tiyin</td></tr>
-          <tr><td>TOKEN_PAYMENT_OTP</td><td>"111111"</td><td>Literal OTP for token (card-bound) payments — no SMS</td></tr>
-          <tr><td>RENEW_WINDOW_MS</td><td>24 hours</td><td>How far ahead of expiry a subscription becomes due</td></tr>
-          <tr><td>GRACE_MS</td><td>3 days</td><td>How long a failing subscription keeps access before downgrade</td></tr>
-          <tr><td>PRICE_NOTICE_DAYS</td><td>14</td><td>Minimum days between price notice delivery and first charge at new price</td></tr>
-          <tr><td>TRIAL_DAYS</td><td>14</td><td>Free trial length for new accounts</td></tr>
-          <tr><td>ATMOS_BASE_URL</td><td>env</td><td>ATMOS API base URL</td></tr>
-          <tr><td>ATMOS_STORE_ID</td><td>env</td><td>Our merchant store ID</td></tr>
-          <tr><td>ATMOS_CONSUMER_KEY / SECRET</td><td>env</td><td>OAuth client_credentials for ATMOS API auth</td></tr>
-          <tr><td>ATMOS_CALLBACK_API_KEY</td><td>env</td><td>Key for verifying payment callback MD5 signatures</td></tr>
-          <tr><td>ATMOS_CALLBACK_CIDR</td><td>env (optional)</td><td>Comma-separated CIDRs for IP allowlist. Off by default in dev.</td></tr>
-          <tr><td>BILLING_AUTORENEW_ENABLED</td><td>env flag</td><td>Master switch for auto-renewal. DRY-RUN by default.</td></tr>
-          <tr><td>CRON_SECRET</td><td>env</td><td>Bearer token protecting all cron endpoints</td></tr>
-        </table>
-      </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <!--  TAB 3: SUBSCRIPTION LIFECYCLE                                         -->
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <div class="tab-content" id="tab-subscription">
-      <div class="info-bar" style="border-color: rgba(16,185,129,0.3);">
-        <div class="info-title" style="color: var(--accent-green);">Subscription Lifecycle</div>
-        <div class="info-text">
-          A subscription tracks one seller's relationship with a paid plan. The subscription status determines what happens at renewal time and whether the seller keeps access. The <code>users.plan</code> column (what was paid) is the ONLY input to feature gating — never <code>derived_tier</code>.
-        </div>
-      </div>
-
-      <!-- State Machine -->
-      <div class="state-machine">
-        <div class="sm-title">Subscription State Machine</div>
-        <div class="sm-subtitle">States and transitions for subscriptions.status</div>
-
-        <div class="state-grid">
-          <div class="state-node pending"><div class="state-name">pending</div><div class="state-desc">Payment initiated, awaiting ATMOS</div></div>
-          <div class="state-node active"><div class="state-name">active</div><div class="state-desc">Paid and running</div></div>
-          <div class="state-node past-due"><div class="state-name">past_due</div><div class="state-desc">Renewal failed, grace period</div></div>
-          <div class="state-node cancelled"><div class="state-name">cancelled</div><div class="state-desc">Seller cancelled, access to period end</div></div>
-          <div class="state-node free"><div class="state-name">free (users.plan)</div><div class="state-desc">Expired / downgraded</div></div>
-        </div>
-
-        <div class="transition-list">
-          <div class="transition-item"><span class="transition-from">pending</span><span class="transition-arrow">&rarr;</span><span class="transition-to">active</span><span class="transition-trigger">Payment succeeds (applyAtmosPaymentSuccess)</span></div>
-          <div class="transition-item"><span class="transition-from">pending</span><span class="transition-arrow">&rarr;</span><span class="transition-to">failed</span><span class="transition-trigger">Payment fails or ATMOS config error</span></div>
-          <div class="transition-item"><span class="transition-from">active</span><span class="transition-arrow">&rarr;</span><span class="transition-to">active</span><span class="transition-trigger">Renewal succeeds (period extended)</span></div>
-          <div class="transition-item"><span class="transition-from">active</span><span class="transition-arrow">&rarr;</span><span class="transition-to">cancelled</span><span class="transition-trigger">Seller cancels (cancelPlan) &mdash; keeps access to period end</span></div>
-          <div class="transition-item"><span class="transition-from">active</span><span class="transition-arrow">&rarr;</span><span class="transition-to">past_due</span><span class="transition-trigger">Renewal charge fails</span></div>
-          <div class="transition-item"><span class="transition-from">past_due</span><span class="transition-arrow">&rarr;</span><span class="transition-to">active</span><span class="transition-trigger">Retry charge succeeds</span></div>
-          <div class="transition-item"><span class="transition-from">past_due</span><span class="transition-arrow">&rarr;</span><span class="transition-to">free</span><span class="transition-trigger">Grace period (3 days) exceeded &mdash; users.plan set to 'free'</span></div>
-          <div class="transition-item"><span class="transition-from">cancelled</span><span class="transition-arrow">&rarr;</span><span class="transition-to">active</span><span class="transition-trigger">Seller resumes (resumePlan) while period still active</span></div>
-          <div class="transition-item"><span class="transition-from">cancelled</span><span class="transition-arrow">&rarr;</span><span class="transition-to">free</span><span class="transition-trigger">Period expires (expire-plans cron sets users.plan='free')</span></div>
-        </div>
-      </div>
-
-      <!-- Price Change Pipeline -->
-      <div class="flow-diagram" style="border-color: rgba(168,85,247,0.25);">
-        <div class="flow-title" style="color: var(--accent-purple);">Price Change Notice Pipeline</div>
-        <div class="flow-subtitle">Nobody is charged an amount they were not told about in advance. Every failure mode falls toward "keep charging what they agreed to."</div>
-        <div class="flow-steps">
-          <div class="flow-step"><div class="step-icon purple">1</div><div class="step-label">STAGED</div><div class="step-detail">Operator sets pending_amount_tiyin + effective_date. Nothing charged. Must be an increase. Effective date &ge;14 days away.</div><div class="step-file">stagePriceChange()</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon amber">2</div><div class="step-label">NOTIFIED</div><div class="step-detail">Seller told via Telegram (uz/ru/en). Delivery recorded in pending_notified_at. Failed send = NOT recorded = increase never takes effect.</div><div class="step-file">dispatchDuePriceNotices()</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon green">3</div><div class="step-label">CHARGED</div><div class="step-detail">First renewal on/after effective date WHERE notice is &ge;14 days old. Only then is pending promoted into agreed_amount_tiyin.</div><div class="step-file">promotePendingAmount()</div></div>
-        </div>
-        <div style="margin-top: 16px; padding: 12px; background: rgba(239,68,68,0.08); border-left: 3px solid var(--accent-red); border-radius: 4px; font-size: 12px; color: var(--text-secondary);">
-          <strong style="color: var(--accent-red);">Safety invariant:</strong> An undelivered increase must never become chargeable by mere passage of time. If pending_notified_at is NULL, the pending amount is never charged — the seller keeps paying their agreed price.
-        </div>
-      </div>
-
-      <!-- Cancellation & Resume -->
-      <div class="state-machine" style="border-color: rgba(245,158,11,0.25);">
-        <div class="sm-title" style="color: var(--accent-amber);">Cancellation &amp; Resume</div>
-        <div class="sm-subtitle">What cancelPlan() and resumePlan() do and don't do</div>
-
-        <div class="cards-row cols-2" style="margin-bottom: 16px;">
-          <div class="module-card" style="border-color: rgba(239,68,68,0.3);">
-            <div class="module-path" style="color: var(--accent-red);">cancelPlan(userId)</div>
-            <div class="module-desc">
-              <strong>Does:</strong> Sets ALL live subscriptions to status='cancelled', autorenew=false. Computes access_until = current_period_end. Records cancellation state.<br><br>
-              <strong>Does NOT:</strong> Touch users.plan. Touch plan_expires_at. Remove card token. Refund anything. Immediately lock the seller out.<br><br>
-              The seller keeps full access until the period they already paid for expires.
-            </div>
-          </div>
-          <div class="module-card" style="border-color: rgba(16,185,129,0.3);">
-            <div class="module-path" style="color: var(--accent-green);">resumePlan(userId)</div>
-            <div class="module-desc">
-              <strong>Does:</strong> Sets subscription back to status='active', autorenew=true. Only works while access_until &gt; now (period still active).<br><br>
-              <strong>Does NOT:</strong> Charge anything. Extend the period. Change the plan. This is an undo of the cancel, not a new purchase.<br><br>
-              The next renewal will charge their stored card as usual.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Account Lifecycle -->
-      <div class="state-machine" style="border-color: rgba(99,102,241,0.25);">
-        <div class="sm-title" style="color: var(--accent-indigo);">Account Lifecycle (Inactive Accounts)</div>
-        <div class="sm-subtitle">365 days silent &rarr; warned &middot; +30 &rarr; frozen &middot; +90 &rarr; eligible for deletion. Only free accounts. Never accounts with payment history.</div>
-
-        <div class="flow-steps" style="justify-content: center;">
-          <div class="flow-step"><div class="step-icon blue">1</div><div class="step-label">Active</div><div class="step-detail">Normal account usage. last_active_at updated on each sign-in.</div></div>
-          <div class="flow-connector">&rarr;<br><span style="font-size:9px;color:var(--text-dim);">365d</span></div>
-          <div class="flow-step"><div class="step-icon amber">2</div><div class="step-label">Warned</div><div class="step-detail">Telegram notice sent. 30 days to sign in.</div></div>
-          <div class="flow-connector">&rarr;<br><span style="font-size:9px;color:var(--text-dim);">+30d</span></div>
-          <div class="flow-step"><div class="step-icon purple">3</div><div class="step-label">Frozen</div><div class="step-detail">frozen_at set. Nothing deleted. One-click reactivate on sign-in.</div></div>
-          <div class="flow-connector">&rarr;<br><span style="font-size:9px;color:var(--text-dim);">+90d</span></div>
-          <div class="flow-step"><div class="step-icon red">4</div><div class="step-label">Eligible for Delete</div><div class="step-detail">Only if ACCOUNT_LIFECYCLE_DELETE_ENABLED=true. Only free + no payment history + not grandfathered.</div></div>
-        </div>
-        <div style="margin-top: 16px; padding: 12px; background: rgba(16,185,129,0.08); border-left: 3px solid var(--accent-green); border-radius: 4px; font-size: 12px; color: var(--text-secondary);">
-          <strong style="color: var(--accent-green);">Protected accounts:</strong> Any account with payment history, an active subscription, or is_grandfathered=true is NEVER deleted — logged for a human to review, but the sweep skips them.
-        </div>
-      </div>
-
-      <!-- Daily Expire-Plans Job -->
-      <div class="flow-diagram" style="border-color: rgba(20,184,166,0.25);">
-        <div class="flow-title" style="color: var(--accent-teal);">Daily expire-plans Job (5 stages)</div>
-        <div class="flow-subtitle">GET /api/billing/expire-plans — the daily cron that runs all scheduled billing work, each stage best-effort.</div>
-        <div class="flow-steps">
-          <div class="flow-step"><div class="step-icon teal">1</div><div class="step-label">Downgrade</div><div class="step-detail">Lapsed paid plans (plan_expires_at &lt; now) &rarr; set users.plan='free'.</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon blue">2</div><div class="step-label">Recompute Tiers</div><div class="step-detail">recomputeDerivedTiers() — refreshes users.derived_tier from trailing-30d turnover. Advisory only.</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon purple">3</div><div class="step-label">Price Notices</div><div class="step-detail">dispatchDuePriceNotices() — tell sellers about upcoming price changes via Telegram.</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon amber">4</div><div class="step-label">Tier Nudges</div><div class="step-detail">dispatchTierNudges() — trial ending, trial ended, outgrew free, enterprise outreach.</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon indigo">5</div><div class="step-label">Account Lifecycle</div><div class="step-detail">sweepAccountLifecycle() — warn, freeze, and (flag-gated) delete inactive free accounts.</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <!--  TAB 4: ENTITLEMENT & TIERS                                            -->
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <div class="tab-content" id="tab-entitlement">
-      <div class="info-bar" style="border-color: rgba(99,102,241,0.3);">
-        <div class="info-title" style="color: var(--accent-indigo);">Entitlement System &amp; Turnover Tiers</div>
-        <div class="info-text">
-          Feature gating is based on <code>users.plan</code> (what was paid for), NEVER <code>users.derived_tier</code> (advisory recommendation only). Tiers are derived from trailing-30-day net turnover. Owner emails always have full access. 14-day trial for new accounts.
-        </div>
-      </div>
-
-      <!-- Feature Matrix -->
-      <div class="state-machine" style="border-color: rgba(14,165,233,0.25);">
-        <div class="sm-title" style="color: var(--accent-blue);">Feature Access Matrix</div>
-        <div class="sm-subtitle">How hasFeature() decides. Owner emails &rarr; always true. FREE_FOREVER features &rarr; always true. Paid plan &rarr; all features. Trial &rarr; trial features only.</div>
-
-        <div style="overflow-x: auto;">
-          <table class="const-table">
-            <tr><th>Feature</th><th>Free (no trial)</th><th>Free (trial active)</th><th>Pro / Pro+ / Biznes</th><th>Owner email</th></tr>
-            <tr><td>marketplaces</td><td style="color:var(--accent-green);">&#10003; FREE_FOREVER</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td></tr>
-            <tr><td>dashboard</td><td style="color:var(--accent-red);">&#10007;</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td></tr>
-            <tr><td>products</td><td style="color:var(--accent-red);">&#10007;</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td></tr>
-            <tr><td>orders</td><td style="color:var(--accent-red);">&#10007;</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td></tr>
-            <tr><td>analytics</td><td style="color:var(--accent-red);">&#10007;</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td></tr>
-            <tr><td>stock_sync</td><td style="color:var(--accent-red);">&#10007;</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td></tr>
-            <tr><td>finances</td><td style="color:var(--accent-red);">&#10007;</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td></tr>
-            <tr><td>unit_economics</td><td style="color:var(--accent-red);">&#10007;</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td><td style="color:var(--accent-green);">&#10003;</td></tr>
-          </table>
-        </div>
-      </div>
-
-      <!-- Turnover Bands -->
-      <div class="state-machine" style="border-color: rgba(6,182,212,0.25);">
-        <div class="sm-title" style="color: var(--accent-cyan);">Turnover-Based Tier Bands</div>
-        <div class="sm-subtitle">Trailing-30-day net turnover (so'm) determines the DERIVED tier recommendation. This is advisory — it does NOT grant or remove access.</div>
-
-        <div style="overflow-x: auto;">
-          <table class="const-table">
-            <tr><th>Tier</th><th>Turnover Range (so'm / 30 days)</th><th>Monthly Price</th><th>Annual per Month</th></tr>
-            <tr><td style="color: var(--accent-indigo);">Free</td><td>0 &ndash; 11,999,999</td><td>0</td><td>0</td></tr>
-            <tr><td style="color: var(--accent-cyan);">Pro</td><td>12,000,000 &ndash; 49,999,999</td><td>150,000 so'm</td><td>125,000 so'm</td></tr>
-            <tr><td style="color: var(--accent-green);">Pro+</td><td>50,000,000 &ndash; 119,999,999</td><td>250,000 so'm</td><td>225,000 so'm</td></tr>
-            <tr><td style="color: var(--accent-purple);">Biznes</td><td>120,000,000 &ndash; 179,999,999</td><td>500,000 so'm</td><td>450,000 so'm</td></tr>
-            <tr><td style="color: var(--accent-pink);">Enterprise</td><td>&ge; 180,000,000</td><td colspan="2" style="color: var(--text-dim);">Contact us — individually quoted</td></tr>
-          </table>
-        </div>
-
-        <div style="margin-top: 16px; padding: 12px; background: rgba(6,182,212,0.08); border-left: 3px solid var(--accent-cyan); border-radius: 4px; font-size: 12px; color: var(--text-secondary);">
-          <strong style="color: var(--accent-cyan);">Near ceiling threshold (90%):</strong> When a seller reaches 90% of their band's ceiling, the "outgrew tier" nudge fires. Enterprise outreach triggers at 162,000,000 so'm (90% of 180M Biznes ceiling).
-        </div>
-      </div>
-
-      <!-- Nudge System -->
-      <div class="flow-diagram" style="border-color: rgba(245,158,11,0.25);">
-        <div class="flow-title" style="color: var(--accent-amber);">Notification Nudge System</div>
-        <div class="flow-subtitle">Suggestions only — nothing here changes a plan, an entitlement, or a price. Runs daily via expire-plans job.</div>
-        <div class="flow-steps">
-          <div class="flow-step"><div class="step-icon amber">1</div><div class="step-label">Trial Ending</div><div class="step-detail">Trial has days left. Sent once. Multilingual Telegram (uz/ru/en).</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon red">2</div><div class="step-label">Trial Ended</div><div class="step-detail">Trial is over, paid features locked. Sent once.</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon green">3</div><div class="step-label">Outgrew Free</div><div class="step-detail">Turnover passed Free ceiling. Re-nudgeable after RENUDGE_DAYS. Reads derived_tier.</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon purple">4</div><div class="step-label">Enterprise Outreach</div><div class="step-detail">Turnover &ge; 162M so'm. Pings BOTH seller and admin. For ALL plans, not just free.</div></div>
-        </div>
-      </div>
-
-      <!-- Entitlement Decision Flow -->
-      <div class="state-machine" style="border-color: rgba(236,72,153,0.25);">
-        <div class="sm-title" style="color: var(--accent-pink);">Entitlement Decision Flow</div>
-        <div class="sm-subtitle">How userHasFeature(userId, feature) decides. Two layers: loadEntitlement() (DB read) &rarr; hasFeature() (pure logic).</div>
-
-        <div class="flow-steps" style="justify-content: center;">
-          <div class="flow-step"><div class="step-icon pink">1</div><div class="step-label">Is Owner?</div><div class="step-detail">Email in OWNER_EMAILS set &rarr; YES to everything.</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon blue">2</div><div class="step-label">FREE_FOREVER?</div><div class="step-detail">Feature is 'marketplaces' &rarr; YES always.</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon green">3</div><div class="step-label">Paid Plan?</div><div class="step-detail">computeEffectivePlan(): plan not 'free' AND plan_expires_at &gt; now &rarr; YES to all features.</div></div>
-          <div class="flow-connector">&rarr;</div>
-          <div class="flow-step"><div class="step-icon amber">4</div><div class="step-label">Trial Active?</div><div class="step-detail">trial_ends_at &gt; now AND feature in TRIAL_FEATURES &rarr; YES. Otherwise NO.</div></div>
-        </div>
-
-        <div style="margin-top: 16px; padding: 12px; background: rgba(236,72,153,0.08); border-left: 3px solid var(--accent-pink); border-radius: 4px; font-size: 12px; color: var(--text-secondary);">
-          <strong style="color: var(--accent-pink);">Key invariant:</strong> Feature gating reads <code>users.plan</code> + <code>plan_expires_at</code> + <code>trial_ends_at</code> + <code>email</code>. It NEVER reads <code>derived_tier</code> or <code>derived_turnover_som</code>. The derived tier is for nudges and the pricing page, not for granting or removing access.
-        </div>
-      </div>
-
-      <!-- Nav Gating -->
-      <div class="module-grid" style="margin-top: 20px;">
-        <div class="module-card" style="border-color: rgba(6,182,212,0.3);">
-          <div class="module-path" style="color: var(--accent-cyan);">lib/billing/nav-gating.ts</div>
-          <div class="module-desc">Determines which sidebar nav items show as locked. Advisory only — pages re-check entitlement independently. Maps nav keys (dashboard, products, analytics, etc.) to Feature names.</div>
-          <div class="module-exports"><span class="tag">lockedNavKeys(userId)</span></div>
-        </div>
-        <div class="module-card" style="border-color: rgba(168,85,247,0.3);">
-          <div class="module-path" style="color: var(--accent-purple);">lib/billing/nudge.ts</div>
-          <div class="module-desc">Four daily nudge types: trial_ending, trial_ended, outgrew_free, enterprise_outreach. Throttled via user_notices unique (user_id, kind). Telegram + in-app banner.</div>
-          <div class="module-exports"><span class="tag">dispatchTierNudges()</span><span class="tag">getActiveNotice()</span><span class="tag">dismissNotice()</span></div>
-        </div>
-        <div class="module-card" style="border-color: rgba(99,102,241,0.3);">
-          <div class="module-path" style="color: var(--accent-indigo);">lib/billing/lifecycle.ts</div>
-          <div class="module-desc">Inactive account ladder: warn (365d) &rarr; freeze (+30d) &rarr; delete (+90d, flag-gated). Only free accounts without payment history. Protected accounts never deleted.</div>
-          <div class="module-exports"><span class="tag">sweepAccountLifecycle()</span><span class="tag">reactivate()</span><span class="tag">isFrozen()</span><span class="tag">touchLastActive()</span></div>
-        </div>
-      </div>
-    </div>
-
+<!-- ═══ Header ═══ -->
+<div class="site-header">
+  <button class="hamburger" id="hamburger" aria-label="Menu">&#9776;</button>
+  <span class="logo">DAROMADCHI</span>
+  <span class="logo-sub">System Architecture</span>
+  <div class="search-box">
+    <input type="text" id="search" placeholder="Search architecture..." autocomplete="off">
   </div>
+</div>
 
-  <!-- Detail Panel -->
-  <div class="detail-panel" id="detailPanel">
-    <div class="detail-header">
-      <div><div class="detail-title" id="detailTitle">Component</div></div>
-      <button class="close-btn" id="closeBtn">&times;</button>
+<!-- ═══ Sidebar ═══ -->
+<nav class="sidebar" id="sidebar">
+  <div class="nav-group">
+    <div class="nav-group-label">Overview</div>
+    <a class="nav-link" href="#overview">System Overview</a>
+    <a class="nav-link" href="#stack">Tech Stack</a>
+    <a class="nav-link" href="#layers">Architecture Layers</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Payment System</div>
+    <a class="nav-link" href="#pay-overview">ATMOS Overview</a>
+    <a class="nav-link" href="#flow-uzcard">UzCard / Humo Bind</a>
+    <a class="nav-link" href="#flow-visa">Visa / MC Bind</a>
+    <a class="nav-link" href="#flow-callback">S2S Callback</a>
+    <a class="nav-link" href="#activation">Activation Logic</a>
+    <a class="nav-link" href="#renewal">Auto-Renewal</a>
+    <a class="nav-link" href="#price-change">Price Change System</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Subscription</div>
+    <a class="nav-link" href="#sub-states">State Machine</a>
+    <a class="nav-link" href="#cancel-resume">Cancel &amp; Resume</a>
+    <a class="nav-link" href="#plans-pricing">Plans &amp; Pricing</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Entitlement</div>
+    <a class="nav-link" href="#entitlement">Feature Gating</a>
+    <a class="nav-link" href="#tiers">Turnover Tiers</a>
+    <a class="nav-link" href="#trial">Trial System</a>
+    <a class="nav-link" href="#nudges">Nudge Notifications</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Marketplace</div>
+    <a class="nav-link" href="#stock-sync">Stock Sync &amp; Writes</a>
+    <a class="nav-link" href="#readonly">Read-Only Guard</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Operations</div>
+    <a class="nav-link" href="#crons">Scheduled Jobs</a>
+    <a class="nav-link" href="#lifecycle">Account Lifecycle</a>
+    <a class="nav-link" href="#modules">Billing Modules</a>
+    <a class="nav-link" href="#security">Security &amp; Crypto</a>
+  </div>
+</nav>
+
+<!-- ═══ Main ═══ -->
+<div class="main">
+
+<!-- ─── OVERVIEW ─── -->
+<div class="section" id="s-overview">
+  <span class="section-anchor" id="overview"></span>
+  <div class="section-title"><span class="dot" style="background:var(--indigo)"></span> System Overview</div>
+  <div class="section-desc">
+    Daromadchi is a multi-marketplace seller dashboard for Uzbekistan. It syncs orders, inventory, and stock across <strong>Uzum Market</strong> and <strong>Yandex Market</strong>. Web dashboard + Chrome Extension for seller analytics. Marketplace integrations are <strong>read-only by default</strong> — the one exception is the opt-in, per-shop stock-sync mode, which writes only the stock quantity through a single audited writer after the seller consents.
+  </div>
+  <div class="cards c3">
+    <div class="card"><div class="card-name" style="color:var(--blue)">Web App</div><div class="card-desc">Next.js 16 dashboard at daromadchi.uz. React 19, Turbopack. 20+ dashboard pages, landing, pricing, legal. Multi-language (UZ/RU/EN).</div><div class="card-tags"><span class="tag">Next.js 16</span><span class="tag">React 19</span><span class="tag">Tailwind</span></div></div>
+    <div class="card"><div class="card-name" style="color:var(--blue)">Chrome Extension</div><div class="card-desc">Manifest v3. Injects cost/margin overlays on Uzum and Yandex Market product pages. Syncs auth token from the web app.</div><div class="card-tags"><span class="tag">Manifest v3</span><span class="tag">Content Scripts</span></div></div>
+    <div class="card"><div class="card-name" style="color:var(--blue)">Telegram Bot</div><div class="card-desc">Notifications: daily/weekly digest, stock &amp; order alerts, price change notices, trial reminders, enterprise outreach. Account linking via deep links.</div><div class="card-tags"><span class="tag">Bot API</span><span class="tag">Webhooks</span></div></div>
+  </div>
+</div>
+
+<!-- ─── TECH STACK ─── -->
+<div class="section" id="s-stack">
+  <span class="section-anchor" id="stack"></span>
+  <div class="section-title"><span class="dot" style="background:var(--cyan)"></span> Tech Stack</div>
+  <div class="cards c4">
+    <div class="card"><div class="card-name" style="color:var(--green)">PostgreSQL 17</div><div class="card-desc">39 tables. Self-hosted on VPS (127.0.0.1). Drizzle ORM.</div></div>
+    <div class="card"><div class="card-name" style="color:var(--green)">Drizzle ORM</div><div class="card-desc">Type-safe SQL, schema-first. Migrations applied on deploy.</div></div>
+    <div class="card"><div class="card-name" style="color:var(--amber)">Hetzner VPS</div><div class="card-desc">Ubuntu, Finland. Single host: app + DB + Nginx.</div></div>
+    <div class="card"><div class="card-name" style="color:var(--amber)">GitHub Actions</div><div class="card-desc">Lint, typecheck, build, deploy via SSH, nightly backup.</div></div>
+  </div>
+</div>
+
+<!-- ─── LAYERS ─── -->
+<div class="section" id="s-layers">
+  <span class="section-anchor" id="layers"></span>
+  <div class="section-title"><span class="dot" style="background:var(--purple)"></span> Architecture Layers</div>
+  <div class="section-desc">Top-down: Client &rarr; Auth &rarr; Dashboard &rarr; API Routes &rarr; Data &rarr; External Services &rarr; Infrastructure.</div>
+  <div class="cards c4">
+    <div class="card"><div class="card-name" style="color:var(--purple)">Auth</div><div class="card-desc">NextAuth v5: Credentials+bcrypt, optional Google OAuth, JWT sessions (30d). Blocks unverified emails. Rate limiting per IP.</div><div class="card-tags"><span class="tag">bcryptjs</span><span class="tag">JWT</span></div></div>
+    <div class="card"><div class="card-name" style="color:var(--purple)">Dashboard</div><div class="card-desc">20+ pages: Analytics, Orders, Products, Stocks, P&amp;L, Unit Economics, Payouts, Billing, Alerts, Notifications, Keywords, Reviews, Team, Referral, Settings.</div></div>
+    <div class="card"><div class="card-name" style="color:var(--purple)">API Routes</div><div class="card-desc">70+ endpoints. Auth (7), Marketplace Sync (read-only), Stock-sync (opt-in, audited), Billing (10), Extension (bearer), Telegram, Cron (5), Data (CRUD).</div></div>
+    <div class="card"><div class="card-name" style="color:var(--purple)">External</div><div class="card-desc">Uzum Market, Yandex Market (read-only), ATMOS (payments), Google (OAuth + GA4), SMTP (verification).</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAYMENT SYSTEM                                         -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<!-- ─── ATMOS OVERVIEW ─── -->
+<div class="section" id="s-pay-overview">
+  <span class="section-anchor" id="pay-overview"></span>
+  <div class="section-title"><span class="dot" style="background:var(--pink)"></span> ATMOS Payment Integration</div>
+  <div class="section-desc">
+    ATMOS is the Uzbek payment aggregator that handles all subscription charges. Money is integer <strong>tiyin</strong> (1 so'm = 100 tiyin). Two card-binding flows: <strong>UzCard/Humo</strong> (direct in-app binding with SMS OTP) and <strong>Visa/Mastercard</strong> (hosted binding via MPS). Amount is ALWAYS derived server-side from <code style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(255,255,255,0.06);padding:2px 5px;border-radius:3px;">PLAN_PRICES_TIYIN</code> — never trusted from the client. ATMOS has no native recurring billing, so auto-renewal is a custom cron that charges stored card tokens.
+  </div>
+  <div class="cards c3">
+    <div class="card">
+      <div class="card-name" style="color:var(--pink)">OAuth2 Token</div>
+      <div class="card-desc">client_credentials grant. Token cached in-memory with proactive refresh (5min before expiry). Automatic 401 retry with fresh token.</div>
+      <div class="card-tags"><span class="tag">ATMOS_CONSUMER_KEY</span><span class="tag">ATMOS_CONSUMER_SECRET</span></div>
     </div>
-    <div class="detail-content">
-      <div class="detail-section"><div class="detail-label">Description</div><div class="detail-value" id="detailDesc"></div></div>
-      <div class="detail-section"><div class="detail-label">Technology</div><div style="display:flex;flex-wrap:wrap;gap:6px;" id="detailTech"></div></div>
-      <div class="detail-section" id="connectionsSection" style="display:none;"><div class="detail-label">Connected To</div><div id="detailConnections"></div></div>
+    <div class="card">
+      <div class="card-name" style="color:var(--pink)">UzCard / Humo Path</div>
+      <div class="card-desc">Direct card binding. PAN entered in-app (transit-only, never stored). SMS OTP confirms binding. Returns reusable card_token. Charge: payCreate &rarr; payPreApply &rarr; payApply (literal OTP "111111").</div>
+    </div>
+    <div class="card">
+      <div class="card-name" style="color:var(--pink)">Visa / MC Path</div>
+      <div class="card-desc">Hosted card-bind page on ATMOS domain. PAN never touches our server. Returns card_id via callback. Charge: mpsPreCreate &rarr; mpsCreateBind. May require 3DS redirect.</div>
     </div>
   </div>
+  <div class="callout info" style="margin-top:16px;">
+    <strong>10 environment variables</strong> configure the ATMOS integration: ATMOS_BASE_URL, ATMOS_STORE_ID, ATMOS_CONSUMER_KEY, ATMOS_CONSUMER_SECRET, ATMOS_CALLBACK_URL, ATMOS_CALLBACK_API_KEY, ATMOS_CALLBACK_CIDR (optional IP allowlist), ATMOS_HOSTED_BIND_RETURN_URL, ATMOS_HOSTED_BIND_CALLBACK_URL, BILLING_AUTORENEW_ENABLED.
+  </div>
+</div>
 
-  <script>
-    // Tab switching
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-        document.getElementById('detailPanel').classList.remove('active');
-      });
-    });
+<!-- ─── FLOW: UzCard/Humo ─── -->
+<div class="section" id="s-flow-uzcard">
+  <span class="section-anchor" id="flow-uzcard"></span>
+  <div class="section-title"><span class="dot" style="background:var(--pink)"></span> Flow: UzCard / Humo Card Binding</div>
+  <div class="section-desc">Seller enters card in-app &rarr; SMS OTP &rarr; card bound &rarr; first charge &rarr; subscription active. PAN is transit-only, never stored.</div>
+  <div class="flow-box">
+    <div class="flow-steps">
+      <div class="flow-step"><div class="step-num blue">1</div><div class="step-title">Card Entry</div><div class="step-detail">Seller enters PAN+expiry in modal. Card number NEVER stored or logged.</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num pink">2</div><div class="step-title">bind-init</div><div class="step-detail">POST /atmos/bind-init. Validates plan, derives amount from PLAN_PRICES_TIYIN. Persists pending payment + subscription BEFORE ATMOS call. Calls bindCardInit() — sends SMS OTP.</div><div class="step-file">atmos/bind-init/route.ts</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num amber">3</div><div class="step-title">SMS OTP</div><div class="step-detail">ATMOS sends OTP to cardholder's phone. Seller enters the code in the app.</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num pink">4</div><div class="step-title">bind-confirm</div><div class="step-detail">POST /atmos/bind-confirm. Confirms OTP &rarr; reusable card_token. Token stored ENCRYPTED (AES-256-CBC).</div><div class="step-file">atmos/bind-confirm/route.ts</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num indigo">5</div><div class="step-title">First Charge</div><div class="step-detail">3-call ATMOS sequence: payCreate &rarr; payPreApply(token) &rarr; payApply(OTP="111111"). Token payments use literal OTP.</div><div class="step-file">lib/billing/recurring.ts</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num green">6</div><div class="step-title">Activate</div><div class="step-detail">applyAtmosPaymentSuccess(). At-most-once guard. Sets payment=SUCCESS, subscription=active, extends user plan period.</div><div class="step-file">lib/billing/activate.ts</div></div>
+    </div>
+  </div>
+  <div class="callout info">
+    <strong>If charge fails but card binds:</strong> bind-confirm returns <code style="font-family:'JetBrains Mono',monospace;font-size:11px;">cardBound:true</code> so the UI can show a retry button. The seller doesn't need to re-enter their card.
+  </div>
+</div>
 
-    // Component detail data
-    const data = {
-      'web-app': { name: 'Web App', desc: 'Next.js 16 dashboard at daromadchi.uz. React 19 with Turbopack. 20+ dashboard pages plus public landing/pricing/legal. Language switcher (UZ/RU/EN). Email verification on signup. GA4 loads only after cookie consent.', tech: ['React 19', 'Next.js 16', 'TypeScript', 'Tailwind CSS', 'Turbopack'], connections: [{ name: 'NextAuth v5', desc: 'Session management and route protection' }, { name: 'API Routes', desc: 'All dashboard data via REST' }, { name: 'ATMOS', desc: 'Payment flows for subscription billing' }] },
-      'chrome-ext': { name: 'Chrome Extension', desc: 'Manifest v3. Content scripts inject cost/margin overlays on Uzum and Yandex Market pages. Syncs auth token from the web app.', tech: ['Manifest v3', 'Service Workers', 'Content Scripts', 'Bearer token'], connections: [{ name: 'Extension APIs', desc: 'Bearer-token endpoints for products, stats, alerts' }] },
-      'telegram-bot': { name: 'Telegram Bot', desc: 'Notifications: daily/weekly digest, stock & order alerts, price change notices, trial reminders, enterprise outreach. Account linking via deep links with nonce verification.', tech: ['Telegram Bot API', 'Webhooks', 'Deep Links', 'Nonce Auth'], connections: [{ name: 'Telegram APIs', desc: 'Routes for link, disconnect, status, prefs, webhook' }, { name: 'Cron Jobs', desc: 'telegram-digest sends scheduled summaries' }, { name: 'Price Notices', desc: 'Delivers price change notifications to sellers' }] },
-      'nextauth': { name: 'NextAuth (Auth.js) v5', desc: 'Credentials provider with bcrypt (12 rounds) AND optional Google OAuth. 30-day JWT sessions. Blocks unverified emails when SMTP configured. Google signups pass consent gate via short-lived signup_consent cookie.', tech: ['Auth.js v5', 'JWT', 'bcryptjs', 'Credentials', 'Google OAuth'], connections: [{ name: 'PostgreSQL 17', desc: 'Users table with email_verified timestamp' }, { name: 'Email Verification', desc: 'Enforces verification before first login' }] },
-      'email-verify': { name: 'Email Verification', desc: '6-digit code via SMTP on signup. 10-min expiry. Rate-limited resend. Verification only enforced when SMTP_USER is set.', tech: ['Nodemailer', 'SMTP', 'HTML templates'], connections: [{ name: 'SMTP Email', desc: 'Sends HTML verification emails' }] },
-      'rate-limit': { name: 'Rate Limiting', desc: 'Per-IP rate limiting using in-memory Map. Signup capped at 10/hour/IP. Map auto-cleans when large.', tech: ['In-memory Map', 'IP-based'], connections: [] },
-      'readonly-guard': { name: 'Marketplace Egress Guard', desc: 'Read-only by default. POST-for-read whitelist. Only writes: stock-write (ostatok, opt-in) and order-cancel allowlists. Everything else blocked.', tech: ['Guard', 'Allowlist', 'Immutable rule'], connections: [{ name: 'Stock-sync APIs', desc: 'The only sanctioned write path' }] },
-      'postgresql': { name: 'PostgreSQL 17', desc: '39 tables. Auth: users, user_settings, verification_tokens. Marketplace: shops, products, orders, order_items. Billing: payments, subscriptions, renewal_attempts. Stock: stock_sync_state, stock_write_log, order_cancel_log. Self-hosted on VPS.', tech: ['PostgreSQL 17', 'Drizzle ORM', '39 tables'], connections: [{ name: 'Drizzle ORM', desc: 'Type-safe query builder' }, { name: 'Hetzner VPS', desc: 'Runs locally on 127.0.0.1' }] },
-      'drizzle': { name: 'Drizzle ORM', desc: 'Type-safe SQL builder. Schema-first (lib/db/schema.ts). Migrations in migrations/migrations/NNN_*.sql applied on deploy.', tech: ['TypeScript', 'Schema-first', 'Migrations'], connections: [{ name: 'PostgreSQL 17', desc: 'Generates and runs SQL' }] },
-      'encryption': { name: 'Token Encryption', desc: 'AES-256-CBC for marketplace API keys (shops.api_key_encrypted) and ATMOS card tokens (subscriptions.card_token_encrypted). Decrypt only right before use.', tech: ['AES-256-CBC', 'Node.js crypto'], connections: [{ name: 'Marketplace Sync', desc: 'Decrypts shop API keys' }, { name: 'Billing', desc: 'Decrypts card tokens for renewal charges' }] },
-      'atmos': { name: 'ATMOS Payment Aggregator', desc: 'Uzbek payment aggregator. Two card flows: UzCard/Humo (direct bind, 3-call token charge) and Visa/MC (hosted bind, MPS charge). OAuth token cache with 5min refresh margin. 10 env vars configure the integration. Amount always in tiyin.', tech: ['Payment aggregator', 'OAuth', 'MD5 callbacks', 'UzCard/Humo', 'Visa/MC'], connections: [{ name: 'Billing APIs', desc: '10 API routes for checkout, binding, callback, renewal' }, { name: 'PostgreSQL 17', desc: 'payments, subscriptions tables' }] },
-      'uzum': { name: 'Uzum Market API', desc: 'Uzbekistan marketplace. REST API: orders, products, stock, settlements. Read-only; opt-in stock-write only changes quantity.', tech: ['REST API'], connections: [{ name: 'Marketplace Sync', desc: 'uzum/sync + settlements' }] },
-      'yandex': { name: 'Yandex Market API', desc: 'Marketplace. Syncs orders, offer-mappings, stocks, settlements. Some endpoints require POST-for-read (whitelisted).', tech: ['REST API', 'POST-for-read'], connections: [{ name: 'Marketplace Sync', desc: 'yandex/sync + settlements' }] },
-      'google': { name: 'Google', desc: 'Optional OAuth sign-in (email + name only). GA4 analytics, loaded only after cookie consent (production only).', tech: ['OAuth 2.0', 'GA4', 'Consent-gated'], connections: [{ name: 'NextAuth v5', desc: 'Optional Google OAuth provider' }] },
-      'smtp': { name: 'SMTP Email', desc: 'Transactional email via Nodemailer: verification codes, password resets, deletion-request notices.', tech: ['Nodemailer', 'SMTP'], connections: [{ name: 'Email Verification', desc: 'Sends codes' }] },
-      'hetzner': { name: 'Hetzner VPS', desc: 'Ubuntu, Finland (Helsinki). Single host: Next.js app (PM2), PostgreSQL 17, Nginx. Postgres bound to 127.0.0.1.', tech: ['Ubuntu', 'Finland', 'Self-hosted'], connections: [{ name: 'Nginx', desc: 'Reverse proxy' }, { name: 'PM2', desc: 'Process manager' }, { name: 'PostgreSQL 17', desc: 'Local DB' }] },
-      'nginx': { name: 'Nginx', desc: 'Reverse proxy and SSL termination. Routes daromadchi.uz to localhost:3000.', tech: ['Reverse Proxy', 'SSL/TLS'], connections: [] },
-      'pm2': { name: 'PM2', desc: 'Process manager. Auto-restart, logs. Runs the Next.js production server.', tech: ['Process Manager', 'Auto-restart'], connections: [] },
-      'github-ci': { name: 'GitHub Actions', desc: 'Lint, TypeCheck, Build, Health check. Deploy workflow SSHes to VPS. db-backup nightly.', tech: ['GitHub Actions', 'CI/CD'], connections: [] },
-      'deploy': { name: 'Deploy Pipeline', desc: 'Push to main → SSH → git update → build → apply migrations → pm2 restart. Crontab reinstalled each deploy.', tech: ['SSH', 'git', 'npm', 'pm2'], connections: [] },
-      'cron-scheduler': { name: 'Cron Scheduler', desc: 'VPS crontab via cron-runner.sh: sync+stock-sync 5min, telegram-digest hourly, expire-plans daily, billing-renew daily.', tech: ['crontab', 'CRON_SECRET'], connections: [] },
-      'backups': { name: 'DB Backups', desc: 'Nightly 03:00 UTC. pg_dump on VPS, 14 rotated dumps at /var/backups/daromadchi/. Never copied off-host.', tech: ['pg_dump', 'local-only', '14 rotated'], connections: [] },
-      'route-create': { name: 'POST /api/billing/atmos/create', desc: 'Hosted checkout initiation. Derives amount from PLAN_PRICES_TIYIN (NEVER trusts client). Persists pending payment + subscription BEFORE calling ATMOS. Returns { url } for redirect. Amount is tiyin.', tech: ['Auth\'d', 'Invoice flow'], connections: [{ name: 'ATMOS createInvoice()', desc: 'Creates hosted invoice' }, { name: 'activate.ts', desc: 'Callback settles via applyAtmosPaymentSuccess()' }] },
-      'route-bind-init': { name: 'POST /api/billing/atmos/bind-init', desc: 'Direct card-binding step 1 (UzCard/Humo). Validates plan, persists intent, calls bindCardInit(). Card PAN is TRANSIT-ONLY — never stored, never logged. ATMOS sends SMS OTP to cardholder.', tech: ['Auth\'d', 'UzCard/Humo', 'PAN transit-only'], connections: [{ name: 'ATMOS bindCardInit()', desc: 'Initiates card binding + SMS OTP' }] },
-      'route-bind-confirm': { name: 'POST /api/billing/atmos/bind-confirm', desc: 'Step 2. Confirms SMS OTP → reusable card token. Token stored ENCRYPTED (AES-256-CBC). Then charges the first period via chargeBoundCard() (3-call: payCreate → payPreApply → payApply with OTP "111111"). Activates subscription.', tech: ['Auth\'d', 'Token encrypted', 'First charge'], connections: [{ name: 'chargeBoundCard()', desc: '3-call ATMOS token charge' }, { name: 'activate.ts', desc: 'applyAtmosPaymentSuccess()' }] },
-      'route-hosted-bind': { name: 'POST /api/billing/atmos/hosted-bind', desc: 'Visa/MC hosted card-binding. Persists intent, calls hostedBindCreate(), returns redirect URL. After seller completes on ATMOS page, callback receives card_id. Background charge via MPS (mpsPreCreate → mpsCreateBind).', tech: ['Auth\'d', 'Visa/MC', 'Hosted flow'], connections: [{ name: 'ATMOS hostedBindCreate()', desc: 'Creates hosted card-bind page' }, { name: 'MPS charge', desc: 'Background charge after bind callback' }] },
-      'route-callback': { name: 'POST /api/billing/atmos/callback', desc: 'PUBLIC server-to-server endpoint. Two callback shapes: PAYMENT (carry sign — MD5 verified constant-time) and BIND (carry card_id — api_key/sign verified). Payment callback MUST receive HTTP 200 with {"status":1,"message":"Успешно"} or the payment is rejected. Optional IP allowlist via ATMOS_CALLBACK_CIDR.', tech: ['Public', 'S2S', 'MD5 signature', 'IP allowlist'], connections: [{ name: 'activate.ts', desc: 'Settles payment idempotently' }, { name: 'MPS charge', desc: 'Bind callback triggers background charge' }] },
-      'route-cancel': { name: 'POST /api/billing/cancel', desc: 'Auth\'d. action=\'cancel\': stops next renewal, keeps access to period end. action=\'resume\': undoes cancellation while period still active. No card data, no charge.', tech: ['Auth\'d', 'Cancel/Resume'], connections: [{ name: 'cancel.ts', desc: 'cancelPlan() / resumePlan()' }] },
-      'route-autorenew': { name: 'POST /api/billing/autorenew', desc: 'Auth\'d toggle. When off, renewal cron skips this subscription. Card token is kept — can re-enable without re-entering card. No charge involved.', tech: ['Auth\'d', 'Toggle'], connections: [] },
-      'route-expire': { name: 'GET /api/billing/expire-plans', desc: 'Daily cron (CRON_SECRET). 5 stages: (1) downgrade lapsed plans to free, (2) recompute derived tiers, (3) dispatch price change notices, (4) send tier nudges, (5) run account lifecycle sweep. Each stage is best-effort.', tech: ['Cron', 'Daily', '5 stages'], connections: [{ name: 'recomputeDerivedTiers()', desc: 'Refreshes users.derived_tier' }, { name: 'dispatchDuePriceNotices()', desc: 'Tells sellers about price changes' }, { name: 'dispatchTierNudges()', desc: 'Trial/tier notifications' }, { name: 'sweepAccountLifecycle()', desc: 'Warn/freeze/delete inactive' }] },
-      'route-renew': { name: 'GET /api/cron/billing-renew', desc: 'Daily renewal cron. Auth via CRON_SECRET. Kill-switch: BILLING_AUTORENEW_DISABLED. Calls runBillingRenewal() which finds due subscriptions (expiring within 24h) and charges stored card tokens.', tech: ['Cron', 'Daily', 'Flag-gated'], connections: [{ name: 'runBillingRenewal()', desc: 'The renewal engine' }] },
-      'route-renew-one': { name: 'POST /api/billing/renew-one', desc: 'Owner-only. Controlled single-subscription renewal for testing. Requires explicit subscription_id. Defaults to DRY-RUN; confirm:true for real charge. Same charge logic as batch renewal.', tech: ['Owner-only', 'Test harness', 'DRY-RUN default'], connections: [{ name: 'chargeBoundCard()', desc: 'Same charge path as batch' }] },
-    };
+<!-- ─── FLOW: Visa/MC ─── -->
+<div class="section" id="s-flow-visa">
+  <span class="section-anchor" id="flow-visa"></span>
+  <div class="section-title"><span class="dot" style="background:var(--pink)"></span> Flow: Visa / Mastercard Hosted Binding</div>
+  <div class="section-desc">Seller redirected to ATMOS hosted page &rarr; card bound via callback &rarr; MPS charge in background. PAN never touches our server.</div>
+  <div class="flow-box">
+    <div class="flow-steps">
+      <div class="flow-step"><div class="step-num blue">1</div><div class="step-title">Initiate</div><div class="step-detail">POST /atmos/hosted-bind. Persists intent. Calls hostedBindCreate() &rarr; returns redirect URL.</div><div class="step-file">atmos/hosted-bind/route.ts</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num amber">2</div><div class="step-title">ATMOS Page</div><div class="step-detail">Seller enters card on ATMOS's domain. Full PCI scope stays with ATMOS.</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num green">3</div><div class="step-title">Bind Callback</div><div class="step-detail">ATMOS POSTs { card_id, api_key } to /atmos/callback. Verified via sign or api_key match. card_id stored (not encrypted — it's not a PAN).</div><div class="step-file">atmos/callback/route.ts</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num indigo">4</div><div class="step-title">MPS Charge</div><div class="step-detail">Background (Next.js after()): mpsPreCreate() &rarr; mpsCreateBind(cardId). May return 3DS redirect URL for the seller.</div><div class="step-file">lib/billing/recurring.ts</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num green">5</div><div class="step-title">Activate</div><div class="step-detail">applyAtmosPaymentSuccess(). Same idempotent path as all other flows. At-most-once guard.</div><div class="step-file">lib/billing/activate.ts</div></div>
+    </div>
+  </div>
+  <div class="callout warn">
+    <strong>3DS handling:</strong> If mpsCreateBind returns a 3DS redirect, the seller must complete authentication on the bank's page. The final callback then settles the payment through the same callback route.
+  </div>
+</div>
 
-    // Dashboard page stubs
-    ['pg-analytics','pg-orders','pg-products','pg-stocks','pg-pnl','pg-unit-econ','pg-payouts','pg-billing','pg-alerts','pg-notifications','pg-keywords','pg-reviews','pg-sync','pg-settings','pg-team','pg-referral','pg-account','pg-search'].forEach(id => {
-      if (!data[id]) data[id] = { name: id.replace('pg-','').replace(/-/g,' '), desc: 'Dashboard page.', tech: ['Dashboard'], connections: [] };
-    });
+<!-- ─── CALLBACK ─── -->
+<div class="section" id="s-flow-callback">
+  <span class="section-anchor" id="flow-callback"></span>
+  <div class="section-title"><span class="dot" style="background:var(--red)"></span> S2S Callback Verification</div>
+  <div class="section-desc">ATMOS POSTs to /api/billing/atmos/callback — a public endpoint with no session auth. Two callback shapes: payment (charge settled) and bind (card bound). Security relies on signature verification + optional IP allowlist.</div>
+  <div class="flow-box">
+    <div class="flow-steps">
+      <div class="flow-step"><div class="step-num amber">1</div><div class="step-title">ATMOS POST</div><div class="step-detail">Raw body logged FIRST (audit trail). JSON or form-encoded fallback parsing.</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num red">2</div><div class="step-title">IP Allowlist</div><div class="step-detail">Optional check against ATMOS_CALLBACK_CIDR. Supports comma-separated CIDR list (152.233.12.0/23, 92.63.207.0/24).</div><div class="step-file">lib/billing/atmos-verify.ts</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num purple">3</div><div class="step-title">Route Shape</div><div class="step-detail">card_id present &rarr; BIND callback. Otherwise &rarr; PAYMENT callback. Different verification paths.</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num pink">4</div><div class="step-title">Verify Signature</div><div class="step-detail">Payment: MD5(store_id + txn_id + account + amount + api_key). Constant-time comparison via timingSafeEqual(). Bind: api_key match.</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num blue">5</div><div class="step-title">Advisory Re-query</div><div class="step-detail">For payments: getInvoiceStatus() or getMpsTransactionStatus() re-queries ATMOS. Advisory — callback is authoritative.</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num green">6</div><div class="step-title">Activate &amp; Reply</div><div class="step-detail">applyAtmosPaymentSuccess(). MUST reply HTTP 200 with {"status":1,"message":"Успешно"} or payment is rejected.</div></div>
+    </div>
+  </div>
+  <div class="callout danger">
+    <strong>Critical:</strong> The callback endpoint MUST return exactly <code style="font-family:'JetBrains Mono',monospace;font-size:11px;">{"status":1,"message":"Успешно"}</code> (HTTP 200). Any other response body or status code causes ATMOS to treat the payment as rejected.
+  </div>
+</div>
 
-    // Detail panel
-    const detailPanel = document.getElementById('detailPanel');
-    document.querySelectorAll('.card').forEach(card => {
-      card.addEventListener('click', () => {
-        const id = card.dataset.id;
-        const d = data[id];
-        if (!d) return;
-        document.getElementById('detailTitle').textContent = d.name;
-        document.getElementById('detailDesc').textContent = d.desc;
-        document.getElementById('detailTech').innerHTML = d.tech.map(t => `<span class="tag" style="font-size:11px;padding:3px 8px;">${t}</span>`).join('');
-        const cs = document.getElementById('connectionsSection');
-        if (d.connections && d.connections.length > 0) {
-          document.getElementById('detailConnections').innerHTML = d.connections.map(c => `<div class="conn-item"><div class="conn-name">${c.name}</div><div class="conn-desc">${c.desc}</div></div>`).join('');
-          cs.style.display = 'block';
-        } else { cs.style.display = 'none'; }
-        detailPanel.classList.add('active');
-      });
-    });
-    document.getElementById('closeBtn').addEventListener('click', () => detailPanel.classList.remove('active'));
-    document.addEventListener('click', e => {
-      if (!detailPanel.contains(e.target) && !e.target.closest('.card') && !e.target.closest('.legend-item') && !e.target.closest('.tab-btn'))
-        detailPanel.classList.remove('active');
-    });
+<!-- ─── ACTIVATION ─── -->
+<div class="section" id="s-activation">
+  <span class="section-anchor" id="activation"></span>
+  <div class="section-title"><span class="dot" style="background:var(--green)"></span> Activation Logic (Exactly-Once)</div>
+  <div class="section-desc">
+    <code style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(255,255,255,0.06);padding:2px 5px;border-radius:3px;">applyAtmosPaymentSuccess()</code> in <strong>lib/billing/activate.ts</strong> is THE ONE PLACE where payment &rarr; SUCCESS and subscription &rarr; active happens. Every payment flow converges here.
+  </div>
+  <div class="cards c2">
+    <div class="card">
+      <div class="card-name" style="color:var(--green)">Exactly-Once Guard</div>
+      <div class="card-desc">
+        Conditional UPDATE gated on <code style="font-family:'JetBrains Mono',monospace;font-size:10px;">atmos_status NOT IN ('SUCCESS','FAILED')</code>. If the row is already final, the UPDATE matches 0 rows and returns early. DB row lock serializes concurrent callers (callback + cron arriving simultaneously).
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-name" style="color:var(--green)">What It Does</div>
+      <div class="card-desc">
+        1. Sets payment atmos_status = 'SUCCESS'<br>
+        2. Sets subscription status = 'active'<br>
+        3. Extends period: MAX(now, current_expiry) + plan months<br>
+        4. Sets users.plan to the plan key<br>
+        5. COALESCE on agreed_amount_tiyin (self-heals, never overwrites existing)
+      </div>
+    </div>
+  </div>
+  <div class="callout info">
+    <strong>Period extension uses addMonths with day-clamping:</strong> A plan bought on Jan 31 expires Feb 28, not Mar 3. The old setMonth() silently rolled overflow forward, making every month-end purchase run long.
+  </div>
+  <div class="callout warn">
+    <strong>isPlanKey() gating:</strong> Every plan checkout can sell must be grantable via isPlanKey(). This check prevented Biznes from being charged but never activated — the plan was added to PLAN_PRICES_TIYIN but checkout was blocked.
+  </div>
+</div>
 
-    // Legend filter (overview tab only)
-    let activeFilter = null;
-    const sections = document.querySelectorAll('#tab-overview .section[data-category]');
-    const arrows = document.querySelectorAll('#tab-overview .flow-arrow');
-    document.querySelectorAll('.legend-item[data-filter]').forEach(item => {
-      item.addEventListener('click', e => {
-        e.stopPropagation();
-        const f = item.dataset.filter;
-        if (activeFilter === f) {
-          activeFilter = null;
-          document.querySelectorAll('.legend-item').forEach(li => li.classList.remove('active'));
-          sections.forEach(s => s.classList.remove('dimmed'));
-          arrows.forEach(a => a.classList.remove('dimmed'));
-        } else {
-          activeFilter = f;
-          document.querySelectorAll('.legend-item').forEach(li => li.classList.remove('active'));
-          item.classList.add('active');
-          sections.forEach(s => s.classList.toggle('dimmed', s.dataset.category !== f));
-          arrows.forEach(a => a.classList.add('dimmed'));
-        }
-      });
-    });
-  </script>
+<!-- ─── RENEWAL ─── -->
+<div class="section" id="s-renewal">
+  <span class="section-anchor" id="renewal"></span>
+  <div class="section-title"><span class="dot" style="background:var(--teal)"></span> Auto-Renewal Cron</div>
+  <div class="section-desc">
+    <code style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(255,255,255,0.06);padding:2px 5px;border-radius:3px;">runBillingRenewal()</code> in lib/billing/renew.ts — the only code that moves money without a human clicking a button. Runs via daily cron, flag-gated by BILLING_AUTORENEW_ENABLED.
+  </div>
+  <div class="flow-box">
+    <div class="flow-label" style="color:var(--teal)">Renewal Flow</div>
+    <div class="flow-sublabel">Daily cron finds due subscriptions &rarr; charges stored card &rarr; extends or downgrades</div>
+    <div class="flow-steps">
+      <div class="flow-step"><div class="step-num teal">1</div><div class="step-title">Find Due Subs</div><div class="step-detail">status IN (active, past_due), autorenew=true, period_end &lt; now+24h, has card_token OR card_id.</div><div class="step-file">RENEW_WINDOW_MS = 24h</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num amber">2</div><div class="step-title">Determine Amount</div><div class="step-detail">Charges agreed_amount_tiyin (NEVER live config prices). Staged price only if notified &ge;14 days ago AND effective date passed.</div><div class="step-file">renewalAmountTiyin()</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num indigo">3</div><div class="step-title">Charge Card</div><div class="step-detail">Routes by card type: chargeBoundCard() for UzCard/Humo (3-call) or chargeBoundCardMps() for Visa/MC (2-call). Fresh payment row per attempt.</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num green">4a</div><div class="step-title">Success</div><div class="step-detail">applyAtmosPaymentSuccess(). If staged price charged, promotePendingAmount() makes it the new agreed price.</div></div>
+      <div class="flow-arrow">|</div>
+      <div class="flow-step"><div class="step-num red">4b</div><div class="step-title">Failure</div><div class="step-detail">Within grace (3 days) &rarr; past_due. Past grace &rarr; users.plan='free'. Card token KEPT — can retry.</div><div class="step-file">GRACE_MS = 3 days</div></div>
+    </div>
+  </div>
+  <div class="callout danger">
+    <strong>agreed_amount_tiyin is the source of truth for charges.</strong> It's locked at signup and NEVER overwritten by config price changes. A seller who signed up at 100,000 so'm keeps paying 100,000 until a price change notice is delivered, 14 days elapse, and the effective date arrives.
+  </div>
+</div>
+
+<!-- ─── PRICE CHANGE ─── -->
+<div class="section" id="s-price-change">
+  <span class="section-anchor" id="price-change"></span>
+  <div class="section-title"><span class="dot" style="background:var(--purple)"></span> Price Change System (3-Gate Pipeline)</div>
+  <div class="section-desc">Nobody is charged an amount they were not told about in advance. Every failure mode falls toward "keep charging what they agreed to."</div>
+  <div class="flow-box">
+    <div class="flow-label" style="color:var(--purple)">STAGED &rarr; NOTIFIED &rarr; CHARGED</div>
+    <div class="flow-sublabel">lib/billing/price-notice.ts — all 3 gates must pass before the new price is charged</div>
+    <div class="flow-steps">
+      <div class="flow-step"><div class="step-num purple">1</div><div class="step-title">STAGED</div><div class="step-detail">Operator sets pending_amount_tiyin + effective_date. Must be an increase. Effective date &ge; 14 days away. Nothing charged yet.</div><div class="step-file">stagePriceChange()</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num amber">2</div><div class="step-title">NOTIFIED</div><div class="step-detail">Seller told via Telegram (trilingual UZ/RU/EN). Delivery recorded in pending_notified_at. Failed send = NOT recorded = increase never takes effect.</div><div class="step-file">dispatchDuePriceNotices()</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num green">3</div><div class="step-title">CHARGED</div><div class="step-detail">First renewal on/after effective_date WHERE notice &ge; 14 days old. Only then is pending amount promoted into agreed_amount_tiyin.</div><div class="step-file">promotePendingAmount()</div></div>
+    </div>
+  </div>
+  <div class="sm-box" style="margin-top:16px;">
+    <div class="sm-title" style="color:var(--purple)">pendingAmountIsChargeable() — All 4 conditions required</div>
+    <div class="sm-subtitle">If ANY condition fails, the seller pays their existing agreed price</div>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <tr><th>Condition</th><th>Check</th><th>If fails</th></tr>
+        <tr><td>pending_amount_tiyin</td><td>Must be &gt; 0 (an actual pending increase exists)</td><td>No pending change &rarr; charge agreed</td></tr>
+        <tr><td>effective_date</td><td>Must be &le; now (effective date has arrived)</td><td>Too early &rarr; charge agreed</td></tr>
+        <tr><td>pending_notified_at</td><td>Must be non-NULL (notice was delivered)</td><td>Undelivered &rarr; charge agreed forever</td></tr>
+        <tr><td>PRICE_NOTICE_DAYS</td><td>notified_at must be &ge; 14 days ago</td><td>Too recent &rarr; charge agreed</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="callout danger">
+    <strong>Safety invariant:</strong> An undelivered increase MUST NEVER become chargeable by mere passage of time. If pending_notified_at is NULL, the pending amount is never charged — the seller keeps paying their agreed price indefinitely.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SUBSCRIPTION                                           -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<!-- ─── STATE MACHINE ─── -->
+<div class="section" id="s-sub-states">
+  <span class="section-anchor" id="sub-states"></span>
+  <div class="section-title"><span class="dot" style="background:var(--green)"></span> Subscription State Machine</div>
+  <div class="section-desc">States and transitions for subscriptions.status. The subscription status determines what happens at renewal and whether the seller keeps access.</div>
+  <div class="sm-box">
+    <div class="state-grid">
+      <div class="state-node s-pending"><div class="state-name">pending</div><div class="state-desc">Payment initiated, awaiting ATMOS</div></div>
+      <div class="state-node s-active"><div class="state-name">active</div><div class="state-desc">Paid and running</div></div>
+      <div class="state-node s-past-due"><div class="state-name">past_due</div><div class="state-desc">Renewal failed, grace period</div></div>
+      <div class="state-node s-cancelled"><div class="state-name">cancelled</div><div class="state-desc">Seller cancelled, access to period end</div></div>
+      <div class="state-node s-free"><div class="state-name">free (users.plan)</div><div class="state-desc">Expired / downgraded</div></div>
+    </div>
+    <div class="transition-list">
+      <div class="transition-item"><span class="t-from">pending</span><span class="t-arrow">&rarr;</span><span class="t-to">active</span><span class="t-trigger">Payment succeeds (applyAtmosPaymentSuccess)</span></div>
+      <div class="transition-item"><span class="t-from">pending</span><span class="t-arrow">&rarr;</span><span class="t-to">failed</span><span class="t-trigger">Payment fails or ATMOS config error</span></div>
+      <div class="transition-item"><span class="t-from">active</span><span class="t-arrow">&rarr;</span><span class="t-to">active</span><span class="t-trigger">Renewal succeeds (period extended, same status)</span></div>
+      <div class="transition-item"><span class="t-from">active</span><span class="t-arrow">&rarr;</span><span class="t-to">cancelled</span><span class="t-trigger">Seller cancels (cancelPlan) — keeps access to period end</span></div>
+      <div class="transition-item"><span class="t-from">active</span><span class="t-arrow">&rarr;</span><span class="t-to">past_due</span><span class="t-trigger">Renewal charge fails (within 3-day grace)</span></div>
+      <div class="transition-item"><span class="t-from">past_due</span><span class="t-arrow">&rarr;</span><span class="t-to">active</span><span class="t-trigger">Retry charge succeeds</span></div>
+      <div class="transition-item"><span class="t-from">past_due</span><span class="t-arrow">&rarr;</span><span class="t-to">free</span><span class="t-trigger">Grace period (3 days) exceeded — users.plan='free'</span></div>
+      <div class="transition-item"><span class="t-from">cancelled</span><span class="t-arrow">&rarr;</span><span class="t-to">active</span><span class="t-trigger">Seller resumes (resumePlan) while period still active</span></div>
+      <div class="transition-item"><span class="t-from">cancelled</span><span class="t-arrow">&rarr;</span><span class="t-to">free</span><span class="t-trigger">Period expires (daily cron sets users.plan='free')</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── CANCEL & RESUME ─── -->
+<div class="section" id="s-cancel-resume">
+  <span class="section-anchor" id="cancel-resume"></span>
+  <div class="section-title"><span class="dot" style="background:var(--amber)"></span> Cancellation &amp; Resume</div>
+  <div class="cols-2">
+    <div class="sm-box" style="border-color:rgba(248,113,113,0.2);">
+      <div class="sm-title" style="color:var(--red)">cancelPlan(userId)</div>
+      <div class="sm-subtitle">lib/billing/cancel.ts</div>
+      <div style="font-size:12px;color:var(--fg-secondary);line-height:1.7;">
+        <strong style="color:var(--fg)">Does:</strong> Sets ALL live subscriptions to status='cancelled', autorenew=false. Computes access_until = current_period_end. Records cancellation state.<br><br>
+        <strong style="color:var(--fg)">Does NOT:</strong> Touch users.plan. Touch plan_expires_at. Remove card token. Refund anything. Immediately lock the seller out.<br><br>
+        The seller keeps full access until the period they already paid for expires.
+      </div>
+    </div>
+    <div class="sm-box" style="border-color:rgba(52,211,153,0.2);">
+      <div class="sm-title" style="color:var(--green)">resumePlan(userId)</div>
+      <div class="sm-subtitle">lib/billing/cancel.ts</div>
+      <div style="font-size:12px;color:var(--fg-secondary);line-height:1.7;">
+        <strong style="color:var(--fg)">Does:</strong> Sets subscription back to status='active', autorenew=true. Only works while access_until &gt; now (period still active).<br><br>
+        <strong style="color:var(--fg)">Does NOT:</strong> Charge anything. Extend the period. Change the plan.<br><br>
+        If period is over, returns 'period_over' — seller needs a fresh checkout.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PLANS & PRICING ─── -->
+<div class="section" id="s-plans-pricing">
+  <span class="section-anchor" id="plans-pricing"></span>
+  <div class="section-title"><span class="dot" style="background:var(--cyan)"></span> Plans &amp; Pricing</div>
+  <div class="section-desc">Single source of truth: PLAN_PRICES_TIYIN in lib/billing/plans.ts. Annual prices are explicit (not derived from a discount percentage), because Pro's 16.67% can't be expressed as a whole number without rounding — 17% would charge 124,500 while advertising 125,000.</div>
+  <div class="sm-box">
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <tr><th>Plan</th><th>Monthly (so'm)</th><th>Monthly (tiyin)</th><th>Annual/mo (so'm)</th><th>Annual/mo (tiyin)</th><th>Discount</th></tr>
+        <tr><td style="color:var(--cyan)">Pro</td><td>150,000</td><td>15,000,000</td><td>125,000</td><td>12,500,000</td><td>~17%</td></tr>
+        <tr><td style="color:var(--green)">Pro+</td><td>250,000</td><td>25,000,000</td><td>225,000</td><td>22,500,000</td><td>10%</td></tr>
+        <tr><td style="color:var(--purple)">Biznes</td><td>500,000</td><td>50,000,000</td><td>450,000</td><td>45,000,000</td><td>10%</td></tr>
+        <tr><td style="color:var(--pink)">Enterprise</td><td colspan="5" style="color:var(--fg-dim)">Individually quoted — contact us</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="callout info">
+    <strong>USD display prices</strong> (Pro $20, Pro+ $40, Biznes $80) are a DISPLAY-ONLY approximation fetched from open.er-api.com with daily cache and FALLBACK_USD_UZS=12,600. These MUST NEVER feed a charged amount.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- ENTITLEMENT                                            -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<!-- ─── FEATURE GATING ─── -->
+<div class="section" id="s-entitlement">
+  <span class="section-anchor" id="entitlement"></span>
+  <div class="section-title"><span class="dot" style="background:var(--indigo)"></span> Feature Gating (Entitlement)</div>
+  <div class="section-desc">
+    hasFeature() in lib/billing/features.ts is a <strong>pure function</strong> — no DB access. It reads users.plan (what was paid for), NEVER users.derived_tier (advisory recommendation only). Two layers: loadEntitlement() (DB read) &rarr; hasFeature() (pure logic).
+  </div>
+  <div class="flow-box">
+    <div class="flow-label" style="color:var(--indigo)">hasFeature() Decision Chain</div>
+    <div class="flow-sublabel">Each check short-circuits — first YES wins</div>
+    <div class="flow-steps">
+      <div class="flow-step"><div class="step-num pink">1</div><div class="step-title">Owner Email?</div><div class="step-detail">Email in OWNER_EMAILS &rarr; YES to everything, always.</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num blue">2</div><div class="step-title">FREE_FOREVER?</div><div class="step-detail">Feature is 'marketplaces' &rarr; YES for everyone.</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num green">3</div><div class="step-title">Paid Plan?</div><div class="step-detail">plan != 'free' AND plan_expires_at > now &rarr; YES to all features.</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num amber">4</div><div class="step-title">Trial Active?</div><div class="step-detail">trial_ends_at > now AND feature in TRIAL_FEATURES &rarr; YES. Otherwise NO.</div></div>
+    </div>
+  </div>
+  <div class="sm-box" style="margin-top:16px;">
+    <div class="sm-title" style="color:var(--indigo)">Feature Access Matrix</div>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <tr><th>Feature</th><th>Free (no trial)</th><th>Free (trial active)</th><th>Pro / Pro+ / Biznes</th><th>Owner</th></tr>
+        <tr><td>marketplaces</td><td style="color:var(--green)">&#10003; FREE_FOREVER</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td></tr>
+        <tr><td>dashboard</td><td style="color:var(--red)">&#10007;</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td></tr>
+        <tr><td>products</td><td style="color:var(--red)">&#10007;</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td></tr>
+        <tr><td>orders</td><td style="color:var(--red)">&#10007;</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td></tr>
+        <tr><td>analytics</td><td style="color:var(--red)">&#10007;</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td></tr>
+        <tr><td>stock_sync</td><td style="color:var(--red)">&#10007;</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td></tr>
+        <tr><td>finances</td><td style="color:var(--red)">&#10007;</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td></tr>
+        <tr><td>unit_economics</td><td style="color:var(--red)">&#10007;</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td><td style="color:var(--green)">&#10003;</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TIERS ─── -->
+<div class="section" id="s-tiers">
+  <span class="section-anchor" id="tiers"></span>
+  <div class="section-title"><span class="dot" style="background:var(--cyan)"></span> Turnover-Based Tiers</div>
+  <div class="section-desc">
+    Trailing-30-day net turnover (so'm) determines the <strong>derived</strong> tier recommendation. This is ADVISORY ONLY — it does NOT grant or remove access. lib/billing/tiers.ts is a pure function, no DB access.
+  </div>
+  <div class="sm-box">
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <tr><th>Tier</th><th>Turnover Range (so'm / 30 days)</th><th>Monthly Price</th><th>Annual per Month</th></tr>
+        <tr><td style="color:var(--indigo)">Free</td><td>0 &ndash; 11,999,999</td><td>0</td><td>0</td></tr>
+        <tr><td style="color:var(--cyan)">Pro</td><td>12,000,000 &ndash; 49,999,999</td><td>150,000 so'm</td><td>125,000 so'm</td></tr>
+        <tr><td style="color:var(--green)">Pro+</td><td>50,000,000 &ndash; 119,999,999</td><td>250,000 so'm</td><td>225,000 so'm</td></tr>
+        <tr><td style="color:var(--purple)">Biznes</td><td>120,000,000 &ndash; 179,999,999</td><td>500,000 so'm</td><td>450,000 so'm</td></tr>
+        <tr><td style="color:var(--pink)">Enterprise</td><td>&ge; 180,000,000</td><td colspan="2" style="color:var(--fg-dim)">Individually quoted</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="callout info">
+    <strong>Near-ceiling threshold (NEAR_CEILING_FRACTION = 0.9):</strong> When a seller reaches 90% of their band's ceiling, the "outgrew tier" nudge fires. Enterprise outreach triggers at 162,000,000 so'm (90% of 180M Biznes ceiling).
+  </div>
+</div>
+
+<!-- ─── TRIAL ─── -->
+<div class="section" id="s-trial">
+  <span class="section-anchor" id="trial"></span>
+  <div class="section-title"><span class="dot" style="background:var(--amber)"></span> Trial System</div>
+  <div class="section-desc">New accounts get a 14-day free trial (TRIAL_DAYS = 14). Trial grants access to TRIAL_FEATURES (all paid features). Trial is computed from trial_ends_at — no status column needed.</div>
+  <div class="cards c2">
+    <div class="card"><div class="card-name" style="color:var(--amber)">Trial Start</div><div class="card-desc">trial_ends_at is set on account creation: now + 14 days. No action needed to start the trial — it's automatic for every new signup.</div></div>
+    <div class="card"><div class="card-name" style="color:var(--amber)">Trial End</div><div class="card-desc">When trial_ends_at &lt; now AND users.plan = 'free', paid features are locked. Nudge notifications fire: trial_ending (before) and trial_ended (after).</div></div>
+  </div>
+</div>
+
+<!-- ─── NUDGES ─── -->
+<div class="section" id="s-nudges">
+  <span class="section-anchor" id="nudges"></span>
+  <div class="section-title"><span class="dot" style="background:var(--amber)"></span> Nudge Notifications</div>
+  <div class="section-desc">Suggestions only — nothing here changes a plan, an entitlement, or a price. Runs daily via expire-plans job. Throttled via user_notices unique (user_id, kind) — the upsert IS the throttle.</div>
+  <div class="flow-box">
+    <div class="flow-label" style="color:var(--amber)">4 Nudge Types (dispatchTierNudges)</div>
+    <div class="flow-steps">
+      <div class="flow-step"><div class="step-num amber">1</div><div class="step-title">Trial Ending</div><div class="step-detail">Trial has days left. Sent once. Trilingual Telegram (UZ/RU/EN).</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num red">2</div><div class="step-title">Trial Ended</div><div class="step-detail">Trial is over, paid features locked. Sent once.</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num green">3</div><div class="step-title">Outgrew Free</div><div class="step-detail">Turnover passed Free ceiling. Re-nudgeable after RENUDGE_DAYS.</div></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step"><div class="step-num purple">4</div><div class="step-title">Enterprise</div><div class="step-detail">Turnover &ge; 162M so'm. Pings BOTH seller AND admin operators. For ALL plans.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- MARKETPLACE                                            -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<!-- ─── STOCK SYNC ─── -->
+<div class="section" id="s-stock-sync">
+  <span class="section-anchor" id="stock-sync"></span>
+  <div class="section-title"><span class="dot" style="background:var(--green)"></span> Stock Sync &amp; Write System</div>
+  <div class="section-desc">
+    The ONE sanctioned write exception to the read-only marketplace rule. <code style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(255,255,255,0.06);padding:2px 5px;border-radius:3px;">pushStock()</code> in lib/marketplace/stock-writer.ts is the single module that writes to marketplace APIs. Only updates stock quantity (ostatok), only after the seller opts in, and every write is fully audited.
+  </div>
+  <div class="sm-box">
+    <div class="sm-title" style="color:var(--green)">pushStock() Safety Layers</div>
+    <div class="sm-subtitle">8 layers of defense — any failure aborts the write</div>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <tr><th>#</th><th>Guard</th><th>What it checks</th></tr>
+        <tr><td>1</td><td>Kill switch</td><td>STOCK_WRITE_ENABLED env var must be true. Global emergency stop.</td></tr>
+        <tr><td>2</td><td>Scope check</td><td>Shop must have stock_sync_mode = 'edit' (seller opted in and consented).</td></tr>
+        <tr><td>3</td><td>Identifier validation</td><td>Product must have the required identifiers for the marketplace (skuId+barcode for Uzum, offerId for Yandex).</td></tr>
+        <tr><td>4</td><td>Quantity clamping</td><td>Negative quantities clamped to 0. Prevents marketplace errors.</td></tr>
+        <tr><td>5</td><td>Dry-run gate</td><td>Unless confirm=true, returns what WOULD be sent without actually sending.</td></tr>
+        <tr><td>6</td><td>Freshness guard</td><td>Checks recentlyWrittenProductIds() — skips products written within 5 minutes to prevent sync-back reverting manual edits.</td></tr>
+        <tr><td>7</td><td>URL-exact guard</td><td>The request URL must match the marketplace-readonly-guard.ts allowlist exactly. No URL manipulation possible.</td></tr>
+        <tr><td>8</td><td>Retry with backoff</td><td>On transient failures, retries with exponential backoff. Logs every attempt.</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="cols-2" style="margin-top:16px;">
+    <div class="card">
+      <div class="card-name" style="color:var(--green)">Uzum Market Write</div>
+      <div class="card-desc">POST /v2/fbs/sku/stocks — sends skuId, barcode, amount, fbsLinked, dbsLinked. Method-exact + URL-exact allowlist in marketplace-readonly-guard.ts.</div>
+    </div>
+    <div class="card">
+      <div class="card-name" style="color:var(--green)">Yandex Market Write</div>
+      <div class="card-desc">PUT /v2/campaigns/{id}/offers/stocks — sends offerId + warehouseId + count + updatedAt. Same allowlist guard.</div>
+    </div>
+  </div>
+  <div class="callout success">
+    <strong>Full audit trail:</strong> Every write (success or failure) is logged in the stock_write_log table with the complete request body, response body, status code, and timestamp. The 5-minute freshness guard (recent-write-guard.ts) prevents the sync cron from reverting manual stock edits.
+  </div>
+</div>
+
+<!-- ─── READ-ONLY GUARD ─── -->
+<div class="section" id="s-readonly">
+  <span class="section-anchor" id="readonly"></span>
+  <div class="section-title"><span class="dot" style="background:var(--red)"></span> Read-Only Marketplace Guard</div>
+  <div class="section-desc">lib/marketplace-readonly-guard.ts — enforces the marketplace read-only rule at the HTTP layer. Every outbound marketplace request passes through this guard.</div>
+  <div class="cards c2">
+    <div class="card">
+      <div class="card-name" style="color:var(--red)">Default: Block All Writes</div>
+      <div class="card-desc">PUT, PATCH, DELETE are ALWAYS blocked. POST is blocked UNLESS the endpoint is in the POST-for-read whitelist (some marketplace APIs require POST for read operations — e.g., Yandex offer-mappings returns 405 on GET).</div>
+    </div>
+    <div class="card">
+      <div class="card-name" style="color:var(--green)">Exceptions (2 only)</div>
+      <div class="card-desc">1. Stock-write allowlist: method-exact + URL-exact entries for Uzum POST /v2/fbs/sku/stocks and Yandex PUT /v2/campaigns/*/offers/stocks. 2. Order-cancel allowlist: for the sanctioned oversell-cancel path.</div>
+    </div>
+  </div>
+  <div class="callout danger">
+    <strong>Immutable rule:</strong> Any code that writes to a marketplace API outside these two exceptions (stock-write and order-cancel) is FORBIDDEN without explicit written approval from the repository owner. Violation = immediate revert.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- OPERATIONS                                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<!-- ─── CRONS ─── -->
+<div class="section" id="s-crons">
+  <span class="section-anchor" id="crons"></span>
+  <div class="section-title"><span class="dot" style="background:var(--teal)"></span> Scheduled Jobs</div>
+  <div class="sm-box">
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <tr><th>Job</th><th>Schedule</th><th>Route</th><th>What it does</th></tr>
+        <tr><td>Marketplace sync</td><td>Every 5 min</td><td>/api/cron/sync</td><td>Syncs orders, products, settlements from Uzum + Yandex. Read-only.</td></tr>
+        <tr><td>Stock sync</td><td>Every 5 min</td><td>/api/cron/stock-sync</td><td>Pushes stock changes via stock-writer (opt-in shops only).</td></tr>
+        <tr><td>Telegram digest</td><td>Hourly</td><td>/api/cron/telegram-digest</td><td>Sends daily/weekly digest summaries to linked Telegram accounts.</td></tr>
+        <tr><td>Expire plans</td><td>Daily</td><td>/api/billing/expire-plans</td><td>5 stages: downgrade, tiers, price notices, nudges, lifecycle sweep.</td></tr>
+        <tr><td>Billing renew</td><td>Daily</td><td>/api/cron/billing-renew</td><td>Auto-renew subscriptions. Flag-gated. Charges stored card tokens.</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="callout info">
+    <strong>All cron endpoints</strong> are protected by CRON_SECRET (bearer token). VPS crontab calls them via cron-runner.sh. Each deploy reinstalls the crontab.
+  </div>
+</div>
+
+<!-- ─── LIFECYCLE ─── -->
+<div class="section" id="s-lifecycle">
+  <span class="section-anchor" id="lifecycle"></span>
+  <div class="section-title"><span class="dot" style="background:var(--indigo)"></span> Account Lifecycle</div>
+  <div class="section-desc">sweepAccountLifecycle() in lib/billing/lifecycle.ts — handles inactive free accounts. Only free accounts without payment history or grandfathered status.</div>
+  <div class="flow-box">
+    <div class="flow-label" style="color:var(--indigo)">Inactive Account Ladder</div>
+    <div class="flow-steps" style="justify-content:center;">
+      <div class="flow-step"><div class="step-num blue">1</div><div class="step-title">Active</div><div class="step-detail">Normal usage. last_active_at updated on sign-in.</div></div>
+      <div class="flow-arrow">&rarr; <span style="font-size:9px;color:var(--fg-dim)">365d</span></div>
+      <div class="flow-step"><div class="step-num amber">2</div><div class="step-title">Warned</div><div class="step-detail">Telegram notice. 30 days to sign in.</div></div>
+      <div class="flow-arrow">&rarr; <span style="font-size:9px;color:var(--fg-dim)">+30d</span></div>
+      <div class="flow-step"><div class="step-num purple">3</div><div class="step-title">Frozen</div><div class="step-detail">frozen_at set. Nothing deleted. One sign-in reactivates.</div></div>
+      <div class="flow-arrow">&rarr; <span style="font-size:9px;color:var(--fg-dim)">+90d</span></div>
+      <div class="flow-step"><div class="step-num red">4</div><div class="step-title">Delete-Eligible</div><div class="step-detail">Only if ACCOUNT_LIFECYCLE_DELETE_ENABLED=true.</div></div>
+    </div>
+  </div>
+  <div class="callout success">
+    <strong>Protected accounts (never deleted):</strong> Any account with payment history, an active subscription, or is_grandfathered=true. NULL last_active_at = unknown, not inactive (treated as recently active).
+  </div>
+</div>
+
+<!-- ─── MODULES ─── -->
+<div class="section" id="s-modules">
+  <span class="section-anchor" id="modules"></span>
+  <div class="section-title"><span class="dot" style="background:var(--pink)"></span> Billing Module Map</div>
+  <div class="mod-grid">
+    <div class="mod-card"><div class="mod-path" style="color:var(--pink)">lib/billing/plans.ts</div><div class="mod-desc">Single source of truth for prices. PLAN_PRICES_TIYIN with pro/pro_plus/biznes. All money is integer tiyin. Annual prices are explicit, not derived from discount %.</div><div class="mod-exports"><span class="tag">PLAN_PRICES_TIYIN</span><span class="tag">planAmountTiyin()</span><span class="tag">somToTiyin()</span><span class="tag">tiyinToSom()</span><span class="tag">isPlanKey()</span></div></div>
+    <div class="mod-card"><div class="mod-path" style="color:var(--pink)">lib/billing/atmos.ts</div><div class="mod-desc">ATMOS API client. OAuth token cache (5min margin, 401 retry). UzCard/Humo: bindCardInit/Confirm, payCreate/PreApply/Apply. Visa/MC: hostedBindCreate, mpsPreCreate/CreateBind.</div><div class="mod-exports"><span class="tag">bindCardInit()</span><span class="tag">bindCardConfirm()</span><span class="tag">payCreate()</span><span class="tag">payPreApply()</span><span class="tag">payApply()</span><span class="tag">hostedBindCreate()</span><span class="tag">mpsPreCreate()</span><span class="tag">mpsCreateBind()</span></div></div>
+    <div class="mod-card"><div class="mod-path" style="color:var(--pink)">lib/billing/activate.ts</div><div class="mod-desc">THE ONE PLACE payment&rarr;SUCCESS. At-most-once via conditional UPDATE on non-final atmos_status. Extends period with MAX(now, current_expiry). Self-heals agreed_amount via COALESCE.</div><div class="mod-exports"><span class="tag">applyAtmosPaymentSuccess()</span></div></div>
+    <div class="mod-card"><div class="mod-path" style="color:var(--pink)">lib/billing/recurring.ts</div><div class="mod-desc">Card-charging wrappers. UzCard/Humo: 3-call (payCreate&rarr;payPreApply&rarr;payApply "111111"). Visa/MC: 2-call MPS (mpsPreCreate&rarr;mpsCreateBind).</div><div class="mod-exports"><span class="tag">chargeBoundCard()</span><span class="tag">chargeBoundCardMps()</span></div></div>
+    <div class="mod-card"><div class="mod-path" style="color:var(--pink)">lib/billing/renew.ts</div><div class="mod-desc">Auto-renewal engine. Charges agreed_amount_tiyin (NEVER live config). 24h window, 3-day grace. Injectable charge/decrypt/now for testing. DRY-RUN by default.</div><div class="mod-exports"><span class="tag">runBillingRenewal()</span><span class="tag">RENEW_WINDOW_MS</span><span class="tag">GRACE_MS</span></div></div>
+    <div class="mod-card"><div class="mod-path" style="color:var(--pink)">lib/billing/cancel.ts</div><div class="mod-desc">Cancel sets status='cancelled' + autorenew=false. Keeps access until period end. NEVER touches users.plan. Resume undoes cancel while period active.</div><div class="mod-exports"><span class="tag">cancelPlan()</span><span class="tag">resumePlan()</span><span class="tag">getCancellationState()</span></div></div>
+    <div class="mod-card"><div class="mod-path" style="color:var(--pink)">lib/billing/price-notice.ts</div><div class="mod-desc">3-gate pipeline: STAGED&rarr;NOTIFIED&rarr;CHARGED. Undelivered notice = increase never takes effect. 4 conditions all required for pendingAmountIsChargeable().</div><div class="mod-exports"><span class="tag">stagePriceChange()</span><span class="tag">pendingAmountIsChargeable()</span><span class="tag">renewalAmountTiyin()</span><span class="tag">promotePendingAmount()</span></div></div>
+    <div class="mod-card"><div class="mod-path" style="color:var(--pink)">lib/billing/features.ts</div><div class="mod-desc">Pure feature gating. Owner emails always have full access. 14-day trial. FREE_FOREVER: only 'marketplaces'. computeEffectivePlan() resolves paid/trial/free.</div><div class="mod-exports"><span class="tag">hasFeature()</span><span class="tag">computeEffectivePlan()</span><span class="tag">TRIAL_DAYS</span></div></div>
+    <div class="mod-card"><div class="mod-path" style="color:var(--pink)">lib/billing/tiers.ts</div><div class="mod-desc">Turnover&rarr;tier assignment. Pure, no DB. Bands: Free &lt;12M, Pro &ge;12M, Pro+ &ge;50M, Biznes &ge;120M, Enterprise &ge;180M. NEAR_CEILING_FRACTION=0.9.</div><div class="mod-exports"><span class="tag">assignTier()</span><span class="tag">TURNOVER_BANDS</span></div></div>
+    <div class="mod-card"><div class="mod-path" style="color:var(--pink)">lib/billing/nudge.ts</div><div class="mod-desc">4 daily nudge types: trial_ending, trial_ended, outgrew_free, enterprise_outreach. Throttled via unique (user_id, kind). Telegram + in-app banner.</div><div class="mod-exports"><span class="tag">dispatchTierNudges()</span><span class="tag">getActiveNotice()</span></div></div>
+    <div class="mod-card"><div class="mod-path" style="color:var(--pink)">lib/billing/lifecycle.ts</div><div class="mod-desc">Inactive account ladder: warn(365d)&rarr;freeze(+30d)&rarr;delete(+90d, flag-gated). Only free, no payment history. reactivate() on sign-in.</div><div class="mod-exports"><span class="tag">sweepAccountLifecycle()</span><span class="tag">reactivate()</span></div></div>
+    <div class="mod-card"><div class="mod-path" style="color:var(--pink)">lib/billing/atmos-verify.ts</div><div class="mod-desc">Pure, dependency-free callback verification. MD5 signature (constant-time via timingSafeEqual). IPv4 CIDR matching for IP allowlist. No env, no network — fully unit-testable.</div><div class="mod-exports"><span class="tag">verifyCallbackSign()</span><span class="tag">ipInCidr()</span><span class="tag">clientIpFromForwarded()</span></div></div>
+  </div>
+</div>
+
+<!-- ─── SECURITY ─── -->
+<div class="section" id="s-security">
+  <span class="section-anchor" id="security"></span>
+  <div class="section-title"><span class="dot" style="background:var(--red)"></span> Security &amp; Crypto</div>
+  <div class="cards c2">
+    <div class="card">
+      <div class="card-name" style="color:var(--red)">Encryption at Rest</div>
+      <div class="card-desc">AES-256-CBC for marketplace API keys (shops.api_key_encrypted) and ATMOS card tokens (subscriptions.card_token_encrypted). Key from ENCRYPTION_KEY env var. Decrypt only at point-of-use, never cached decrypted.</div>
+      <div class="card-tags"><span class="tag">AES-256-CBC</span><span class="tag">Node.js crypto</span></div>
+    </div>
+    <div class="card">
+      <div class="card-name" style="color:var(--red)">Callback Signatures</div>
+      <div class="card-desc">MD5(store_id + transaction_id + account + amount + api_key). Verified via crypto.timingSafeEqual() — constant-time comparison prevents timing attacks. Pure module, no network — fully unit-testable.</div>
+      <div class="card-tags"><span class="tag">MD5</span><span class="tag">timingSafeEqual</span></div>
+    </div>
+    <div class="card">
+      <div class="card-name" style="color:var(--red)">IP Allowlist</div>
+      <div class="card-desc">Optional ATMOS_CALLBACK_CIDR: comma-separated CIDR list (e.g. 152.233.12.0/23, 92.63.207.0/24). IPv4 bitwise matching. Off by default in dev. Extracts client IP from x-forwarded-for chain.</div>
+      <div class="card-tags"><span class="tag">CIDR matching</span><span class="tag">Optional</span></div>
+    </div>
+    <div class="card">
+      <div class="card-name" style="color:var(--red)">Auth Security</div>
+      <div class="card-desc">bcrypt (12 rounds) for password hashing. 30-day JWT sessions. Blocks unverified emails when SMTP configured. Per-IP rate limiting: signup 10/hr. Google OAuth consent gate via short-lived cookie.</div>
+      <div class="card-tags"><span class="tag">bcrypt-12</span><span class="tag">JWT</span><span class="tag">rate-limit</span></div>
+    </div>
+  </div>
+
+  <div class="divider"><span>Key Constants &amp; Environment</span></div>
+  <div class="sm-box">
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <tr><th>Constant / Env</th><th>Value</th><th>Purpose</th></tr>
+        <tr><td>TIYIN_PER_SOM</td><td>100</td><td>Conversion: 1 so'm = 100 tiyin</td></tr>
+        <tr><td>TOKEN_PAYMENT_OTP</td><td>"111111"</td><td>Literal OTP for token (card-bound) payments</td></tr>
+        <tr><td>RENEW_WINDOW_MS</td><td>24 hours</td><td>How far ahead of expiry a subscription becomes due</td></tr>
+        <tr><td>GRACE_MS</td><td>3 days</td><td>How long a failing subscription keeps access</td></tr>
+        <tr><td>PRICE_NOTICE_DAYS</td><td>14</td><td>Minimum notice before charging a new price</td></tr>
+        <tr><td>TRIAL_DAYS</td><td>14</td><td>Free trial length for new accounts</td></tr>
+        <tr><td>NEAR_CEILING_FRACTION</td><td>0.9</td><td>Triggers "outgrew tier" nudge at 90% of ceiling</td></tr>
+        <tr><td>GRACE_MINUTES</td><td>5</td><td>Stock freshness guard window (recent-write-guard)</td></tr>
+        <tr><td>ATMOS_BASE_URL</td><td>env</td><td>ATMOS API base</td></tr>
+        <tr><td>ATMOS_STORE_ID</td><td>env</td><td>Our merchant store ID</td></tr>
+        <tr><td>ATMOS_CONSUMER_KEY/SECRET</td><td>env</td><td>OAuth client_credentials</td></tr>
+        <tr><td>ATMOS_CALLBACK_API_KEY</td><td>env</td><td>MD5 signature verification key</td></tr>
+        <tr><td>ATMOS_CALLBACK_CIDR</td><td>env (optional)</td><td>IP allowlist for callback endpoint</td></tr>
+        <tr><td>BILLING_AUTORENEW_ENABLED</td><td>env flag</td><td>Master switch for auto-renewal</td></tr>
+        <tr><td>STOCK_WRITE_ENABLED</td><td>env flag</td><td>Kill switch for stock writes</td></tr>
+        <tr><td>ACCOUNT_LIFECYCLE_DELETE_ENABLED</td><td>env flag (off)</td><td>Enables actual account deletion</td></tr>
+        <tr><td>CRON_SECRET</td><td>env</td><td>Bearer token for all cron endpoints</td></tr>
+        <tr><td>ENCRYPTION_KEY</td><td>env</td><td>AES-256-CBC key for tokens and API keys</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div> <!-- /main -->
+
+<script>
+// Sidebar toggle
+const sidebar = document.getElementById('sidebar');
+document.getElementById('hamburger').addEventListener('click', () => sidebar.classList.toggle('open'));
+document.querySelector('.main').addEventListener('click', () => sidebar.classList.remove('open'));
+
+// Active nav tracking
+const navLinks = document.querySelectorAll('.nav-link');
+const sections = document.querySelectorAll('.section-anchor');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      navLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + id));
+    }
+  });
+}, { rootMargin: '-80px 0px -70% 0px', threshold: 0 });
+sections.forEach(s => observer.observe(s));
+
+// Search
+const searchInput = document.getElementById('search');
+const allSections = document.querySelectorAll('.section');
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.toLowerCase().trim();
+  allSections.forEach(sec => {
+    if (!q) { sec.style.display = ''; return; }
+    const text = sec.textContent.toLowerCase();
+    sec.style.display = text.includes(q) ? '' : 'none';
+  });
+});
+
+// Smooth scroll for nav
+navLinks.forEach(link => {
+  link.addEventListener('click', e => {
+    sidebar.classList.remove('open');
+  });
+});
+</script>
 </body>
 </html>
