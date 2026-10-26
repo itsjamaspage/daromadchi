@@ -206,25 +206,20 @@ function uzumItemSnapshot(it: UzumFbsOrderItem): { title: string | null; sku: st
   }
 }
 
-// Uzum's FBS list can report quantity=1 while the order-level price is an
-// exact multiple of the unit price (a real 2-unit order came back as one
-// item, quantity 1, price 76 000 with order price 152 000). When the order has
-// a single line item and the total divides evenly, trust the ratio. When the
-// item carries no usable price, fall back to the product's known selling
-// price so the app can still work out the real unit count.
+// Trust the API-reported item quantity. Dividing the order-level price by the
+// item price used to infer "real" quantity, but this over-counts when the order
+// total includes delivery/service fees, or when a repriced product sends the
+// CURRENT unit price against an ORIGINAL order total (300 000 / 100 000 = 3
+// when the real qty is 1). The one case where the API sends no quantity at all
+// (both fields absent) still falls back to 1 — safer to undercount than to
+// fabricate phantom sales.
 function effectiveQty(
-  o: UzumFbsOrder,
+  _o: UzumFbsOrder,
   it: UzumFbsOrderItem,
-  lineCount: number,
-  fallbackUnitPrice?: number | null,
+  _lineCount: number,
+  _fallbackUnitPrice?: number | null,
 ): number {
-  const q = it.quantity ?? it.amount ?? 1
-  const p = it.price > 0 ? it.price : (fallbackUnitPrice ?? 0)
-  const total = o.price ?? o.totalPrice
-  if (lineCount === 1 && p > 0 && total != null && total > p * q && total % p === 0) {
-    return total / p
-  }
-  return q
+  return it.quantity ?? it.amount ?? 1
 }
 
 export interface SyncResult {
@@ -694,18 +689,13 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
         priceByMpid.set(String(r.marketplace_product_id), r.selling_price)
       }
     }
-    const distinctPrices = [...new Set(priceByMpid.values())]
-    const soloPrice = distinctPrices.length === 1 ? distinctPrices[0] : null
-
     const orderRows = taggedOrders.map(({ o, ff }) => {
       // Support both new (id/dateCreated/price/orderItems) and legacy field names
       const extId = extIdOf(o)
       const orderedAt = parseOrderedAt(o.dateCreated ?? o.createdAt)
       const revenue = o.price ?? o.totalPrice ?? 0
       const allItems = o.orderItems ?? o.items ?? []
-      const unitsFromTotal = allItems.length === 0 && soloPrice != null && revenue > 0 && revenue % soloPrice === 0
-        ? revenue / soloPrice
-        : null
+      const unitsFromTotal: number | null = null
       return {
         shop_id: shopId,
         order_id_external: extId,
@@ -1230,8 +1220,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
           const pid = dbProducts[0].id as string
           const sp = priceByDbId.get(pid)
           const total = o.price ?? o.totalPrice ?? 0
-          const qty = sp && total > 0 && total % sp === 0 ? total / sp : 1
-          itemRows.push({ order_id: dbOrderId, product_id: pid, quantity: qty, price_per_unit: sp ?? total,
+          itemRows.push({ order_id: dbOrderId, product_id: pid, quantity: 1, price_per_unit: sp ?? total,
             title: dbProducts[0].title ?? null, sku: null, variant_color: null })
         }
       }
