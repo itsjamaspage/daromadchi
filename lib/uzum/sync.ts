@@ -5,6 +5,7 @@ import { clearShopData } from '@/lib/db/clear-shop-data'
 import { uzumStockQuantity } from './stock-reading'
 import { selectCancellationAlerts } from '@/lib/marketplace/cancellation-alert'
 import { RESERVING_RAW_STATUSES } from '@/lib/marketplace/stock-allocation'
+import { recentlyWrittenProductIds } from '@/lib/marketplace/recent-write-guard'
 import {
   fetchAllPages,
   fetchUzumOrders,
@@ -475,13 +476,13 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
           })))
         }
         if (toUpd.length > 0) {
+          const graceSet = await recentlyWrittenProductIds(toUpd.map(r => r.id))
           for (const r of toUpd) {
             const patch: Record<string, unknown> = {
               title: r.title,
               sku: r.sku,
               category: r.category,
               selling_price: r.selling_price != null ? String(r.selling_price) : null,
-              stock_quantity: r.stock_quantity,
               quantity_sold: r.quantity_sold,
               marketplace_product_id: r.marketplace_product_id,
               is_archived: r.is_archived,
@@ -489,6 +490,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
               variant_color: r.variant_color,
               fulfillment_type: 'fbs',
             }
+            if (!graceSet.has(r.id)) patch.stock_quantity = r.stock_quantity
             if (r.image_url != null) patch.image_url = r.image_url
             await db.update(products).set(patch).where(eq(products.id, r.id))
           }
