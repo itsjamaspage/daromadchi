@@ -16,6 +16,7 @@ import { RESERVING_RAW_STATUSES } from '@/lib/marketplace/stock-allocation'
 import { ORDER_STATUS_LOOKBACK_DAYS } from '@/lib/marketplace/reserved-display'
 import { isYandexFulfillmentRequired, isYandexSellerFulfilled } from '@/lib/marketplace/fulfillment-statuses'
 import { selectCancellationAlerts } from '@/lib/marketplace/cancellation-alert'
+import { recentlyWrittenProductIds } from '@/lib/marketplace/recent-write-guard'
 import { resolveWithFallback } from '@/lib/categories/resolve'
 import { withShopLock } from '@/lib/db/shop-lock'
 
@@ -441,11 +442,8 @@ async function syncFromYandexLocked(
           })))
         }
         if (toUpd.length > 0) {
+          const graceSet = await recentlyWrittenProductIds(toUpd.map(r => r.id))
           for (const r of toUpd) {
-            // Only overwrite selling_price / stock_quantity when the API
-            // actually reported a value — otherwise keep the existing DB
-            // value so a silent "endpoint returned nothing" doesn't clobber
-            // real data with 0.
             const patch: Record<string, unknown> = {
               marketplace_product_id: r.marketplace_product_id,
               title: r.title,
@@ -455,7 +453,7 @@ async function syncFromYandexLocked(
             }
             if (r.category != null) patch.category = r.category
             if (r.selling_price != null) patch.selling_price = String(r.selling_price)
-            if (r.stock_quantity != null) patch.stock_quantity = r.stock_quantity
+            if (r.stock_quantity != null && !graceSet.has(r.id)) patch.stock_quantity = r.stock_quantity
             // Only overwrite the group key when this sync derived one — a missing
             // marketModelName shouldn't wipe an existing grouping (mirrors the
             // "don't clobber real data with nulls" rule for the fields above).

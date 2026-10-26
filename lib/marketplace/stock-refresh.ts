@@ -30,6 +30,7 @@ import { fetchUzumShopProducts, fetchUzumShops, getUzumRateLimit, UzumApiError }
 import { fetchAllYandexStocks, fetchAllYandexCampaignOffers } from '@/lib/yandex/client'
 import { uzumStockQuantity } from '@/lib/uzum/stock-reading'
 import { stockKeysFor, trimmedIndex, resolveStock } from '@/lib/marketplace/stock-key-match'
+import { recentlyWrittenProductIds } from '@/lib/marketplace/recent-write-guard'
 import { logger } from '@/lib/logger'
 
 export interface StockRefreshResult {
@@ -129,17 +130,15 @@ export async function refreshUzumStock(
     inArray(products.marketplace_product_id, ids),
   ))
 
+  const recentlyWritten = await recentlyWrittenProductIds(rows.map(r => r.id))
   let updated = 0
+  let skippedByGrace = 0
   for (const r of rows) {
+    if (recentlyWritten.has(r.id)) { skippedByGrace++; continue }
     const next = live.get(String(r.mpid))
     if (next === undefined) continue
     const fields: Record<string, unknown> = {}
     if (next !== r.stock) fields.stock_quantity = next
-    // Clear a manual override once the marketplace confirms the value — the
-    // override's job was to keep the UI honest until the next sync reads the
-    // pushed value back. If the marketplace now reports the same number, the
-    // override is redundant; if it reports a different number (seller changed
-    // stock on the marketplace itself), the marketplace is authoritative.
     if (r.stockOverride != null) fields.stock_override = null
     if (Object.keys(fields).length === 0) continue
     await db.update(products)
@@ -150,9 +149,7 @@ export async function refreshUzumStock(
 
   const rl = getUzumRateLimit()
   logger.info('uzum_stock_refresh', {
-    shopId, seen: live.size, updated,
-    // Real headroom, read off the response we already made rather than
-    // estimated from the schedule.
+    shopId, seen: live.size, updated, skippedByGrace,
     rateLimitRemainingPerDay: rl?.remainingPerDay ?? null,
     rateLimitPerDay: rl?.limitPerDay ?? null,
   })
@@ -240,13 +237,13 @@ export async function refreshYandexStock(
   }
 
   const trimmed = trimmedIndex(stockMap)
+  const recentlyWritten = await recentlyWrittenProductIds(own.map(p => p.id))
   let updated = 0
   let unmatched = 0
+  let skippedByGrace = 0
   for (const p of own) {
-    // Same identifier chain the heavy pass resolves through, so a product the
-    // heavy pass can refresh is never one the light pass silently skips.
+    if (recentlyWritten.has(p.id)) { skippedByGrace++; continue }
     const next = resolveStock(p, stockMap, trimmed)
-    // Absent = UNKNOWN. Never written, never zeroed.
     if (next === undefined) { unmatched++; continue }
     const fields: Record<string, unknown> = {}
     if (next !== p.stock) fields.stock_quantity = next
@@ -258,9 +255,7 @@ export async function refreshYandexStock(
 
   logger.info('yandex_stock_refresh', {
     shopId, seen: stockMap.size, updated, complete,
-    // Tracked rows the response never mentioned. Non-zero on a `complete` read
-    // means an identifier mismatch, not a truncated page — worth looking at.
-    unmatched, tracked: own.length,
+    unmatched, tracked: own.length, skippedByGrace,
     ...(lastError ? { lastError } : {}),
   })
   return { ok: true, seen: stockMap.size, updated, unmatched }
