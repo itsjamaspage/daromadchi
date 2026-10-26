@@ -674,7 +674,7 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold"
                 style={{ background: 'color-mix(in srgb, var(--c1) 14%, transparent)', border: '1px solid color-mix(in srgb, var(--c1) 35%, transparent)', color: 'var(--c1)' }}>
                 <Star className="w-3.5 h-3.5" />
-                {planLabel(cancelledAndExpired ? billing.plan : plan, d)}
+                {planLabel(plan, d)}
               </span>
               {billing.isOnTrial && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400">Trial</span>
@@ -710,7 +710,7 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {/* Every paid tier carries the same features, so Biznes reuses the
                   Pro+ bullet list rather than needing its own copy. */}
-              {(PLAN_FEATURES[billing.plan === 'biznes' ? 'pro_plus' : billing.plan] ?? []).map((f: string) => (
+              {(PLAN_FEATURES[plan === 'biznes' ? 'pro_plus' : plan] ?? []).map((f: string) => (
                 <li key={f} className="flex items-center gap-2 text-sm text-[var(--text-dim)]">
                   <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--c1)' }} />
                   {f}

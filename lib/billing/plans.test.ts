@@ -45,8 +45,8 @@ describe('yearly is the stated per-month price × 12', () => {
   }
 
   it('the turnover ladder prices are what is charged', () => {
-    assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro.monthly), 10_000) // TEMP 10 000 for testing (was 150 000)
-    assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro.annualPerMonth), 8_000) // TEMP 8 000 for testing (was 125 000)
+    assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro.monthly), 150_000)
+    assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro.annualPerMonth), 125_000)
     assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro_plus.monthly), 250_000)
     assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro_plus.annualPerMonth), 225_000)
   })
