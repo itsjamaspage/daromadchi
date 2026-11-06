@@ -1,0 +1,178 @@
+name: Drop Yandex Market (DESTRUCTIVE, manual)
+
+# One-shot, manually-triggered migration runner for
+# migrations/migrations/103_drop_yandex_market.sql.
+#
+# WHY THIS EXISTS AS A WORKFLOW RATHER THAN A REGISTERED MIGRATION
+# ----------------------------------------------------------------
+# 103 deletes real seller rows (Yandex shops, orders, order_items, products and
+# the settlement tables) before it can drop 'yandex_market' from the
+# marketplace_type enum. That must never happen unattended on a push to main,
+# which is why it is deliberately absent from scripts/apply-sql-migrations.mjs.
+#
+# It also must not require whoever runs it to have psql and an SSH key. So the
+# operation lives here: the same SSH path the deploy already uses, with the
+# safety steps that a careful hand-run would do, written down and enforced.
+#
+# WHAT IT DOES, IN ORDER
+#   1. Refuses to start unless `confirm` is exactly: DROP YANDEX
+#   2. Refuses to start unless the deployed commit CONTAINS the Yandex removal
+#      (the enum value cannot be dropped while a build that still writes it is
+#      serving — see the ordering note below).
+#   3. Takes a pg_dump ON THE VPS, to the same place and in the same format as
+#      the nightly `DB · Backup Postgres` workflow, and fails if it is empty.
+#   4. Reports what is about to be deleted — counted, before anything is run.
+#   5. Runs 103 with ON_ERROR_STOP=1, echoing its RAISE NOTICE output.
+#   6. Verifies the enum afterwards and fails if 'yandex_market' survives.
+#
+# THE BACKUP STAYS ON THE VPS, matching db-backup.yml's standing rule: the full
+# DB (emails, password hashes, payments, Telegram IDs, encrypted marketplace
+# tokens) must never leave our infrastructure, so GitHub is not a data
+# processor. It is written to /var/backups/daromadchi/ alongside the nightly
+# dumps, with a name that says why it exists, and is deliberately left OUT of
+# the 14-dump rotation so it cannot be aged out by later nightlies.
+#
+# ORDERING: run this AFTER the Yandex-removal code is deployed. Dropping the
+# enum value while an older build is still serving would make that build error
+# the moment it touched a 'yandex_market' row. Step 2 enforces this.
+#
+# RE-RUNNABLE: 103 is idempotent (guarded on the enum value still existing), so
+# a second run is a clean no-op rather than a second round of deletions.
+#
+# PAIRED WITH 104: the migrations that created the Yandex tables and columns are
+# all `IF NOT EXISTS`, so the next deploy would recreate them. 104 is registered
+# in the runner, guarded on 103 having run, and re-drops them. Nothing extra to
+# do here — it simply means the schema stays clean after this workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DROP YANDEX to confirm this deletes production seller data'
+        required: true
+        type: string
+
+concurrency:
+  group: drop-yandex-market
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Back up, then drop Yandex Market
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check the confirmation phrase
+        run: |
+          if [ "${{ inputs.confirm }}" != "DROP YANDEX" ]; then
+            echo "Refusing to run: 'confirm' must be exactly DROP YANDEX."
+            echo "Got: '${{ inputs.confirm }}'"
+            exit 1
+          fi
+          echo "Confirmed."
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" | base64 -d > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Back up, migrate, verify
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -s' <<'MIGRATE'
+          set -euo pipefail
+          cd /var/www/daromadchi
+
+          SQL=migrations/migrations/103_drop_yandex_market.sql
+          if [ ! -f "$SQL" ]; then
+            echo "ABORT: $SQL is not on the server. Deploy the Yandex-removal commit first."
+            exit 1
+          fi
+
+          # ── Ordering guard ────────────────────────────────────────────────
+          # lib/yandex/ is deleted by the removal commit. If it is still here,
+          # the serving build predates the removal and would break the moment
+          # the enum value disappeared.
+          if [ -d lib/yandex ]; then
+            echo "ABORT: lib/yandex/ still exists, so the deployed build predates the Yandex removal."
+            echo "Merge and deploy the removal first, then re-run this workflow."
+            exit 1
+          fi
+
+          # ── Resolve DATABASE_URL the same way apply-sql-migrations.mjs does ──
+          DB=""
+          for F in .env.production.local .env.local .env .env.production; do
+            [ -f "$F" ] || continue
+            LINE=$(grep -m1 '^DATABASE_URL=' "$F" 2>/dev/null || true)
+            if [ -n "$LINE" ]; then
+              DB=$(printf %s "$LINE" | cut -d= -f2- | tr -d "\"'")
+              break
+            fi
+          done
+          if [ -z "$DB" ]; then
+            echo "ABORT: DATABASE_URL not found in the server .env files."
+            exit 1
+          fi
+
+          # Same auto-install db-backup.yml does — pg_dump is not on the box by default.
+          if ! command -v pg_dump >/dev/null 2>&1; then
+            echo "Installing postgresql-client..."
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends postgresql-client >/dev/null
+          fi
+          command -v psql >/dev/null || { echo "ABORT: psql is not installed on this host."; exit 1; }
+
+          # ── 1. Backup, before anything is read or written ──────────────────
+          # Host only, never the password — same discipline as db-backup.yml.
+          echo "Dumping public schema from host: $(echo "$DB" | sed -E 's#.*@([^:/]+).*#\1#')"
+          sudo mkdir -p /var/backups/daromadchi
+          sudo chown -R "$(whoami)":"$(whoami)" /var/backups/daromadchi
+          STAMP=$(date -u +%Y%m%d-%H%M%S)
+          BACKUP=/var/backups/daromadchi/pre-yandex-drop-${STAMP}.dump
+          # Same flags as the nightly dump, so the restore procedure is the one
+          # already written down. NOT named dump-*.dump on purpose: the nightly
+          # rotation keeps only the 14 newest of those, and this one must not be
+          # aged out while it is still the thing that can undo 103.
+          pg_dump "$DB" --schema=public --no-owner --no-acl -Fc -f "$BACKUP"
+          BYTES=$(stat -c%s "$BACKUP")
+          if [ "$BYTES" -lt 10000 ]; then
+            echo "ABORT: backup is only $BYTES bytes, which is too small to be a real dump."
+            exit 1
+          fi
+          echo "Backup OK: $BACKUP ($(du -h "$BACKUP" | cut -f1))"
+          echo "Restore with:  pg_restore --clean --if-exists -d \"\$DATABASE_URL\" $BACKUP"
+
+          # ── 2. Say what is about to go, before it goes ─────────────────────
+          echo ""
+          echo "── About to delete ──────────────────────────────────────────"
+          psql -v ON_ERROR_STOP=1 -X -q "$DB" <<'COUNTS'
+          \pset pager off
+          select 'shops'                as relation, count(*) from shops  where marketplace = 'yandex_market'
+          union all select 'orders',      count(*) from orders where marketplace = 'yandex_market'
+             or shop_id in (select id from shops where marketplace = 'yandex_market')
+          union all select 'products',    count(*) from products
+             where shop_id in (select id from shops where marketplace = 'yandex_market')
+          union all select 'unit_economics_items', count(*) from unit_economics_items where marketplace = 'yandex_market'
+          union all select 'yandex_settlement_transactions', count(*) from yandex_settlement_transactions
+          union all select 'product_write_log', count(*) from product_write_log;
+          COUNTS
+
+          # ── 3. Run it ──────────────────────────────────────────────────────
+          echo ""
+          echo "── Running 103_drop_yandex_market.sql ───────────────────────"
+          psql -v ON_ERROR_STOP=1 -X -f "$SQL" "$DB"
+
+          # ── 4. Verify ──────────────────────────────────────────────────────
+          echo ""
+          echo "── Verifying ────────────────────────────────────────────────"
+          LEFT=$(psql -X -t -A -c "select count(*) from pg_enum e join pg_type t on t.oid = e.enumtypid where t.typname = 'marketplace_type' and e.enumlabel = 'yandex_market';" "$DB")
+          if [ "$LEFT" != "0" ]; then
+            echo "FAILED: 'yandex_market' is still a value of marketplace_type."
+            exit 1
+          fi
+          echo "marketplace_type no longer contains 'yandex_market'."
+          psql -X -c "select unnest(enum_range(null::marketplace_type)) as marketplace_type;" "$DB"
+          echo ""
+          echo "Done. Backup retained at $BACKUP"
+          MIGRATE

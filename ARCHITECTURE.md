@@ -527,7 +527,14 @@ on our own infrastructure and GitHub is not a data processor.
     by hand after a backup:
     `psql "$DATABASE_URL" -f migrations/migrations/103_drop_yandex_market.sql`.
     The app does not depend on it: every Yandex code path is gone, so until it is
-    applied the leftover rows are simply unreachable.
+    applied the leftover rows are simply unreachable. Trigger it without psql via
+    the **Drop Yandex Market** workflow (`workflow_dispatch`), which backs up on
+    the VPS first, refuses to run against a build that predates the removal, and
+    verifies the enum afterwards.
+  - `104` — registered, and must stay LAST. The migrations that created the
+    Yandex tables/columns are all `IF NOT EXISTS`, so a deploy recreates what
+    103 drops; 104 re-drops them. Guarded on 103 having run, so it is a no-op
+    (and can never destroy live Yandex data) before then.
 
 ## Deployment
 
