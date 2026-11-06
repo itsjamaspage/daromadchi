@@ -64,7 +64,16 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    // A CENTRED, FIXED-WIDTH COLUMN.
+    //
+    // This page is a single stack of settings cards, and it had no width limit
+    // at all — so on a desktop the API-token input, the share-link row and the
+    // warehouse rows stretched the full width of the content area with their
+    // labels marooned at the far left. Everything here reads better in one
+    // narrow column, which is also what loading.tsx already drew (it capped
+    // itself at max-w-2xl, so the skeleton and the real page did not even
+    // agree). Both now use the same max-w-3xl, centred.
+    <div className="space-y-6 max-w-3xl mx-auto">
       <div>
         <div className="flex items-center gap-3 mb-0.5">
           <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.settingsTitle}</h1>

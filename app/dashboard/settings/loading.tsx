@@ -2,7 +2,8 @@ import { SkeletonBox, PageHeaderSkeleton } from '@/components/dashboard/Skeleton
 
 export default function SettingsLoading() {
   return (
-    <div className="space-y-6 max-w-2xl">
+    // Same width and centring as page.tsx, so the skeleton does not jump.
+    <div className="space-y-6 max-w-3xl mx-auto">
       <PageHeaderSkeleton />
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 space-y-5">
         {Array.from({ length: 4 }).map((_, i) => (

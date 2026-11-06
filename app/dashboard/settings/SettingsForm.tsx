@@ -249,7 +249,14 @@ function WarehousesCard() {
   useEffect(() => {
     fetch('/api/warehouses')
       .then(r => r.json())
-      .then(d => { setWarehouses(d.warehouses ?? []); setShops(d.shops ?? []) })
+      .then(d => {
+        setWarehouses(d.warehouses ?? [])
+        // Only shops on a marketplace this build still integrates. A seller who
+        // connected Yandex Market before it left Uzbekistan still has that row
+        // until migration 103 is applied, and it was listed here with no badge
+        // and a warehouse dropdown that cannot mean anything any more.
+        setShops((d.shops ?? []).filter((sh: ShopLite) => sh.marketplace in MP_BADGE))
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -312,14 +319,14 @@ function WarehousesCard() {
               autoFocus
               value={newName}
               onChange={e => setNewName(e.target.value)}
-              placeholder="Ombor nomi (masalan: Toshkent ombori)"
+              placeholder={t.whNamePlaceholder}
               className="flex-1 bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(99,179,237,0.5)] transition-all"
             />
             <button type="submit" disabled={adding}
               className="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-xl disabled:opacity-50 transition-colors"
               style={{ background: '#63b3ed', color: '#131321' }}>
               {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Saqlash
+              {t.save}
             </button>
             <button type="button" onClick={() => setShowAdd(false)}
               className="px-3 py-2 rounded-xl text-sm text-[var(--text-muted)] border border-[var(--border2)] hover:text-red-400 transition-colors">
@@ -332,10 +339,10 @@ function WarehousesCard() {
         {/* Warehouse list */}
         {loading ? (
           <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm py-2">
-            <Loader2 className="w-4 h-4 animate-spin" /> Yuklanmoqda…
+            <Loader2 className="w-4 h-4 animate-spin" /> {t.whLoading}
           </div>
         ) : warehouses.length === 0 ? (
-          <p className="text-[var(--text-muted)] text-sm">Hali ombor yo&apos;q. Yuqoridagi tugma bilan yarating.</p>
+          <p className="text-[var(--text-muted)] text-sm">{t.whEmpty}</p>
         ) : (
           <div className="space-y-2">
             {warehouses.map(w => {
@@ -346,7 +353,7 @@ function WarehousesCard() {
                   <span className="text-sm font-medium text-[var(--text-base)] flex-1">{w.name}</span>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {assigned.length === 0
-                      ? <span className="text-[var(--text-muted)] text-xs">Do&apos;kon biriktirilmagan</span>
+                      ? <span className="text-[var(--text-muted)] text-xs">{t.whNoShop}</span>
                       : assigned.map(s => {
                           const b = MP_BADGE[s.marketplace]
                           return b ? (
@@ -359,7 +366,7 @@ function WarehousesCard() {
                   </div>
                   <button
                     onClick={() => handleDelete(w.id)}
-                    title="O'chirish"
+                    title={t.whDelete}
                     className="text-[var(--text-muted)] hover:text-red-400 transition-colors ml-1"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -373,7 +380,7 @@ function WarehousesCard() {
         {/* Shop assignments */}
         {!loading && shops.length > 0 && (
           <div className="space-y-2 pt-2 border-t border-[var(--border)]">
-            <p className="text-xs font-medium text-[var(--text-muted)] pb-1">Do&apos;konni omborga biriktirish</p>
+            <p className="text-xs font-medium text-[var(--text-muted)] pb-1">{t.whAssignHead}</p>
             {shops.map(s => {
               const b = MP_BADGE[s.marketplace]
               return (
@@ -389,7 +396,7 @@ function WarehousesCard() {
                     onChange={e => handleAssign(s.id, e.target.value || null)}
                     className="bg-[var(--bg-card2)] border border-[var(--border2)] rounded-lg px-2 py-1 text-xs text-[var(--text-base)] focus:outline-none focus:border-[rgba(99,179,237,0.5)] transition-all cursor-pointer"
                   >
-                    <option value="">— Biriktirilmagan —</option>
+                    <option value="">{t.whUnassigned}</option>
                     {warehouses.map(w => (
                       <option key={w.id} value={w.id}>{w.name}</option>
                     ))}
@@ -421,7 +428,13 @@ export default function SettingsForm({ uzumShop, shopCounts, userId, telegramCha
   ]
   const connected = mpCards.filter(c => c.shop?.api_key_encrypted)
   const cardCols    = mpCards.length >= 3 ? 'md:grid-cols-3' : mpCards.length >= 2 ? 'md:grid-cols-2' : ''
-  const summaryCols = connected.length >= 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'
+  // One connected store used to land in a two-column grid, so it rendered as a
+  // half-width card with empty space beside it. Give it the full column and lay
+  // its two numbers out side by side instead of stacked.
+  const summaryCols = connected.length >= 3 ? 'sm:grid-cols-3'
+                    : connected.length === 2 ? 'sm:grid-cols-2'
+                    : 'grid-cols-1'
+  const singleSummary = connected.length === 1
 
   return (
     <div className="space-y-6">
@@ -431,10 +444,17 @@ export default function SettingsForm({ uzumShop, shopCounts, userId, telegramCha
             const c = shopCounts[mp]
             const labels: Record<string, string> = { uzum: 'Uzum' }
             return (
-              <div key={mp} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3">
-                <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c1)' }}>{labels[mp]}</p>
-                <p className="text-lg font-bold text-[var(--text-base)]">{c?.products ?? 0} <span className="text-xs font-normal text-[var(--text-muted)]">{t.products}</span></p>
-                <p className="text-xs text-[var(--text-muted)]">{c?.orders ?? 0} {t.orders}</p>
+              <div
+                key={mp}
+                className={`bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3 ${
+                  singleSummary ? 'flex items-center justify-between gap-4' : ''
+                }`}
+              >
+                <p className={`text-xs font-semibold ${singleSummary ? '' : 'mb-1'}`} style={{ color: 'var(--c1)' }}>{labels[mp]}</p>
+                <div className={singleSummary ? 'flex items-baseline gap-5' : ''}>
+                  <p className="text-lg font-bold text-[var(--text-base)]">{c?.products ?? 0} <span className="text-xs font-normal text-[var(--text-muted)]">{t.products}</span></p>
+                  <p className="text-xs text-[var(--text-muted)]">{c?.orders ?? 0} {t.orders}</p>
+                </div>
               </div>
             )
           })}
