@@ -1,6 +1,53 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════════
+   SELF-HOSTED FONTS — do not replace these with next/font/google.
+
+   next/font/google downloads the font files from fonts.gstatic.com AT BUILD
+   TIME. On 6 Nov the production build died doing exactly that ("Can't resolve
+   '@vercel/turbopack-next/internal/font/google/font'" for every JetBrains Mono
+   @font-face), and because the deploy had already deleted the previous build,
+   the live process was left serving the site with no CSS until someone noticed.
+   A VPS cannot be relied on to reach Google on demand, and a webfont is not a
+   reason for a deploy to fail. These two files are in the repository, so the
+   build needs no network at all.
+
+   They are declared here rather than through next/font because every
+   font-family in this codebase — this file, and the inline styles all over the
+   landing page — names 'Space Grotesk' and 'JetBrains Mono' literally.
+   next/font/local would register them under a generated name instead, and
+   every one of those literals would quietly fall back to system-ui.
+
+   Both are the latin subset, variable weight axis, byte-for-byte the files
+   Google serves. To refresh: take the src URL under the "latin" comment for
+   each family from
+   fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=JetBrains+Mono:wght@400..700
+   Both fonts are SIL OFL 1.1.
+═══════════════════════════════════════════════════════════════════ */
+
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/fonts/space-grotesk-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    FONTS
    Display + Body: Space Grotesk (weights 300–700)
    Mono:           JetBrains Mono (numbers & code)
