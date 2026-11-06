@@ -31,7 +31,13 @@ const _fetchKpis = unstable_cache(
     // total using computeStockGroups (which handles FBS shared-pool + FBO
     // additive per member). When a specific marketplace is filtered in, a
     // naive per-shop SUM is fine because a shop can't have duplicate SKUs.
-    const [current, stockNaive, groups] = await Promise.all([
+    // The baseline period is fetched HERE, alongside the current one, not after
+    // it. It used to be `await fetchPeriodKpis(prev…)` further down, which is a
+    // second full round trip to Postgres strictly after the first had come back
+    // — and the dashboard's first paint waits on this function. Its window is
+    // known up front (kpiWindows computed it above) and it reads nothing from
+    // `current`, so there was never a reason to serialise it.
+    const [current, stockNaive, groups, prev] = await Promise.all([
       fetchPeriodKpis(shopIds, sinceDate, untilDate),
       marketplaceFiltered
         ? db.select({
@@ -39,6 +45,7 @@ const _fetchKpis = unstable_cache(
           }).from(products).where(inArray(products.shop_id, shopIds))
         : Promise.resolve([{ total: 0 }]),
       marketplaceFiltered ? Promise.resolve([]) : computeStockGroups(userId, allShopIds),
+      prevSinceDate ? fetchPeriodKpis(shopIds, prevSinceDate, prevUntilDate) : Promise.resolve(null),
     ])
     // WHAT THE MARKETPLACES REPORT, not our inferred pool.
     //
@@ -95,8 +102,7 @@ const _fetchKpis = unstable_cache(
       returned_orders: current.returned,
     }
 
-    if (prevSinceDate) {
-      const prev = await fetchPeriodKpis(shopIds, prevSinceDate, prevUntilDate)
+    if (prev) {
       result.change_revenue = pct(current.revenue, prev.revenue)
       result.change_profit = pct(current.profit, prev.profit)
       // Margin badge compares like-for-like: this period's margin-after-commission
