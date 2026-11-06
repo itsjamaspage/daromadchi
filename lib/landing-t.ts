@@ -44,7 +44,7 @@ export const T = {
     all: tr('Все', 'Barchasi', 'All'),
     dateRange: tr('17 мар — 30 мар 2026', '17-mar — 30-mar 2026', 'Mar 17 — Mar 30, 2026'),
     dailyRevenue: tr('Выручка по дням', 'Kunlik daromad', 'Daily revenue'),
-    platforms: tr('Площадки', 'Maydonchalar', 'Platforms'),
+    fulfilment: tr('Склады', 'Omborlar', 'Fulfilment'),
     product: tr('Товар', 'Mahsulot', 'Product'),
     sku: tr('Артикул', 'Artikul', 'SKU'),
     revenueSum: tr('Выручка, сум', "Daromad, so'm", 'Revenue, sum'),
@@ -59,8 +59,8 @@ export const T = {
   },
 
   hero: {
-    headingLine1: tr('Управляйте продажами на двух маркетплейсах', "Ikkita marketpleys sotuvlaringizni bitta joydan boshqaring", 'Manage your sales across two marketplaces'),
-    headingLine2: tr('из одной панели', '', 'from one dashboard'),
+    headingLine1: tr('Управляйте продажами на Uzum Market', "Uzum Market sotuvlaringizni boshqaring", 'Manage your Uzum Market sales'),
+    headingLine2: tr('из одной панели', 'bitta paneldan', 'from one dashboard'),
     subtitle: tr(
       'Выручка, прибыль, остатки и юнит-экономика по Uzum Market — обновление каждые 15 минут, без ручного ввода',
       "Uzum Market bo'yicha daromad, foyda, qoldiqlar va birlik-iqtisod — har 15 daqiqada yangilanadi, qo'lda kiritishsiz",
@@ -72,23 +72,23 @@ export const T = {
 
   comparison: {
     title: tr(
-      'Сейчас вы видите только половину данных',
-      "Hozir siz ma'lumotlarning yarmini ko'ryapsiz",
-      "You're only seeing half the data",
+      'Кабинет Uzum показывает выручку, а не прибыль',
+      "Uzum kabineti daromadni ko'rsatadi, foydani emas",
+      'The Uzum cabinet shows revenue, not profit',
     ),
-    accent: tr('половину данных', 'yarmini', 'half the data'),
+    accent: tr('а не прибыль', 'foydani emas', 'not profit'),
     sub: tr(
-      'Два отдельных кабинета не дают общей картины — приходится переключаться и складывать цифры вручную',
-      "Ikkita alohida kabinet umumiy rasmni bermaydi — raqamlarni qo'lda hisoblashga to'g'ri keladi",
-      'Two separate dashboards give no unified view — you switch tabs and add up numbers by hand',
+      'Комиссии, эквайринг, логистика и себестоимость приходится складывать вручную в Excel — и к концу месяца цифры уже не сходятся',
+      "Komissiya, ekvayring, logistika va tannarxni Excelda qo'lda qo'shishga to'g'ri keladi — oy oxirida raqamlar to'g'ri kelmaydi",
+      'Fees, acquiring, logistics and cost price get added up by hand in Excel — and by month-end the numbers no longer agree',
     ),
-    row1: tr('Выручка по всем площадкам', "Barcha saytlar bo'yicha daromad", 'Revenue across all platforms'),
+    row1: tr('Чистая выручка после комиссий', "Komissiyalardan keyin sof daromad", 'Net revenue after fees'),
     row2: tr('Чистая прибыль в реальном времени', 'Real vaqt sof foyda', 'Real-time net profit'),
-    row3: tr('Остатки по складам', 'Ombor qoldiqlari', 'Stock by warehouse'),
+    row3: tr('Оповещения о заканчивающихся остатках', "Qoldiq tugayotgani haqida ogohlantirish", 'Low-stock alerts'),
     row4: tr('Юнит-экономика', 'Birlik-iqtisod', 'Unit economics'),
     row5: tr('Уведомления в Telegram', 'Telegram bildirishnomalari', 'Telegram notifications'),
     row6: tr('Экспорт в Excel', 'Excel ga eksport', 'Excel export'),
-    separateDashboards: tr('2 кабинета по отдельности', '2 ta alohida kabinet', '2 separate dashboards'),
+    separateDashboards: tr('Кабинет Uzum', 'Uzum kabineti', 'Uzum cabinet'),
     tryFree: startFreeCta,
   },
 
@@ -122,9 +122,9 @@ export const T = {
     ),
     feature1Title: tr('Выручка и прибыль в реальном времени', 'Real-time daromad va foyda', 'Real-time revenue & profit'),
     feature1Desc: tr(
-      'Следите за KPI по каждому маркетплейсу и временному периоду',
-      'Har bir marketpleysning KPIlarini kuzating',
-      'Track KPIs per marketplace and time period',
+      'Следите за KPI по дням, неделям и месяцам',
+      'KPIlarni kun, hafta va oy kesimida kuzating',
+      'Track KPIs by day, week and month',
     ),
     feature2Title: tr('Маржа и рентабельность по каждому товару', 'Har bir mahsulot uchun marja va rentabellik', 'Margin & profitability per product'),
     feature2Desc: tr(
@@ -157,7 +157,7 @@ export const T = {
     signUp: tr('Зарегистрироваться', "Ro'yxatdan o'tish", 'Sign up'),
     step2Title: tr('Подключите магазин', "Do'koningizni ulang", 'Connect your store'),
     step2Desc: tr(
-      'Вставьте API-ключ из кабинета Uzum или Яндекс — получите доступ к данным магазина. По умолчанию платформа только читает данные (остатки можно синхронизировать по желанию).',
+      'Вставьте API-ключ из кабинета Uzum — получите доступ к данным магазина. По умолчанию платформа только читает данные (остатки можно синхронизировать по желанию).',
       "Uzum kabinetidan API kalitini kiriting — do'kon ma'lumotlariga kirish oling. Sukut bo'yicha platforma faqat ma'lumot o'qiydi (ostatokni xohishingizga ko'ra sinxronlash mumkin).",
       'Paste your API key from Uzum to access your store\'s data. By default the platform only reads your data (you can optionally turn on stock sync).',
     ),
@@ -173,12 +173,12 @@ export const T = {
   },
 
   bento: {
-    title: tr("Все данные маркетплейсов в одном дашборде", "Barcha marketplace ma'lumotlari bitta dashboardda", 'All your marketplace data in one dashboard'),
+    title: tr("Все данные магазина в одном дашборде", "Do'konning barcha ma'lumotlari bitta dashboardda", 'All your store data in one dashboard'),
     accent: tr('одном дашборде', 'bitta dashboardda', 'one dashboard'),
     sub: tr(
-      'Аналитика продаж, контроль остатков и управление финансами — в реальном времени по обеим площадкам',
-      "Sotuv tahlili, zaxira nazorati va moliyaviy boshqaruv — ikkala maydoncha bo'yicha real vaqtda",
-      'Real-time profit tracking, margin control, and inventory management across both marketplaces',
+      'Аналитика продаж, контроль остатков и управление финансами — в реальном времени',
+      "Sotuv tahlili, zaxira nazorati va moliyaviy boshqaruv — real vaqtda",
+      'Real-time profit tracking, margin control, and inventory management',
     ),
     revenue: tr('Выручка', 'Daromad', 'Revenue'),
     orders: tr('Заказы', 'Buyurtmalar', 'Orders'),
@@ -186,7 +186,7 @@ export const T = {
     profit: tr('Прибыль', 'Foyda', 'Profit'),
     thisMonth: tr('за месяц', 'oyda', 'this month'),
     analyticsLabel: tr('АНАЛИТИКА', 'TAHLIL', 'ANALYTICS'),
-    analyticsTitle: tr('Аналитика маркетплейсов', 'Analitika markazi', 'Marketplace analytics'),
+    analyticsTitle: tr('Аналитика продаж', 'Savdo tahlili', 'Sales analytics'),
     analyticsDesc: tr(
       'Uzum Market — обновление каждые 15 минут',
       'Uzum Market — har 15 daqiqada yangilanadi',

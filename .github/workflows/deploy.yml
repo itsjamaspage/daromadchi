@@ -46,21 +46,49 @@ jobs:
             || (echo "npm ci failed, wiping node_modules and retrying..." && rm -rf node_modules && npm ci --no-audit --no-fund) \
             || (echo "npm ci still failing, falling back to npm install..." && rm -rf node_modules && npm install --no-audit --no-fund)
           echo "Building..."
-          # Clear the previous Turbopack build output before rebuilding. `.next`
-          # is gitignored so `git reset --hard` never touches it, and a stale
-          # cache from an earlier build can leave the production compile
-          # referencing an externalized module copy (e.g. .next/node_modules/
-          # pg-<hash>/esm/index.mjs) that this build never regenerates — the
-          # compile "succeeds" but page-data collection then dies with
-          # ERR_MODULE_NOT_FOUND, aborting the deploy before migrations run. A
-          # full rebuild each deploy is cheap (~40s) and immune to that. Mirrors
-          # the node_modules self-heal above.
-          rm -rf .next
-          npm run build
+          # Build into .next-build, NOT into the .next the live process is
+          # serving from.
+          #
+          # This step used to be `rm -rf .next && npm run build`. Two reasons for
+          # the rm, both still honoured below:
+          #   * `.next` is gitignored, so `git reset --hard` never touches it,
+          #     and a stale cache can leave the production compile referencing an
+          #     externalized module copy (e.g. .next/node_modules/pg-<hash>/
+          #     esm/index.mjs) that this build never regenerates — the compile
+          #     "succeeds" and page-data collection then dies with
+          #     ERR_MODULE_NOT_FOUND. A full rebuild each deploy is cheap (~40s).
+          #   * It kept the directory from accumulating dead output.
+          # Building into an empty .next-build gives both.
+          #
+          # What it also did, unintentionally: delete the build the live process
+          # was serving. Chunk filenames are content-hashed, so for the whole
+          # ~60s of the build every open page and every new request asked for
+          # /_next/static/css/<old-hash>.css and got a 404. The HTML rendered,
+          # the stylesheet did not — which is exactly what an unstyled landing
+          # page looks like: the md:hidden bottom nav visible on desktop, every
+          # responsive grid collapsed to one column, the pricing tabs bare.
+          # Reported as three separate UI bugs; it was this.
+          #
+          # Now the old build keeps serving until the swap below, which is a
+          # rename — so the unstyled window shrinks from a minute to the moment
+          # between `mv` and pm2 coming back up.
+          rm -rf .next-build .next-old
+          NEXT_DIST_DIR=.next-build npm run build
+          if [ ! -f .next-build/BUILD_ID ]; then
+            echo "ABORT: .next-build has no BUILD_ID, so the build did not finish."
+            echo "The previous build is untouched and still serving."
+            exit 1
+          fi
           # Exported so both the migration step and the restarted process see it.
           export TZ=Asia/Tashkent
           echo "Applying DB migrations..."
           node scripts/apply-sql-migrations.mjs
+          echo "Swapping in the new build..."
+          # Near-atomic: two renames on the same filesystem. Up to this point a
+          # failure anywhere above has left .next untouched and the old build
+          # serving, which is the safe state the smoke check below depends on.
+          if [ -d .next ]; then mv .next .next-old; fi
+          mv .next-build .next
           echo "Restarting app..."
           # TZ=Asia/Tashkent is a SAFETY NET, not the mechanism. Business dates go
           # through lib/shop-time.ts, which names the zone explicitly and so does
@@ -118,6 +146,9 @@ jobs:
             exit 1
           fi
           echo "Smoke check passed: serving $TARGET_SHA, / renders."
+          # Only now is the previous build provably unnecessary. Keeping it until
+          # after the smoke check means a failed deploy still has it on disk.
+          rm -rf .next-old
           echo "Installing cron runner..."
           # Install the TRACKED script. It has existed at scripts/cron-runner.sh
           # since #249 ("put cron scheduling in version control") — and this
