@@ -177,6 +177,11 @@ const MIGRATIONS = [
   // Persist marketplace substatus for return-reason display. Additive +
   // idempotent (ADD COLUMN IF NOT EXISTS).
   'migrations/migrations/101_marketplace_substatus.sql',
+  // Keeps the Yandex schema objects dropped. REGISTERED on purpose, unlike 103:
+  // it is guarded on 103 having already run, drops no rows, and exists because
+  // the IF-NOT-EXISTS migrations above (030/035/038/051/096/098) recreate what
+  // 103 removes on the very next deploy. Must stay LAST. See the file header.
+  'migrations/migrations/104_drop_yandex_schema_leftovers.sql',
   // NOT REGISTERED, DELIBERATELY: 103_drop_yandex_market.sql.
   // It DELETES real seller data (Yandex shops, orders, order_items, products
   // and settlement rows) before it can drop 'yandex_market' from the
