@@ -4,8 +4,8 @@
  * The READ-ONLY counterpart of the edit-mode cross-store stock sync. A seller on
  * read-only keys never lets Daromadchi write to a marketplace — so when a linked
  * cross-marketplace SKU goes out of sync (Uzum sells the last unit → 0, but the
- * linked Yandex listing still shows 1), instead of WRITING the corrected number
- * we TELL the seller the exact number to set by hand: "• JMWHT — set 0 on Yandex".
+ * a linked listing on another shop still shows 1), instead of WRITING the
+ * corrected number we TELL the seller the exact number to set by hand.
  *
  * SAFETY: this module never writes to any marketplace. It imports only read /
  * compute helpers (computeAvailable, reservingOrderCondition) and the notifier —
@@ -50,7 +50,7 @@ async function loadUserGroups(userId: string): Promise<Map<string, LoadedGroup>>
     priority: shops.primary_channel_priority,
   }).from(shops).where(and(eq(shops.user_id, userId), eq(shops.is_active, true)))
 
-  const inScope = shopRows.filter(s => s.marketplace === 'uzum' || s.marketplace === 'yandex_market')
+  const inScope = shopRows.filter(s => s.marketplace === 'uzum')
   const shopById = new Map(inScope.map(s => [s.id, s]))
   const shopIds = [...shopById.keys()]
   const groups = new Map<string, LoadedGroup>()

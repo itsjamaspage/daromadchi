@@ -76,16 +76,12 @@ export default function AnalyticsBoard({ chartData, categoryData, products, kpis
   const axisColor = theme === 'dark' ? '#64748b' : '#9ca3af'
   const gridColor = theme === 'dark' ? '#ffffff10' : '#00000010'
 
-  /* Stacked channel data — split daily revenue across marketplaces deterministically */
-  const channelData = useMemo(() => {
-    const split = [0.63] // uzum / yandex
-    return chartData.map((d, i) => {
-      const wobble = ((i * 7) % 11) / 100 - 0.05
-      const uzum = Math.round(d.revenue * (split[0] + wobble))
-      const yandex = Math.max(0, d.revenue - uzum)
-      return { date: d.date, Uzum: uzum, Yandex: yandex }
-    })
-  }, [chartData])
+  /* Per-channel revenue. One integrated marketplace today, so the stack has a
+     single series — the shape stays stacked for when another is added. */
+  const channelData = useMemo(
+    () => chartData.map(d => ({ date: d.date, Uzum: d.revenue })),
+    [chartData],
+  )
 
   /* New vs returning — derived from total orders */
   const customerSplit = useMemo(() => {
@@ -229,8 +225,7 @@ export default function AnalyticsBoard({ chartData, categoryData, products, kpis
                 ) : null}
               />
               <Legend wrapperStyle={{ fontSize: 11, color: axisColor }} iconType="circle" />
-              <Bar dataKey="Uzum" stackId="a" fill={PALETTE[0]} radius={[0, 0, 0, 0]} />
-              <Bar dataKey="Yandex" stackId="a" fill={PALETTE[3]} radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Uzum" stackId="a" fill={PALETTE[0]} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

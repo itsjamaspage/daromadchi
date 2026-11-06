@@ -1,5 +1,5 @@
 import { inArray, gte, and, asc, ne, eq, sql } from 'drizzle-orm'
-import { db, orders, orderItems, products, shops, uzumSettlementOrders, yandexSettlementTransactions } from '@/lib/db'
+import { db, orders, orderItems, products, shops, uzumSettlementOrders } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import { getRealFinancialsByBucket } from '@/lib/db/real-financials'
@@ -46,13 +46,6 @@ export interface PnlRow {
   additionalPayment: number
   /** true when commission/delivery came from percentages, not marketplace data */
   estimated: boolean
-  /**
-   * true when the bucket has a Yandex sale whose real settlement hasn't landed
-   * yet. Yandex fees are NEVER estimated from a percentage (the order endpoint
-   * carries no real fee — only the netting report does, a few days later), so
-   * the UI shows "pending" for these instead of a fabricated number.
-   */
-  feePending: boolean
   /**
    * True when at least one delivered item in the bucket has no cost price. The
    * `cogs` beside it counts only the items that DO have one, so it is a floor,
@@ -169,11 +162,11 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
   // chart handles missing months by simply omitting the bar.
   const grouped = new Map<string, {
     revenue: number; realFee: number; realDelivery: number; count: number
-    // revenueEstimable = non-cancelled revenue EXCLUDING Yandex. Percentage
-    // estimates for missing fees are applied ONLY to this, so Yandex revenue
-    // is never multiplied into a fabricated fee. hasYandex flags a Yandex sale
-    // in the bucket so we can mark its fee "pending" until settlement lands.
-    revenueEstimable: number; hasYandex: boolean
+    // revenueEstimable = delivered, non-cancelled revenue that percentage
+    // estimates for missing fees may be applied to. Kept separate from
+    // `revenue` so a marketplace whose fees are settlement-only can be excluded
+    // from the estimate base rather than multiplied into a fabricated fee.
+    revenueEstimable: number
     cancelledCount: number; cancelledAmount: number
     pendingRevenue: number; pendingCount: number
     penalty: number; storageFee: number; additionalPayment: number
@@ -186,7 +179,7 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
     const d = row.ordered_at
     const key = bucket === 'day' ? shopDateStr(d) : shopMonthStr(d)
     const ex = grouped.get(key) ?? {
-      revenue: 0, realFee: 0, realDelivery: 0, count: 0, revenueEstimable: 0, hasYandex: false,
+      revenue: 0, realFee: 0, realDelivery: 0, count: 0, revenueEstimable: 0,
       cancelledCount: 0, cancelledAmount: 0,
       pendingRevenue: 0, pendingCount: 0,
       penalty: 0, storageFee: 0, additionalPayment: 0,
@@ -204,8 +197,7 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
       ex.revenue      += rev
       // money-guard-ok: a sum of the fees WE have on record. Nothing downstream
       // reads a zero here as "the marketplace charged nothing" — `estimated`
-      // substitutes a percentage for non-Yandex revenue, and `feePending` marks
-      // Yandex sales whose settlement has not landed instead of showing 0.
+      // substitutes a percentage instead of showing 0.
       ex.realFee      += Number(row.marketplace_fee ?? 0)
       // money-guard-ok: as above, for delivery.
       ex.realDelivery += Number(row.delivery_cost ?? 0)
@@ -213,10 +205,7 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
       ex.storageFee   += Number(row.storage_fee ?? 0)
       ex.additionalPayment += Number(row.additional_payment ?? 0)
       ex.count        += 1
-      // Yandex fees are settlement-only — never estimate them. Keep Yandex
-      // revenue out of the estimable base and flag the sale as pending.
-      if (row.marketplace === 'yandex_market') ex.hasYandex = true
-      else ex.revenueEstimable += rev
+      ex.revenueEstimable += rev
     }
     grouped.set(key, ex)
   }
@@ -224,15 +213,12 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
   const result: PnlRow[] = Array.from(grouped.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, v]) => {
-      // Prefer real settlement data (Yandex united-netting or Uzum
-      // /v1/finance/orders) when we have any for the bucket; fall back
+      // Prefer real settlement data (Uzum /v1/finance/orders) when we
+      // have any for the bucket; fall back
       // to marketplace_fee stored on the orders row; fall back again
       // to Unit-Economics percentages. Same precedence Payouts uses.
       const real = realByBucket.get(key)
       const hasReal = !!real && real.itemCount > 0
-      const hasRealYandex = !!real && real.ymItemCount > 0
-      // Percentage estimates apply ONLY to estimable (non-Yandex) revenue —
-      // Yandex fees are settlement-only and are never fabricated from a %.
       const estimated  = !hasReal && v.realFee === 0 && v.revenueEstimable > 0
       const commission = hasReal ? real!.commission
                        : estimated ? v.revenueEstimable * params.commissionPct / 100
@@ -240,8 +226,8 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
       const delivery   = hasReal ? real!.delivery
                        : v.realDelivery > 0 ? v.realDelivery
                        : v.revenueEstimable * params.lastMilePct / 100
-      // Acquiring is bundled into marketplace commission (Uzum + Yandex
-      // both fold it in). Only show a separate estimated acquiring line
+      // Acquiring is bundled into marketplace commission (Uzum folds it
+      // in). Only show a separate estimated acquiring line
       // when we're falling back to Unit-Economics percentages.
       const acquiring  = (!hasReal && estimated) ? v.revenueEstimable * params.acquiringPct / 100 : 0
       // Other real marketplace deductions (storage, acquiring, ads/boost,
@@ -250,9 +236,6 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
       // Net is unchanged: commission (now Поручение-only) + otherFees == the old
       // catch-all commission, so the same total is still subtracted below.
       const otherFees  = hasReal ? real!.other : 0
-      // A Yandex sale whose real settlement hasn't landed yet → its fee is
-      // "pending" (shown as a placeholder), not zero and not an estimate.
-      const feePending = v.hasYandex && !hasRealYandex
       const cogs       = cogsByBucket.get(key) ?? 0
       const cogsPending = cogsPendingBuckets.has(key)
       const penalty    = v.penalty
@@ -285,7 +268,6 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
         additionalPayment,
         net: v.revenue - commission - delivery - otherFees - acquiring - tax - cogs - penalty - storageFee - additionalPayment,
         estimated,
-        feePending,
         cogsPending,
       }
     })
@@ -341,10 +323,10 @@ export async function getCogsBreakdown(opts: {
 }
 
 /** Delivery (logistics) charged per marketplace over the range, from the same
- *  settlement sources the P&L delivery figure uses — Uzum logistic_delivery_fee
- *  and Yandex "Доставка"-tagged debits. Backs the Доставка card tooltip so it
- *  can name which store charged the fee. Only non-zero stores matter to the UI. */
-export interface DeliveryByMp { marketplace: 'uzum' | 'yandex_market'; delivery: number }
+ *  settlement source the P&L delivery figure uses — Uzum
+ *  logistic_delivery_fee. Backs the Доставка card tooltip so it can name which
+ *  store charged the fee. Only non-zero stores matter to the UI. */
+export interface DeliveryByMp { marketplace: 'uzum'; delivery: number }
 
 export async function getDeliveryByMarketplace(opts: {
   from: Date; to: Date; marketplace?: MarketplaceType
@@ -354,7 +336,6 @@ export async function getDeliveryByMarketplace(opts: {
   const shopRows = await db.select({ id: shops.id, marketplace: shops.marketplace })
     .from(shops).where(inArray(shops.id, shopIds))
   const uz = shopRows.filter(r => r.marketplace === 'uzum').map(r => r.id)
-  const ym = shopRows.filter(r => r.marketplace === 'yandex_market').map(r => r.id)
 
   const out: DeliveryByMp[] = []
   if (uz.length > 0) {
@@ -367,18 +348,6 @@ export async function getDeliveryByMarketplace(opts: {
       ne(uzumSettlementOrders.status, 'CANCELED'),
     ))
     out.push({ marketplace: 'uzum', delivery: Number(r?.d ?? 0) })
-  }
-  if (ym.length > 0) {
-    const [r] = await db.select({
-      d: sql<number>`coalesce(sum(${yandexSettlementTransactions.amount}), 0)`,
-    }).from(yandexSettlementTransactions).where(and(
-      inArray(yandexSettlementTransactions.shop_id, ym),
-      gte(yandexSettlementTransactions.transaction_at, opts.from),
-      sql`${yandexSettlementTransactions.transaction_at} <= ${opts.to}`,
-      eq(yandexSettlementTransactions.entry_type, 'Удержание'),
-      sql`${yandexSettlementTransactions.order_type} like '%Доставка%'`,
-    ))
-    out.push({ marketplace: 'yandex_market', delivery: Number(r?.d ?? 0) })
   }
   return out
 }

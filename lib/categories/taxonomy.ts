@@ -26,7 +26,8 @@ export interface CanonicalCategory {
   parent_group: ParentGroup
   name: { ru: string; uz: string; en: string }
   terms: { ru: string[]; uz: string[]; en: string[] }
-  raw_examples: { uzum: string[]; yandex_market: string[] }
+  /** Raw marketplace category strings seen in the wild, used as extra match terms. */
+  raw_examples: string[]
   notes?: string
 }
 
@@ -40,10 +41,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['smartfonlar','smartfon','aqlli telefonlar','telefonlar','mobil telefonlar','iphone','tugmali telefonlar'],
       en: ['smartphones','smartphone','mobile phones','cell phones','iphones','android phones','feature phones'],
     },
-    raw_examples: {
-      uzum: ['Smartfonlar','Смартфоны'],
-      yandex_market: ['Смартфоны','Мобильные телефоны'],
-    },
+    raw_examples: ['Smartfonlar','Смартфоны','Мобильные телефоны'],
     notes: 'The device itself, not accessories. If raw string mentions "чехол" (case) or "стекло" (glass), it belongs to phone_accessories.',
   },
   {
@@ -55,10 +53,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['telefon aksessuarlari','chexollar','himoya oynasi','himoya plyonkasi','telefon ushlagichlari','popsoketlar','selfi tayoqchalari'],
       en: ['phone accessories','phone cases','screen protectors','phone cables','phone holders','popsockets','selfie sticks','phone stands'],
     },
-    raw_examples: {
-      uzum: ['Telefon aksessuarlari','Chexollar','Himoya oynalari'],
-      yandex_market: ['Аксессуары для мобильных телефонов','Аксессуары для смартфонов','Чехлы для телефонов','Чехлы и накладки для телефонов','Защитные стекла'],
-    },
+    raw_examples: ['Telefon aksessuarlari','Chexollar','Himoya oynalari','Аксессуары для мобильных телефонов','Аксессуары для смартфонов','Чехлы для телефонов','Чехлы и накладки для телефонов','Защитные стекла'],
   },
   {
     id: 'headphones',
@@ -69,10 +64,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['quloqchinlar','quloqchin','simsiz quloqchinlar','simli quloqchinlar','tws','bluetooth quloqchinlar','blyutuz quloqchinlar','garnitura',"o'yin quloqchinlari"],
       en: ['headphones','earphones','earbuds','tws','wireless earphones','wired headphones','in-ear','over-ear','on-ear','airpods','bluetooth headphones','gaming headset','headset'],
     },
-    raw_examples: {
-      uzum: ['Simsiz quloqchinlar','Quloqchinlar','TWS quloqchinlar'],
-      yandex_market: ['Наушники','Гарнитуры','Наушники и гарнитуры','Беспроводные наушники','TWS наушники'],
-    },
+    raw_examples: ['Simsiz quloqchinlar','Quloqchinlar','TWS quloqchinlar','Наушники','Гарнитуры','Наушники и гарнитуры','Беспроводные наушники','TWS наушники'],
   },
   {
     id: 'smart_watches',
@@ -83,16 +75,13 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['aqlli soatlar','smart soatlar','smart soat','smart-soat','fitness bilaguzuk','fitnes braslet','sport soatlar','bolalar aqlli soatlari'],
       en: ['smart watches','smartwatches','fitness trackers','fitness bands','wearables','apple watch','sport watches','kids smart watches'],
     },
-    raw_examples: {
-      // Uzum returns the category as a raw localized string that varies by
-      // account language / taxonomy version, so the SAME watch can arrive as
-      // Uzbek ("Aqlli soatlar") OR Russian ("Смарт-часы" / "Умные часы"). All
-      // spellings must be listed here or a Uzum product stored under the
-      // Russian label misses the alias join (keyed by marketplace='uzum') and
-      // fragments into its own donut slice.
-      uzum: ['Aqlli soatlar','Smart soatlar','Fitness bilaguzuklar','Смарт-часы','Умные часы'],
-      yandex_market: ['Умные часы','Фитнес-браслеты','Умные часы и браслеты','Смарт-часы'],
-    },
+    // Uzum returns the category as a raw localized string that varies by
+    // account language / taxonomy version, so the SAME watch can arrive as
+    // Uzbek ("Aqlli soatlar") OR Russian ("Смарт-часы" / "Умные часы"). All
+    // spellings must be listed here or a Uzum product stored under the
+    // Russian label misses the alias join (keyed by marketplace='uzum') and
+    // fragments into its own donut slice.
+    raw_examples: ['Aqlli soatlar','Smart soatlar','Fitness bilaguzuklar','Смарт-часы','Умные часы','Фитнес-браслеты','Умные часы и браслеты'],
     notes: 'Distinct from analog jewelry/fashion watches — those go to jewelry.',
   },
   {
@@ -104,10 +93,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['noutbuklar','noutbuk','laptop','macbook',"o'yin noutbuklari",'portativ kompyuterlar'],
       en: ['laptops','laptop','notebooks','macbooks','gaming laptops','ultrabooks'],
     },
-    raw_examples: {
-      uzum: ['Noutbuklar','Ноутбуки'],
-      yandex_market: ['Ноутбуки','Ноутбуки персональные','Ноутбуки и ультрабуки'],
-    },
+    raw_examples: ['Noutbuklar','Ноутбуки','Ноутбуки персональные','Ноутбуки и ультрабуки'],
   },
   {
     id: 'tablets',
@@ -118,10 +104,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['planshetlar','planshet','ipad','elektron kitoblar','grafik planshetlar'],
       en: ['tablets','tablet','ipads','e-readers','kindle','drawing tablets'],
     },
-    raw_examples: {
-      uzum: ['Planshetlar','Планшеты'],
-      yandex_market: ['Планшеты','Планшетные компьютеры','Электронные книги','Книги электронные'],
-    },
+    raw_examples: ['Planshetlar','Планшеты','Планшетные компьютеры','Электронные книги','Книги электронные'],
   },
   {
     id: 'computer_peripherals',
@@ -132,10 +115,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['klaviaturalar','sichqonchalar','monitorlar','veb kameralar','kompyuter aksessuarlari','sichqoncha gilamchalari','klaviatura va sichqoncha to\'plami'],
       en: ['keyboards','mice','computer mouse','monitors','webcams','mousepads','computer peripherals','usb hubs','pc components'],
     },
-    raw_examples: {
-      uzum: ['Kompyuter aksessuarlari','Klaviaturalar','Monitorlar','Klaviatura va sichqoncha to\'plami'],
-      yandex_market: ['Компьютерная периферия','Мониторы','Клавиатуры','Клавиатуры компьютерные','Компьютерные мыши','Комплекты клавиатур и мышей'],
-    },
+    raw_examples: ['Kompyuter aksessuarlari','Klaviaturalar','Monitorlar','Klaviatura va sichqoncha to\'plami','Компьютерная периферия','Мониторы','Клавиатуры','Клавиатуры компьютерные','Компьютерные мыши','Комплекты клавиатур и мышей'],
   },
   {
     id: 'networking_storage',
@@ -146,10 +126,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['routerlar','wi-fi routerlar','tashqi disklar','flashkalar','ssd','xotira kartalari'],
       en: ['routers','wifi routers','external hard drives','ssds','usb flash drives','modems','network equipment','memory cards','microsd'],
     },
-    raw_examples: {
-      uzum: ['Routerlar','Flash xotira'],
-      yandex_market: ['Wi-Fi роутеры','Внешние накопители','Сетевое оборудование','Внешние жесткие диски','Флешки USB'],
-    },
+    raw_examples: ['Routerlar','Flash xotira','Wi-Fi роутеры','Внешние накопители','Сетевое оборудование','Внешние жесткие диски','Флешки USB'],
   },
   {
     id: 'tvs',
@@ -160,10 +137,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['televizorlar','televizor','tv','smart tv','proyektorlar','tv pristavkalari'],
       en: ['tvs','televisions','smart tvs','led tvs','oled tvs','qled tvs','projectors','streaming devices','tv mounts'],
     },
-    raw_examples: {
-      uzum: ['Televizorlar'],
-      yandex_market: ['Телевизоры и видеотехника','Телевизоры','Проекторы'],
-    },
+    raw_examples: ['Televizorlar','Телевизоры и видеотехника','Телевизоры','Проекторы'],
   },
   {
     id: 'speakers_audio',
@@ -174,10 +148,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['kolonkalar','portativ kolonkalar','bluetooth kolonkalar','saundbarlar','aqlli kolonkalar'],
       en: ['speakers','bluetooth speakers','portable speakers','soundbars','home theater','jbl','subwoofers','smart speakers'],
     },
-    raw_examples: {
-      uzum: ['Kolonkalar','Portativ kolonkalar'],
-      yandex_market: ['Портативная акустика','Беспроводные колонки','Домашняя акустика','Портативные колонки','Акустические системы','Акустические системы для дома','Саундбары'],
-    },
+    raw_examples: ['Kolonkalar','Portativ kolonkalar','Портативная акустика','Беспроводные колонки','Домашняя акустика','Портативные колонки','Акустические системы','Акустические системы для дома','Саундбары'],
     notes: 'Distinct from headphones. Speakers = external audio playback.',
   },
   {
@@ -189,10 +160,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['fotoapparatlar','kameralar','aksiya kameralari','gopro','shtativlar','obyektivlar'],
       en: ['cameras','dslr cameras','mirrorless cameras','action cameras','gopro','camcorders','lenses','tripods','instant cameras'],
     },
-    raw_examples: {
-      uzum: ['Fotoapparatlar','Экшн-камеры'],
-      yandex_market: ['Фото- и видеотехника','Фото- и видеокамеры','Аксессуары для фото'],
-    },
+    raw_examples: ['Fotoapparatlar','Экшн-камеры','Фото- и видеотехника','Фото- и видеокамеры','Аксессуары для фото'],
   },
   {
     id: 'gaming',
@@ -203,10 +171,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ["o'yin konsollari",'playstation','xbox','nintendo','joystiklar','geympadlar',"video o'yinlar"],
       en: ['gaming consoles','playstation','xbox','nintendo switch','controllers','video games','gaming chairs','vr headsets','gaming steering wheels'],
     },
-    raw_examples: {
-      uzum: ["O'yin konsollari",'Игровые приставки'],
-      yandex_market: ['Игровые приставки','Приставки игровые','Игры для консолей','Геймпады','Геймпад'],
-    },
+    raw_examples: ['yin konsollari",','Игровые приставки','Приставки игровые','Игры для консолей','Геймпады','Геймпад'],
   },
   {
     id: 'power_banks_chargers',
@@ -217,10 +182,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['powerbanklar','powerbank','portativ zaryadlagichlar','zaryadlash qurilmalari','adapterlar','simsiz zaryadlagichlar','tashqi akkumulyatorlar'],
       en: ['power banks','power bank','powerbank','portable chargers','chargers','power adapters','wireless chargers','wall chargers','car chargers','magsafe'],
     },
-    raw_examples: {
-      uzum: ['Powerbanklar','Zaryadlagichlar','Tashqi akkumulyatorlar'],
-      yandex_market: ['Внешние аккумуляторы','Зарядные устройства','Повербанки','Портативные аккумуляторы'],
-    },
+    raw_examples: ['Powerbanklar','Zaryadlagichlar','Tashqi akkumulyatorlar','Внешние аккумуляторы','Зарядные устройства','Повербанки','Портативные аккумуляторы'],
     notes: 'Car chargers may also match car_electronics — prefer this canonical unless raw string contains "авто"/"car"/"avto".',
   },
   {
@@ -232,10 +194,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['choynaklar','elektr choynaklar','blenderlar','mikserlar','tosterlar','kofe mashinalari',"mikroto'lqinli pechlar",'multivarkalar','shirasiqargichlar',"go'sht qiymalagichlar"],
       en: ['kettles','electric kettles','blenders','mixers','toasters','coffee machines','microwaves','multicookers','juicers','food processors','meat grinders','bread makers','air fryers'],
     },
-    raw_examples: {
-      uzum: ['Choynaklar','Blenderlar','Kofe mashinalari'],
-      yandex_market: ['Мелкая бытовая техника','Мелкая кухонная техника','Чайники','Блендеры'],
-    },
+    raw_examples: ['Choynaklar','Blenderlar','Kofe mashinalari','Мелкая бытовая техника','Мелкая кухонная техника','Чайники','Блендеры'],
   },
   {
     id: 'large_kitchen_appliances',
@@ -246,10 +205,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['muzlatgichlar','muzlatkichlar','plitalar','gaz plitalari','elektr plitalar','idish yuvish mashinalari',"so'rgichlar"],
       en: ['refrigerators','fridges','freezers','stoves','gas stoves','electric stoves','cooktops','ovens','dishwashers','range hoods','built-in appliances'],
     },
-    raw_examples: {
-      uzum: ['Muzlatgichlar','Katta maishiy texnika'],
-      yandex_market: ['Крупная бытовая техника','Холодильники','Посудомоечные машины'],
-    },
+    raw_examples: ['Muzlatgichlar','Katta maishiy texnika','Крупная бытовая техника','Холодильники','Посудомоечные машины'],
   },
   {
     id: 'cookware',
@@ -260,10 +216,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['qozonlar','tovalar','kostryulkalar','pishirish idishlari'],
       en: ['cookware','pans','pots','frying pans','saucepans','cast iron','bakeware','baking sheets','cookware sets','woks'],
     },
-    raw_examples: {
-      uzum: ['Tovalar va qozonlar'],
-      yandex_market: ['Кастрюли и сковороды','Посуда для приготовления','Сковороды','Сковороды для готовки','Кастрюли'],
-    },
+    raw_examples: ['Tovalar va qozonlar','Кастрюли и сковороды','Посуда для приготовления','Сковороды','Сковороды для готовки','Кастрюли'],
   },
   {
     id: 'tableware_utensils',
@@ -274,10 +227,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['stol idishlari','likobchalar','krujkalar','stakanlar','oshxona pichoqlari','kesish taxtalari','oshxona buyumlari'],
       en: ['tableware','dinnerware','plates','mugs','cups','glasses','cutlery','kitchen knives','cutting boards','kitchen utensils','graters'],
     },
-    raw_examples: {
-      uzum: ['Stol idishlari','Oshxona pichoqlari'],
-      yandex_market: ['Столовая посуда','Посуда для сервировки','Кухонные принадлежности'],
-    },
+    raw_examples: ['Stol idishlari','Oshxona pichoqlari','Столовая посуда','Посуда для сервировки','Кухонные принадлежности'],
   },
   {
     id: 'bed_bath_textiles',
@@ -288,10 +238,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['choyshab','sochiqlar',"ko'rpalar",'yostiqlar',"choyshab to'plamlari",'matraslar'],
       en: ['bedding','bed linen','sheets','pillowcases','duvet covers','towels','blankets','pillows','comforters','mattresses','bathrobes'],
     },
-    raw_examples: {
-      uzum: ["Choyshab to'plamlari",'Sochiqlar'],
-      yandex_market: ['Домашний текстиль','Постельное белье','Полотенца','Одеяла','Одеяла для сна'],
-    },
+    raw_examples: ['plamlari",','Домашний текстиль','Постельное белье','Полотенца','Одеяла','Одеяла для сна'],
   },
   {
     id: 'furniture',
@@ -302,10 +249,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['mebel','divanlar','stollar','stullar','karavotlar','shkaflar','tumbalar','kompyuter stollari'],
       en: ['furniture','sofas','armchairs','chairs','tables','beds','wardrobes','cabinets','shelves','desks','office chairs'],
     },
-    raw_examples: {
-      uzum: ['Mebel'],
-      yandex_market: ['Мебель','Диваны','Столы'],
-    },
+    raw_examples: ['Mebel','Мебель','Диваны','Столы'],
     notes: 'Kids furniture belongs here unless the raw string is clearly a nursery item — otherwise use baby_products.',
   },
   {
@@ -317,10 +261,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['uy bezaklari','rasmlar','vazalar','shamlar','oynalar','devor soatlari','gilamlar','pardalar','foto ramkalar'],
       en: ['home decor','wall art','posters','vases','candles','mirrors','wall clocks','rugs','curtains','decorative pillows','figurines','picture frames'],
     },
-    raw_examples: {
-      uzum: ['Uy bezaklari','Gilamlar'],
-      yandex_market: ['Домашний декор','Декор для дома','Картины','Картины интерьерные','Ковры','Ковры напольные'],
-    },
+    raw_examples: ['Uy bezaklari','Gilamlar','Домашний декор','Декор для дома','Картины','Картины интерьерные','Ковры','Ковры напольные'],
   },
   {
     id: 'cleaning_supplies',
@@ -331,10 +272,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['maishiy kimyo','kir yuvish kukunlari','idish yuvish vositalari','tozalash vositalari','axlat xaltalari','havoni tozalovchilar'],
       en: ['cleaning supplies','laundry detergent','fabric softener','dish soap','household chemicals','mops','trash bags','air fresheners','insect repellent'],
     },
-    raw_examples: {
-      uzum: ['Maishiy kimyo','Kir yuvish vositalari'],
-      yandex_market: ['Бытовая химия','Средства для стирки'],
-    },
+    raw_examples: ['Maishiy kimyo','Kir yuvish vositalari','Бытовая химия','Средства для стирки'],
   },
   {
     id: 'lighting',
@@ -345,10 +283,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['yoritish','lampalar','yoritgichlar','lyustralar','stol lampalari','led lampalar','giryandalar'],
       en: ['lighting','lamps','light fixtures','chandeliers','desk lamps','floor lamps','led bulbs','string lights','wall sconces'],
     },
-    raw_examples: {
-      uzum: ['Yoritish','Lampalar'],
-      yandex_market: ['Освещение','Люстры','Настольные лампы'],
-    },
+    raw_examples: ['Yoritish','Lampalar','Освещение','Люстры','Настольные лампы'],
   },
   {
     id: 'home_small_appliances',
@@ -359,10 +294,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['dazmollar','changyutgichlar','ventilyatorlar','isitgichlar','konditsionerlar','havo namlagichlar','tikuv mashinalari','kir yuvish mashinalari'],
       en: ['irons','vacuum cleaners','fans','heaters','air conditioners','humidifiers','air purifiers','sewing machines','garment steamers','washing machines','robot vacuums'],
     },
-    raw_examples: {
-      uzum: ['Dazmollar','Changyutgichlar','Konditsionerlar'],
-      yandex_market: ['Уход за домом','Климатическая техника','Техника для дома','Утюги','Пылесосы'],
-    },
+    raw_examples: ['Dazmollar','Changyutgichlar','Konditsionerlar','Уход за домом','Климатическая техника','Техника для дома','Утюги','Пылесосы'],
   },
   {
     id: 'makeup_cosmetics',
@@ -373,10 +305,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['bezovchi kosmetika',"labbo'yoqlar","ko'z bo'yoqlari","ko'z qalamlari",'yuz uchun kremlar','pudralar','kirpik uchun tushlar'],
       en: ['makeup','cosmetics','foundation','lipstick','eyeshadow','mascara','blush','powder','concealer','makeup brushes','eyeliner','lip gloss','highlighter','bronzer'],
     },
-    raw_examples: {
-      uzum: ['Bezovchi kosmetika',"Labbo'yoqlar"],
-      yandex_market: ['Декоративная косметика','Макияж лица'],
-    },
+    raw_examples: ['Bezovchi kosmetika','Декоративная косметика','Макияж лица'],
   },
   {
     id: 'skincare',
@@ -387,10 +316,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['teri parvarishi','yuz kremlari','serumlar','yuz niqoblari','toniklar','skrablar','quyoshdan himoya vositalari','tana kremlari'],
       en: ['skincare','face creams','serums','face masks','toners','cleansers','scrubs','sunscreen','spf','body care','body lotions','eye patches'],
     },
-    raw_examples: {
-      uzum: ['Teri parvarishi','Yuz kremlari'],
-      yandex_market: ['Уход за лицом','Уход за телом','Уход за кожей','Средства для лица'],
-    },
+    raw_examples: ['Teri parvarishi','Yuz kremlari','Уход за лицом','Уход за телом','Уход за кожей','Средства для лица'],
   },
   {
     id: 'haircare',
@@ -401,10 +327,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['soch parvarishi','shampunlar','soch niqoblari','soch bo\'yoqlari','fenlar','soch to\'g\'rilagichlar','soch olish mashinalari'],
       en: ['haircare','shampoo','hair conditioner','hair masks','hair oils','hair dye','hair dryers','curling irons','hair straighteners','hair clippers'],
     },
-    raw_examples: {
-      uzum: ['Soch parvarishi','Shampunlar','Fenlar'],
-      yandex_market: ['Уход за волосами','Средства для волос'],
-    },
+    raw_examples: ['Soch parvarishi','Shampunlar','Fenlar','Уход за волосами','Средства для волос'],
   },
   {
     id: 'perfumes',
@@ -415,10 +338,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['atirlar','parfyumeriya','erkaklar atirlari','ayollar atirlari','arab atirlari'],
       en: ['perfumes','fragrances','eau de parfum','eau de toilette','cologne',"men's fragrances","women's fragrances",'arabic perfumes'],
     },
-    raw_examples: {
-      uzum: ['Atirlar'],
-      yandex_market: ['Парфюмерия','Женская парфюмерия','Мужская парфюмерия'],
-    },
+    raw_examples: ['Atirlar','Парфюмерия','Женская парфюмерия','Мужская парфюмерия'],
   },
   {
     id: 'personal_hygiene',
@@ -429,10 +349,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['shaxsiy gigiyena','sovun','dush gellari','dezodorantlar','nam salfetkalar','ustaralar','hojatxona qog\'ozi'],
       en: ['personal hygiene','soap','shower gel','deodorants','antiperspirants','wet wipes','feminine care','razors','shaving supplies','cotton pads','toilet paper'],
     },
-    raw_examples: {
-      uzum: ['Shaxsiy gigiyena','Sovunlar'],
-      yandex_market: ['Средства гигиены','Женская гигиена','Средства для бритья'],
-    },
+    raw_examples: ['Shaxsiy gigiyena','Sovunlar','Средства гигиены','Женская гигиена','Средства для бритья'],
   },
   {
     id: 'oral_care',
@@ -443,10 +360,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ["og'iz parvarishi",'tish pastalari',"tish cho'tkalari","elektr tish cho'tkalari","og'izni chayqash vositalari"],
       en: ['oral care','toothpaste','toothbrushes','electric toothbrushes','mouthwash','dental floss','water flossers','teeth whitening'],
     },
-    raw_examples: {
-      uzum: ['Tish parvarishi','Tish pastalari'],
-      yandex_market: ['Уход за полостью рта','Гигиена полости рта','Зубные щетки','Щетки зубные'],
-    },
+    raw_examples: ['Tish parvarishi','Tish pastalari','Уход за полостью рта','Гигиена полости рта','Зубные щетки','Щетки зубные'],
   },
   {
     id: 'health_medical',
@@ -457,10 +371,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['tibbiy tovarlar','tonometrlar','termometrlar','pulsoksimetrlar','massajerlar','vitaminlar','plastirlar','tibbiy niqoblar'],
       en: ['medical devices','blood pressure monitors','thermometers','pulse oximeters','glucose meters','nebulizers','massagers','vitamins','supplements','first aid','bandages','medical masks'],
     },
-    raw_examples: {
-      uzum: ['Tibbiy tovarlar','Vitaminlar'],
-      yandex_market: ['Медицинские приборы','Витамины и БАДы','Товары для здоровья','Тонометры','БАДы'],
-    },
+    raw_examples: ['Tibbiy tovarlar','Vitaminlar','Медицинские приборы','Витамины и БАДы','Товары для здоровья','Тонометры','БАДы'],
   },
   {
     id: 'mens_clothing',
@@ -471,10 +382,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['erkaklar kiyimi','erkaklar futbolkalari',"erkaklar ko'ylaklari",'erkaklar shimlari','erkaklar kurtkalari','erkaklar kostyumlari'],
       en: ["men's clothing","men's t-shirts","men's shirts","men's jeans","men's pants","men's jackets","men's sweaters","men's suits",'hoodies',"men's shorts",'polo shirts'],
     },
-    raw_examples: {
-      uzum: ['Erkaklar kiyimi'],
-      yandex_market: ['Мужская одежда','Мужские футболки','Мужские джинсы'],
-    },
+    raw_examples: ['Erkaklar kiyimi','Мужская одежда','Мужские футболки','Мужские джинсы'],
     notes: 'This is your Auralook target category. Precision here matters.',
   },
   {
@@ -486,10 +394,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['ayollar kiyimi',"ayollar ko'ylaklari",'ayollar bluzkalari','yubkalar','ayollar shimlari','ayollar kurtkalari'],
       en: ["women's clothing",'dresses','blouses','skirts',"women's jeans","women's jackets",'tops','cardigans',"women's pants","women's sweaters"],
     },
-    raw_examples: {
-      uzum: ['Ayollar kiyimi'],
-      yandex_market: ['Женская одежда','Платья','Блузки'],
-    },
+    raw_examples: ['Ayollar kiyimi','Женская одежда','Платья','Блузки'],
   },
   {
     id: 'kids_clothing',
@@ -500,10 +405,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['bolalar kiyimi','chaqaloqlar kiyimi',"o'g'il bolalar kiyimi",'qizlar kiyimi','maktab formasi'],
       en: ["kids' clothing",'baby clothing','newborn clothing','bodysuits',"boys' clothing","girls' clothing",'school uniforms','onesies'],
     },
-    raw_examples: {
-      uzum: ['Bolalar kiyimi'],
-      yandex_market: ['Детская одежда','Одежда для мальчиков','Одежда для девочек'],
-    },
+    raw_examples: ['Bolalar kiyimi','Детская одежда','Одежда для мальчиков','Одежда для девочек'],
   },
   {
     id: 'shoes',
@@ -514,10 +416,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['poyabzallar','krossovkalar','etiklar','tuflilar','sandallar','erkaklar poyabzali','ayollar poyabzali','bolalar poyabzali','shippaklar'],
       en: ['shoes','sneakers','boots','loafers','sandals','slippers','sports shoes',"men's shoes","women's shoes","kids' shoes",'moccasins','uggs','rain boots'],
     },
-    raw_examples: {
-      uzum: ['Poyabzallar','Krossovkalar'],
-      yandex_market: ['Обувь','Мужская обувь','Женская обувь','Кроссовки'],
-    },
+    raw_examples: ['Poyabzallar','Krossovkalar','Обувь','Мужская обувь','Женская обувь','Кроссовки'],
   },
   {
     id: 'bags_wallets',
@@ -528,10 +427,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['sumkalar','ryukzaklar','hamyonlar','sayohat sumkalari','chemodanlar','erkaklar sumkalari','ayollar sumkalari'],
       en: ['bags','backpacks','wallets','purses','clutches','travel bags','suitcases',"men's bags","women's bags",'crossbody bags','waist bags'],
     },
-    raw_examples: {
-      uzum: ['Sumkalar','Ryukzaklar'],
-      yandex_market: ['Сумки и аксессуары','Сумки','Сумки повседневные','Женские сумки','Рюкзаки','Чемоданы','Чемоданы и аксессуары для чемоданов'],
-    },
+    raw_examples: ['Sumkalar','Ryukzaklar','Сумки и аксессуары','Сумки','Сумки повседневные','Женские сумки','Рюкзаки','Чемоданы','Чемоданы и аксессуары для чемоданов'],
   },
   {
     id: 'jewelry',
@@ -542,10 +438,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['zargarlik buyumlari','uzuklar',"sirg'alar",'zanjirlar','bilagujuklar',"qo'l soatlari",'bijuteriya'],
       en: ['jewelry','rings','earrings','necklaces','pendants','bracelets','watches','fashion jewelry','wedding rings','brooches'],
     },
-    raw_examples: {
-      uzum: ['Zargarlik buyumlari','Bijuteriya'],
-      yandex_market: ['Ювелирные изделия','Ювелирные украшения','Бижутерия','Наручные часы'],
-    },
+    raw_examples: ['Zargarlik buyumlari','Bijuteriya','Ювелирные изделия','Ювелирные украшения','Бижутерия','Наручные часы'],
     notes: 'Analog wristwatches go here, not smart_watches. Disambiguate via "смарт"/"smart"/"fitness" keywords in raw string.',
   },
   {
@@ -557,10 +450,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['ichki kiyim','paypoqlar','kolgotkilar','pijamalar','uy kiyimi','xalatlar'],
       en: ['underwear','bras','panties','socks','tights','stockings','thermal underwear','pajamas','loungewear','shapewear'],
     },
-    raw_examples: {
-      uzum: ['Ichki kiyim'],
-      yandex_market: ['Нижнее белье','Носки','Пижамы','Домашняя одежда'],
-    },
+    raw_examples: ['Ichki kiyim','Нижнее белье','Носки','Пижамы','Домашняя одежда'],
   },
   {
     id: 'toys',
@@ -571,10 +461,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ["o'yinchoqlar",'yumshoq o\'yinchoqlar','konstruktorlar','lego',"qo'g'irchoqlar",'mashinalar',"stol o'yinlari",'pazllar'],
       en: ['toys','stuffed animals','building blocks','lego','dolls','toy cars','board games','educational toys','rc toys','puzzles','kinetic sand','action figures'],
     },
-    raw_examples: {
-      uzum: ["O'yinchoqlar"],
-      yandex_market: ['Игрушки','Мягкие игрушки','Конструкторы','Конструкторы детские'],
-    },
+    raw_examples: ['Игрушки','Мягкие игрушки','Конструкторы','Конструкторы детские'],
   },
   {
     id: 'baby_products',
@@ -585,10 +472,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['chaqaloqlar uchun mahsulotlar','tagliklar','pampers','chaqaloq oziq-ovqati','shishalar',"so'rg'ichlar",'kolyaskalar',"avtoo'rindiqlar",'beshiklar'],
       en: ['baby products','diapers','baby food','baby formula','baby bottles','pacifiers','strollers','car seats','baby monitors','baby baths','cribs','playpens'],
     },
-    raw_examples: {
-      uzum: ['Chaqaloqlar uchun mahsulotlar','Tagliklar'],
-      yandex_market: ['Товары для детей','Товары для малышей','Подгузники','Детское питание'],
-    },
+    raw_examples: ['Chaqaloqlar uchun mahsulotlar','Tagliklar','Товары для детей','Товары для малышей','Подгузники','Детское питание'],
   },
   {
     id: 'fitness_sports_equipment',
@@ -599,10 +483,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['sport tovarlari','trenajerlar','gantellar','yoga gilamchalar','fitnes uskunalari','sport kiyimlari',"to'plar"],
       en: ['sports equipment','exercise machines','dumbbells','barbells','yoga mats','resistance bands','jump ropes','activewear','sportswear','sports balls','boxing gloves'],
     },
-    raw_examples: {
-      uzum: ['Sport tovarlari','Trenajerlar'],
-      yandex_market: ['Спорттовары','Фитнес','Спорт и отдых','Тренажеры','Одежда для фитнеса'],
-    },
+    raw_examples: ['Sport tovarlari','Trenajerlar','Спорттовары','Фитнес','Спорт и отдых','Тренажеры','Одежда для фитнеса'],
   },
   {
     id: 'outdoor_camping',
@@ -613,10 +494,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['turizm','kamping','chodirlar','uxlash xaltalari','termoslar','mangallar'],
       en: ['outdoor','camping','tents','sleeping bags','hiking backpacks','thermoses','camping cookware','grills','bbq skewers','camping mats','flasks'],
     },
-    raw_examples: {
-      uzum: ['Turizm','Chodirlar'],
-      yandex_market: ['Товары для туризма','Туризм','Палатки','Мангалы'],
-    },
+    raw_examples: ['Turizm','Chodirlar','Товары для туризма','Туризм','Палатки','Мангалы'],
   },
   {
     id: 'bicycles_scooters',
@@ -627,10 +505,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['velosipedlar','samokatlar','elektr samokatlar','skeytbordlar','rolikli konkilar','bolalar velosipedlari'],
       en: ['bicycles','bikes','scooters','electric scooters','skateboards','roller skates','hoverboards','bike accessories','helmets',"kids' bikes"],
     },
-    raw_examples: {
-      uzum: ['Velosipedlar','Samokatlar'],
-      yandex_market: ['Велосипеды','Самокаты и ролики'],
-    },
+    raw_examples: ['Velosipedlar','Samokatlar','Велосипеды','Самокаты и ролики'],
   },
   {
     id: 'auto_parts',
@@ -641,10 +516,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['avto ehtiyot qismlar','avto tovarlar','motor moylari','avtomobil gilamchalari','shinalar','disklar'],
       en: ['auto parts','car accessories','motor oil','car mats','seat covers','car alarms','tires','winter tires','wheels','wipers','car batteries'],
     },
-    raw_examples: {
-      uzum: ['Avto tovarlar'],
-      yandex_market: ['Автотовары','Автозапчасти','Шины и диски'],
-    },
+    raw_examples: ['Avto tovarlar','Автотовары','Автозапчасти','Шины и диски'],
   },
   {
     id: 'car_electronics',
@@ -655,10 +527,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['avto elektronika','avtomagnitolalar','video registratorlar','gps navigatorlar','avtomobil telefon ushlagichlari'],
       en: ['car electronics','car stereos','dash cams','gps navigators','radar detectors','car phone mounts','car chargers','parking sensors','reverse cameras'],
     },
-    raw_examples: {
-      uzum: ['Avto elektronika'],
-      yandex_market: ['Автомобильная электроника','Автоэлектроника','Видеорегистраторы'],
-    },
+    raw_examples: ['Avto elektronika','Автомобильная электроника','Автоэлектроника','Видеорегистраторы'],
   },
   {
     id: 'books_stationery',
@@ -669,10 +538,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['kitoblar','badiiy adabiyot','darsliklar','daftarlar','ruchkalar','qalamlar','kantselyariya tovarlari','bloknotlar','maktab ryukzaklari'],
       en: ['books','fiction','textbooks','notebooks','pens','pencils','stationery','notepads','planners','school backpacks','markers',"children's books"],
     },
-    raw_examples: {
-      uzum: ['Kitoblar','Kantselyariya'],
-      yandex_market: ['Книги','Канцелярские товары','Канцтовары','Тетради','Тетради школьные'],
-    },
+    raw_examples: ['Kitoblar','Kantselyariya','Книги','Канцелярские товары','Канцтовары','Тетради','Тетради школьные'],
   },
   {
     id: 'pet_supplies',
@@ -683,10 +549,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['hayvonlar uchun tovarlar','itlar uchun tovarlar','mushuklar uchun tovarlar','hayvonlar uchun ozuqa','akvariumlar'],
       en: ['pet supplies','dog supplies','cat supplies','dog food','cat food','cat litter','pet toys','leashes','pet carriers','collars','pet houses','aquariums'],
     },
-    raw_examples: {
-      uzum: ['Hayvonlar uchun tovarlar'],
-      yandex_market: ['Зоотовары','Корм для собак','Корм для кошек'],
-    },
+    raw_examples: ['Hayvonlar uchun tovarlar','Зоотовары','Корм для собак','Корм для кошек'],
   },
   {
     id: 'groceries_food',
@@ -697,10 +560,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['oziq-ovqat mahsulotlari','bakaleya','yormalar','makaronlar',"o'simlik moyi",'shakar','un','ziravorlar','konservalar','choy','kofe','shirinliklar'],
       en: ['groceries','pantry staples','rice','pasta','cooking oil','sugar','flour','spices','condiments','canned goods','tea','coffee','sweets','snacks','beverages'],
     },
-    raw_examples: {
-      uzum: ['Oziq-ovqat','Choy va kofe'],
-      yandex_market: ['Продукты питания','Бакалея','Чай, кофе'],
-    },
+    raw_examples: ['Oziq-ovqat','Choy va kofe','Продукты питания','Бакалея','Чай, кофе'],
   },
   {
     id: 'garden_outdoor',
@@ -711,10 +571,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ["bog' va tomorqa","urug'lar","o'g'itlar","bog' asboblari",'gullar uchun tuvaklar','issiqxonalar'],
       en: ['garden supplies','seeds','fertilizers','garden tools','lawn mowers','pruning shears','hoses','outdoor furniture','greenhouses','plant pots','trimmers'],
     },
-    raw_examples: {
-      uzum: ["Bog' va tomorqa"],
-      yandex_market: ['Сад и огород','Сад и дача','Товары для сада','Семена'],
-    },
+    raw_examples: ['Сад и огород','Сад и дача','Товары для сада','Семена'],
   },
   {
     id: 'tools_hardware',
@@ -725,10 +582,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['asboblar',"qo'l asboblari",'elektr asboblari','drellar',"bolg'alar",'otvyortkalar','gayka kalitlari','qurilish materiallari','arralar'],
       en: ['tools','hand tools','power tools','drills','screwdrivers','hammers','wrenches','fasteners','building materials','paint','saws','angle grinders'],
     },
-    raw_examples: {
-      uzum: ['Asboblar','Qurilish materiallari'],
-      yandex_market: ['Строительство и ремонт','Инструменты','Электроинструменты'],
-    },
+    raw_examples: ['Asboblar','Qurilish materiallari','Строительство и ремонт','Инструменты','Электроинструменты'],
   },
   {
     id: 'office_supplies',
@@ -739,10 +593,7 @@ export const TAXONOMY: CanonicalCategory[] = [
       uz: ['ofis tovarlari','printerlar','mfu','kartrijlar','printer qog\'ozlari','kalkulyatorlar','ofis stullari'],
       en: ['office supplies','printers','all-in-one printers','ink cartridges','printer paper','staplers','hole punches','folders','calculators','paper shredders','office chairs'],
     },
-    raw_examples: {
-      uzum: ['Ofis tovarlari','Printerlar'],
-      yandex_market: ['Товары для офиса','Офисные товары','Принтеры и МФУ'],
-    },
+    raw_examples: ['Ofis tovarlari','Printerlar','Товары для офиса','Офисные товары','Принтеры и МФУ'],
     notes: 'Office chairs may also match furniture — prefer this canonical if raw string mentions "офис"/"office".',
   },
 ]

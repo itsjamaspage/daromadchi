@@ -32,7 +32,7 @@ export type Feature =
   | 'dashboard'
   | 'products'
   | 'orders'          // includes the order/low-stock Telegram alerts
-  | 'marketplaces'    // Uzum + Yandex both, on every tier
+  | 'marketplaces'    // Marketplace connection, on every tier
   | 'analytics'
   | 'stock_sync'      // the Sklad page + cross-store write-back
   | 'finances'        // finances / payouts

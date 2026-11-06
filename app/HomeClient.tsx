@@ -45,7 +45,6 @@ const P = {
   dText:     '#E8FFF8',
   // marketplace
   uzum:      '#494fdf',
-  yandex:    '#E8A000',
 }
 
 // Accent colours per theme
@@ -274,7 +273,7 @@ function DashMockup({ lang }: { lang: Lang }) {
         <div style={{ background: bg2, borderBottom: `1px solid ${border}`, padding: '8px 12px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ display: 'flex', gap: 3 }}>
-            {[T.mockup.all[lang],'Uzum','Yandex Market'].map((tab, i) => (
+            {[T.mockup.all[lang],'Uzum'].map((tab, i) => (
               <div key={tab} style={{ fontSize: 10, fontWeight: 600, padding: '4px 9px', borderRadius: 6, cursor: 'pointer',
                 background: i === 0 ? teal : 'transparent', color: i === 0 ? '#fff' : muted }}>
                 {tab}
@@ -543,7 +542,6 @@ function MarqueeSection({ lang }: { lang: Lang }) {
   const items = [
     T.marquee.salesAnalytics[lang],
     'P&L hisobot',
-    'Yandex Market',
     T.marquee.unitEconomics[lang],
     'Uzum Market',
     T.marquee.marginControl[lang],
@@ -868,7 +866,7 @@ function HowItWorksSection({ lang }: { lang: Lang }) {
           <p style={{ fontSize: 11, fontWeight: 700, color: sub, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {T.howItWorks.yourStores[lang]}
           </p>
-          {[{mp:'Uzum',c:acc.color,status:'✅'},{mp:'Yandex Market',c:acc.color,status:'✅'}].map(m => (
+          {[{mp:'Uzum Market',c:acc.color,status:'✅'}].map(m => (
             <div key={m.mp} style={{ display: 'flex', alignItems: 'center', gap: 10,
               padding: '12px 14px', background: fldBg, borderRadius: 10, border: `1px solid ${uiBdr}`, marginBottom: 8 }}>
               <div style={{ width: 9, height: 9, borderRadius: '50%', background: m.c }} />
@@ -1201,19 +1199,9 @@ function ExtensionSection({ lang }: { lang: Lang }) {
         T.extension.uzumPoint3[lang],
       ],
     },
-    // Wildberries extension card removed — WB integration is sunset
-    // app-wide. The 4-card grid is now a 3-card layout (see
-    // md:grid-cols-3 override on the grid below).
-    {
-      name: 'Yandex Market', color: '#E8A000', bg: 'rgba(232,160,0,0.1)',
-      icon: 'YM',
-      headline: T.extension.ymHeadline[lang],
-      points: [
-        T.extension.ymPoint1[lang],
-        T.extension.ymPoint2[lang],
-        T.extension.ymPoint3[lang],
-      ],
-    },
+    // Wildberries and Yandex Market extension cards removed — WB integration
+    // is sunset app-wide and Yandex Market left Uzbekistan on 10 Nov 2026.
+    // The 4-card grid is now a 2-card layout (see md:grid-cols-2 below).
     {
       name: T.extension.freeName[lang],
       color: acc.tint, bg: isDark ? 'rgba(131,192,249,0.1)' : 'rgba(131,192,249,0.15)',
@@ -1237,7 +1225,7 @@ function ExtensionSection({ lang }: { lang: Lang }) {
           sub={T.extension.sub[lang]}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-12">
           {(() => {
             const glowHsl = ['234 67 57', '39 100 45', '207 90 74']
             const glowCols = [
@@ -1418,7 +1406,6 @@ function ResourcesSection({ lang }: { lang: Lang }) {
       icon: <Plug2 size={18} color={acc.tint} />,
       items: [
         { t: 'Uzum Market',   d: T.resources.intUzumDesc[lang] },
-        { t: 'Yandex Market', d: T.resources.intYmDesc[lang] },
       ],
       link: T.resources.intLink[lang],
       href: '/help',
@@ -1644,9 +1631,9 @@ function CtaSection({ lang }: { lang: Lang }) {
       <div className="hidden lg:block">
         <FloatCard mp="Uzum"metric={T.cta.revenue[lang]} value={T.cta.revenueValue[lang]} change="+12%" up delay={0} floatDur={3.8}
           style={{ left: '4%', top: '20%', transform: 'rotate(-3.5deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Yandex Market"metric={T.cta.orders[lang]} value="1 842" change="+8%" up delay={0.1} floatDur={4.3}
+        <FloatCard mp="Uzum"metric={T.cta.orders[lang]} value="1 842" change="+8%" up delay={0.1} floatDur={4.3}
           style={{ right: '3%', top: '18%', transform: 'rotate(4deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Yandex Market"metric={T.cta.margin[lang]} value="32.4%" change="+2.1%" up={true} delay={0.15} floatDur={3.6}
+        <FloatCard mp="Uzum"metric={T.cta.margin[lang]} value="32.4%" change="+2.1%" up={true} delay={0.15} floatDur={3.6}
           style={{ left: '6%', bottom: '20%', transform: 'rotate(-2deg)', zIndex: 5, opacity: 0.9 }} />
         <FloatCard mp="Uzum"metric={T.cta.profit[lang]} value={T.cta.profitValue[lang]} change="+15%" up delay={0.2} floatDur={4.1}
           style={{ right: '5%', bottom: '22%', transform: 'rotate(3deg)', zIndex: 5, opacity: 0.9 }} />
@@ -1706,7 +1693,7 @@ function FooterSection({ lang }: { lang: Lang }) {
       { label: T.footer.about[lang], href: '/about' },
     ]},
     { head: T.footer.marketplacesHead[lang], links: [
-      { label: 'Uzum Market', href: '#' }, { label: 'Yandex Market', href: '#' },
+      { label: 'Uzum Market', href: '#' },
     ]},
     { head: T.footer.contactHead[lang], links: [
       { label: 'Telegram', href: TELEGRAM_CONTACT_URL },

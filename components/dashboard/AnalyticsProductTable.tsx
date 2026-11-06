@@ -22,7 +22,7 @@
  *
  * ── Sales that never linked to a product ────────────────────────────────────
  * A sales row can carry product_id = null (the order item never matched a
- * listing — see docs/investigations/yandex-order-items-findings.md). Those
+ * listing). Those
  * rows have real revenue, and a catalogue-driven table would silently drop
  * them. They are appended as flat rows with the margin columns blank, so the
  * revenue in this table still reconciles with the KPI cards above it.
@@ -51,7 +51,6 @@ import {
 
 const MP_META: Record<string, { short: string; color: string; bg: string }> = {
   uzum:          { short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'  },
-  yandex_market: { short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)' },
 }
 
 function fmt(n: number) {
@@ -254,7 +253,7 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
   const groupKey = (item: typeof grouped[number]) =>
     item.type === 'parent' ? `p:${item.key}` : `f:${item.row.row.id}`
 
-  // ABC over GROUPS, not listings. The same product sold on Uzum and Yandex is
+  // ABC over GROUPS, not listings. The same product sold on two listings is
   // one thing to stock; ranking its two halves separately would split its
   // revenue and demote a strong product twice.
   const abc: Map<string, AbcClass> = abcClassify(

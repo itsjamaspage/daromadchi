@@ -25,15 +25,15 @@ describe('margin after commission', () => {
   })
 
   it('EXCLUDES an unreported-fee order — it is pending, not zero-fee margin', () => {
-    // The real screenshot shape: Uzum counted, Yandex awaiting settlement.
+    // The real screenshot shape: one store counted, another awaiting settlement.
     const totals = sumEconomics([
       mk({ key: 'uzum',          revenue: 200_000, marketplaceFee: 44_500, cogs: 130_000 }),
-      mk({ key: 'yandex_market', revenue: 115_000, marketplaceFee: null }),
+      mk({ key: 'other_market', revenue: 115_000, marketplaceFee: null }),
     ])
-    // Only Uzum: 200 000 − 44 500. Yandex's 115 000 is NOT counted as margin.
+    // Only the counted store: 200 000 − 44 500. The other 115 000 is NOT margin.
     assert.equal(marginAfterCommission(totals), 200_000 - 44_500)
     assert.equal(totals.excluded.length, 1)
-    assert.equal(totals.excluded[0].key, 'yandex_market')
+    assert.equal(totals.excluded[0].key, 'other_market')
     assert.equal(totals.excluded[0].reason, 'fee_not_reported')
     assert.equal(totals.excluded[0].revenue, 115_000)
   })

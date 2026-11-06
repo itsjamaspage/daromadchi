@@ -60,11 +60,11 @@ async function main() {
         }
       }
 
-      for (const mp of ['uzum', 'yandex_market'] as const) {
-        for (const raw of cat.raw_examples[mp]) {
+      {
+        for (const raw of cat.raw_examples) {
           const [a] = await tx
             .insert(categoryAliases)
-            .values({ canonical_id: canonicalId, marketplace: mp, original_name: raw })
+            .values({ canonical_id: canonicalId, marketplace: 'uzum', original_name: raw })
             .onConflictDoNothing()
             .returning({ id: categoryAliases.id })
           if (a) aliasesInserted++

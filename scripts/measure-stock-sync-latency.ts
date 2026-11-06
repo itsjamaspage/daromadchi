@@ -4,9 +4,7 @@
  *
  * READ-ONLY, end to end. No DB writes, no marketplace writes, no change to
  * sync behaviour. The two live calls are the cheap stock-only reads the
- * clients already make — Uzum GET /v3/fbs/sku/stocks and Yandex
- * POST /v2/campaigns/{id}/offers/stocks, the latter already allowlisted in
- * lib/marketplace-readonly-guard.ts as a read that requires POST.
+ * client already makes — Uzum GET /v3/fbs/sku/stocks.
  *
  *   set -a; . ./.env; set +a
  *   npm run measure:stock-latency -- KBWHT
@@ -26,7 +24,6 @@ import { and, eq, ilike, or } from 'drizzle-orm'
 import { db, shops, products, users } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
 import { fetchAllUzumSkuStocks } from '@/lib/uzum/client'
-import { fetchYandexStocks } from '@/lib/yandex/client'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -43,7 +40,7 @@ const WATCH_MAX_MS = 30 * 60 * 1000
 const args = process.argv.slice(2)
 const watch = args.includes('--watch')
 // Several terms are accepted on purpose: the same product carries a different
-// SKU on each marketplace (KBWHT on Uzum, KY-БЕЛЫЙ on Yandex), so one term
+// SKU on the marketplace (e.g. KBWHT on Uzum), so one term
 // would answer for only half the stores. A shared word from the title works
 // for both.
 const terms = args.filter(a => !a.startsWith('--'))
@@ -95,32 +92,6 @@ async function liveUzum(token: string): Promise<{ map: Map<string, number>; call
   return { map, calls: Math.max(1, Math.ceil(rows.length / 50)) }
 }
 
-/**
- * Live Yandex quantity per offer — AND the bucket types behind it.
- *
- * The types matter as much as the number: the sync counts only the FIT bucket,
- * so an offer whose units sit in another bucket reads 0 here while the seller's
- * cabinet shows stock. Printing the raw types is what distinguishes "genuinely
- * sold out" from "counted the wrong bucket".
- */
-async function liveYandex(token: string, campaignId: string, skus: string[]) {
-  const map = new Map<string, { fit: number; buckets: string }>()
-  let calls = 0
-  if (skus.length === 0) return { map, calls }
-  const res: any = await fetchYandexStocks(token, campaignId, skus)
-  calls++
-  const take = (key: string, stocks: any[] | undefined) => {
-    if (!key) return
-    const list = stocks ?? []
-    const fit = list.find(s => s?.type === 'FIT')?.count ?? 0
-    const buckets = list.length === 0 ? '(none)' : list.map(s => `${s?.type}=${s?.count}`).join(' ')
-    const prev = map.get(key.toLowerCase())
-    map.set(key.toLowerCase(), { fit: (prev?.fit ?? 0) + Number(fit || 0), buckets })
-  }
-  for (const item of res?.result?.skus ?? []) take(item.sku ?? item.offerId ?? '', item.warehouseStocks ?? item.stocks)
-  for (const w of res?.result?.warehouses ?? []) for (const off of w.offers ?? []) take(off.offerId ?? '', off.stocks)
-  return { map, calls }
-}
 
 async function report() {
   const all = await loadShops()
@@ -149,7 +120,6 @@ async function report() {
   let calls = 0
   const failures: string[] = []
   const uzLive = new Map<string, number>()
-  const ymLive = new Map<string, { fit: number; buckets: string }>()
   for (const s of all) {
     if (!s.enc) continue
     const token = decrypt(s.enc)
@@ -157,10 +127,6 @@ async function report() {
       if (s.marketplace === 'uzum') {
         const r = await liveUzum(token); calls += r.calls
         for (const [k, v] of r.map) uzLive.set(k, v)
-      } else if (s.marketplace === 'yandex_market' && s.externalId) {
-        const skus = rows.filter(r => r.marketplace === 'yandex_market').map(r => r.sku!).filter(Boolean)
-        const r = await liveYandex(token, s.externalId, skus); calls += r.calls
-        for (const [k, v] of r.map) ymLive.set(k, v)
       }
     } catch (e) {
       // A failed call still spent rate-limit budget, and reporting 0 would read
@@ -174,13 +140,10 @@ async function report() {
   console.log(`  ${pad('SKU', 22)}${pad('marketplace', 15)}${pad('daromadchi', 12)}${pad('live now', 10)}${pad('match', 7)}last sync`)
   for (const r of rows) {
     const key = (r.sku ?? '').toLowerCase()
-    const live = r.marketplace === 'uzum' ? uzLive.get(key) : ymLive.get(key)?.fit
+    const live = uzLive.get(key)
     const shown = live === undefined ? '—' : String(live)
     const match = live === undefined ? '?' : (Number(live) === Number(r.stock) ? 'yes' : 'NO')
     console.log(`  ${pad(r.sku, 22)}${pad(r.marketplace, 15)}${pad(r.stock, 12)}${pad(shown, 10)}${pad(match, 7)}${ago(r.lastSyncedAt)}`)
-    const yb = r.marketplace === 'yandex_market' ? ymLive.get(key)?.buckets : undefined
-    // Only FIT is counted by the sync — show every bucket so a miscount is visible.
-    if (yb) console.log(`  ${' '.repeat(22)}buckets: ${yb}`)
   }
   if (failures.length > 0) {
     console.log('\n  Live fetch failed — "live now" is unknown, not zero:')

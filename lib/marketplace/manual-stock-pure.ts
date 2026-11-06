@@ -9,7 +9,7 @@ import { notifT, type NotifLang } from '@/lib/notif-i18n'
 import { COLOR_LABELS } from '@/lib/products/resolveColor'
 import type { MarketplaceType } from '@/lib/types'
 
-const MP_LABEL: Record<string, string> = { uzum: 'Uzum', yandex_market: 'Yandex Market' }
+const MP_LABEL: Record<string, string> = { uzum: 'Uzum' }
 export function mpLabel(mp: string): string { return MP_LABEL[mp] ?? mp }
 
 // Status marker written into stock_notify_state.last_status for manual-reminder

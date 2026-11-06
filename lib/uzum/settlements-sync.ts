@@ -15,7 +15,7 @@ import { mergeSettlementItems, collectUndatedUntilCovered, TERMINAL_UZUM_STATUSE
  *
  * `windowDays` defaults to 14 — Uzum's payout state can flip between
  * PROCESSING → TO_WITHDRAW → CANCELED for up to a few weeks after the
- * order, so a slightly wider window than Yandex catches those late
+ * order, so a slightly wider window catches those late
  * transitions on every cron run.
  */
 export interface UzumSettlementsSyncResult {
@@ -177,7 +177,7 @@ export async function syncUzumSettlements(
     }
   })
 
-  // Chunked upsert — same 500-row batch size as the Yandex sync (Postgres'
+  // Chunked upsert — 500-row batches (Postgres'
   // parameter limit ~65k, this table has ~20 columns).
   const CHUNK = 500
   try {

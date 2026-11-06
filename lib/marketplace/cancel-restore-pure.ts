@@ -12,7 +12,7 @@
 import { notifT, type NotifLang } from '@/lib/notif-i18n'
 import type { MarketplaceType } from '@/lib/types'
 
-const MP_LABEL: Record<string, string> = { uzum: 'Uzum', yandex_market: 'Yandex Market' }
+const MP_LABEL: Record<string, string> = { uzum: 'Uzum' }
 export function mpLabel(mp: string): string { return MP_LABEL[mp] ?? mp }
 
 export type RestoreVariant = 'action' | 'info'

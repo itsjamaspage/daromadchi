@@ -5,9 +5,9 @@
  * Three separate screens computed profit three different ways, and two of them
  * could not tell "zero" from "don't know":
  *
- *   • Yandex publishes commission ONLY in the netting report, days after
+ *   • A marketplace may publish commission ONLY in a settlement report, days after
  *     delivery, so orders.marketplace_fee is NULL until then (by design — see
- *     lib/yandex/sync.ts). Reading that NULL as a zero fee returns the order's
+ *     the sale). Reading that NULL as a zero fee returns the order's
  *     whole revenue as profit. It put "Чистая прибыль = Общая выручка = 115 000"
  *     on the dashboard for a sale nobody had been paid for.
  *   • A product with no cost_price contributes nothing to COGS, so it shows as
@@ -158,7 +158,7 @@ export interface PeriodTotals {
  *   fee_not_reported — the marketplace has not published the commission yet.
  *     Nothing the seller can do; the number will arrive on its own. Counting
  *     the order would mean inventing a fee, so the order is EXCLUDED and named:
- *     "Ожидает расчёта: Yandex Market (115 000)".
+ *     "Ожидает расчёта: <marketplace> (115 000)".
  *
  *   cost_not_set — the seller has not entered what the goods cost. They can fix
  *     it in a minute, and excluding the order would leave someone who has never

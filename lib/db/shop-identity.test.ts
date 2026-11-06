@@ -9,7 +9,7 @@ const FBS = '149137909'   // campaign A
 const FBY = '987654321'   // campaign B
 
 // ── The reported bug ────────────────────────────────────────────────────────
-test('adding a second Yandex campaign creates a NEW shop, never touching the first', () => {
+test('adding a second external id creates a NEW shop, never touching the first', () => {
   // The FBS + FBY case. Previously this resolved to campaign A's row and tripped
   // clearShopData, deleting A's orders, products and history.
   const r = resolveShopIdentity([shop('A', FBS)], FBY)

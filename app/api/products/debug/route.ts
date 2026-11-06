@@ -18,7 +18,6 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   const userShops = await db.select({
     id: shops.id,
     marketplace: shops.marketplace,
-    campaign_placement: shops.campaign_placement,
     last_synced_at: shops.last_synced_at,
     name: shops.name,
   })
@@ -68,7 +67,6 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       id: s.id,
       marketplace: s.marketplace,
       name: s.name,
-      campaign_placement: s.campaign_placement,
       last_synced_at: s.last_synced_at?.toISOString(),
     })),
     matchCount: rows.length,

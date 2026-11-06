@@ -30,7 +30,7 @@ export type Plan = 'free' | 'pro' | 'pro_plus' | 'biznes' | 'enterprise'
 // "Unlimited do'konlar" on Pro, so the repository shipped a limit and its own
 // contradiction side by side. It also contradicted the entitlement rules
 // themselves: `marketplaces` is in FREE_FOREVER, meaning a free account is
-// entitled to Uzum AND Yandex Market, which takes two shops. Capping free at one
+// entitled to more than one shop. Capping free at one
 // would have taken away a capability the free tier is promised.
 //
 // Store count is not a gated capability under the turnover model. Tiers differ

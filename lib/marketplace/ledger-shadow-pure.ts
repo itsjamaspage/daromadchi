@@ -10,7 +10,7 @@
  * Kept DB-free so the two shaping decisions are unit-tested: (1) mapping a raw
  * order row to a GroupOrder via orderLedgerStatus (the RESERVING-anchored rule,
  * #392), and (2) emitting the comparison PER ROW, not per group — JMBLK is the
- * proof this matters: uzum physical_stock=1, yandex=2, and the group MAX shows 2,
+ * proof this matters: one listing physical_stock=1, another 2, and the group MAX shows 2,
  * so a group-level comparison would call JMBLK "matching" while one row is wrong.
  */
 

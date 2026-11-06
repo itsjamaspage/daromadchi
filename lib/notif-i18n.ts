@@ -199,7 +199,7 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     extFooter:      "daromadchi.uz da to'liq tahlil",
     oversellHead: (title, _lastOrder) =>
       `⚠️ <b>Tovar tugadi: ${title}</b>\nZaxira 0 ga yetdi — xaridorlar bu tovarni endi buyurtma qila olmaydi.`,
-    oversellAutoCancelOff: "Zaxirani to'ldiring va Uzum hamda Yandex'da qoldiqni yangilang.",
+    oversellAutoCancelOff: "Zaxirani to'ldiring va Uzum'da qoldiqni yangilang.",
     oversellNoLaterOrder:  "Bekor qilish uchun ochiq buyurtma topilmadi — qo'lda tekshiring.",
     oversellRateLimited:   (used, max, mp) => `🚫 Avtomatik bekor qilish chegarasi (${used}/${max} shu soatda). Bekor QILINMADI — ${mp} uchun qo'lda bekor qiling.`,
     oversellCancelling:    (mp) => `🤖 Keyingi buyurtma bekor qilinmoqda (${mp}, sabab OUT_OF_STOCK).`,
@@ -281,7 +281,7 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     extFooter:      'полная аналитика на daromadchi.uz',
     oversellHead: (title, _lastOrder) =>
       `⚠️ <b>Товар распродан: ${title}</b>\nОстаток дошёл до 0 — покупатели больше не могут заказать этот товар.`,
-    oversellAutoCancelOff: 'Пополните запас и обновите остаток на Uzum и Yandex.',
+    oversellAutoCancelOff: 'Пополните запас и обновите остаток на Uzum.',
     oversellNoLaterOrder:  'Не найден открытый заказ для автоотмены — проверьте вручную.',
     oversellRateLimited:   (used, max, mp) => `🚫 Достигнут лимит автоотмены (${used}/${max} за час). НЕ отменяем автоматически — отмените ${mp} вручную.`,
     oversellCancelling:    (mp) => `🤖 Отменяем поздний заказ (${mp}, причина OUT_OF_STOCK).`,
@@ -363,7 +363,7 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     extFooter:      'full analytics at daromadchi.uz',
     oversellHead: (title, _lastOrder) =>
       `⚠️ <b>Sold out: ${title}</b>\nStock has reached 0 — buyers can no longer order this product.`,
-    oversellAutoCancelOff: 'Restock and update the quantity on Uzum and Yandex.',
+    oversellAutoCancelOff: 'Restock and update the quantity on Uzum.',
     oversellNoLaterOrder:  'No open order found to auto-cancel — please check manually.',
     oversellRateLimited:   (used, max, mp) => `🚫 Auto-cancel rate limit reached (${used}/${max} this hour). NOT auto-cancelling — use one-click cancel for ${mp}.`,
     oversellCancelling:    (mp) => `🤖 Auto-cancelling the later order (${mp}, reason OUT_OF_STOCK).`,

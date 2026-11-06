@@ -806,7 +806,7 @@ async function syncFromUzumLocked(shopId: string, token: string, heavy = true, a
       // it never recorded that it had — so nothing downstream could tell an
       // order the seller was told about from one they were not. The
       // cancellation notice needs exactly that distinction, and alert_sent_at
-      // (migration 081) is the column Yandex already uses for it.
+      // (migration 081) is the column used for it.
       const alertedExtIds = new Set<string>()
       for (const r of toInsOrd) {
         if (r.status === 'pending' || r.status === 'confirmed') {

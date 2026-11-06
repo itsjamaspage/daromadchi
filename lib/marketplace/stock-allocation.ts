@@ -2,7 +2,7 @@
  * Pure stock-sync planning — no DB, no network, no side effects.
  *
  * Given the members of one cross-marketplace SKU group (the same physical
- * product listed on Uzum / Yandex Market), it computes:
+ * product listed across shops), it computes:
  *   Step A — the shared `available` number (the read-only leftover math), and
  *   Step B — the target ostatok to write to each stock_sync store, per the
  *            group's oversell_mode, writing ONLY where the listed number differs.
@@ -42,7 +42,7 @@ import type { MarketplaceType } from '@/lib/types'
  *            EXCLUDES CREATED / NEW / PENDING — the freshly-placed state that
  *            still covers the unpaid / payment-processing window Uzum
  *            auto-cancels. Reserve only once the seller is actually fulfilling.
- *   Yandex → PROCESSING        («находится в обработке» — the ONLY status a
+ *   PROCESSING                 («находится в обработке» — the ONLY status a
  *                              seller ships from; a prepaid order reaches it only
  *                              AFTER payment. See lib/marketplace/
  *                              fulfillment-statuses.ts).
@@ -50,13 +50,13 @@ import type { MarketplaceType } from '@/lib/types'
  *            PICKUP            — waiting at the pickup point, ordered but not yet
  *                              collected: the unit is still committed.
  *            EXCLUDES UNPAID / PLACING / RESERVED — not paid or not finalised
- *            (Yandex's own pre-payment states; reserving them is the bug).
+ *            (pre-payment states; reserving them is the bug).
  *
  * 'delivered' («Выданы» / DELIVERED — customer collected) is already reflected
  * in the marketplace's own listed stock, so it is NOT re-counted (double-count).
  *
  * The raw strings do not collide across marketplaces (Uzum in-transit is
- * DELIVERING, Yandex reserving is DELIVERY; Uzum has no PROCESSING in its real
+ * DELIVERING; Uzum has no PROCESSING in its real
  * FBS enum), so one flat union set is safe.
  *
  * Trade-off (chosen deliberately): reserving at payment can briefly show the
@@ -69,7 +69,7 @@ export const RESERVING_RAW_STATUSES = [
   // Uzum — paid & committed: seller packing → in transit → PVZ received.
   // CREATED / NEW / PENDING (unpaid draft) are deliberately NOT here.
   'PACKING', 'PENDING_DELIVERY', 'DELIVERING', 'ACCEPTED_AT_DP', 'HANDED_OVER', 'TRANSFERRED',
-  // Yandex — paid & in processing, shipped, or waiting at pickup (not collected).
+  // Paid & in processing, shipped, or waiting at pickup (not collected).
   // UNPAID / PLACING / RESERVED (not paid) are deliberately NOT here.
   'PROCESSING', 'DELIVERY', 'PICKUP',
 ] as const
@@ -94,8 +94,8 @@ export interface SyncMember {
    *  seeds from listedStock so behaviour degrades gracefully. */
   physicalStock: number | null
   /** Reserving order units on this listing — paid, committed orders (Uzum
-   *  PACKING and later / Yandex PROCESSING and later). Unpaid drafts (Uzum
-   *  CREATED, Yandex UNPAID/PLACING/RESERVED) are excluded so they don't draw
+   *  PACKING and later). Unpaid drafts (Uzum
+   *  CREATED) are excluded so they don't draw
    *  down stock. See RESERVING_RAW_STATUSES. */
   pending: number
   /** CREATED/unpaid order units on THIS listing only. Excluded from cross-store
@@ -272,7 +272,7 @@ export function planStockWrites(members: SyncMember[], mode: OversellMode, onHan
     // SKIPPED in 'off' (mirror-always) mode: the owner accepts the last-unit
     // oversell so every writable channel mirrors the true free-to-sell number —
     // even a member holding a reserve re-raises to `available` (this is what lets
-    // Yandex re-raise 0→1 to match Uzum). The backstop still applies for
+    // a re-raise 0→1 to match a sibling listing). The backstop still applies for
     // lock_last_unit / partition.
     if (mode !== 'off' && m.pending > 0 && target > m.listedStock) target = m.listedStock
     // Same-store oversell prevention: CREATED orders are excluded from the
@@ -363,9 +363,9 @@ export function decidePush(plan: PlannedWrite, history?: PushHistory): PushDecis
  * root cause): the marketplace where the sale happened auto-adjusts its OWN live
  * stock, but our products.stock_quantity copy for that listing can lag reality.
  * A per-member `target === listedStock` equality then wrongly skips the very
- * listing that needs re-raising — e.g. Yandex's real stock is 0 while our DB
+ * listing that needs re-raising — e.g. one listing's real stock is 0 while our DB
  * still says 1, target is 1, so the equality skips it and the mirror never
- * re-raises Yandex 0→1. Reasserting the whole changing group re-pushes it
+ * re-raises it 0→1. Reasserting the whole changing group re-pushes it
  * regardless of the (possibly-stale) equality.
  *
  * A fully-unchanged group (NO member willWrite) writes NOTHING — this stays a

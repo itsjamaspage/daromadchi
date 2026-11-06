@@ -8,7 +8,6 @@ import nextTs from "eslint-config-next/typescript";
 // files to prevent accidental write calls to seller accounts.
 // DO NOT remove or weaken this rule without owner approval.
 const MARKETPLACE_FILES = [
-  "lib/yandex/**",
   "lib/uzum/**",
   "lib/wildberries/**",
   "lib/validate-token.ts",

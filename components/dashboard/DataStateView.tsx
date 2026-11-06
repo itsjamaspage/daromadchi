@@ -30,15 +30,14 @@ function statusIcon(s: SyncDay['status']) {
   }
 }
 
-type MP = 'uzum' | 'yandex'
+type MP = 'uzum'
 
 interface Props {
   uzumDays:     SyncDay[]
-  yandexDays:   SyncDay[]
   connectedMps?: string[]
 }
 
-export default function DataStateView({ uzumDays, yandexDays, connectedMps }: Props) {
+export default function DataStateView({ uzumDays, connectedMps }: Props) {
   const { lang } = useLang()
   const d = translations[lang].dashboard
   const [mp, setMp] = useState<MP>('uzum')
@@ -46,8 +45,8 @@ export default function DataStateView({ uzumDays, yandexDays, connectedMps }: Pr
   const [resyncing, setResyncing] = useState<Set<string>>(new Set())
   const [hoveredDay, setHoveredDay] = useState<SyncDay | null>(null)
 
-  const days = mp === 'uzum' ? uzumDays : yandexDays
-  const mpId = mp === 'uzum' ? 'uzum' : 'yandex_market'
+  const days = uzumDays
+  const mpId = 'uzum'
   const isConnected = !connectedMps || connectedMps.length === 0 || connectedMps.includes(mpId)
 
   function statusLabel(s: SyncDay['status']) {
@@ -73,7 +72,7 @@ export default function DataStateView({ uzumDays, yandexDays, connectedMps }: Pr
   }
 
   async function resyncSelected() {
-    const marketplace = mp === 'uzum' ? 'uzum' : 'yandex_market'
+    const marketplace = 'uzum'
     setResyncing(new Set(selected))
     setSelected(new Set())
     await fetch('/api/sync/resync-days', {
@@ -96,11 +95,10 @@ export default function DataStateView({ uzumDays, yandexDays, connectedMps }: Pr
 
   return (
     <div className="space-y-4">
-      {/* Marketplace tabs */}
-      <div className="flex items-center gap-1 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
+      {/* Marketplace tabs — hidden while a single marketplace is integrated. */}
+      <div className="hidden items-center gap-1 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
         {([
-          { id: 'uzum',   label: 'Uzum' },
-          { id: 'yandex', label: 'Yandex Market' },
+          { id: 'uzum', label: 'Uzum' },
         ] as { id: MP; label: string }[]).map(m => (
           <button key={m.id}
             onClick={() => { setMp(m.id); setSelected(new Set()); setHoveredDay(null) }}

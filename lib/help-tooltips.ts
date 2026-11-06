@@ -229,11 +229,11 @@ export const helpContent: HelpDB = {
   advertising: {
     uz: {
       title: 'Reklama',
-      what: 'Uzum, Wildberries va Yandex Market reklamalariga sarflangan mablag\', klik soni, ko\'rishlar va DRR (reklama samaradorligi) ko\'rsatkichlari.',
+      what: 'Uzum va Wildberries reklamalariga sarflangan mablag\', klik soni, ko\'rishlar va DRR (reklama samaradorligi) ko\'rsatkichlari.',
       why: 'Reklama budjetingizni to\'g\'ri boshqaring: nima foydali, nima zararga ishlayotganini aniqlang.',
       how: 'Yuqori DRR — reklama qimmat. Effektiv kampaniyalarni ko\'paytiring, samarasizlarini to\'xtating.',
       steps: [
-        { step: 1, text: 'Uzum, Wildberries va Yandex Market reklama tizimlaridan xarajatlar olinadi' },
+        { step: 1, text: 'Uzum va Wildberries reklama tizimlaridan xarajatlar olinadi' },
         { step: 2, text: 'Har bir kampaniya bo\'yicha klik va ko\'rishlar sanaldi' },
         { step: 3, text: 'Daromad bilan solishtirilib DRR hisoblanadi' },
         { step: 4, text: 'Har kuni yangilanadi' },
@@ -241,11 +241,11 @@ export const helpContent: HelpDB = {
     },
     ru: {
       title: 'Реклама',
-      what: 'Затраты на рекламу Uzum, Wildberries и Yandex Market, количество кликов, показы и показатель ДРР (эффективность рекламы).',
+      what: 'Затраты на рекламу Uzum и Wildberries, количество кликов, показы и показатель ДРР (эффективность рекламы).',
       why: 'Правильно управляйте рекламным бюджетом: определите, что работает в плюс, а что — в минус.',
       how: 'Высокий ДРР означает дорогую рекламу. Масштабируйте эффективные кампании, останавливайте неэффективные.',
       steps: [
-        { step: 1, text: 'Расходы получены из рекламных систем Uzum, Wildberries и Yandex Market' },
+        { step: 1, text: 'Расходы получены из рекламных систем Uzum и Wildberries' },
         { step: 2, text: 'Клики и показы подсчитаны по каждой кампании' },
         { step: 3, text: 'ДРР рассчитывается в сравнении с выручкой' },
         { step: 4, text: 'Обновляется ежедневно' },
@@ -253,11 +253,11 @@ export const helpContent: HelpDB = {
     },
     en: {
       title: 'Advertising',
-      what: 'Ad spend, clicks, impressions and DRR (ad efficiency metric) across Uzum, Wildberries and Yandex Market.',
+      what: 'Ad spend, clicks, impressions and DRR (ad efficiency metric) across Uzum and Wildberries.',
       why: 'Manage your ad budget effectively: find what\'s profitable and what\'s losing money.',
       how: 'High DRR = expensive ads. Scale up the campaigns that work, stop the ones that don\'t.',
       steps: [
-        { step: 1, text: 'Spend data pulled from Uzum, Wildberries and Yandex Market ad systems' },
+        { step: 1, text: 'Spend data pulled from Uzum and Wildberries ad systems' },
         { step: 2, text: 'Clicks and impressions counted per campaign' },
         { step: 3, text: 'DRR calculated vs revenue' },
         { step: 4, text: 'Updated daily' },
@@ -309,7 +309,7 @@ export const helpContent: HelpDB = {
       title: 'Birlik iqtisodiyoti',
       what: 'Har bir mahsulot yoki buyurtma bo\'yicha haqiqiy foyda: narxdan barcha xarajatlar (komissiya, yetkazish, soliq) ayirilgandan keyingi holat.\n\n⚠️ Eslatma: bu ma\'lumotlar taxminiy hisoblanadi va aniq buxgalteriya hisobi o\'rnini bosmaydi.',
       why: 'Qaysi mahsulotlar sof foyda keltiradi, qaysilari aslida zararli ekanini bilib oling.',
-      how: 'Chrome kengaytmasini o\'rnating → Uzum yoki Yandex Market\'da mahsulot sahifasini oching → «Birlik iqtisodiyotiga qo\'shish» tugmasini bosing. Mahsulot fotosurat va tafsilotlari bilan avtomatik qo\'shiladi. Foyda marjasi manfiy bo\'lsa — narxni oshirish yoki xarajatlarni kamaytirish kerak.',
+      how: 'Chrome kengaytmasini o\'rnating → Uzum Market\'da mahsulot sahifasini oching → «Birlik iqtisodiyotiga qo\'shish» tugmasini bosing. Mahsulot fotosurat va tafsilotlari bilan avtomatik qo\'shiladi. Foyda marjasi manfiy bo\'lsa — narxni oshirish yoki xarajatlarni kamaytirish kerak.',
       steps: [
         { step: 1, text: 'Sotish narxi va sotuv hajmi olinadi' },
         { step: 2, text: 'Komissiya, yetkazish, qaytarishlar ayiriladi' },
@@ -321,7 +321,7 @@ export const helpContent: HelpDB = {
       title: 'Юнит-экономика',
       what: 'Реальная прибыль на единицу товара или заказ: цена минус все расходы (комиссия, доставка, налоги).\n\n⚠️ Примечание: данные являются приблизительными и не заменяют точный бухгалтерский учёт.',
       why: 'Узнайте, какие товары приносят чистую прибыль, а какие на самом деле убыточны.',
-      how: 'Установите расширение Chrome → откройте страницу товара на Uzum или Yandex Market → нажмите «Добавить в юнит-экономику». Товар с фото и деталями добавится сюда автоматически. Отрицательная маржа — нужно поднять цену или снизить расходы.',
+      how: 'Установите расширение Chrome → откройте страницу товара на Uzum Market → нажмите «Добавить в юнит-экономику». Товар с фото и деталями добавится сюда автоматически. Отрицательная маржа — нужно поднять цену или снизить расходы.',
       steps: [
         { step: 1, text: 'Берётся цена продажи и объём продаж' },
         { step: 2, text: 'Вычитаются комиссия, доставка, возвраты' },
@@ -333,7 +333,7 @@ export const helpContent: HelpDB = {
       title: 'Unit Economics',
       what: 'Real profit per product or order: price minus all costs (commission, delivery, taxes).\n\n⚠️ Note: these figures are approximate estimates and do not replace precise accounting.',
       why: 'Find out which products generate real profit and which are actually losing money.',
-      how: 'Install the Chrome extension → open any product page on Uzum or Yandex Market → click "Add to Unit Economics". The product with photo and details lands here automatically. Negative margin = raise price or cut costs.',
+      how: 'Install the Chrome extension → open any product page on Uzum Market → click "Add to Unit Economics". The product with photo and details lands here automatically. Negative margin = raise price or cut costs.',
       steps: [
         { step: 1, text: 'Sale price and sales volume are taken' },
         { step: 2, text: 'Commission, delivery, and returns are subtracted' },

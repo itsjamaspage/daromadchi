@@ -1,7 +1,7 @@
 /**
  * Read-only "restore your listing after cancel" alert (Part 2) — DB dispatch.
  *
- * When a seller on READ-ONLY keys cancels an order, Uzum/Yandex do not put the
+ * When a seller on READ-ONLY keys cancels an order, the marketplace does not put the
  * unit back on the listing: it's physically on the shelf but unsellable, and
  * sellers forget this constantly. This tells them — with the exact number to
  * restore the listing to (the reservation-time physical_stock snapshot).

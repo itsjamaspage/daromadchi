@@ -4,9 +4,8 @@
  * ── Why this exists ─────────────────────────────────────────────────────────
  * Both connect paths used to resolve the shop by (user_id, marketplace,
  * is_active) alone, with the marketplace's own account id absent from the
- * predicate. A seller with two Yandex campaigns — the normal shape for FBS +
- * FBY, which Yandex runs as separate campaigns under one business — therefore
- * could not hold both: entering the second campaign id updated the SAME row,
+ * predicate. A seller with two accounts on one marketplace therefore
+ * could not hold both: entering the second external id updated the SAME row,
  * and tripped the "campaign changed" branch into clearShopData(), deleting the
  * first campaign's orders, order_items, products, sync_days, ad_campaigns and
  * search_phrases. Then it wiped back the other way on the next switch.
@@ -54,10 +53,9 @@ export type ShopIdentityResolution =
 
 /**
  * @param candidates active shops for this (user, marketplace)
- * @param externalId the marketplace account id from the request — Yandex's
- *        campaignId. Pass null when the request carries none: Uzum learns its
- *        shop id inside the sync rather than from the seller, and a token-only
- *        re-save may omit it.
+ * @param externalId the marketplace account id from the request. Pass null when
+ *        the request carries none: Uzum learns its shop id inside the sync
+ *        rather than from the seller, and a token-only re-save may omit it.
  */
 export function resolveShopIdentity(
   candidates: readonly ShopIdentityCandidate[],
@@ -79,9 +77,9 @@ export function resolveShopIdentity(
   if (exact) return { action: 'update', shopId: exact.id, adopts: false }
 
   // A row that has no external id yet adopts this one rather than being left
-  // orphaned beside a new row. Safe: the Yandex sync is skipped entirely for a
-  // shop with no shop_id_external (app/api/cron/sync/route.ts), so such a row
-  // cannot be holding another campaign's synced data.
+  // orphaned beside a new row. Safe: a sync that needs an external id is
+  // skipped entirely for a shop without one (app/api/cron/sync/route.ts), so
+  // such a row cannot be holding another account's synced data.
   const unclaimed = candidates.find(c => !c.shop_id_external?.trim())
   if (unclaimed) return { action: 'update', shopId: unclaimed.id, adopts: true }
 

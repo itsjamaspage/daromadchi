@@ -14,17 +14,17 @@ import { formatSum } from '../lib/format-sum'
 
 type Lang = 'ru' | 'uz' | 'en'
 const LANGS: Lang[] = ['ru', 'uz', 'en']
-const mpName = (mp: string) => ({ uzum: 'Uzum', yandex_market: 'Yandex Market' } as Record<string, string>)[mp] ?? mp
+const mpName = (mp: string) => ({ uzum: 'Uzum' } as Record<string, string>)[mp] ?? mp
 
 // Realistic figures from the reported dashboard: Uzum counted (200k, 44.5k fee →
-// 155.5k margin), Yandex still awaiting settlement (115k).
+// 155.5k margin), and the all-awaiting case where settlement has not landed.
 function card(lang: Lang, scenario: 'counted_and_pending' | 'all_pending') {
   const t = dashT[lang]
   const d = t.dashboard
 
   if (scenario === 'all_pending') {
     // Everything awaiting settlement → margin 0, no breakdown, coverage only.
-    const coverage = `${t.kpi.awaiting}: ${mpName('yandex_market')} (${formatSum(115_000)})`
+    const coverage = `${t.kpi.awaiting}: ${mpName('uzum')} (${formatSum(115_000)})`
     return <KpiCard title={d.marginAfterCommission} value={formatSum(0)} change={null}
       icon={TrendingUp} color="emerald" coverage={coverage} />
   }
@@ -35,7 +35,7 @@ function card(lang: Lang, scenario: 'counted_and_pending' | 'all_pending') {
     { label: t.kpi.fees,   value: formatSum(fees), kind: 'minus' },
     { label: t.kpi.margin, value: formatSum(margin), kind: 'total' },
   ]
-  const coverage = `${t.kpi.counted}: ${mpName('uzum')} · ${t.kpi.awaiting}: ${mpName('yandex_market')} (${formatSum(115_000)})`
+  const coverage = `${t.kpi.counted}: ${mpName('uzum')}`
   return <KpiCard title={d.marginAfterCommission} value={formatSum(margin)} change={92}
     icon={TrendingUp} color="emerald" breakdown={breakdown} coverage={coverage} />
 }

@@ -3,7 +3,7 @@
  *
  * Every figure here comes from `orders` + `order_items`, which BOTH syncs
  * populate identically. That is the selection rule: a column that works on
- * Uzum but not Yandex (or the reverse) is worse than no column, because a
+ * one marketplace but not another is worse than no column, because a
  * seller cannot tell an empty cell from a zero.
  *
  * ── What was deliberately left out, and why ─────────────────────────────────
@@ -11,7 +11,7 @@
  *    There is no ads integration for either marketplace, so these would be
  *    permanently empty columns.
  *  • Anything built on products.quantity_sold (the marketplace's own lifetime
- *    units-sold). Only lib/uzum/sync.ts writes it — lib/yandex/sync.ts never
+ *    units-sold). Only lib/uzum/sync.ts writes it — no other sync
  *    does — so a "lifetime sold" column would silently be Uzum-only.
  */
 

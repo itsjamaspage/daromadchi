@@ -2,7 +2,7 @@
 // table.
 //
 // variant_group_key is already namespaced per marketplace — uzum:<cardId>,
-// yandex:<modelName> (see lib/uzum/sync.ts and lib/yandex/sync.ts) — so
+// namespaced per marketplace (see lib/uzum/sync.ts) — so
 // bucketing on it alone gives exactly "same store, same product" with no
 // cross-marketplace bleed. That is the whole trick, and it is why this needs no
 // union-find: the store separation is already encoded in the key. The
@@ -12,7 +12,7 @@
 // This is deliberately NOT lib/variant-grouping.ts. That one exists to weld
 // listings ACROSS marketplaces via a shared SKU, which is right for the
 // analytics tables — one product, wherever it sold. Here the store is the point:
-// a seller reading this table wants "my Uzum listing" and "my Yandex listing"
+// a seller reading this table wants each of their listings
 // kept apart, because their prices, stock, and edits are separate things.
 
 export interface StoreVariantRow {

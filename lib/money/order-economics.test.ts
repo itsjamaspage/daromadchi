@@ -11,7 +11,7 @@ const order = (o: Partial<Parameters<typeof orderEconomics>[0]> = {}) => ({
 })
 
 describe('an absent value is never a zero', () => {
-  it('a Yandex order with no settlement yet has UNKNOWN fees, not free ones', () => {
+  it('an order with no settlement yet has UNKNOWN fees, not free ones', () => {
     // The reported bug: this returned 115 000 of profit on 115 000 of sales.
     const e = orderEconomics(order({ revenue: 115000, cogs: 0 }))
     assert.equal(e.fees.known, false)
@@ -74,21 +74,24 @@ describe('addKnown — unknowns are contagious', () => {
 
 describe('totalling a period', () => {
   const uzum = (o = {}) => ({ key: 'uzum', ...order({ marketplaceFee: 17000, deliveryCost: 5250, cogs: 65000 }), ...o })
-  const yandexPending = (o = {}) => ({ key: 'yandex_market', ...order({ revenue: 115000, cogs: 0 }), ...o })
+  // A second key, so the counted/excluded SPLIT is visible. The function treats
+  // the key opaquely; what matters is that unreported fees are set aside per
+  // group rather than counted at zero.
+  const feePending = (o = {}) => ({ key: 'other_market', ...order({ revenue: 115000, cogs: 0 }), ...o })
 
   it('counts what the marketplace has reported and sets aside what it has not', () => {
-    const t = sumEconomics([uzum(), yandexPending()])
+    const t = sumEconomics([uzum(), feePending()])
     assert.equal(t.revenue, 215000, 'every sale still counts as a sale')
     assert.equal(t.countedRevenue, 100000)
     assert.equal(t.net, 12750)
     assert.deepEqual(t.counted, ['uzum'])
     assert.deepEqual(t.excluded, [
-      { key: 'yandex_market', reason: 'fee_not_reported', revenue: 115000, orders: 1 },
+      { key: 'other_market', reason: 'fee_not_reported', revenue: 115000, orders: 1 },
     ])
   })
 
   it('an excluded order takes its cost with it', () => {
-    const t = sumEconomics([uzum(), yandexPending({ cogs: 90000 })])
+    const t = sumEconomics([uzum(), feePending({ cogs: 90000 })])
     assert.equal(t.cogs, 65000, 'only the counted order contributes cost')
     assert.equal(t.countedRevenue - t.fees - t.cogs, t.net)
   })
@@ -107,7 +110,7 @@ describe('totalling a period', () => {
   })
 
   it('a missing FEE does exclude it — nobody can make that number appear', () => {
-    const t = sumEconomics([yandexPending()])
+    const t = sumEconomics([feePending()])
     assert.equal(t.countedRevenue, 0)
     assert.equal(t.net, 0)
     assert.equal(t.costMissing.orders, 0)
@@ -115,16 +118,16 @@ describe('totalling a period', () => {
   })
 
   it('both at once: one waits, the other is flagged', () => {
-    const t = sumEconomics([uzum({ cogs: null }), yandexPending()])
+    const t = sumEconomics([uzum({ cogs: null }), feePending()])
     assert.equal(t.costMissing.orders, 1)
     assert.equal(t.excluded.length, 1)
-    assert.equal(t.excluded[0].key, 'yandex_market')
+    assert.equal(t.excluded[0].key, 'other_market')
   })
 
   it('never reports a profit above the sales behind it', () => {
     // The acceptance rule, as an invariant of the summing itself.
     for (const set of [
-      [uzum()], [yandexPending()], [uzum(), yandexPending()],
+      [uzum()], [feePending()], [uzum(), feePending()],
       [uzum({ cogs: null })], [uzum({ marketplaceFee: null, deliveryCost: null })], [],
     ]) {
       const t = sumEconomics(set)
@@ -134,7 +137,7 @@ describe('totalling a period', () => {
   })
 
   it('a period where the marketplace has reported nothing totals zero', () => {
-    const t = sumEconomics([yandexPending(), yandexPending()])
+    const t = sumEconomics([feePending(), feePending()])
     assert.equal(t.revenue, 230000)
     assert.equal(t.countedRevenue, 0)
     assert.equal(t.net, 0)

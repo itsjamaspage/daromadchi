@@ -58,7 +58,7 @@ test('nobody derives a week boundary by hand', () => {
 test('no dashboard screen turns a Date into a calendar day through UTC', () => {
   // `toISOString().slice(0, 10)` is the exact shape that named the wrong day.
   //
-  // Scoped to the UI, deliberately. In lib/uzum, lib/yandex and the billing and
+  // Scoped to the UI, deliberately. In lib/uzum and the billing and
   // sync modules the same call is CORRECT: those dates are query parameters for
   // APIs that specify UTC, and rewriting them to local time would move the
   // window they fetch. On a dashboard screen there is no such excuse — a date a

@@ -51,9 +51,9 @@ const T = {
     freeName: 'Bepul', freeDesc: "Boshlash uchun ideal — hech qanday to'lov talab etilmaydi", freeCta: 'Boshlash',
     proName: 'Pro', proDesc: "O'sib kelayotgan biznes uchun to'liq analitika vositalari", proBadge: 'Eng mashhur', proCta: "Sinab ko'ring",
     proPlusName: 'Pro+', proPlusDesc: "Yirik biznes uchun — Pro imkoniyatlari + eksklyuziv funksiyalar", proPlusBadge: 'Maksimal', proPlusCta: 'Pro+ ni boshlash',
-    freeFeatures: ['Aqlli boshqaruv paneli', 'Mahsulotlar', 'Buyurtmalar va ogohlantirishlar', 'Uzum + Yandex Market', 'Kengaytma (extension)'],
+    freeFeatures: ['Aqlli boshqaruv paneli', 'Mahsulotlar', 'Buyurtmalar va ogohlantirishlar', 'Uzum Market', 'Kengaytma (extension)'],
     proFeatures: [
-      "Unlimited do'konlar", 'Unlimited mahsulotlar', '12 oylik tarix', 'Uzum + Yandex Market', 'Unit-ekonomika',
+      "Unlimited do'konlar", 'Unlimited mahsulotlar', '12 oylik tarix', 'Uzum Market', 'Unit-ekonomika',
       'Eksport Excel / PDF', 'F&Z (P&L) hisobot', 'Maxsus hisobotlar',
     ],
     proPlusExtras: [
@@ -69,7 +69,7 @@ const T = {
     cmpCore: 'Asosiy imkoniyatlar', unlimited: 'Cheksiz', days30: '30 kun', months12: '12 oy', maksimal: 'MAKSIMAL', freePrice: "0 so'm",
     cmpFeatures: [
       'Aqlli boshqaruv paneli', 'Mahsulotlar', 'Buyurtmalar va ogohlantirishlar',
-      'Uzum + Yandex Market', 'Tahlil', 'Ombor sinxronizatsiyasi',
+      'Uzum Market', 'Tahlil', 'Ombor sinxronizatsiyasi',
       'Moliya va to\'lovlar', 'Unit-iqtisod',
     ],
     faqBadge: "Ko'p so'raladigan savollar", faqHeading: 'Savollar & Javoblar', faqSub: "Qo'shimcha savolingiz bo'lsa Telegram orqali bog'laning",
@@ -94,9 +94,9 @@ const T = {
     freeName: 'Бесплатно', freeDesc: 'Идеально для старта — оплата не требуется', freeCta: 'Начать',
     proName: 'Pro', proDesc: 'Полный набор аналитики для растущего бизнеса', proBadge: 'Популярный', proCta: 'Попробовать',
     proPlusName: 'Pro+', proPlusDesc: 'Для крупного бизнеса — возможности Pro + эксклюзивные функции', proPlusBadge: 'Максимум', proPlusCta: 'Подключить Pro+',
-    freeFeatures: ['Умный дашборд', 'Товары', 'Заказы и уведомления', 'Uzum + Yandex Market', 'Расширение (extension)'],
+    freeFeatures: ['Умный дашборд', 'Товары', 'Заказы и уведомления', 'Uzum Market', 'Расширение (extension)'],
     proFeatures: [
-      'Безлимит магазинов', 'Безлимит товаров', 'История 12 месяцев', 'Uzum + Yandex Market', 'Юнит-экономика',
+      'Безлимит магазинов', 'Безлимит товаров', 'История 12 месяцев', 'Uzum Market', 'Юнит-экономика',
       'Экспорт Excel / PDF', 'Отчёт P&L', 'Кастомные отчёты',
     ],
     proPlusExtras: [
@@ -112,7 +112,7 @@ const T = {
     cmpCore: 'Основные возможности', unlimited: 'Безлимит', days30: '30 дней', months12: '12 месяцев', maksimal: 'МАКСИМУМ', freePrice: '0 сум',
     cmpFeatures: [
       'Умный дашборд', 'Товары', 'Заказы и уведомления',
-      'Uzum + Yandex Market', 'Аналитика', 'Синхронизация склада',
+      'Uzum Market', 'Аналитика', 'Синхронизация склада',
       'Финансы и выплаты', 'Юнит-экономика',
     ],
     faqBadge: 'Частые вопросы', faqHeading: 'Вопросы и ответы', faqSub: 'Есть ещё вопрос? Напишите нам в Telegram',
@@ -137,9 +137,9 @@ const T = {
     freeName: 'Free', freeDesc: 'Perfect to start — no payment required', freeCta: 'Get started',
     proName: 'Pro', proDesc: 'Full analytics toolkit for a growing business', proBadge: 'Most popular', proCta: 'Try it',
     proPlusName: 'Pro+', proPlusDesc: 'For large business — Pro features + exclusive tools', proPlusBadge: 'Maximum', proPlusCta: 'Get Pro+',
-    freeFeatures: ['Smart dashboard', 'Products', 'Orders & alerts', 'Uzum + Yandex Market', 'Extension'],
+    freeFeatures: ['Smart dashboard', 'Products', 'Orders & alerts', 'Uzum Market', 'Extension'],
     proFeatures: [
-      'Unlimited stores', 'Unlimited products', '12-month history', 'Uzum + Yandex Market', 'Unit economics',
+      'Unlimited stores', 'Unlimited products', '12-month history', 'Uzum Market', 'Unit economics',
       'Export Excel / PDF', 'P&L report', 'Custom reports',
     ],
     proPlusExtras: [
@@ -155,7 +155,7 @@ const T = {
     cmpCore: 'Core features', unlimited: 'Unlimited', days30: '30 days', months12: '12 months', maksimal: 'MAXIMUM', freePrice: "0 so'm",
     cmpFeatures: [
       'Smart dashboard', 'Products', 'Orders & alerts',
-      'Uzum + Yandex Market', 'Analytics', 'Stock sync',
+      'Uzum Market', 'Analytics', 'Stock sync',
       'Finances & payouts', 'Unit economics',
     ],
     faqBadge: 'FAQ', faqHeading: 'Questions & Answers', faqSub: 'Have another question? Reach us on Telegram',

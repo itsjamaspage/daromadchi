@@ -1,8 +1,6 @@
 /**
  * Populates the stock-WRITE identifiers on `products` from READ-only endpoints:
  *   • Uzum → market_barcode (string barcode from GET /v3/fbs/sku/stocks)
- *   • Yandex Market → market_sku (shopSku) + market_warehouse_id (from the
- *     offers/stocks read + FBS warehouses)
  *
  * This module ONLY reads marketplaces and writes to our own DB — it never calls
  * the stock-writer and can never fire a live store write. It is the first of the
@@ -15,7 +13,6 @@ import { db, products } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
 import { fetchAllUzumSkuStocks } from '@/lib/uzum/client'
-import { fetchYandexStockLocations, fetchYandexWarehouses } from '@/lib/yandex/client'
 import type { MarketplaceType } from '@/lib/types'
 
 export interface BackfillShop {
@@ -58,7 +55,6 @@ export async function backfillShopIdentifiers(shop: BackfillShop): Promise<Backf
     mpid: products.marketplace_product_id,
     barcode: products.market_barcode,
     marketSku: products.market_sku,
-    warehouseId: products.market_warehouse_id,
   }).from(products).where(eq(products.shop_id, shop.id))
   base.totalProducts = rows.length
 
@@ -136,34 +132,6 @@ export async function backfillShopIdentifiers(shop: BackfillShop): Promise<Backf
         logger.warn('uzum_barcode_backfill_no_match', { shopId: shop.id, ...diag })
         base.debug = diag // also returned in the backfill route's JSON response
       }
-    } else if (shop.marketplace === 'yandex_market') {
-      const campaignId = nonBlank(shop.shop_id_external)
-      if (!campaignId) return { ...base, error: 'no_campaign_id' }
-      const locations = await fetchYandexStockLocations(token, campaignId)
-      // Fetch the shop's FBS warehouse independently so we can backfill
-      // products that don't appear in the stock response yet (newly pushed).
-      let fallbackWarehouseId: string | null = null
-      try {
-        const whs = await fetchYandexWarehouses(token, campaignId)
-        if (whs.length > 0) fallbackWarehouseId = String(whs[0].id)
-      } catch { /* best-effort */ }
-      for (const p of rows) {
-        const shopSku = nonBlank(p.sku) ?? nonBlank(p.mpid)
-        if (!shopSku) continue
-        const loc = (p.sku && locations.get(p.sku.trim())) || (p.mpid && locations.get(String(p.mpid).trim()))
-        const wh = loc ? String(loc.warehouseId) : fallbackWarehouseId
-        if (!wh) continue
-        base.matched++
-        if (p.marketSku !== shopSku || p.warehouseId !== wh) {
-          await db.update(products).set({ market_sku: shopSku, market_warehouse_id: wh }).where(eq(products.id, p.id))
-          base.updated++
-        }
-      }
-      base.missingAfter = rows.filter(p => {
-        const shopSku = nonBlank(p.sku) ?? nonBlank(p.mpid)
-        const wh = p.warehouseId || fallbackWarehouseId
-        return !(p.marketSku && p.warehouseId) && !(shopSku && wh)
-      }).length
     } else {
       return { ...base, error: 'marketplace_out_of_scope' }
     }

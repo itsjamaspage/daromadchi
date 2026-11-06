@@ -1,4 +1,4 @@
-export type MarketplaceType = 'uzum' | 'yandex_market'
+export type MarketplaceType = 'uzum'
 
 export interface AdsStatsSummary {
   impressions: number
@@ -42,8 +42,8 @@ export interface UnitEconomicsItem {
   productUrl?: string
   addedAt: string
   // Marker set when commissionPct / delivery were computed from the
-  // seller's own settlement history (Yandex netting or Uzum
-  // finance/orders) instead of a hard-coded percentage default.
+  // seller's own settlement history (Uzum finance/orders) instead of a
+  // hard-coded percentage default.
   // UnitEconomicsTable shows an "R" badge when this is 'real' — sellers
   // can tell at a glance which rows carry real marketplace fees vs.
   // still-unmapped ones using the default estimate.
@@ -126,10 +126,6 @@ export interface Shop {
   last_synced_at: string | null
   created_at: string
   warehouse_id?: string | null
-  // Yandex Market only — the seller's businessId (distinct from campaignId).
-  // Netting/settlement APIs are scoped to businessId, so we expose it in the
-  // Settings UI as a separate field.
-  business_id?: string | null
   // Rate-limit cooldown persisted from the sync code. Currently only
   // Wildberries writes to this; the settings card surfaces it as a
   // "throttled until X" chip with a manual reset button.
@@ -211,7 +207,6 @@ export interface Order {
   items_count: number
   ordered_at: string
   shop_id_external?: string | null
-  business_id?: string | null
 }
 
 export interface DailyRevenue {
@@ -243,8 +238,7 @@ export interface Kpis {
   /** Marketplaces whose money is in total_profit. */
   counted_marketplaces?: string[]
   /** Marketplaces with delivered sales the marketplace has not reported money
-   *  for yet (Yandex publishes commission only in the netting report, days
-   *  later). Excluded from the profit and named under it instead. */
+   *  for yet. Excluded from the profit and named under it instead. */
   pending_marketplaces?: {
     marketplace: string
     revenue: number
@@ -256,8 +250,9 @@ export interface Kpis {
   total_orders: number            // every order received, incl. cancelled
   cancelled_orders?: number       // subset of total_orders that were cancelled
   cancelled_units?: number
-  /** Orders whose status is 'returned'. ORDERS, not units — Yandex collapses a
-   *  partial return into the same status, so unit counts would over-state. */
+  /** Orders whose status is 'returned'. ORDERS, not units — a marketplace may
+   *  collapse a partial return into the same status, so unit counts would
+   *  over-state. */
   returned_orders?: number
   /** total_stock split by where it physically sits: FBO/FBY warehouses hold
    *  independent inventory and add, FBS members share one pool and MAX. The two
@@ -297,7 +292,7 @@ export interface PayoutOrderItem {
 }
 
 // A single settled order inside a payout period, named. Sourced from each
-// marketplace's Finance/settlement data (Yandex netting, Uzum finance/orders)
+// marketplace's Finance/settlement data (Uzum finance/orders)
 // — NOT the Orders feed — so the number+name matches what the seller sees in
 // the cabinet's финансы/финансовые отчёты. `name` is null when the product
 // title can't be resolved for the order's SKU (graceful — number still shows).
@@ -317,9 +312,8 @@ export interface PayoutOrderLine {
    */
   status: PayoutStatus
   /**
-   * Uzum's own status for THIS order, when the row is Uzum's. Null for Yandex,
-   * whose settlement is proven per order by its payment-order number and whose
-   * badge keeps reading `status` above.
+   * Uzum's own status for THIS order, when the row is Uzum's. Null for any
+   * other marketplace, whose badge keeps reading `status` above.
    *
    * Shown instead of the derived PayoutStatus because "earned" was a placeholder
    * standing in for a state Uzum names precisely. Nothing downstream reads it —
@@ -331,11 +325,11 @@ export interface PayoutOrderLine {
 // Settlement/payout state for a payout row. Driven by real marketplace signals,
 // never the calendar (a past month proves nothing about whether money moved).
 //   available_to_withdraw — Uzum TO_WITHDRAW: earned, withdrawable, NOT withdrawn.
-//   fees_pending          — Yandex settled credit posted but fee debits not yet
+//   fees_pending          — settled credit posted but fee debits not yet
 //                           final (stays inside the pending bucket, flagged).
 //   paid / estimated_paid — reserved; NOT emitted by the settled branches today
-//                           (no accessible Uzum payout-history feed — 403 RBAC;
-//                           no Yandex order-level withdrawal feed). See
+//                           (no accessible Uzum payout-history feed — 403 RBAC).
+//                           See
 //                           docs/plans/payouts-settlement-accuracy.md.
 //   processing            — legacy, deprecated; kept for back-compat, not emitted.
 /**
@@ -381,8 +375,8 @@ export interface PayoutEntry {
   status: PayoutStatus
   /**
    * The period's Uzum status, rolled up from the orders inside it — see
-   * rollUpUzumOrderStatus. Null for Yandex and for a period with no recognised
-   * Uzum status, where the badge falls back to `status`.
+   * rollUpUzumOrderStatus. Null for a period with no recognised Uzum status,
+   * where the badge falls back to `status`.
    */
   uzumStatus?: UzumOrderStatus | null
   payoutDate: string | null
@@ -393,9 +387,9 @@ export interface PayoutEntry {
   // Marketplace order numbers (orders.order_id_external) in this period, so a row
   // can be cross-referenced with the seller cabinet's order list.
   orderNumbers?: string[]
-  // Yandex payment-order numbers («№ платежного поручения», e.g. 92735) for a
+  // Payment-order numbers («№ платежного поручения», e.g. 92735) for a
   // transferred (paid) period — the bank-statement reference that proves the
-  // payout hit the account. Only populated once the netting shows «Переведён».
+  // payout hit the account.
   paymentReferences?: string[]
   // Per-order named breakdown for this settled period: each order number paired
   // with its product name and net, sourced from the marketplace's Finance data.
@@ -409,7 +403,7 @@ export interface PayoutEntry {
   firstOrderDate: string | null
   lastOrderDate: string | null
   // True when the marketplace hasn't yet published real settlement
-  // data for this period (currently: always true for Yandex Market).
+  // data for this period.
   // When true the UI hides estimated commission/tax/ads/net numbers
   // and shows an "Ожидает данных" state instead — no fake numbers.
   awaitingSettlement: boolean

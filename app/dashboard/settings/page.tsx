@@ -2,7 +2,7 @@ import { getT } from '@/lib/server-i18n'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { shops, userSettings, products, orders } from '@/lib/db/schema'
-import { eq, and, count, sql } from 'drizzle-orm'
+import { eq, count } from 'drizzle-orm'
 import SettingsForm from './SettingsForm'
 import type { Shop } from '@/lib/types'
 
@@ -10,8 +10,7 @@ export default async function SettingsPage() {
   const [t, user] = await Promise.all([getT(), getCurrentUser()])
   const d = t.dashboard
 
-  let uzumShop:   Shop | null = null
-  let yandexShop: Shop | null = null
+  let uzumShop: Shop | null = null
   const shopCounts: Record<string, { products: number; orders: number }> = {}
 
   if (user) {
@@ -29,11 +28,10 @@ export default async function SettingsPage() {
         throttled_until:       row.throttled_until?.toISOString()       ?? null,
         stock_sync_consent_at: row.stock_sync_consent_at?.toISOString() ?? null,
       } as Shop
-      if (row.marketplace === 'uzum')          uzumShop   = s
-      if (row.marketplace === 'yandex_market') yandexShop = s
+      if (row.marketplace === 'uzum') uzumShop = s
     }
 
-    const countedShops = ([uzumShop, yandexShop].filter(Boolean)) as Shop[]
+    const countedShops = ([uzumShop].filter(Boolean)) as Shop[]
     await Promise.all(countedShops.map(async s => {
       const [[{ total: pc }], [{ total: oc }]] = await Promise.all([
         db.select({ total: count() }).from(products).where(eq(products.shop_id, s.id)),
@@ -41,16 +39,6 @@ export default async function SettingsPage() {
       ])
       shopCounts[s.marketplace] = { products: pc ?? 0, orders: oc ?? 0 }
     }))
-  }
-
-  let yandexFulfillmentType: string | null = null
-  if (yandexShop) {
-    const ftRows = await db.selectDistinct({ ft: products.fulfillment_type })
-      .from(products)
-      .where(and(eq(products.shop_id, yandexShop.id), sql`${products.fulfillment_type} IS NOT NULL`))
-    const types = ftRows.map(r => r.ft).filter(Boolean) as string[]
-    if (types.length === 1) yandexFulfillmentType = types[0]
-    else if (types.length > 1) yandexFulfillmentType = types.join('+')
   }
 
   let telegramChatId:   string | null = null
@@ -88,13 +76,11 @@ export default async function SettingsPage() {
       </div>
       <SettingsForm
         uzumShop={uzumShop}
-        yandexShop={yandexShop}
         shopCounts={shopCounts}
         userId={user?.id ?? ''}
         telegramChatId={telegramChatId}
         telegramUsername={telegramUsername}
         shareToken={shareToken}
-        yandexFulfillmentType={yandexFulfillmentType}
       />
     </div>
   )

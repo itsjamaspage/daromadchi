@@ -6,7 +6,6 @@ import type { SharedProduct } from '@/lib/db/share'
 
 const MP_BADGE: Record<string, { label: string; color: string; bg: string }> = {
   uzum:          { label: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.15)' },
-  yandex_market: { label: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.15)' },
 }
 
 const FT_LABEL: Record<string, string> = {

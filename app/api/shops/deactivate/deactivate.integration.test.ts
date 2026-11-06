@@ -26,17 +26,17 @@ before(async () => {
     id: userId, email: `deactivate-${userId}@test.local`, full_name: 'deactivate test',
   })
   const rows = await db.insert(shops).values([
-    { user_id: userId, name: 'campaign A', marketplace: 'yandex_market', shop_id_external: '111', is_active: true },
-    { user_id: userId, name: 'campaign B', marketplace: 'yandex_market', shop_id_external: '222', is_active: true },
+    { user_id: userId, name: 'campaign A', marketplace: 'uzum', shop_id_external: '111', is_active: true },
+    { user_id: userId, name: 'campaign B', marketplace: 'uzum', shop_id_external: '222', is_active: true },
   ]).returning({ id: shops.id, ext: shops.shop_id_external })
   activeShopId = rows.find(r => r.ext === '111')!.id
   staleShopId  = rows.find(r => r.ext === '222')!.id
 
   // One order on each, inside the 30-day turnover window.
   await db.insert(orders).values([
-    { shop_id: activeShopId, order_id_external: 'A-1', marketplace: 'yandex_market',
+    { shop_id: activeShopId, order_id_external: 'A-1', marketplace: 'uzum',
       status: 'delivered', revenue: '100000', items_count: 1, ordered_at: new Date() },
-    { shop_id: staleShopId, order_id_external: 'B-1', marketplace: 'yandex_market',
+    { shop_id: staleShopId, order_id_external: 'B-1', marketplace: 'uzum',
       status: 'delivered', revenue: '900000', items_count: 1, ordered_at: new Date() },
   ])
 })

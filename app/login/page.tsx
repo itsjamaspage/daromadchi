@@ -768,7 +768,7 @@ function LoginForm() {
         </div>
 
         <div className="flex items-center justify-center gap-2 mt-5 flex-wrap">
-          {['Uzum Market', 'Yandex Market'].map((mp) => (
+          {['Uzum Market'].map((mp) => (
             <span key={mp}
               className="px-2.5 py-1 rounded-lg text-[11px] font-medium border"
               style={{

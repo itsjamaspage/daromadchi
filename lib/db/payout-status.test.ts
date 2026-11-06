@@ -4,12 +4,6 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   deriveUzumBucketStatus,
-  deriveYandexSettledStatus,
-  isYandexTransferred,
-  isYandexSentStatus,
-  isYandexAwaitingTransfer,
-  yandexFullyTransferred,
-  deriveYandexOrderStatus,
   deriveBucketStatusFromOrders,
   sumPaidOrders,
   isPartiallyPaidStatus,
@@ -19,6 +13,7 @@ import {
   rollUpUzumOrderStatus,
   isUzumOrderStatus,
 } from './payout-status'
+import type { PayoutStatus } from '@/lib/types'
 
 describe('Uzum status — available vs pending, NEVER paid (BUG 1)', () => {
   // THE test that matters most: an available-to-withdraw balance must never
@@ -49,107 +44,6 @@ describe('Uzum status — available vs pending, NEVER paid (BUG 1)', () => {
   })
 })
 
-describe('Yandex status — partial netting flagged, NEVER paid (BUG 2)', () => {
-  // Credit posted, fee debits not yet posted → net is NOT final. The 100 000 M9 case.
-  it('credit>0, debit=0 → fees_pending, counted in pending bucket, not paid', () => {
-    const s = deriveYandexSettledStatus(100000, 0)
-    assert.equal(s, 'fees_pending')
-    assert.equal(isPaidStatus(s), false)
-    assert.equal(isPendingStatus(s), true)
-    assert.equal(isAvailableStatus(s), false)
-  })
-
-  it('credit>0 and debits present → pending (fees final)', () => {
-    assert.equal(deriveYandexSettledStatus(100000, 16060), 'pending')
-  })
-
-  it('NEVER emits paid from a settled Yandex bucket (no calendar paid)', () => {
-    assert.equal(isPaidStatus(deriveYandexSettledStatus(100000, 0)), false)
-    assert.equal(isPaidStatus(deriveYandexSettledStatus(100000, 16060)), false)
-  })
-})
-
-describe('Yandex netting transfer signal — "paid" IS provable (PROBLEM 1)', () => {
-  // The confirmed example: order 59564845443 → «Переведён по графику выплат», п/п №92735.
-  it('«Переведён по графику выплат» + payment-order number → transferred → paid', () => {
-    assert.equal(isYandexTransferred('Переведён по графику выплат', '92735'), true)
-    assert.equal(deriveYandexSettledStatus(59940, 0, true), 'paid')
-    assert.equal(isPaidStatus(deriveYandexSettledStatus(59940, 0, true)), true)
-  })
-
-  // Order 60137441539 (M9) → «Будет переведён по графику выплат», no п/п → still pending.
-  it('«Будет переведён по графику выплат» (no п/п) → NOT transferred, NOT paid', () => {
-    assert.equal(isYandexTransferred('Будет переведён по графику выплат', null), false)
-    assert.equal(isYandexAwaitingTransfer('Будет переведён по графику выплат'), true)
-    assert.equal(isPaidStatus(deriveYandexSettledStatus(100000, 16000, false)), false)
-  })
-
-  it('«Переведён» WITHOUT a payment-order number is not proof of transfer', () => {
-    assert.equal(isYandexTransferred('Переведён по графику выплат', null), false)
-    assert.equal(isYandexTransferred('Переведён по графику выплат', '  '), false)
-  })
-
-  it('handles the е/ё spelling of переведен/переведён', () => {
-    assert.equal(isYandexTransferred('Переведен по графику выплат', '92735'), true)
-  })
-
-  it('transferPosted=false keeps the existing fees_pending / pending behavior', () => {
-    assert.equal(deriveYandexSettledStatus(100000, 0, false), 'fees_pending')
-    assert.equal(deriveYandexSettledStatus(100000, 16060, false), 'pending')
-    assert.equal(deriveYandexSettledStatus(100000, 0), 'fees_pending') // default arg
-  })
-})
-
-describe('«Переводятся» — in transit is NOT transferred', () => {
-  // The exact wording that produced the overstatement. Yandex reported
-  // 32 940 transferred and 100 000 still «Переводятся»; the app showed 59 940
-  // paid, because this status matched neither classifier and so blocked
-  // nothing.
-  //
-  // «Переводятся» shares no stem with «переведён»: перевод- vs перевед-. And it
-  // carries no «будет». That is why BOTH of the old checks answered no.
-  const IN_TRANSIT = 'Переводятся'
-
-  it('is not counted as transferred, even with a payment-order number', () => {
-    assert.equal(isYandexTransferred(IN_TRANSIT, '92735'), false)
-  })
-
-  it('is not recognised as awaiting either — which is exactly the trap', () => {
-    assert.equal(isYandexAwaitingTransfer(IN_TRANSIT), false)
-  })
-
-  it('the OLD rule called such a bucket paid; the new one does not', () => {
-    // One row genuinely transferred, two still in transit: 3 transactions.
-    const txnCount = 3, transferred = 1, awaitingRecognised = 0
-
-    const oldRule = transferred > 0 && awaitingRecognised === 0
-    assert.equal(oldRule, true, 'reproduces the bug: the old guard passed')
-    assert.equal(deriveYandexSettledStatus(176_000, 0, oldRule), 'paid')
-
-    const newRule = yandexFullyTransferred(txnCount, transferred)
-    assert.equal(newRule, false)
-    const status = deriveYandexSettledStatus(176_000, 0, newRule)
-    assert.equal(isPaidStatus(status), false, 'in-transit money must not read as paid')
-  })
-
-  it('a bucket where every row IS transferred still reads paid', () => {
-    assert.equal(yandexFullyTransferred(3, 3), true)
-    assert.equal(deriveYandexSettledStatus(176_000, 1_000, true), 'paid')
-  })
-
-  it('any unclassifiable status keeps the bucket out of paid', () => {
-    // The point of positive proof: a wording nobody has seen yet fails closed.
-    for (const unknown of ['Переводятся', 'В обработке', 'На согласовании', '']) {
-      assert.equal(isYandexTransferred(unknown, '92735'), false, unknown)
-    }
-    assert.equal(yandexFullyTransferred(2, 1), false)
-  })
-
-  it('an empty bucket is never paid', () => {
-    assert.equal(yandexFullyTransferred(0, 0), false)
-  })
-})
-
 describe('no settlement data means pending, never paid-by-age', () => {
   // The second bug: a month bucket with no settlement rows used to be marked
   // 'estimated_paid' purely because the month had ended. Age is not a
@@ -168,27 +62,20 @@ describe('no settlement data means pending, never paid-by-age', () => {
 })
 
 describe('per-order settlement — the real seller data', () => {
-  // The two orders from the report that produced this fix.
-  const PAID_ORDER    = { number: '59564845443', net: 59_940, transferred: true }   // п/п 92735
-  const PENDING_ORDER = { number: '60137441539', net: 100_000, transferred: false } // «Будет переведён», no п/п
-
-  it('an order carrying a payment-order number is paid', () => {
-    // The п/п IS the bank reference: it exists because the money moved.
-    assert.equal(isYandexTransferred('Переведён по графику выплат', '92735'), true)
-    assert.equal(deriveYandexOrderStatus(PAID_ORDER.transferred), 'paid')
-  })
-
-  it('an order without one is pending, whatever its month is doing', () => {
-    assert.equal(isYandexTransferred('Будет переведён по графику выплат', null), false)
-    assert.equal(deriveYandexOrderStatus(PENDING_ORDER.transferred), 'pending')
-  })
+  // A transfer signal on the ORDER, not the month. Modelled on the two orders
+  // from the report that produced this fix: one proven transferred, one not.
+  // The marketplace that supplied that signal is gone, but the roll-up rules it
+  // forced are what the Payouts tiles still sum, so they stay tested.
+  const orderStatus = (transferred: boolean): PayoutStatus => transferred ? 'paid' : 'pending'
+  const PAID_ORDER    = { number: '59564845443', net: 59_940, transferred: true }
+  const PENDING_ORDER = { number: '60137441539', net: 100_000, transferred: false }
 
   it('the mixed bucket reports exactly 59 940 paid and 100 000 pending', () => {
     // The case BOTH previous versions got wrong, in opposite directions:
     // before, the whole 159 940 read as paid; after the strict fix, none of it
     // did. The truth is one of each.
     const orders = [PAID_ORDER, PENDING_ORDER].map(o => ({
-      net: o.net, status: deriveYandexOrderStatus(o.transferred),
+      net: o.net, status: orderStatus(o.transferred),
     }))
     const bucketNet = orders.reduce((s, o) => s + o.net, 0)
 
@@ -205,8 +92,8 @@ describe('per-order settlement — the real seller data', () => {
 
   it('a month where every order transferred is simply paid', () => {
     const orders = [
-      { net: 10_000, status: deriveYandexOrderStatus(true) },
-      { net: 20_000, status: deriveYandexOrderStatus(true) },
+      { net: 10_000, status: orderStatus(true) },
+      { net: 20_000, status: orderStatus(true) },
     ]
     assert.equal(deriveBucketStatusFromOrders(orders, 'pending'), 'paid')
     assert.equal(sumPaidOrders(orders), 30_000)
@@ -214,8 +101,8 @@ describe('per-order settlement — the real seller data', () => {
 
   it('a month where nothing transferred keeps the transaction-level fallback', () => {
     const orders = [
-      { net: 10_000, status: deriveYandexOrderStatus(false) },
-      { net: 20_000, status: deriveYandexOrderStatus(false) },
+      { net: 10_000, status: orderStatus(false) },
+      { net: 20_000, status: orderStatus(false) },
     ]
     assert.equal(deriveBucketStatusFromOrders(orders, 'fees_pending'), 'fees_pending')
     assert.equal(sumPaidOrders(orders), 0)
@@ -300,68 +187,5 @@ describe('rollUpUzumOrderStatus — one status for a row of many items', () => {
     assert.equal(isUzumOrderStatus('WITHDRAWN'), false)   // never existed
     assert.equal(isUzumOrderStatus(null), false)
     assert.equal(isUzumOrderStatus(''), false)
-  })
-})
-
-describe('«Отправлен» — the second sent wording', () => {
-  // Both orders from the report that exposed this. One under each wording, both
-  // carrying a payment order, both genuinely in the seller's bank — and only the
-  // first one used to read as paid.
-  const PEREVEDEN = { note: 'Переведён по графику выплат', pp: '92735' }  // order 59564845443
-  const OTPRAVLEN = { note: 'Отправлен',                   pp: '5913'  }  // order 60137441539
-
-  it('order 59564845443 — «Переведён» + п/п 92735 is paid', () => {
-    assert.equal(isYandexTransferred(PEREVEDEN.note, PEREVEDEN.pp), true)
-    assert.equal(deriveYandexOrderStatus(true), 'paid')
-  })
-
-  it('order 60137441539 — «Отправлен» + п/п 5913 is paid', () => {
-    // The regression this fixes: money already sent, badge said «Ожидает».
-    assert.equal(isYandexTransferred(OTPRAVLEN.note, OTPRAVLEN.pp), true)
-  })
-
-  it('both orders together make their bucket fully transferred', () => {
-    const rows = [PEREVEDEN, OTPRAVLEN]
-    const transferred = rows.filter(r => isYandexTransferred(r.note, r.pp)).length
-    assert.equal(transferred, 2)
-    assert.equal(yandexFullyTransferred(rows.length, transferred), true)
-    assert.equal(deriveYandexSettledStatus(176_000, 1_000, true), 'paid')
-  })
-
-  it('inflected forms of both verbs are covered', () => {
-    for (const note of ['Отправлен', 'Отправлено', 'ОТПРАВЛЕН', 'Переведена']) {
-      assert.equal(isYandexTransferred(note, '5913'), true, note)
-    }
-  })
-
-  it('«Отправлен» without a payment order is NOT paid', () => {
-    // The п/п is the bank-statement reference; status text alone never suffices.
-    assert.equal(isYandexTransferred('Отправлен', null), false)
-    assert.equal(isYandexTransferred('Отправлен', '   '), false)
-  })
-
-  it('a future tense is not a completed send, whichever verb it uses', () => {
-    // The «будет» guard covers every stem, not just «перевед» — that asymmetry
-    // is exactly the kind of gap that produced this bug.
-    assert.equal(isYandexSentStatus('Будет отправлен'), false)
-    assert.equal(isYandexSentStatus('Будет переведён по графику выплат'), false)
-    assert.equal(isYandexTransferred('Будет отправлен', '5913'), false)
-  })
-
-  it('«Переводятся» stays out — in transit is still not arrived', () => {
-    // Guarded here as well as in its own block: adding a stem must not widen
-    // the rule onto money that has not landed.
-    assert.equal(isYandexSentStatus('Переводятся'), false)
-    assert.equal(isYandexTransferred('Переводятся', '92735'), false)
-  })
-
-  it('«Отправляется» — in the act of sending — is not sent', () => {
-    assert.equal(isYandexSentStatus('Отправляется'), false)
-  })
-
-  it('an unknown wording still fails closed, п/п or not', () => {
-    for (const note of ['В обработке', 'На согласовании', '', null, undefined]) {
-      assert.equal(isYandexTransferred(note, '5913'), false, String(note))
-    }
   })
 })

@@ -3,7 +3,7 @@
  *
  * Every profit bug this project has shipped had the same shape: a money column
  * that the marketplace had not reported yet, coerced to zero, then subtracted
- * as though it were a fact. `coalesce(marketplace_fee, 0)` says "Yandex charged
+ * as though it were a fact. `coalesce(marketplace_fee, 0)` says "the marketplace charged
  * nothing". `coalesce(cost_price, 0)` says "these goods were free". Neither is
  * true, and both produce a number that looks plausible enough to trust —
  * a 100% margin, a weekly profit larger than that week's sales.

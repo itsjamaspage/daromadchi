@@ -12,13 +12,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # RULE: Marketplace APIs are read-only by default — one audited, opt-in write exception
 
 Marketplace API access is READ-ONLY BY DEFAULT. The app MUST NEVER send PUT, PATCH, or
-DELETE requests to any external marketplace API (Yandex Market, Uzum Market, Wildberries,
+DELETE requests to any external marketplace API (Uzum Market, Wildberries,
 or any other marketplace/e-commerce platform), except through the single sanctioned
 exception described below.
 
 POST is only allowed when the marketplace API itself requires POST for a READ operation
-(e.g. Yandex offer-mappings, stocks, stats endpoints return 405 on GET — those specific
-approved endpoints are listed in lib/marketplace-readonly-guard.ts).
+(e.g. the Wildberries cards-list and FBS stock-lookup endpoints read via POST — those
+specific approved endpoints are listed in lib/marketplace-readonly-guard.ts).
 
 THE ONE SANCTIONED WRITE EXCEPTION — opt-in, audited, stock-quantity-only:
 A single per-shop "Stock-sync (edit)" mode may update ONLY the stock quantity (ostatok)

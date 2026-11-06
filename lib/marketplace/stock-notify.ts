@@ -35,7 +35,7 @@ import { COLOR_LABELS } from '@/lib/products/resolveColor'
 import type { MarketplaceType } from '@/lib/types'
 
 const MP_LABEL: Record<string, string> = {
-  uzum: 'Uzum', yandex_market: 'Yandex Market',
+  uzum: 'Uzum',
 }
 
 export interface StockUpdateEvent {
@@ -119,7 +119,7 @@ export function buildDigestMessage(
 const RESTOCK_THRESHOLD = 5
 
 // How long an identical digest is treated as a duplicate. One physical sale fans
-// out to TWO sync triggers (the Yandex webhook AND the 5-min cron), seconds
+// out to TWO sync triggers, seconds
 // apart, producing the SAME (status, target, available) for the SAME SKU — this
 // window collapses that twin into one message. A genuine new sale changes
 // `available` (a new key → sends), and the same state recurring AFTER the window
@@ -200,7 +200,7 @@ export async function notifyStockUpdates(userId: string, events: StockUpdateEven
     }
 
     // Keep only the SKUs whose outcome is genuinely NEW — not a RECENT DUPLICATE.
-    // A single physical sale fans out to two triggers (Yandex webhook + 5-min
+    // A single physical sale can fan out to two triggers (webhook + 5-min
     // cron) producing an identical (status, target, available) digest seconds
     // apart; those are collapsed to ONE message. An unchanged SKU whose last
     // notification is within the window is dropped; a real change (new available/

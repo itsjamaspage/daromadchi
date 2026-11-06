@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Daromadchi — Uzum & Yandex Analytics",
-  "version": "2.6.2",
-  "description": "Uzum va Yandex Market sotuvchilari uchun aqlli tahlil: marja, ROI, reklama samaradorligi",
+  "name": "Daromadchi — Uzum Analytics",
+  "version": "2.7.0",
+  "description": "Uzum Market sotuvchilari uchun aqlli tahlil: marja, ROI, reklama samaradorligi",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -26,18 +26,12 @@
         "https://www.uzum.uz/*",
         "*://*.uzum.uz/*"
       ],
-      "js": ["content.js"],
-      "css": ["content.css"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": [
-        "https://partner.market.yandex.ru/*",
-        "https://market.yandex.ru/*",
-        "https://market.yandex.uz/*"
+      "js": [
+        "content.js"
       ],
-      "js": ["content-yandex.js"],
-      "css": ["content.css"],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_idle"
     },
     {
@@ -45,7 +39,9 @@
         "https://daromadchi.uz/*",
         "https://www.daromadchi.uz/*"
       ],
-      "js": ["content-daromadchi.js"],
+      "js": [
+        "content-daromadchi.js"
+      ],
       "run_at": "document_idle"
     },
     {
@@ -57,19 +53,24 @@
         "https://www.wildberries.ru/*",
         "https://wildberries.ru/*"
       ],
-      "js": ["content-wb.js"],
-      "css": ["content.css"],
+      "js": [
+        "content-wb.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["storage", "alarms", "notifications", "activeTab"],
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications",
+    "activeTab"
+  ],
   "host_permissions": [
     "*://*.uzum.uz/*",
     "https://uzum.uz/*",
-    "https://partner.market.yandex.ru/*",
-    "https://market.yandex.ru/*",
-    "https://market.yandex.uz/*",
-    "https://api.partner.market.yandex.ru/*",
     "https://daromadchi.uz/*",
     "https://www.daromadchi.uz/*",
     "https://common-api.wildberries.ru/*",

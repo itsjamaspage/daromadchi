@@ -13,14 +13,14 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
   // ── Params ───────────────────────────────────────────────────────────────────
   const { searchParams } = req.nextUrl
-  const marketplace = searchParams.get('marketplace')   // 'uzum' | 'yandex'
+  const marketplace = searchParams.get('marketplace')   // 'uzum'
   const productId   = searchParams.get('productId')
 
   if (!marketplace || !productId) {
     return NextResponse.json({ error: 'marketplace va productId talab etiladi' }, { status: 400 })
   }
 
-  const mpType = marketplace === 'yandex' ? 'yandex_market' as const : 'uzum' as const
+  const mpType = 'uzum' as const
 
   // ── Own product lookup ────────────────────────────────────────────────────────
   let ownProduct: {
@@ -81,9 +81,9 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
       // DRR: shop-level fee / revenue ratio (last 30 days).
       //
-      // `feeReported` is the reason this is two columns and not one. Yandex
-      // leaves marketplace_fee NULL until its netting report arrives, so
-      // sum(fee) over a Yandex-only shop is NULL — and coalescing that to 0
+      // `feeReported` is the reason this is two columns and not one. A
+      // marketplace that has not reported a fee yet leaves marketplace_fee
+      // NULL, so sum(fee) over such a shop is NULL — and coalescing that to 0
       // used to show the seller "DRR 0.0%", a number that reads as
       // "your marketplace charges you nothing". No fee reported yet is not a
       // fee of nothing; it is an answer we do not have, so send null and let
@@ -157,9 +157,6 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       }
     } catch { /* market data is optional */ }
   }
-
-  // Yandex public market data requires a separate API key — graceful degradation for now
-  // Will be added when Yandex Content API integration is implemented
 
   return NextResponse.json({ ownProduct, marketData })
 })

@@ -6,7 +6,7 @@ export interface SharedProduct {
   title: string
   sku: string | null
   image_url: string | null
-  marketplace: 'uzum' | 'yandex_market'
+  marketplace: 'uzum'
   fulfillment_type: string | null
   stock_quantity: number
 }
@@ -25,7 +25,7 @@ export async function getSharedProducts(token: string): Promise<SharedProduct[] 
   if (userShops.length === 0) return []
 
   const shopIds = userShops.map(s => s.id)
-  const mpByShop = new Map(userShops.map(s => [s.id, s.marketplace as 'uzum' | 'yandex_market']))
+  const mpByShop = new Map(userShops.map(s => [s.id, s.marketplace as 'uzum']))
 
   const rows = await db.select({
     title: products.title,

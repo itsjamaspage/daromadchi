@@ -11,13 +11,8 @@ import { withErrorHandler } from '@/lib/api-handler'
 import { resolveShopIdentity } from '@/lib/db/shop-identity'
 
 const TokenSchema = z.object({
-  marketplace: z.enum(['uzum', 'yandex_market']),
+  marketplace: z.enum(['uzum']),
   token:       z.string().max(2000).optional(),
-  campaignId:  z.string().max(200).optional(),
-  // Yandex only. Persisted to shops.business_id so the netting-report
-  // sync can hit the businessId-scoped endpoints without having to
-  // resolve it from campaignId on every run.
-  businessId:  z.string().max(200).optional(),
   shopName:    z.string().max(200).optional(),
 })
 
@@ -30,17 +25,10 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   if (!parsed.success) {
     return NextResponse.json({ ok: false, error: parsed.error.issues[0]?.message ?? 'Noto\'g\'ri ma\'lumot' }, { status: 400 })
   }
-  const { marketplace, token, campaignId, businessId, shopName } = parsed.data
-
-  if (campaignId?.trim() && !/^\d+$/.test(campaignId.trim())) {
-    return NextResponse.json({ ok: false, error: 'Campaign ID должен быть числом. Скопируйте его из URL в Yandex Partner: campaignId=<число>.' }, { status: 400 })
-  }
-  if (businessId?.trim() && !/^\d+$/.test(businessId.trim())) {
-    return NextResponse.json({ ok: false, error: 'Business ID должен состоять только из цифр.' }, { status: 400 })
-  }
+  const { marketplace, token, shopName } = parsed.data
 
   if (token?.trim()) {
-    const valid = await validateMarketplaceToken(marketplace, token.trim(), campaignId?.trim())
+    const valid = await validateMarketplaceToken(marketplace, token.trim())
     if (!valid) {
       return NextResponse.json(
         { ok: false, error: 'Недействительный токен. Проверьте и попробуйте снова.' },
@@ -49,12 +37,12 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     }
   }
 
-  // Identity includes the campaign id — see lib/db/shop-identity.ts. Without it
-  // a seller's second Yandex campaign (the normal FBS + FBY shape) overwrote the
-  // first shop AND wiped its data.
+  // Identity resolution — see lib/db/shop-identity.ts. Uzum carries no external
+  // id on a connect (the sync learns its shop id), so this resolves on the
+  // candidate count alone: none → insert, one → update, several → ambiguous.
   const candidates = await db.select({ id: shops.id, shop_id_external: shops.shop_id_external }).from(shops)
     .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, marketplace), eq(shops.is_active, true)))
-  const resolved = resolveShopIdentity(candidates, campaignId)
+  const resolved = resolveShopIdentity(candidates, null)
 
   if (resolved.action === 'ambiguous') {
     // Only reachable once a user holds several campaigns for one marketplace:
@@ -71,8 +59,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     update.token_valid = true
     update.last_synced_at = null
   }
-  if (campaignId?.trim()) update.shop_id_external = campaignId.trim()
-  if (businessId?.trim()) update.business_id = businessId.trim()
 
   // A connect NEVER deletes synced data any more.
   //

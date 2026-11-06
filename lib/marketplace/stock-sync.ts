@@ -29,10 +29,9 @@ import { backfillShopIdentifiers } from '@/lib/marketplace/identifier-backfill'
 import { decrypt } from '@/lib/crypto'
 import { withStockSyncLock } from '@/lib/db/shop-lock'
 import { fetchAllUzumSkuStocks } from '@/lib/uzum/client'
-import { fetchYandexStockLocations } from '@/lib/yandex/client'
 import type { MarketplaceType } from '@/lib/types'
 
-const IN_SCOPE: MarketplaceType[] = ['uzum', 'yandex_market']
+const IN_SCOPE: MarketplaceType[] = ['uzum']
 
 // A 'skipped' write worth notifying about: one where we couldn't target the
 // write and the seller must fix config (missing identifier / token). Benign
@@ -59,7 +58,6 @@ interface ProductRow {
   physical_stock: number | null
   market_barcode: string | null
   market_sku: string | null
-  market_warehouse_id: string | null
   fulfillment_type: string | null
   title: string | null
   variant_color: string | null
@@ -150,7 +148,6 @@ async function loadGroups(userId: string): Promise<{
       physical_stock: products.physical_stock,
       market_barcode: products.market_barcode,
       market_sku: products.market_sku,
-      market_warehouse_id: products.market_warehouse_id,
       fulfillment_type: products.fulfillment_type,
       title: products.title,
       variant_color: products.variant_color,
@@ -162,9 +159,9 @@ async function loadGroups(userId: string): Promise<{
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       // Only orders that RESERVE stock draw down available: a PAID, committed
-      // order (Uzum PACKING and later / Yandex PROCESSING and later), from order
+      // order (Uzum PACKING and later), from order
       // ingestion — so the sibling listing drops right away. Unpaid drafts (Uzum
-      // CREATED, Yandex UNPAID) keep listings full so a cancelled draft can't
+      // CREATED) keep listings full so a cancelled draft can't
       // phantom-out the other channel. Shared condition, see
       // reservingOrderCondition / RESERVING_RAW_STATUSES.
       .where(and(inArray(orders.shop_id, shopIds), reservingOrderCondition()))
@@ -246,7 +243,7 @@ async function loadGroups(userId: string): Promise<{
   }
   const pendingByProduct = new Map(pendingRows.map(r => [r.product_id, Number(r.qty)]))
   const createdPendingByProduct = new Map(createdPendingRows.map(r => [r.product_id, Number(r.qty)]))
-  // product_id → reserving order ids on it (product_id can be null when a Yandex
+  // product_id → reserving order ids on it (product_id can be null when an
   // line never linked to a products row — those are un-attributable, exactly as
   // the pending sum drops them, so nothing over-counts).
   const orderIdsByProduct = new Map<string, string[]>()
@@ -385,10 +382,11 @@ async function noteSkip(shopId: string, matchKey: string, target: number, repeat
 
 /**
  * Ensure the stock-WRITE identifiers are populated before any write is planned.
- * Uzum keys on products.market_barcode and Yandex on products.market_sku (+
- * market_warehouse_id); the product/order sync never fills these — they come
- * from backfillShopIdentifiers (read-only endpoints). Without them every write
- * skips (missing_barcode / missing_sku), which is exactly what a live sale hit.
+ * Uzum keys on products.market_barcode and products.market_sku (the FBS
+ * skuId); the product/order sync never fills these — they come from
+ * backfillShopIdentifiers (read-only endpoints). Without them every write
+ * skips (missing_barcode / missing_uzum_skuid), which is exactly what a live
+ * sale hit.
  *
  * Runs a shop's backfill ONLY when it still has a product missing its
  * identifier, so once populated this is a cheap existence check with no
@@ -409,7 +407,7 @@ async function ensureWriteIdentifiers(userId: string): Promise<void> {
 
   for (const s of shopRows) {
     if (!s.api_key_encrypted) continue
-    // Uzum needs market_barcode; Yandex needs market_sku (+ warehouse, set
+    // Uzum needs market_barcode (set
     // together with market_sku by the backfill).
     const missingCol = s.marketplace === 'uzum' ? products.market_barcode : products.market_sku
     const [missing] = await db.select({ id: products.id }).from(products)
@@ -642,7 +640,7 @@ async function syncStockSyncGroupsLocked(opts: RunOptions): Promise<StockSyncRun
     // writable member to its target — even one whose (possibly-stale) listedStock
     // already equals target. The sale-origin marketplace auto-adjusts its own live
     // stock but our stock_quantity copy for it can lag, so a per-member equality
-    // would wrongly skip the listing that needs re-raising (the stale-Yandex root
+    // would wrongly skip the listing that needs re-raising (the stale-listing root
     // cause). A fully-unchanged group still writes NOTHING (strict no-op).
     const toWrite = planGroupWrites({ available, plans })
     // Log which shop's policy governed this group the first time it actually
@@ -675,7 +673,9 @@ async function syncStockSyncGroupsLocked(opts: RunOptions): Promise<StockSyncRun
       const shop = shopsById.get(plan.member.shopId)!
       const product = group.products.get(plan.member.productId)!
 
-      // FBY stock is managed by Yandex's warehouse — never push to it.
+      // Warehouse-managed stock — never push to it. Retained for legacy 'fby'
+      // rows that predate the Yandex removal and survive until migration 103
+      // is applied; a stock push to one of those would be meaningless.
       if (product.fulfillment_type === 'fby') {
         entries.push({
           matchKey, marketplace: shop.marketplace, shopId: shop.id, productId: product.id,
@@ -711,8 +711,7 @@ async function syncStockSyncGroupsLocked(opts: RunOptions): Promise<StockSyncRun
 
       // Resolve the write identifier just before pushing.
       const barcode = shop.marketplace === 'uzum' ? product.market_barcode : null
-      const marketSku = shop.marketplace === 'yandex_market' ? product.market_sku : product.sku
-      const warehouseId = shop.marketplace === 'yandex_market' ? product.market_warehouse_id : null
+      const marketSku = product.sku
 
       // Silent skip: never attempt a Uzum write for a SKU the seller hasn't
       // linked to their FBS warehouse (fbsLinked:false → guaranteed HTTP 400).
@@ -751,15 +750,13 @@ async function syncStockSyncGroupsLocked(opts: RunOptions): Promise<StockSyncRun
         sku: marketSku,
         barcode,
         // Uzum FBS stock-update (POST /v2/fbs/sku/stocks) requires all 5 fields;
-        // it keys on the FBS skuId (products.market_sku). Yandex path is unaffected.
+        // it keys on the FBS skuId (products.market_sku).
         uzumSkuId: shop.marketplace === 'uzum' ? product.market_sku : null,
         uzumFbsLinked,
         uzumDbsLinked,
         quantity: plan.target,
         version,
-        warehouseId,
         productId: product.id,
-        updatedAt: computedAt,
         freshnessKey: matchKey,
       })
 
@@ -857,12 +854,6 @@ export async function readBackStock(
       const n = rec.amount ?? rec.quantityActive
       return typeof n === 'number' ? n : null
     }
-    if (shop.marketplace === 'yandex_market') {
-      const campaignId = shop.shop_id_external?.trim()
-      if (!campaignId) return null
-      const locations = await fetchYandexStockLocations(token, campaignId)
-      return locations.get(identifier.trim())?.count ?? null
-    }
   } catch (err) {
     logger.warn('stock_read_back_failed', { marketplace: shop.marketplace, error: String(err).slice(0, 200) })
   }
@@ -913,8 +904,7 @@ export async function verifiedLivePush(userId: string, productId: string, quanti
   if (!await userHasFeature(userId, 'stock_sync')) return fail('plan_gated', target)
 
   const barcode = shop.marketplace === 'uzum' ? found.product.market_barcode : null
-  const marketSku = shop.marketplace === 'yandex_market' ? found.product.market_sku : found.product.sku
-  const warehouseId = shop.marketplace === 'yandex_market' ? found.product.market_warehouse_id : null
+  const marketSku = found.product.sku
   const identifier = shop.marketplace === 'uzum' ? barcode : marketSku
   if (!identifier) return fail('missing_identifier', target)
 
@@ -928,8 +918,8 @@ export async function verifiedLivePush(userId: string, productId: string, quanti
       id: shop.id, marketplace: shop.marketplace, api_key_encrypted: shop.api_key_encrypted,
       shop_id_external: shop.shop_id_external,
     },
-    sku: marketSku, barcode, quantity: target, version, warehouseId,
-    productId: found.product.id, updatedAt: new Date().toISOString(), freshnessKey: found.matchKey,
+    sku: marketSku, barcode, quantity: target, version,
+    productId: found.product.id, freshnessKey: found.matchKey,
   })
 
   if (result.status !== 'sent') {

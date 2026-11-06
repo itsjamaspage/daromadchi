@@ -20,8 +20,7 @@ interface Shop {
 }
 
 const MP_CONFIG: Record<string, { label: string; color: string; letter: string; syncUrl: string }> = {
-  uzum:         { label: 'Uzum Market',    color: 'violet',  letter: 'U', syncUrl: '/api/uzum/sync' },
-  yandex_market:{ label: 'Yandex Market',  color: 'amber',   letter: 'Y', syncUrl: '/api/yandex/sync' },
+  uzum: { label: 'Uzum Market', color: 'violet', letter: 'U', syncUrl: '/api/uzum/sync' },
 }
 
 const COLOR_CLASSES: Record<string, { bg: string; border: string; text: string; badge: string }> = {
@@ -45,7 +44,7 @@ function ShopCard({ shop }: { shop: Shop }) {
   const cfg = MP_CONFIG[shop.marketplace]
   const col = COLOR_CLASSES[cfg?.color ?? 'violet']
   const LAUNCH_YEAR: Record<string, string> = {
-    uzum: 'okt 2022', yandex_market: 'apr 2025',
+    uzum: 'okt 2022',
   }
   const hasKey = !!shop.api_key_encrypted
   const lastSync = shop.last_synced_at ? new Date(shop.last_synced_at).toLocaleString() : null
@@ -185,23 +184,21 @@ function ShopCard({ shop }: { shop: Shop }) {
 interface Props {
   shops: Shop[]
   uzumDays: SyncDay[]
-  yandexDays: SyncDay[]
   connectedMps: string[]
 }
 
-export default function SyncStatusClient({ shops, uzumDays, yandexDays, connectedMps }: Props) {
+export default function SyncStatusClient({ shops, uzumDays, connectedMps }: Props) {
   const router = useRouter()
   const { lang } = useLang()
   const t = dashT[lang].sync
   const [syncingAll, setSyncingAll] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
 
-  const hasDays = uzumDays.length > 0 || yandexDays.length > 0
+  const hasDays = uzumDays.length > 0
 
   async function handleSyncAll() {
     setSyncingAll(true)
     await fetch('/api/uzum/sync', { method: 'POST' }).catch(() => {})
-    await fetch('/api/yandex/sync', { method: 'POST' }).catch(() => {})
     router.refresh()
     setSyncingAll(false)
   }
@@ -246,7 +243,6 @@ export default function SyncStatusClient({ shops, uzumDays, yandexDays, connecte
           {showHistory && (
             <DataStateView
               uzumDays={uzumDays}
-              yandexDays={yandexDays}
               connectedMps={connectedMps}
             />
           )}

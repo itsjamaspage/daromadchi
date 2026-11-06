@@ -15,11 +15,11 @@ const applied = (prev: Set<string>, writes: PendingLedgerWrite[]) =>
   new Set<string>([...prev, ...keysOf(writes)])
 
 const live = (id: string, qty = 1): GroupOrder =>
-  ({ orderIdExternal: id, marketplace: 'yandex_market', qty, status: 'live' })
+  ({ orderIdExternal: id, marketplace: 'other_market', qty, status: 'live' })
 const cancelled = (id: string, qty = 1): GroupOrder =>
-  ({ orderIdExternal: id, marketplace: 'yandex_market', qty, status: 'cancelled' })
+  ({ orderIdExternal: id, marketplace: 'other_market', qty, status: 'cancelled' })
 const returned = (id: string, restockable: boolean, qty = 1): GroupOrder =>
-  ({ orderIdExternal: id, marketplace: 'yandex_market', qty, status: 'returned', restockable })
+  ({ orderIdExternal: id, marketplace: 'other_market', qty, status: 'returned', restockable })
 
 describe('ledgerOnHand / availableFromOnHand', () => {
   it('sums deltas to the on-hand balance', () => {
@@ -35,11 +35,11 @@ describe('ledgerOnHand / availableFromOnHand', () => {
 })
 
 describe('diffLedger — Option A (debit at placement)', () => {
-  it('THE JMBLK case: seed 2, one live Yandex order → consume −1 → on-hand 1', () => {
+  it('THE JMBLK case: seed 2, one live order → consume −1 → on-hand 1', () => {
     // Both listing pools were stale-high at 2; the ledger is what actually debits.
     const events: LedgerEvent[] = [seed(2)]
     const writes = diffLedger([live('60137441539')], new Set())
-    assert.deepEqual(writes, [{ delta: -1, reason: 'consume', orderIdExternal: '60137441539', marketplace: 'yandex_market' }])
+    assert.deepEqual(writes, [{ delta: -1, reason: 'consume', orderIdExternal: '60137441539', marketplace: 'other_market' }])
     const onHand = ledgerOnHand([...events, ...writes.map(w => ({ delta: w.delta, reason: w.reason }))])
     assert.equal(onHand, 1)
     assert.equal(availableFromOnHand(onHand), 1)   // NOT the stale 2
@@ -56,7 +56,7 @@ describe('diffLedger — Option A (debit at placement)', () => {
   it('cancel AFTER a consume credits the unit back (+qty), once', () => {
     const rec = applied(new Set(), diffLedger([live('o1')], new Set()))  // consumed
     const credit = diffLedger([cancelled('o1')], rec)
-    assert.deepEqual(credit, [{ delta: 1, reason: 'cancel', orderIdExternal: 'o1', marketplace: 'yandex_market' }])
+    assert.deepEqual(credit, [{ delta: 1, reason: 'cancel', orderIdExternal: 'o1', marketplace: 'other_market' }])
     const rec2 = applied(rec, credit)
     assert.deepEqual(diffLedger([cancelled('o1')], rec2), [])    // idempotent
   })
@@ -68,7 +68,7 @@ describe('diffLedger — Option A (debit at placement)', () => {
   it('return credits back ONLY when restockable (sellable-only)', () => {
     const rec = applied(new Set(), diffLedger([live('o1')], new Set()))  // consumed
     assert.deepEqual(diffLedger([returned('o1', true)], rec),
-      [{ delta: 1, reason: 'return', orderIdExternal: 'o1', marketplace: 'yandex_market' }])
+      [{ delta: 1, reason: 'return', orderIdExternal: 'o1', marketplace: 'other_market' }])
     assert.deepEqual(diffLedger([returned('o1', false)], rec), [])       // write-off → no credit
   })
 
@@ -81,12 +81,12 @@ describe('diffLedger — Option A (debit at placement)', () => {
 
   it('multi-unit order debits the full quantity', () => {
     assert.deepEqual(diffLedger([live('o1', 3)], new Set()),
-      [{ delta: -3, reason: 'consume', orderIdExternal: 'o1', marketplace: 'yandex_market' }])
+      [{ delta: -3, reason: 'consume', orderIdExternal: 'o1', marketplace: 'other_market' }])
   })
 
   it('delivered is live-CLOSED: first-seen-delivered records NOTHING (the PBBLK phantom)', () => {
     const delivered = (id: string, qty = 1): GroupOrder =>
-      ({ orderIdExternal: id, marketplace: 'yandex_market', qty, status: 'delivered' })
+      ({ orderIdExternal: id, marketplace: 'other_market', qty, status: 'delivered' })
     // First sighting already delivered → no consume created (was the debit-at-delivery bug).
     assert.deepEqual(diffLedger([delivered('pbblk-ord')], new Set()), [])
     // A delivered order whose consume was recorded while it was reserving → no-op,
@@ -113,14 +113,14 @@ describe('orderLedgerStatus — live is anchored to RESERVING_RAW_STATUSES (flag
     for (const raw of ['PACKING', 'PENDING_DELIVERY', 'DELIVERING', 'ACCEPTED_AT_DP']) {
       assert.equal(orderLedgerStatus(raw, 'pending'), 'live', raw)
     }
-    // Yandex
+    // Second store
     for (const raw of ['PROCESSING', 'DELIVERY', 'PICKUP']) {
       assert.equal(orderLedgerStatus(raw, 'confirmed'), 'live', raw)
     }
   })
 
   it('UNPAID DRAFTS never debit the pool → null (the reserve-at-payment guarantee)', () => {
-    // Uzum freshly-placed / unpaid; Yandex pre-payment states. All normalize to
+    // Uzum freshly-placed / unpaid, plus other pre-payment states. All normalize to
     // 'pending', none are in the reserving set → nothing recorded.
     for (const raw of ['CREATED', 'NEW', 'PENDING']) {
       assert.equal(orderLedgerStatus(raw, 'pending'), null, raw)

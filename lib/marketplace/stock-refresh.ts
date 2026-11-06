@@ -27,9 +27,7 @@ import 'server-only'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db, products } from '@/lib/db'
 import { fetchUzumShopProducts, fetchUzumShops, getUzumRateLimit, UzumApiError } from '@/lib/uzum/client'
-import { fetchAllYandexStocks, fetchAllYandexCampaignOffers } from '@/lib/yandex/client'
 import { uzumStockQuantity } from '@/lib/uzum/stock-reading'
-import { stockKeysFor, trimmedIndex, resolveStock } from '@/lib/marketplace/stock-key-match'
 import { recentlyWrittenProductIds } from '@/lib/marketplace/recent-write-guard'
 import { logger } from '@/lib/logger'
 
@@ -119,8 +117,7 @@ export async function refreshUzumStock(
   //
   // The predicate belongs HERE, in the WHERE clause, not in a check around the
   // loop — same reasoning as app/api/shops/deactivate/route.ts: one predicate
-  // cannot be forgotten, and a check-then-write leaves a window. The Yandex
-  // sibling below was always scoped this way.
+  // cannot be forgotten, and a check-then-write leaves a window.
   const ids = [...live.keys()]
   const rows = await db.select({
     id: products.id, mpid: products.marketplace_product_id, stock: products.stock_quantity,
@@ -154,109 +151,4 @@ export async function refreshUzumStock(
     rateLimitPerDay: rl?.limitPerDay ?? null,
   })
   return { ok: true, seen: live.size, updated }
-}
-
-/**
- * Refresh one Yandex shop's stock quantities.
- *
- * ── The join ────────────────────────────────────────────────────────────────
- * The stocks response is keyed by offerId — the seller's own code — which is
- * normally what products.sku holds, and a live probe against the real account
- * confirmed that: 8 catalog entries, 8 stock keys, every SKU hitting on
- * shopSku with the expected FIT count.
- *
- * That probe is why this used to look up products.sku and nothing else. It was
- * a point-in-time check of one account, and it does not hold for every row.
- * When offer-mappings returns an entry with no shopSku/offerId, `skuOf()`
- * yields '' and the product is stored with `sku = marketSku`
- * (lib/yandex/sync.ts:334) — which never appears as a stocks key. Such a row
- * missed here forever while the heavy pass still refreshed it through its own
- * fallback chain (lib/yandex/sync.ts:301-305), so its stock moved only on the
- * plan-gated pass. Exactly the staleness this whole module exists to remove.
- *
- * So the lookup now tries every identifier the row carries, via
- * resolveStock() — market_sku first (it is defined as the exact shopSku these
- * endpoints expect), then sku, then marketplace_product_id. What we are
- * willing to WRITE is unchanged; only what we can find widened.
- *
- * ── Partial reads ───────────────────────────────────────────────────────────
- * Yandex pages sequentially, so a mid-page failure stops a batch early with a
- * partly-filled map. That is now visible (`complete`), and it matters here
- * because absence means "unknown" — on a truncated read the untouched SKUs
- * silently keep their old values, which is safe but worth logging rather than
- * reporting as a clean refresh. `unmatched` in the log line separates the two
- * causes of a quiet tick: a complete read with unmatched > 0 is an identifier
- * mismatch, not a lost page.
- */
-export async function refreshYandexStock(
-  shopId: string,
-  token: string,
-  campaignId: string,
-): Promise<StockRefreshResult> {
-  // Ask for the SKUs we actually track. The endpoint ignores the list when the
-  // empty-body attempt wins and returns the whole catalogue paginated, which is
-  // harmless — we only read keys we have rows for.
-  const own = await db.select({
-    id: products.id,
-    sku: products.sku,
-    market_sku: products.market_sku,
-    marketplace_product_id: products.marketplace_product_id,
-    stock: products.stock_quantity,
-    stockOverride: products.stock_override,
-  }).from(products).where(eq(products.shop_id, shopId))
-  // Ask under every identifier we hold, not just products.sku — a row stored
-  // with a marketSku (offer-mappings returned no shopSku) would otherwise never
-  // appear in the request OR the response.
-  const skus = [...new Set(own.flatMap(stockKeysFor))]
-  if (skus.length === 0) return { ok: true, seen: 0, updated: 0 }
-
-  let stockMap: Map<string, number>
-  let complete: boolean
-  let lastError: string | null
-  try {
-    const r = await fetchAllYandexStocks(token, campaignId, skus)
-    stockMap = r.stockMap; complete = r.complete; lastError = r.lastError
-  } catch (e) {
-    return { ok: false, seen: 0, updated: 0, error: String(e).slice(0, 200) }
-  }
-  // FBY sellers: /offers/stocks returns empty because FBY warehouses don't
-  // report through that endpoint. Fall back to the campaign-offers endpoint
-  // (same fallback the heavy sync uses in lib/yandex/sync.ts).
-  if (stockMap.size === 0) {
-    try {
-      const fallback = await fetchAllYandexCampaignOffers(token, campaignId)
-      if (fallback.size > 0) {
-        stockMap = fallback; complete = true; lastError = null
-      }
-    } catch (e) {
-      lastError = lastError ?? String(e).slice(0, 200)
-    }
-  }
-  if (stockMap.size === 0) {
-    return { ok: false, seen: 0, updated: 0, error: lastError ?? 'stocks response empty' }
-  }
-
-  const trimmed = trimmedIndex(stockMap)
-  const recentlyWritten = await recentlyWrittenProductIds(own.map(p => p.id))
-  let updated = 0
-  let unmatched = 0
-  let skippedByGrace = 0
-  for (const p of own) {
-    if (recentlyWritten.has(p.id)) { skippedByGrace++; continue }
-    const next = resolveStock(p, stockMap, trimmed)
-    if (next === undefined) { unmatched++; continue }
-    const fields: Record<string, unknown> = {}
-    if (next !== p.stock) fields.stock_quantity = next
-    if (p.stockOverride != null) fields.stock_override = null
-    if (Object.keys(fields).length === 0) continue
-    await db.update(products).set(fields).where(eq(products.id, p.id))
-    updated++
-  }
-
-  logger.info('yandex_stock_refresh', {
-    shopId, seen: stockMap.size, updated, complete,
-    unmatched, tracked: own.length, skippedByGrace,
-    ...(lastError ? { lastError } : {}),
-  })
-  return { ok: true, seen: stockMap.size, updated, unmatched }
 }

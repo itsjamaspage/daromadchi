@@ -45,7 +45,7 @@ export async function fetchPeriodKpis(shopIds: string[], since: Date | null, unt
       total_orders: sql<number>`count(*)`,
       cancelled_orders: sql<number>`count(*) filter (where ${orders.status} = 'cancelled')`,
       // Returned orders. Counted as ORDERS, not units, and that is a limit of the
-      // data rather than a preference: Yandex maps PARTIALLY_RETURNED («возвращен
+      // data rather than a preference: a marketplace may map PARTIALLY_RETURNED («возвращен
       // частично») onto the same 'returned' status as a full return, so nothing
       // here knows how many units of a partial actually came back. Counting units
       // would silently treat every partial as a total loss. The dedicated

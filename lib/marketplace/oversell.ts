@@ -34,7 +34,7 @@ function autoCancelMax(): number {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 3
 }
 
-const MP_LABEL: Record<string, string> = { uzum: 'Uzum', yandex_market: 'Yandex Market' }
+const MP_LABEL: Record<string, string> = { uzum: 'Uzum' }
 
 /** Oversell alert, in the seller's own language. See lib/telegram-seller.ts. */
 async function alert(userId: string, build: (T: NotifStrings) => string): Promise<void> {

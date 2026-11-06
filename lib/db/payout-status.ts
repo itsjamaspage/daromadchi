@@ -24,121 +24,6 @@ export function deriveUzumBucketStatus(orderStatuses: readonly string[]): Payout
   return orderStatuses.some((s) => s === 'TO_WITHDRAW') ? 'available_to_withdraw' : 'pending'
 }
 
-/**
- * Stems of the "money has been sent" wordings in the netting report's "Статус"
- * column. Yandex does not use one phrase:
- *
- *   «Переведён по графику выплат»  → перевед-
- *   «Отправлен»                    → отправлен-
- *
- * Both are past forms describing a completed send. Matching on the stem covers
- * the gender/number endings Yandex inflects for (Переведён / Переведена /
- * Отправлен / Отправлено) without listing each one.
- *
- * Only «перевед» was here before, which is what put a genuinely paid order under
- * «Ожидает»: order 60137441539 carried «Отправлен» with payment order 5913 — the
- * money was in the seller's bank — and the classifier read it as not sent.
- */
-const SENT_STEMS = ['перевед', 'отправлен'] as const
-
-/**
- * Whether the status text alone claims the money has been sent.
- *
- * The «будет» guard applies to EVERY stem, not just «перевед». Yandex writes
- * «Будет переведён по графику выплат» for a scheduled future transfer, and the
- * same construction is available for any of these verbs — a future tense must
- * never read as a completed one, whichever verb it is built from.
- *
- * «Переводятся» (in transit) is excluded structurally rather than by a rule:
- * its stem is перевод-, not перевед-, and it matches no other entry. Money on
- * its way is not money that arrived.
- */
-export function isYandexSentStatus(statusNote: string | null | undefined): boolean {
-  const s = (statusNote ?? '').toLowerCase()
-  if (s.includes('будет')) return false           // «Будет переведён…» — scheduled, not done
-  return SENT_STEMS.some(stem => s.includes(stem))
-}
-
-/**
- * Whether a Yandex netting transaction represents money ALREADY TRANSFERRED to
- * the seller.
- *
- * Two independent signals must agree, and each is doing a different job:
- *
- *   1. A payment-order number («Номер платежного поручения») — the bank-statement
- *      reference. It exists because a payment instruction was issued, so it is
- *      the closest thing in this report to physical proof.
- *   2. A sent-family status. The п/п is not trusted alone because a number can
- *      be assigned while the transfer is still moving; the status is what says
- *      the send completed.
- *
- * Requiring both keeps the failure direction safe: an unrecognised wording, or a
- * row with no п/п, stays out of "paid". Understating what has been sent is
- * merely conservative; overstating it tells a seller money has arrived when it
- * has not, which is the error this file has had to fix twice.
- */
-export function isYandexTransferred(
-  statusNote: string | null | undefined,
-  paymentOrderNumber: string | null | undefined,
-): boolean {
-  const hasPaymentOrder = !!(paymentOrderNumber && String(paymentOrderNumber).trim())
-  return isYandexSentStatus(statusNote) && hasPaymentOrder
-}
-
-/**
- * Whether a Yandex netting transaction is still AWAITING transfer
- * («Будет переведён по графику выплат»).
- *
- * Kept for what it describes, but it is NO LONGER what decides "paid" — see
- * yandexFullyTransferred below. Counting only the statuses we recognise as
- * awaiting meant any wording we had not thought of counted as neither, and a
- * bucket holding it was free to call itself paid. «Переводятся» (in transit) is
- * exactly that: it shares no stem with «переведён» (перевод vs перевед) and has
- * no «будет», so it slipped through both.
- */
-export function isYandexAwaitingTransfer(statusNote: string | null | undefined): boolean {
-  const s = (statusNote ?? '').toLowerCase()
-  return s.includes('будет') && s.includes('перевед') // «Будет переведён…»
-}
-
-/**
- * Is EVERY transaction in this bucket proven transferred?
- *
- * This replaces "has a transfer and nothing recognisably awaiting" with positive
- * proof, and the difference is the bug it fixes. The old rule asked what we could
- * recognise as NOT yet sent; anything unrecognised — a status wording nobody had
- * seen, «Переводятся» above all — answered "no", and the bucket called itself
- * paid. In the report that produced this fix, 32 940 genuinely transferred and
- * 100 000 still in transit were shown to the seller as 59 940 paid.
- *
- * Now a bucket is paid only when the count of transferred transactions equals
- * the count of transactions in it. A row we cannot classify keeps the whole
- * bucket out of "paid", which is the direction that can only ever understate
- * what the seller has been sent.
- *
- * Both counts come from the same loop over the same rows in payouts.ts, so they
- * cannot drift apart.
- */
-export function yandexFullyTransferred(txnCount: number, transferredCount: number): boolean {
-  if (txnCount <= 0) return false
-  return transferredCount >= txnCount
-}
-
-/**
- * Yandex settled-bucket status, driven by the netting report — NEVER the calendar.
- *
- *   transferPosted (EVERY transaction proven transferred) → paid
- *   else credit > 0 AND debit == 0 → fees_pending  (net not final; flagged, in pending bucket)
- *   else                          → pending        (fees final, transfer not yet posted)
- *
- * `transferPosted` is rolled up in payouts.ts via yandexFullyTransferred().
- * Defaults to false so existing callers (and pre-payment-order data) behave as before.
- */
-export function deriveYandexSettledStatus(credit: number, debit: number, transferPosted = false): PayoutStatus {
-  if (transferPosted) return 'paid'
-  return credit > 0 && debit === 0 ? 'fees_pending' : 'pending'
-}
-
 /* ── Uzum's own order status (display) ─────────────────────────────────────── */
 
 /** The complete /v1/finance/orders enum. Runtime guard for a text DB column. */
@@ -163,11 +48,10 @@ export function isUzumOrderStatus(s: string | null | undefined): s is UzumOrderS
  *   PROCESSING  <  PARTIALLY_CANCELLED  <  TO_WITHDRAW
  *
  * so TO_WITHDRAW requires EVERY item to have reached it. That direction is the
- * one this codebase already had to learn: yandexFullyTransferred replaced an
- * "any transferred" rule precisely because "any" let one advanced row speak for
- * rows that had not moved, and the seller was shown money as sent that was not.
- * Overstating readiness is the error that costs something; understating it is
- * merely conservative.
+ * one this codebase already had to learn: an "any advanced" rule let one row
+ * speak for rows that had not moved, and the seller was shown money as sent
+ * that was not. Overstating readiness is the error that costs something;
+ * understating it is merely conservative.
  *
  * CANCELED is only reported when EVERY item is cancelled — and in practice it
  * cannot reach a badge at all: payouts.ts drops cancelled items before any row
@@ -198,19 +82,6 @@ export function rollUpUzumOrderStatus(statuses: readonly string[]): UzumOrderSta
 export interface SettledOrder {
   net: number
   status: PayoutStatus
-}
-
-/**
- * One order's status, from the transfer signal on its own transactions.
- *
- * `transferred` is true when ANY transaction for the order passes
- * isYandexTransferred — a «Переведён…» status carrying a payment-order number.
- * That п/п is the bank-statement reference: it exists precisely because the
- * money moved, so an order that has one is settled regardless of what the rest
- * of its month is doing.
- */
-export function deriveYandexOrderStatus(transferred: boolean): PayoutStatus {
-  return transferred ? 'paid' : 'pending'
 }
 
 /**

@@ -4,7 +4,7 @@
  * getStockAlerts() returns one row per PRODUCT LISTING — per shop, per
  * marketplace. That is right for /dashboard/alerts, which shows the per-channel
  * breakdown and flags shared stock. On the notifications page it is noise: the
- * same earphones appear twice, once titled in Russian from Yandex and once in
+ * same earphones appear twice, once titled in Russian and once in
  * Uzbek from Uzum, and a seller reads that as two problems.
  *
  * Worse, the two rows can disagree. Each carries its own listing's available

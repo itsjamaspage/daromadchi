@@ -16,7 +16,7 @@
  * real value, it never destroys it.
  *
  * LOCAL ONLY. Saving here writes one Daromadchi row. Nothing about it reaches
- * Uzum or Yandex.
+ * the marketplace.
  */
 
 import { useState, useRef } from 'react'

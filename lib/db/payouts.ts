@@ -1,10 +1,9 @@
 import { inArray, gte, and, ne, eq, sql, asc, type AnyColumn } from 'drizzle-orm'
-import { db, orders, orderItems, products, shops, yandexSettlementTransactions, uzumSettlementOrders } from '@/lib/db'
+import { db, orders, orderItems, products, shops, uzumSettlementOrders } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine } from '@/lib/types'
 import { isoWeekKey, currentIsoWeekKey, addMonths } from '@/lib/period-week'
-import { classifyYandexDebit } from '@/lib/db/real-financials'
 
 // The period bucket, defined ONCE.
 //
@@ -19,7 +18,7 @@ import { classifyYandexDebit } from '@/lib/db/real-financials'
 // IYYY-"W"IW is ISO-8601: weeks run Monday→Sunday and belong to the year
 // containing their Thursday. lib/period-week.ts reproduces it in JS and is
 // verified against this exact expression.
-import { deriveUzumBucketStatus, rollUpUzumOrderStatus, deriveYandexSettledStatus, isYandexTransferred, isYandexAwaitingTransfer, yandexFullyTransferred, deriveYandexOrderStatus, deriveBucketStatusFromOrders } from '@/lib/db/payout-status'
+import { deriveUzumBucketStatus, rollUpUzumOrderStatus } from '@/lib/db/payout-status'
 
 // AT TIME ZONE 'Asia/Tashkent' so the bucket is the SELLER's week, matching
 // isoWeekKey in lib/period-week.ts byte-for-byte. Without the cast Postgres uses
@@ -142,19 +141,6 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   }
   for (const list of itemsMap.values()) list.sort((a, b) => b.revenue - a.revenue)
 
-  // Global SKU → product title map, built from the same per-product breakdown
-  // rows. Used to name Yandex settled orders: the netting report carries a SKU
-  // per transaction but no product title, so we resolve the title from the
-  // seller's own catalog. Uzum's finance/orders already carries product_title,
-  // so it doesn't need this. Keys are trimmed so they match the netting SKUs.
-  const skuTitle = new Map<string, string>()
-  for (const r of itemRows) {
-    if (r.sku && r.productTitle) {
-      const k = String(r.sku).trim()
-      if (k && !skuTitle.has(k)) skuTitle.set(k, r.productTitle)
-    }
-  }
-
   type Bucket = {
     revenue: number; realFee: number; realDelivery: number
     penalty: number; storageFee: number; additionalPayment: number
@@ -184,9 +170,9 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
     }
 
     if (row.status === 'returned') {
-      // Returns are already accounted for inside settlement data (Yandex:
-      // negative Начисление rows reduce credit; Uzum: CANCELED rows are
-      // skipped entirely). Counting them here as a retail-price deduction
+      // Returns are already accounted for inside settlement data (Uzum:
+      // CANCELED rows are skipped entirely). Counting them here as a
+      // retail-price deduction
       // was a phantom — it inflated "Удержано маркетплейсом" by a number
       // that was never actually subtracted from the seller's payout.
       // Skip returned orders: they contribute nothing to the payout.
@@ -214,103 +200,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   const now = new Date()
   const currentWeek = currentIsoWeekKey(now)
 
-  // Yandex real-settlement aggregation. Per YYYY-MM bucket, sum:
-  //   - Начисления (positive contribution to what seller receives)
-  //   - Удержания (negative contribution)
-  // Grouped by (shop_id, YYYY-MM) so we can match the |mp key below.
-  const ymShopIds = shopRows.filter(r => r.marketplace === 'yandex_market').map(r => r.id)
-  const ymSettlementByKey = new Map<string, { credit: number; debit: number; commission: number; delivery: number; other: number; txnCount: number; transferred: number; awaiting: number; paymentOrders: Set<string>; orderNumbers: Set<string>; orderLines: Map<string, { sku: string | null; credit: number; debit: number; transferred: boolean }> }>()
-  // SKU → product name taken straight from the netting report's «Название товара»
-  // (sale rows only). Lets Payouts show the Yandex product name exactly as the
-  // seller's finance report prints it, in preference to the SKU→catalog title.
-  const ymFinanceNameBySku = new Map<string, string>()
-  if (ymShopIds.length > 0) {
-    // Try/catch guards against the migration not yet being applied on
-    // this DB (fresh deploy race, or admin manually rolled back). The
-    // Payouts page must render even if the settlements table doesn't
-    // exist yet — every Yandex row just stays in "awaiting" state.
-    try {
-      const settlementRows = await db.select({
-        period: weekBucket(yandexSettlementTransactions.transaction_at).as('period'),
-        entry_type: yandexSettlementTransactions.entry_type,
-        entry_source: yandexSettlementTransactions.entry_source,
-        order_type: yandexSettlementTransactions.order_type,
-        amount: yandexSettlementTransactions.amount,
-        status_note: yandexSettlementTransactions.status_note,
-        payment_order_number: yandexSettlementTransactions.payment_order_number,
-        order_id_external: yandexSettlementTransactions.order_id_external,
-        sku: yandexSettlementTransactions.sku,
-        product_name: yandexSettlementTransactions.product_name,
-      }).from(yandexSettlementTransactions)
-        .where(and(
-          inArray(yandexSettlementTransactions.shop_id, ymShopIds),
-          gte(yandexSettlementTransactions.transaction_at, since),
-        ))
-      for (const r of settlementRows) {
-        if (!r.period) continue
-        const key = `${r.period}|yandex_market`
-        const b = ymSettlementByKey.get(key) ?? { credit: 0, debit: 0, commission: 0, delivery: 0, other: 0, txnCount: 0, transferred: 0, awaiting: 0, paymentOrders: new Set<string>(), orderNumbers: new Set<string>(), orderLines: new Map<string, { sku: string | null; credit: number; debit: number; transferred: boolean }>() }
-        const amt = Number(r.amount)
-        b.txnCount += 1
-        // Order numbers straight from the Finance section (netting report) — the
-        // same «Номер заказа» the seller sees in Финансовые отчёты, not the Orders feed.
-        const orderNum = r.order_id_external ? String(r.order_id_external).trim() : ''
-        if (orderNum) {
-          b.orderNumbers.add(orderNum)
-          // Per-order accumulation: credit (Начисление) is what the seller earns
-          // on the order; debits (commission/delivery) reduce it. net = credit − debit.
-          // The netting SKU names the product via skuTitle; keep the first non-empty SKU.
-          const line = b.orderLines.get(orderNum) ?? { sku: null, credit: 0, debit: 0, transferred: false }
-          if (!line.sku && r.sku) line.sku = String(r.sku).trim()
-          if (r.entry_type === 'Начисление') line.credit += amt
-          else line.debit += amt
-          // The transfer signal, kept per ORDER instead of only counted for the
-          // month. It was already computed on this row and thrown away, which is
-          // why an order carrying п/п 92735 could render as «Ожидает» — the proof
-          // was in the data, just never attached to the thing it proved.
-          if (isYandexTransferred(r.status_note, r.payment_order_number)) line.transferred = true
-          b.orderLines.set(orderNum, line)
-        }
-        // «Название товара» is the product name on sale (Начисление) rows and a
-        // SERVICE name (commission/logistics) on fee rows — so capture it only
-        // from the sale line, keyed by SKU, first-writer-wins.
-        if (r.entry_type === 'Начисление' && r.product_name && r.sku) {
-          const k = String(r.sku).trim()
-          if (k && !ymFinanceNameBySku.has(k)) ymFinanceNameBySku.set(k, r.product_name)
-        }
-        // Transfer roll-up: count transactions the netting report PROVES were
-        // transferred («Переведён…» + payment-order number). The bucket is paid
-        // only when that count reaches txnCount — positive proof, not "nothing
-        // recognisably awaiting". `awaiting` is still tracked for diagnosis but
-        // no longer decides anything: it could only ever describe wordings we
-        // already knew, and «Переводятся» was not one of them.
-        if (isYandexTransferred(r.status_note, r.payment_order_number)) {
-          b.transferred += 1
-          // The payment-order number (№ платежного поручения, e.g. 92735) is the
-          // bank-statement reference for this payout — collect it for the paid row.
-          if (r.payment_order_number) b.paymentOrders.add(String(r.payment_order_number).trim())
-        } else if (isYandexAwaitingTransfer(r.status_note)) b.awaiting += 1
-        if (r.entry_type === 'Начисление') {
-          b.credit += amt
-        } else {
-          b.debit += amt
-          // Split debits by the SERVICE NAME (product_name), not order_type —
-          // order_type is always "Продажа физлицу". Same classifier the P&L uses
-          // (lib/db/real-financials.ts): "Доставка покупателю" → delivery,
-          // "Поручение на продажу" → commission, everything else (penalties,
-          // transfer fees, storage, acquiring, ads) → other.
-          b[classifyYandexDebit(r.product_name)] += amt
-        }
-        ymSettlementByKey.set(key, b)
-      }
-    } catch (e) {
-      // Table missing or query failed. Log for diagnosis; render with
-      // no settlement rows (Yandex rows stay in "awaiting" state).
-      console.error('[payouts] yandex_settlement_transactions query failed:', String(e).slice(0, 200))
-    }
-  }
-
-  // Uzum real-settlement aggregation — mirror the Yandex approach.
+  // Uzum real-settlement aggregation.
   // /v1/finance/orders returns per-order-item rows with authoritative
   // sellerPrice / commission / logisticDeliveryFee / withdrawnProfit,
   // so we sum by (shop_id × YYYY-MM) and use those instead of the
@@ -391,126 +281,6 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
     // and all of them carry the same answer for this period+marketplace: does
     // its COGS cover everything that sold, or only the costed part?
     const cogsPartial = cogsPendingKeys.has(key)
-
-    // Yandex Market special-case: the `commissionTotal` field on the
-    // /v2/campaigns/{id}/orders endpoint is Yandex's order-TIME
-    // estimate, not the actual settlement charge. The real numbers
-    // live in Yandex's "united netting report" which is generated
-    // async and typically published a few days AFTER settlement.
-    //
-    // Seller explicitly asked: for Yandex, DON'T estimate. Wait until
-    // Yandex publishes real settlement data, then show that. Until
-    // then we return a placeholder entry with status='pending_settlement'
-    // and net=null so the UI can render "Ожидает данных Yandex"
-    // instead of guessing.
-    //
-    // TODO: fetch Yandex united-netting-report API and store real
-    // settlement per order — then this branch flips to real numbers.
-    if (mp === 'yandex_market') {
-      const isPast = weekKey < currentWeek
-      const settled = ymSettlementByKey.get(key)
-      // If Yandex has already published settlement data for this month,
-      // use its REAL numbers. Otherwise return an "awaiting" placeholder.
-      if (settled && settled.txnCount > 0) {
-        const netPayout = settled.credit - settled.debit
-        // Per-order named breakdown from the netting report: each «Номер заказа»
-        // paired with its net (credit − debit) and product name. Name comes from
-        // the report's own «Название товара» (so it reads exactly as the seller's
-        // finance report), falling back to the SKU→catalog title if the report
-        // row had no name. Sorted by net so the biggest orders lead.
-        const orderLines: PayoutOrderLine[] = [...settled.orderLines.entries()]
-          .map(([number, l]) => ({
-            number,
-            name: l.sku ? (ymFinanceNameBySku.get(l.sku) ?? skuTitle.get(l.sku) ?? null) : null,
-            net: l.credit - l.debit,
-            status: deriveYandexOrderStatus(l.transferred),
-          }))
-          .sort((a, b) => b.net - a.net)
-        // Show the finance report's product name on the row's headline/breakdown
-        // too: remap each item's title by SKU, keeping the catalog title only as a
-        // fallback when the report didn't name that SKU.
-        const ymItems = (itemsMap.get(key) ?? []).map(it => {
-          const k = it.sku ? it.sku.trim() : ''
-          const financeName = k ? ymFinanceNameBySku.get(k) : undefined
-          return financeName ? { ...it, productTitle: financeName } : it
-        })
-        const ymGross = settled.credit || v.revenue
-        const ymReconDelta = Math.round((ymGross - settled.commission - settled.delivery - settled.other - netPayout) * 100) / 100
-        const entry: PayoutEntry = {
-          id: key,
-          period: weekKey,
-          marketplace: mp,
-          grossRevenue: ymGross,
-          commission: settled.commission,
-          delivery: settled.delivery,
-          adSpend: 0,
-          acquiring: 0,
-          tax: 0,
-          penalty: 0,
-          storageFee: 0,
-          additionalPayment: 0,
-          otherDeductions: settled.other,
-          netPayout,
-          ordersCount: settled.orderNumbers.size || v.count,
-          orderNumbers: [...settled.orderNumbers],
-          paymentReferences: [...settled.paymentOrders],
-          orders: orderLines,
-          reconciliationDelta: ymReconDelta,
-          // Status from the netting report, never the calendar:
-          //  • transferPosted (a payment order issued, none still awaiting) → paid
-          //  • credit>0 & debit==0 (fees not posted yet) → fees_pending (visible at gross)
-          //  • else → pending
-          // transferPosted = the bucket has a transferred txn and none still awaiting.
-          // Rolled up from the orders above, so a part-transferred month says so
-          // instead of picking a side. The transaction-level rule remains the
-          // fallback for buckets with no order-numbered rows (fee-only months).
-          status: deriveBucketStatusFromOrders(
-            orderLines,
-            deriveYandexSettledStatus(
-              settled.credit,
-              settled.debit,
-              yandexFullyTransferred(settled.txnCount, settled.transferred),
-            ),
-          ),
-          payoutDate: null,
-          payoutEstimated: false,
-          items: ymItems,
-          firstOrderDate: isoDate(v.firstOrderAt),
-          lastOrderDate:  isoDate(v.lastOrderAt),
-          awaitingSettlement: false,
-          cogsPartial,
-        }
-        return [entry]
-      }
-
-      const entry: PayoutEntry = {
-        id: key,
-        period: weekKey,
-        marketplace: mp,
-        grossRevenue: v.revenue,
-        commission: 0,
-        delivery: 0,
-        adSpend: 0,
-        acquiring: 0,
-        tax: 0,
-        penalty: 0,
-        storageFee: 0,
-        additionalPayment: 0,
-        otherDeductions: 0,
-        netPayout: 0,
-        ordersCount: v.count,
-        orderNumbers: v.orderNumbers,
-        status: isPast ? 'pending' : 'estimated_pending',
-        payoutDate: null,
-        payoutEstimated: false,
-        items: itemsMap.get(key) ?? [],
-        firstOrderDate: isoDate(v.firstOrderAt),
-        lastOrderDate:  isoDate(v.lastOrderAt),
-        awaitingSettlement: true,
-        cogsPartial,
-      }
-      return [entry]
-    }
 
     // Uzum real-settlement branch. Prefer /v1/finance/orders data when
     // we have any items in this month — it carries Uzum's authoritative
@@ -623,8 +393,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       // This used to read `isPast ? 'estimated_paid' : ...`, which called a month
       // paid on its age alone — a Uzum payout that failed and was reversed still
       // showed as «Выплачено» because nothing here consults payout outcomes at
-      // all. Age is not a settlement signal, so it no longer produces one. The
-      // Yandex no-settlement branch above already worked this way.
+      // all. Age is not a settlement signal, so it no longer produces one.
       status: isPast ? 'pending' : 'estimated_pending',
       payoutDate: null,
       payoutEstimated: true,
@@ -637,17 +406,17 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
     return [entry]
   })
 
-  // Real payout data ONLY. Drop the estimate fallback (payoutEstimated) and
-  // the Yandex "awaiting" placeholder (awaitingSettlement) so a period appears
-  // here only once the marketplace has published its real settlement/netting
-  // for it — never a percentage estimate, never a zero-filled row. The two
-  // settled branches above are the only ones with payoutEstimated=false AND
-  // awaitingSettlement=false, so only genuinely-settled periods survive.
+  // Real payout data ONLY. Drop the estimate fallback (payoutEstimated) and any
+  // "awaiting" placeholder (awaitingSettlement) so a period appears here only
+  // once the marketplace has published its real settlement for it — never a
+  // percentage estimate, never a zero-filled row. The settled branch above is
+  // the only one with payoutEstimated=false AND awaitingSettlement=false, so
+  // only genuinely-settled periods survive.
   // (The P&L still surfaces these orders as revenue + a "pending" fee.)
   const realEntries = entries.filter(e => !e.payoutEstimated && !e.awaitingSettlement)
   // Latest activity on top — sort by the most recent order date in each period,
-  // not just the YYYY-MM bucket, so within the same month a newer row (e.g. a
-  // 10 Aug Yandex period) sits above an older one (7 Aug Uzum). Falls back to
+  // not just the YYYY-MM bucket, so within the same month a newer row sits
+  // above an older one. Falls back to
   // firstOrderDate, then the period key. Dates are YYYY-MM-DD so lexical compare
   // is chronological.
   realEntries.sort((a, b) =>

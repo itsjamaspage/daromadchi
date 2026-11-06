@@ -127,7 +127,7 @@ function ItemBreakdown({ items }: { items: PayoutOrderItem[] }) {
 }
 
 // Per-order named breakdown, sourced from the marketplace's Finance/settlement
-// data (Yandex netting / Uzum finance-orders). Each row is one order number —
+// data (Uzum finance-orders). Each row is one order number —
 // exactly what the seller sees in финансы — with its product name and net.
 // Distinct from ItemBreakdown, which groups by product across the whole month;
 // this lists individual orders so a number can be matched line-for-line.
@@ -249,7 +249,7 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
   )
 }
 
-const MP_TAB_VALUES = ['all', 'uzum', 'yandex_market'] as const
+const MP_TAB_VALUES = ['all', 'uzum'] as const
 type MpFilter = typeof MP_TAB_VALUES[number]
 
 export default function PayoutsView({ entries, from, to }: Props) {
@@ -259,7 +259,6 @@ export default function PayoutsView({ entries, from, to }: Props) {
   const router = useRouter()
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [mpFilter, setMpFilter] = useState<MpFilter>('all')
-  const [refreshingYm, setRefreshingYm] = useState<false | 'loading'>(false)
   const [refreshingUz, setRefreshingUz] = useState<false | 'loading'>(false)
   // Chip shows `short` (a compact one-liner). Hovering surfaces `full`,
   // which is the same summary plus any debug JSON returned by the sync
@@ -279,58 +278,6 @@ export default function PayoutsView({ entries, from, to }: Props) {
     document.addEventListener('mousedown', onDoc)
     return () => document.removeEventListener('mousedown', onDoc)
   }, [menuOpen])
-
-  async function refreshYandex() {
-    setMenuOpen(false)
-    setRefreshingYm('loading')
-    setRefreshMsg(null)
-    try {
-      const res = await fetch('/api/yandex/refresh-settlements', { method: 'POST' })
-      // Interpret the endpoint's `results[]` — even when HTTP is 200,
-      // individual shops can report ok:false. Surface the actual sync
-      // outcome so the seller sees "3 транзакций синхронизировано" or
-      // the concrete error instead of a green "OK" that lied.
-      let payload: { ok?: boolean; results?: Array<{ ok: boolean; inserted?: number; error?: string; skipped?: string; debug?: unknown }> } = {}
-      try { payload = await res.json() } catch { /* non-json */ }
-      const results = payload.results ?? []
-      const totalInserted = results.reduce((s, r) => s + (r.inserted ?? 0), 0)
-      const firstErrorRow = results.find(r => !r.ok)
-      const firstSkipRow  = results.find(r => r.skipped)
-      // The chip needs a short, human-friendly one-liner; the hover panel
-      // shows the same summary plus the full debug JSON (report id, XLSX
-      // shape, whatever the sync produced).
-      const buildFull = (summary: string, dbg: unknown) =>
-        dbg ? `${summary}\n\n${JSON.stringify(dbg, null, 2)}` : summary
-      // Yandex uses HTTP 420 for "you're generating reports too fast".
-      // Translate it into a friendly hint so the seller knows to wait,
-      // not to keep spamming refresh.
-      const friendly = (raw: string) =>
-        /Yandex API 420/.test(raw)
-          ? 'Yandex ограничил частые запросы отчётов. Подождите 10–15 мин и попробуйте снова.'
-          : raw
-      if (!res.ok) {
-        setRefreshMsg({ tone: 'err', short: `HTTP ${res.status}`, full: `HTTP ${res.status}` })
-      } else if (firstErrorRow) {
-        const raw = firstErrorRow.error ?? 'error'
-        const short = friendly(raw).slice(0, 160)
-        setRefreshMsg({ tone: 'err', short, full: buildFull(friendly(raw), firstErrorRow.debug) })
-      } else if (totalInserted > 0) {
-        setRefreshMsg({ tone: 'ok', short: `${totalInserted} tx`, full: `${totalInserted} tx` })
-        setTimeout(() => router.refresh(), 500)
-      } else {
-        const raw = firstSkipRow?.skipped ?? 'Yandex вернул 0 транзакций'
-        setRefreshMsg({ tone: 'ok', short: raw.slice(0, 160), full: buildFull(raw, firstSkipRow?.debug) })
-      }
-    } catch (e) {
-      const s = String(e).slice(0, 200)
-      setRefreshMsg({ tone: 'err', short: s, full: s })
-    } finally {
-      setRefreshingYm(false)
-      // Auto-dismiss the toast-like message after 30s — long enough for
-      // a screenshot of the hover panel when the debug JSON matters.
-      setTimeout(() => setRefreshMsg(null), 30_000)
-    }
-  }
 
   async function refreshUzum() {
     setMenuOpen(false)
@@ -367,11 +314,12 @@ export default function PayoutsView({ entries, from, to }: Props) {
     }
   }
 
+  // One marketplace: "All / Uzum" offers no choice, so the bar is not rendered.
   const mpTabs = [
-    { value: 'all' as const,           label: t.tabAll },
-    { value: 'uzum' as const,          label: t.tabUzum },
-    { value: 'yandex_market' as const, label: t.tabYandex },
+    { value: 'all' as const,  label: t.tabAll },
+    { value: 'uzum' as const, label: t.tabUzum },
   ]
+  const showMpTabs = mpTabs.length > 2
 
   const filteredEntries = mpFilter === 'all' ? entries : entries.filter(e => e.marketplace === mpFilter)
 
@@ -384,7 +332,7 @@ export default function PayoutsView({ entries, from, to }: Props) {
   // They used to split the same money by PayoutStatus: «Заработано» was the
   // Uzum TO_WITHDRAW total, «Ожидает» everything classed as in-progress. That
   // classification is the one this page just stopped showing per row, because it
-  // was wrong in both directions — Yandex read «Ожидает» on transferred orders,
+  // was wrong in both directions — a transferred order read «Ожидает»,
   // Uzum read «К выводу» on money already banked. Leaving it driving the
   // headline numbers would have kept the same false claim and only made it
   // bigger: a wrong badge sits on one row, a wrong KPI is the first thing read.
@@ -420,7 +368,8 @@ export default function PayoutsView({ entries, from, to }: Props) {
     <div className="space-y-4" ref={printRef}>
       {/* Marketplace tabs + export */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
+        {showMpTabs && (
+          <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
             {mpTabs.map(tab => (
               <button
                 key={tab.value}
@@ -436,6 +385,7 @@ export default function PayoutsView({ entries, from, to }: Props) {
               </button>
             ))}
           </div>
+        )}
         <div className="flex items-center gap-2 ml-auto">
           {refreshMsg && (
             <div className="relative group">
@@ -479,9 +429,9 @@ export default function PayoutsView({ entries, from, to }: Props) {
           <CalendarPicker from={from} to={to} />
           <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
           {/* Kebab (⋮) menu: single icon that expands into a dropdown.
-              Currently one action — "Обновить данные Yandex" — but the
-              menu is designed to hold future actions (e.g. re-sync WB
-              settlements) without cluttering the toolbar. */}
+              Currently one action — "Обновить данные Uzum" — but the
+              menu is designed to hold future actions without cluttering
+              the toolbar. */}
           <div className="relative" ref={menuRef}>
             <button
               type="button"
@@ -500,23 +450,13 @@ export default function PayoutsView({ entries, from, to }: Props) {
               >
                 <button
                   type="button"
-                  onClick={refreshYandex}
-                  disabled={refreshingYm === 'loading'}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed text-left"
-                  style={{ color: 'var(--text-base)' }}
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 flex-shrink-0 ${refreshingYm === 'loading' ? 'animate-spin' : ''}`} />
-                  {refreshingYm === 'loading' ? t.refreshingYandex : t.refreshYandex}
-                </button>
-                <button
-                  type="button"
                   onClick={refreshUzum}
                   disabled={refreshingUz === 'loading'}
                   className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed text-left"
                   style={{ color: 'var(--text-base)' }}
                 >
                   <RefreshCw className={`w-3.5 h-3.5 flex-shrink-0 ${refreshingUz === 'loading' ? 'animate-spin' : ''}`} />
-                  {refreshingUz === 'loading' ? 'Обновление Uzum…' : 'Обновить данные Uzum'}
+                  {refreshingUz === 'loading' ? t.refreshingSettlements : t.refreshSettlements}
                 </button>
               </div>
             )}
@@ -590,7 +530,7 @@ export default function PayoutsView({ entries, from, to }: Props) {
                   >
                     <td className="px-5 py-3.5">
                       {/* MAIN (headline): the marketplace order number(s) + — for a
-                          paid Yandex period — the payment-order № (bank reference).
+                          paid period — the payment-order № (bank reference).
                           Month + date are demoted below. Falls back to the period
                           label when a row has no order numbers. */}
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
@@ -633,8 +573,8 @@ export default function PayoutsView({ entries, from, to }: Props) {
                     <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{fmtShort(entry.grossRevenue, lang)}</td>
                     {entry.awaitingSettlement ? (
                       <>
-                        {/* Yandex row before Yandex publishes real
-                            settlement data — we refuse to estimate.
+                        {/* A row the marketplace has not published real
+                            settlement data for — we refuse to estimate.
                             One long "awaiting" cell spans the deduction
                             columns instead of six fake numbers. */}
                         <td colSpan={5} className="px-4 py-3.5 text-center text-[var(--text-muted)] text-xs italic" title={t.awaitingSettlementHint}>

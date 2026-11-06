@@ -62,9 +62,9 @@ export const T = {
     headingLine1: tr('Управляйте продажами на двух маркетплейсах', "Ikkita marketpleys sotuvlaringizni bitta joydan boshqaring", 'Manage your sales across two marketplaces'),
     headingLine2: tr('из одной панели', '', 'from one dashboard'),
     subtitle: tr(
-      'Выручка, прибыль, остатки и юнит-экономика по Uzum и Yandex Market — обновление каждые 15 минут, без ручного ввода',
-      "Uzum va Yandex Market bo'yicha daromad, foyda, qoldiqlar va birlik-iqtisod — har 15 daqiqada yangilanadi, qo'lda kiritishsiz",
-      'Revenue, profit, stock and unit economics across Uzum and Yandex Market — updated every 15 minutes, no manual entry',
+      'Выручка, прибыль, остатки и юнит-экономика по Uzum Market — обновление каждые 15 минут, без ручного ввода',
+      "Uzum Market bo'yicha daromad, foyda, qoldiqlar va birlik-iqtisod — har 15 daqiqada yangilanadi, qo'lda kiritishsiz",
+      'Revenue, profit, stock and unit economics on Uzum Market — updated every 15 minutes, no manual entry',
     ),
     startFree: startFreeCta,
     howItWorks: tr('Как это работает', 'Qanday ishlaydi', 'How it works'),
@@ -158,8 +158,8 @@ export const T = {
     step2Title: tr('Подключите магазин', "Do'koningizni ulang", 'Connect your store'),
     step2Desc: tr(
       'Вставьте API-ключ из кабинета Uzum или Яндекс — получите доступ к данным магазина. По умолчанию платформа только читает данные (остатки можно синхронизировать по желанию).',
-      "Uzum yoki Yandex kabinetidan API kalitini kiriting — do'kon ma'lumotlariga kirish oling. Sukut bo'yicha platforma faqat ma'lumot o'qiydi (ostatokni xohishingizga ko'ra sinxronlash mumkin).",
-      'Paste your API key from Uzum or Yandex to access your store\'s data. By default the platform only reads your data (you can optionally turn on stock sync).',
+      "Uzum kabinetidan API kalitini kiriting — do'kon ma'lumotlariga kirish oling. Sukut bo'yicha platforma faqat ma'lumot o'qiydi (ostatokni xohishingizga ko'ra sinxronlash mumkin).",
+      'Paste your API key from Uzum to access your store\'s data. By default the platform only reads your data (you can optionally turn on stock sync).',
     ),
     yourStores: tr('Ваши магазины', "Do'konlaringiz", 'Your stores'),
     step3Title: tr('Данные готовы', "Ma'lumotlar tayyor", 'Data is ready'),
@@ -188,9 +188,9 @@ export const T = {
     analyticsLabel: tr('АНАЛИТИКА', 'TAHLIL', 'ANALYTICS'),
     analyticsTitle: tr('Аналитика маркетплейсов', 'Analitika markazi', 'Marketplace analytics'),
     analyticsDesc: tr(
-      'Uzum и Yandex Market — обновление каждые 15 минут',
-      'Uzum va Yandex Market — har 15 daqiqada yangilanadi',
-      'Uzum & Yandex Market — updates every 15 min',
+      'Uzum Market — обновление каждые 15 минут',
+      'Uzum Market — har 15 daqiqada yangilanadi',
+      'Uzum Market — updates every 15 min',
     ),
     dailyRevenue: tr('Выручка по дням', 'Kunlik daromad', 'Daily revenue'),
     inventoryLabel: tr('ЗАПАСЫ', 'ZAXIRA', 'INVENTORY'),
@@ -233,14 +233,6 @@ export const T = {
     uzumPoint1: tr('Комиссия маркетплейса и эквайринг', 'Marketplace va ekvayring komissiyasi', 'Marketplace fee & acquiring'),
     uzumPoint2: tr('Стоимость хранения, доставки и возвратов', 'Saqlash, yetkazib berish va qaytarish xarajatlari', 'Storage, delivery & return costs'),
     uzumPoint3: tr('Чистая прибыль и маржа в одно нажатие', 'Bir bosishda sof foyda va marja', 'Net profit & margin in one click'),
-    ymHeadline: tr(
-      'Расчёт DBS и FBY с учётом всех комиссий',
-      'Barcha komissiyalar hisobga olingan DBS va FBY hisoblash',
-      'DBS & FBY calculation including all commissions',
-    ),
-    ymPoint1: tr('Комиссии категорий и программ лояльности', 'Kategoriya va sodiqlik dasturlari komissiyalari', 'Category & loyalty program commissions'),
-    ymPoint2: tr('Стоимость доставки до покупателя', 'Xaridorgacha yetkazib berish narxi', 'Delivery cost to customer'),
-    ymPoint3: tr('Сравнение DBS vs FBY по чистой прибыли', "Sof foyda bo'yicha DBS vs FBY taqqoslash", 'Profit comparison DBS vs FBY'),
     freeName: tr('Бесплатно', 'Bepul', 'Free'),
     freeHeadline: tr(
       'Устанавливается из Chrome Web Store за несколько секунд',
@@ -314,7 +306,6 @@ export const T = {
     tgLink: tr('Открыть Telegram →', 'Telegramni ochish →', 'Open Telegram →'),
     integrationsTitle: tr('Интеграции', 'Integratsiyalar', 'Integrations'),
     intUzumDesc: tr('Подключение через API-ключ', 'API kalit orqali ulash', 'Connect via API key'),
-    intYmDesc: tr('OAuth-авторизация', 'OAuth-avtorizatsiya', 'OAuth authorisation'),
     intLink: tr('Инструкция по подключению →', "Ulash yo'riqnomasi →", 'Connection guide →'),
   },
 
@@ -343,9 +334,9 @@ export const T = {
       'Which marketplaces are supported?',
     ),
     a3: tr(
-      'Uzum Market и Yandex Market полностью поддерживаются. Данные из обеих платформ объединяются в единую таблицу с разбивкой по площадкам.',
-      "Uzum Market va Yandex Market to'liq qo'llab-quvvatlanadi. Ikkala platformadan ma'lumotlar bitta jadvalga birlashtiriladi.",
-      'Uzum Market and Yandex Market are fully supported. Data from both platforms is merged into one table with per-platform breakdown.',
+      'Uzum Market полностью поддерживается. Данные собираются в единую таблицу с разбивкой по магазинам.',
+      "Uzum Market to'liq qo'llab-quvvatlanadi. Ma'lumotlar bitta jadvalga birlashtiriladi.",
+      'Uzum Market is fully supported. Data is merged into one table with a per-store breakdown.',
     ),
     q4: tr('Как работает юнит-экономика?', 'Birlik-iqtisod qanday ishlaydi?', 'How does unit economics work?'),
     a4: tr(
@@ -393,9 +384,9 @@ export const T = {
 
   footer: {
     description: tr(
-      'Аналитика Uzum и Yandex Market для продавцов из Узбекистана',
-      "O'zbekistondagi sotuvchilar uchun Uzum va Yandex Market tahlili",
-      'Analytics for Uzum and Yandex Market sellers in Uzbekistan',
+      'Аналитика Uzum Market для продавцов из Узбекистана',
+      "O'zbekistondagi sotuvchilar uchun Uzum Market tahlili",
+      'Analytics for Uzum Market sellers in Uzbekistan',
     ),
     productHead: tr('Продукт', 'Mahsulot', 'Product'),
     signIn: tr('Войти', 'Kirish', 'Sign in'),

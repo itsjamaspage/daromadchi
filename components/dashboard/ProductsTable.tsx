@@ -374,7 +374,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     }
 
     // 2b: cross-marketplace bridge via shared product-identifying tokens.
-    // Titles are in different languages (Uzum=Uzbek, Yandex=Russian) so
+    // Titles can be in different languages per listing, so
     // exact matching fails. After Cyrillic→Latin transliteration, model
     // codes like "j16pro", "gtx350" survive in both and are the reliable
     // bridge. Score: alphanumeric tokens >= 4 chars (e.g. "gtx350") = 3,

@@ -11,18 +11,13 @@
  *   tsx scripts/probe-color-attributes.ts JMJ16BG
  *
  * It performs ONLY reads:
- *   • Yandex — POST /v2/businesses/{businessId}/offer-cards  (POST is Yandex's
- *     READ method for cards, same family as offer-mappings). Dumps parameterValues.
  *   • Uzum   — GET  /v1/product/shop/{shopId}. Dumps the full card + SKU JSON.
  * No writes, no stock changes, no status changes.
  */
 import { eq, ilike } from 'drizzle-orm'
 import { db, shops, products } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
-import { fetchCampaignInfo } from '@/lib/yandex/client'
 import { fetchUzumShops, fetchUzumShopProducts } from '@/lib/uzum/client'
-
-const YANDEX_API_BASE = 'https://api.partner.market.yandex.ru'
 
 const sku = (process.argv[2] ?? '').trim()
 if (!sku) {
@@ -33,36 +28,6 @@ if (!sku) {
 function tokenOf(apiKeyEncrypted: string | null): string | null {
   if (!apiKeyEncrypted) return null
   try { return decrypt(apiKeyEncrypted) } catch { return null }
-}
-
-async function probeYandex(token: string, campaignId: string, businessId: string | null) {
-  let bId = businessId
-  if (!bId) {
-    try { bId = String((await fetchCampaignInfo(token, campaignId)).businessId) } catch (e) {
-      console.error('  · could not resolve businessId:', String(e).slice(0, 200)); return
-    }
-  }
-  // POST offer-cards for just this offer. Read-only (POST is YM's read verb here).
-  const res = await fetch(`${YANDEX_API_BASE}/v2/businesses/${bId}/offer-cards`, {
-    method: 'POST',
-    headers: { 'Api-Key': token, 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ offerIds: [sku] }),
-  })
-  const text = await res.text()
-  console.log(`  · offer-cards HTTP ${res.status}`)
-  if (!res.ok) { console.log('  · body:', text.slice(0, 600)); return }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- diagnostic: dump arbitrary API shape
-  let json: Record<string, any>
-  try { json = JSON.parse(text) } catch { console.log('  · non-JSON body:', text.slice(0, 400)); return }
-  const cards = json?.result?.offerCards ?? json?.result?.offerCardsList ?? []
-  if (!cards.length) { console.log('  · no offerCards returned. Raw result keys:', Object.keys(json?.result ?? json ?? {})); return }
-  for (const c of cards) {
-    console.log(`  · offerId=${c.offerId ?? c.mapping?.marketSku ?? '?'}  name="${c.name ?? c.mapping?.marketSkuName ?? ''}"`)
-    const pv = c.parameterValues ?? c.parameters ?? []
-    if (!pv.length) { console.log('    (no parameterValues — colour attr not returned here)') ; continue }
-    // Dump EVERY parameter so we can see how «Цвет» is represented (id vs name, value text vs valueId).
-    for (const p of pv) console.log('    param:', JSON.stringify(p))
-  }
 }
 
 async function probeUzum(token: string) {
@@ -96,7 +61,6 @@ async function main() {
       variant_color: products.variant_color,
       marketplace: shops.marketplace, shop_name: shops.name,
       api_key_encrypted: shops.api_key_encrypted, shop_id_external: shops.shop_id_external,
-      business_id: shops.business_id,
     })
     .from(products)
     .innerJoin(shops, eq(shops.id, products.shop_id))
@@ -109,10 +73,7 @@ async function main() {
     const token = tokenOf(r.api_key_encrypted)
     if (!token) { console.log('  · no usable token for this shop; skipping.'); continue }
     try {
-      if (r.marketplace === 'yandex_market') {
-        if (!r.shop_id_external) { console.log('  · no campaignId (shop_id_external); skipping.'); continue }
-        await probeYandex(token, r.shop_id_external, r.business_id ?? null)
-      } else if (r.marketplace === 'uzum') {
+      if (r.marketplace === 'uzum') {
         await probeUzum(token)
       }
     } catch (e) {

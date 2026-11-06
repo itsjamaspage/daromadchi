@@ -14,7 +14,6 @@ import { translations } from '@/lib/i18n'
 
 const MP_META: Record<string, { label: string; short: string; color: string; bg: string }> = {
   uzum:          { label: 'Uzum',          short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'   },
-  yandex_market: { label: 'Yandex Market', short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)'  },
 }
 
 function fs(n: number) {
@@ -96,7 +95,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   const [showSettings, setShowSettings] = useState(false)
   const [settings, setSettings]         = useState<UnitEcoSettings>(initSettings)
   const [draftSettings, setDraftSettings] = useState<UnitEcoSettings>(initSettings)
-  const [mpFilter, setMpFilter] = useState<'all' | 'uzum' | 'yandex_market'>('all')
+  const [mpFilter, setMpFilter] = useState<'all' | 'uzum'>('all')
   const [editingSupplier, setEditingSupplier] = useState<string|null>(null)
   const supplierRef = useRef<HTMLInputElement>(null)
   // Inline cost editor: click the Tannarx cell to enter a new value —
@@ -362,9 +361,10 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
         </div>
       )}
 
-      {/* Marketplace tabs */}
-      <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
-        {(['all', 'uzum', 'yandex_market'] as const).map(mp => (
+      {/* Marketplace tabs — hidden while a single marketplace is integrated:
+          "All / Uzum" offers no choice. */}
+      <div className="hidden items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
+        {(['all', 'uzum'] as const).map(mp => (
           <button
             key={mp}
             onClick={() => setMpFilter(mp)}

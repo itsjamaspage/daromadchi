@@ -98,13 +98,13 @@ describe('merge-key simulation (what _fetchCategoryRevenue does)', () => {
 
   it('smartphone synonyms produce the same merge key', () => {
     const uzum = resolveCanonical('Smartfonlar')
-    const yandex = resolveCanonical('Мобильные телефоны')
+    const alt = resolveCanonical('Мобильные телефоны')
     assert.ok(uzum)
-    assert.ok(yandex)
+    assert.ok(alt)
     assert.equal(
       `t:${uzum!.canonical_id}`,
-      `t:${yandex!.canonical_id}`,
-      'Uzum and Yandex smartphone categories must merge'
+      `t:${alt!.canonical_id}`,
+      'both smartphone category spellings must merge'
     )
   })
 })

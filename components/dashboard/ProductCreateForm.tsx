@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import {
-  Plus, Trash2, Download, FileSpreadsheet, Send, Upload,
+  Plus, Trash2, Download, FileSpreadsheet, Upload,
   ChevronDown, ChevronUp, ArrowLeft, Check, AlertCircle, Search,
   RefreshCw,
 } from 'lucide-react'
@@ -29,12 +29,6 @@ interface Variant {
   photoUrl: string
 }
 
-interface Characteristic {
-  id: string
-  name: string
-  value: string
-}
-
 const uid = () => Math.random().toString(36).slice(2, 9)
 
 function resolveIdPath(tree: CatNode[], ids: number[]): CatNode[] {
@@ -58,8 +52,8 @@ interface FormDraft {
   photoUrls: string; sellingPrice: string; oldPrice: string
   weightG: string; heightMm: string; widthMm: string; lengthMm: string
   ikpu: string; ikpuPackCode: string; barcode: string; skuGroup: string
-  variants: Variant[]; chars: Characteristic[]
-  uzumCatPathIds: number[]; yandexCatPathIds: number[]
+  variants: Variant[]
+  uzumCatPathIds: number[]
   savedAt?: number
 }
 
@@ -420,26 +414,22 @@ function UzumEnumPicker({
 
 // ── Marketplace badge ────────────────────────────────────────────────────────
 
-function MpBadge({ mp, req }: { mp: 'uz' | 'ym'; req?: boolean }) {
-  const bg = mp === 'uz' ? '#7B68EE' : '#FC3F1D'
+function MpBadge({ req }: { req?: boolean }) {
   return (
     <span
       className="inline-flex items-center text-[10px] font-bold leading-none px-1.5 py-[3px] rounded-[4px] uppercase tracking-wide select-none"
-      style={{ background: bg, color: '#fff' }}
+      style={{ background: '#7B68EE', color: '#fff' }}
     >
       {req && <span className="mr-[1px]">*</span>}
-      {mp === 'uz' ? 'UZ' : 'YM'}
+      UZ
     </span>
   )
 }
 
-function MpBadges({ uz, ym, reqUz, reqYm }: {
-  uz?: boolean; ym?: boolean; reqUz?: boolean; reqYm?: boolean
-}) {
+function MpBadges({ uz, reqUz }: { uz?: boolean; reqUz?: boolean }) {
   return (
     <span className="inline-flex gap-1 ml-1.5 align-middle">
-      {uz && <MpBadge mp="uz" req={reqUz} />}
-      {ym && <MpBadge mp="ym" req={reqYm} />}
+      {uz && <MpBadge req={reqUz} />}
     </span>
   )
 }
@@ -776,24 +766,10 @@ export default function ProductCreateForm() {
   const [uzumTreeError, setUzumTreeError] = useState('')
   const [uzumCatPath, setUzumCatPath] = useState<CatNode[]>([])
 
-  const [yandexTree, setYandexTree] = useState<CatNode[]>([])
-  const [yandexTreeLoading, setYandexTreeLoading] = useState(true)
-  const [yandexTreeError, setYandexTreeError] = useState('')
-  const [yandexCatPath, setYandexCatPath] = useState<CatNode[]>([])
-
   const uzumCatName = uzumCatPath.length > 0 ? uzumCatPath[uzumCatPath.length - 1].name : ''
-  const yandexCatName = yandexCatPath.length > 0 ? yandexCatPath[yandexCatPath.length - 1].name : ''
-  const yandexCatId = yandexCatPath.length > 0 ? yandexCatPath[yandexCatPath.length - 1].id : null
 
   // Uzum category ID (used for export)
   const uzumCatId = uzumCatPath.length > 0 ? uzumCatPath[uzumCatPath.length - 1].id : null
-
-  // Category parameters (fetched from Yandex when category is selected)
-  const [categoryParams, setCategoryParams] = useState<{
-    id: number; name: string; type: string; required?: boolean;
-    values?: { id: number; value: string }[]
-  }[]>([])
-  const [categoryParamsLoading, setCategoryParamsLoading] = useState(false)
 
   // Descriptions
   const [descRu, setDescRu] = useState('')
@@ -833,13 +809,10 @@ export default function ProductCreateForm() {
   // Variants
   const [variants, setVariants] = useState<Variant[]>([])
 
-  // Characteristics (Yandex)
-  const [chars, setChars] = useState<Characteristic[]>([])
-
   // Export state
-  const [downloading, setDownloading] = useState<'uzum' | 'yandex' | 'both' | null>(null)
-  const [pushing, setPushing] = useState(false)
-  const [pushResult, setPushResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const [downloading, setDownloading] = useState<'uzum' | null>(null)
+  // Photo-upload feedback (URL fetch / file-picker failures).
+  const [uploadResult, setUploadResult] = useState<{ ok: boolean; message: string } | null>(null)
 
   // Import state
   const [importResult, setImportResult] = useState<{ ok: boolean; message: string } | null>(null)
@@ -856,16 +829,15 @@ export default function ProductCreateForm() {
     photoUrls, sellingPrice, oldPrice,
     weightG, heightMm, widthMm, lengthMm,
     ikpu, ikpuPackCode, barcode, skuGroup,
-    variants, chars,
+    variants,
     uzumCatPathIds: uzumCatPath.map(n => n.id),
-    yandexCatPathIds: yandexCatPath.map(n => n.id),
   }), [nameRu, nameUz, sku, brand, model, country,
     brandSkipped, modelSkipped, countrySkipped,
     descRu, descUz, shortDescRu, shortDescUz,
     photoUrls, sellingPrice, oldPrice,
     weightG, heightMm, widthMm, lengthMm,
     ikpu, ikpuPackCode, barcode, skuGroup,
-    variants, chars, uzumCatPath, yandexCatPath])
+    variants, uzumCatPath])
 
   const handleSave = useCallback(() => {
     saveDraftToLocal(collectDraft())
@@ -902,19 +874,14 @@ export default function ProductCreateForm() {
     setBarcode(saved.barcode ?? '')
     setSkuGroup(saved.skuGroup ?? '')
     if (saved.variants) setVariants(saved.variants)
-    if (saved.chars) setChars(saved.chars)
     if (saved.uzumCatPathIds?.length && uzumTree.length) {
       const path = resolveIdPath(uzumTree, saved.uzumCatPathIds)
       if (path.length) setUzumCatPath(path)
     }
-    if (saved.yandexCatPathIds?.length && yandexTree.length) {
-      const path = resolveIdPath(yandexTree, saved.yandexCatPathIds)
-      if (path.length) setYandexCatPath(path)
-    }
     setSavedAt(saved.savedAt ?? null)
     setLoadFlash(true)
     setTimeout(() => setLoadFlash(false), 2000)
-  }, [uzumTree, yandexTree])
+  }, [uzumTree])
 
   // ── Fetch category trees on mount ──────────────────────────────────────
   useEffect(() => {
@@ -938,54 +905,6 @@ export default function ProductCreateForm() {
     return () => { cancelled = true }
   }, [])
 
-  useEffect(() => {
-    let cancelled = false
-    fetch('/api/products/yandex-categories')
-      .then(r => r.ok ? r.json() : Promise.reject(r))
-      .then(data => {
-        if (cancelled) return
-        const tree = data.categories ?? []
-        setYandexTree(tree)
-      })
-      .catch(() => { if (!cancelled) setYandexTreeError('Не удалось загрузить категории Yandex') })
-      .finally(() => { if (!cancelled) setYandexTreeLoading(false) })
-    return () => { cancelled = true }
-  }, [])
-
-  // Fetch category parameters when category is selected
-  useEffect(() => {
-    if (!yandexCatId) {
-      return () => { setCategoryParams([]) }
-    }
-    let cancelled = false
-    const load = async () => {
-      setCategoryParamsLoading(true)
-      try {
-        const res = await fetch('/api/products/yandex-category-params', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ categoryId: yandexCatId }),
-        })
-        const data = res.ok ? await res.json() : null
-        if (!cancelled && data?.parameters) {
-          setCategoryParams(data.parameters)
-          const required = data.parameters.filter((p: { required?: boolean }) => p.required)
-          setChars(prev => {
-            const existing = new Set(prev.map(c => c.name.trim().toLowerCase()))
-            const toAdd = required
-              .filter((p: { name: string }) => !existing.has(p.name.toLowerCase()))
-              .map((p: { name: string }) => ({ id: uid(), name: p.name, value: '' }))
-            return toAdd.length > 0 ? [...prev, ...toAdd] : prev
-          })
-        }
-      } catch { /* ignore */ }
-      finally { if (!cancelled) setCategoryParamsLoading(false) }
-    }
-    load()
-    return () => { cancelled = true }
-  }, [yandexCatId])
-
-
   // ── Auto-translate RU↔UZ on blur ──────────────────────────────────────
   const autoTranslate = useAutoTranslate()
 
@@ -1005,22 +924,6 @@ export default function ProductCreateForm() {
     && weightG && heightMm && widthMm && lengthMm
     && ikpu.trim()
     && !hasInvalidSize
-
-  const hasPhotos = variants.length > 0
-    ? variants.every(v => v.photoUrl.trim())
-    : !!photoUrls.trim()
-
-  const canExportYandex =
-    nameRu.trim() && nameUz.trim()
-    && sku.trim()
-    && (brand.trim() || brandSkipped)
-    && yandexCatName.trim()
-    && descRu.trim() && descUz.trim()
-    && hasPhotos
-    && sellingPrice
-    && barcode.trim()
-    && weightG && heightMm && widthMm && lengthMm
-    && ikpu.trim()
 
   // ── Category tree search helper ─────────────────────────────────────────
   const findCatPath = useCallback((tree: CatNode[], name: string): CatNode[] | null => {
@@ -1049,25 +952,21 @@ export default function ProductCreateForm() {
       const data = await file.arrayBuffer()
       const wb = XLSX.read(data, { type: 'array' })
 
-      // Find the right sheet — real Yandex template uses "Список товаров", others use first sheet
-      const productSheetName = wb.SheetNames.find(n => n === 'Список товаров') || wb.SheetNames[0]
-      const ws = wb.Sheets[productSheetName]
+      const ws = wb.Sheets[wb.SheetNames[0]]
       if (!ws) throw new Error('Empty file')
 
       const allRows: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
       if (allRows.length < 2) throw new Error('No data rows')
 
-      // Detect format: real Yandex template has headers in row 2 (section groups in row 1)
-      let headerRowIdx = 0
-      let isUzum = false
-      let isYandex = false
+      // The Uzum template may carry section groups in row 1, so the header row
+      // is located rather than assumed.
+      let headerRowIdx = -1
       for (let i = 0; i < Math.min(allRows.length, 4); i++) {
         const rowStrs = allRows[i].map(h => String(h).trim())
-        if (rowStrs.some(h => /Название товара RU/i.test(h))) { headerRowIdx = i; isUzum = true; break }
-        if (rowStrs.some(h => /Ваш SKU/i.test(h))) { headerRowIdx = i; isYandex = true; break }
+        if (rowStrs.some(h => /Название товара RU/i.test(h))) { headerRowIdx = i; break }
       }
 
-      if (!isUzum && !isYandex) {
+      if (headerRowIdx < 0) {
         throw new Error(lang === 'ru' ? 'Неизвестный формат файла' : lang === 'uz' ? "Noma'lum fayl formati" : 'Unknown file format')
       }
 
@@ -1081,171 +980,77 @@ export default function ProductCreateForm() {
         return isNaN(v) ? 0 : v
       }
 
-      // Skip header row + description row (both formats have one desc row after headers)
+      // Skip header row + description row (one desc row follows the headers)
       const startRow = headerRowIdx + 2
       const dataRows = rows.slice(startRow).filter(r => r.some(c => String(c).trim()))
       if (dataRows.length === 0) throw new Error(lang === 'ru' ? 'Нет данных в файле' : 'No data in file')
 
       const first = dataRows[0]
 
-      if (isUzum) {
-        const ci = {
-          nameRu: col(/^Название товара RU/), sku: col(/^Идентификатор от продавца/),
-          nameUz: col(/^Название товара UZ/), skuGroup: col(/^Группировка SKU/),
-          catName: col(/^Название категории/), catId: col(/^id категории/),
-          brand: col(/^Бренд/), model: col(/^Модель$/), country: col(/^Страна производства/),
-          descRu: col(/^Описание товара RU/), descUz: col(/^Описание товара UZ/),
-          shortRu: col(/^Краткое описание RU/), shortUz: col(/^Краткое описание UZ/),
-          photos: col(/^Ссылки на фото/), barcode: col(/^Штрихкод/), ikpu: col(/^ИКПУ/),
-          color: col(/^Цвет/), size: col(/^Размер/),
-          price: col(/^Цена продажи/), oldPrice: col(/^Цена до скидки/),
-          weight: col(/^Вес/), height: col(/^Высота/), width: col(/^Ширина/), length: col(/^Длина/),
-        }
-        setNameRu(str(first, ci.nameRu))
-        setNameUz(str(first, ci.nameUz))
-        setSku(str(first, ci.sku))
-        setSkuGroup(str(first, ci.skuGroup))
-        setBrand(str(first, ci.brand))
-        setModel(str(first, ci.model))
-        setCountry(str(first, ci.country))
-        const uzCatName = str(first, ci.catName)
-        if (uzCatName) {
-          const path = findCatPath(uzumTree, uzCatName)
-          if (path) setUzumCatPath(path)
-        }
-        setDescRu(str(first, ci.descRu))
-        setDescUz(str(first, ci.descUz))
-        setShortDescRu(str(first, ci.shortRu))
-        setShortDescUz(str(first, ci.shortUz))
-        setPhotoUrls(str(first, ci.photos))
-        setBarcode(str(first, ci.barcode))
-        setIkpu(str(first, ci.ikpu))
-        setSellingPrice(String(num(first, ci.price) || ''))
-        setOldPrice(String(num(first, ci.oldPrice) || ''))
-        setWeightG(String(num(first, ci.weight) || ''))
-        setHeightMm(String(num(first, ci.height) || ''))
-        setWidthMm(String(num(first, ci.width) || ''))
-        setLengthMm(String(num(first, ci.length) || ''))
-        setBrandSkipped(false)
-        setModelSkipped(false)
-        setCountrySkipped(false)
+      const ci = {
+        nameRu: col(/^Название товара RU/), sku: col(/^Идентификатор от продавца/),
+        nameUz: col(/^Название товара UZ/), skuGroup: col(/^Группировка SKU/),
+        catName: col(/^Название категории/), catId: col(/^id категории/),
+        brand: col(/^Бренд/), model: col(/^Модель$/), country: col(/^Страна производства/),
+        descRu: col(/^Описание товара RU/), descUz: col(/^Описание товара UZ/),
+        shortRu: col(/^Краткое описание RU/), shortUz: col(/^Краткое описание UZ/),
+        photos: col(/^Ссылки на фото/), barcode: col(/^Штрихкод/), ikpu: col(/^ИКПУ/),
+        color: col(/^Цвет/), size: col(/^Размер/),
+        price: col(/^Цена продажи/), oldPrice: col(/^Цена до скидки/),
+        weight: col(/^Вес/), height: col(/^Высота/), width: col(/^Ширина/), length: col(/^Длина/),
+      }
+      setNameRu(str(first, ci.nameRu))
+      setNameUz(str(first, ci.nameUz))
+      setSku(str(first, ci.sku))
+      setSkuGroup(str(first, ci.skuGroup))
+      setBrand(str(first, ci.brand))
+      setModel(str(first, ci.model))
+      setCountry(str(first, ci.country))
+      const uzCatName = str(first, ci.catName)
+      if (uzCatName) {
+        const path = findCatPath(uzumTree, uzCatName)
+        if (path) setUzumCatPath(path)
+      }
+      setDescRu(str(first, ci.descRu))
+      setDescUz(str(first, ci.descUz))
+      setShortDescRu(str(first, ci.shortRu))
+      setShortDescUz(str(first, ci.shortUz))
+      setPhotoUrls(str(first, ci.photos))
+      setBarcode(str(first, ci.barcode))
+      setIkpu(str(first, ci.ikpu))
+      setSellingPrice(String(num(first, ci.price) || ''))
+      setOldPrice(String(num(first, ci.oldPrice) || ''))
+      setWeightG(String(num(first, ci.weight) || ''))
+      setHeightMm(String(num(first, ci.height) || ''))
+      setWidthMm(String(num(first, ci.width) || ''))
+      setLengthMm(String(num(first, ci.length) || ''))
+      setBrandSkipped(false)
+      setModelSkipped(false)
+      setCountrySkipped(false)
 
-        const hasVariantData = dataRows.length > 1 || str(first, ci.color) || str(first, ci.size)
-        if (hasVariantData) {
-          setVariants(dataRows.map(r => ({
-            id: uid(),
-            color: str(r, ci.color),
-            size: str(r, ci.size),
-            sku: str(r, ci.sku),
-            barcode: str(r, ci.barcode),
-            sellingPrice: String(num(r, ci.price) || ''),
-            oldPrice: String(num(r, ci.oldPrice) || ''),
-            photoUrl: '',
-          })))
-        }
-
-        const maxKnown = Math.max(...Object.values(ci).filter(v => v >= 0))
-        const parsedChars: { id: string; name: string; value: string }[] = []
-        for (let hIdx = maxKnown + 1; hIdx < headers.length; hIdx++) {
-          const charName = headers[hIdx]
-          if (!charName) continue
-          const charValue = str(first, hIdx)
-          if (charValue) {
-            parsedChars.push({ id: uid(), name: charName, value: charValue })
-          }
-        }
-        if (parsedChars.length > 0) setChars(parsedChars)
-      } else {
-        const ci = {
-          sku: col(/^Ваш SKU/), name: col(/^Название товара/), photos: col(/^Ссылка на изображение/),
-          desc: col(/^Описание товара/), cat: col(/^Категория на Маркете/), brand: col(/^Бренд/),
-          barcode: col(/^Штрихкод/), country: col(/^Страна производства/),
-          nameUz: col(/^Название на узбекском/), descUz: col(/^Описание на узбекском/),
-          weight: col(/^Вес/), length: col(/^Длина/), width: col(/^Ширина/), height: col(/^Высота/),
-          price: col(/^Цена /), oldPrice: col(/^Зачёркнутая цена/),
-          ikpu: col(/^ИКПУ/), ikpuPackCode: col(/^Код упаковки/), chars: col(/^Характеристики/),
-        }
-        setNameRu(str(first, ci.name))
-        setSku(str(first, ci.sku))
-        setPhotoUrls(str(first, ci.photos))
-        const yDesc = str(first, ci.desc)
-        setDescRu(yDesc)
-        const ymCatStr = str(first, ci.cat)
-        if (ymCatStr) {
-          const path = findCatPath(yandexTree, ymCatStr)
-          if (path) setYandexCatPath(path)
-        }
-        setBrand(str(first, ci.brand))
-        setBarcode(str(first, ci.barcode))
-        setCountry(str(first, ci.country))
-        setNameUz(str(first, ci.nameUz))
-        setDescUz(str(first, ci.descUz))
-        setIkpu(str(first, ci.ikpu))
-        setIkpuPackCode(str(first, ci.ikpuPackCode))
-        setSellingPrice(String(num(first, ci.price) || ''))
-        setOldPrice(String(num(first, ci.oldPrice) || ''))
-        setSkuGroup(str(first, ci.sku) || str(first, ci.name))
-        if (yDesc && !shortDescRu) setShortDescRu(yDesc.slice(0, 300))
-
-        const wKg = num(first, ci.weight)
-        if (wKg) setWeightG(String(Math.round(wKg * 1000)))
-        const lCm = num(first, ci.length)
-        if (lCm) setLengthMm(String(Math.round(lCm * 10)))
-        const wCm = num(first, ci.width)
-        if (wCm) setWidthMm(String(Math.round(wCm * 10)))
-        const hCm = num(first, ci.height)
-        if (hCm) setHeightMm(String(Math.round(hCm * 10)))
-
-        const parseColor = (charStr: string) => {
-          if (!charStr) return ''
-          const pair = charStr.split(';').find(p => /^цвет\|/i.test(p.trim()))
-          return pair ? pair.split('|')[1]?.trim() || '' : ''
-        }
-        const parseSize = (charStr: string) => {
-          if (!charStr) return ''
-          const pair = charStr.split(';').find(p => /^размер\|/i.test(p.trim()))
-          return pair ? pair.split('|')[1]?.trim() || '' : ''
-        }
-
-        const charStr = str(first, ci.chars)
-        if (charStr) {
-          setChars(charStr.split(';').filter(Boolean)
-            .filter(p => !/^(цвет|размер)\|/i.test(p.trim()))
-            .map(pair => {
-              const [name, value] = pair.split('|')
-              return { id: uid(), name: name?.trim() || '', value: value?.trim() || '' }
-            }))
-        }
-
-        const firstColor = parseColor(str(first, ci.chars))
-        const firstSize = parseSize(str(first, ci.chars))
-        const hasVariantData = dataRows.length > 1 || firstColor || firstSize
-        if (hasVariantData) {
-          setVariants(dataRows.map(r => {
-            const rChars = str(r, ci.chars)
-            return {
-              id: uid(),
-              color: parseColor(rChars),
-              size: parseSize(rChars),
-              sku: str(r, ci.sku),
-              barcode: str(r, ci.barcode),
-              sellingPrice: String(num(r, ci.price) || ''),
-              oldPrice: String(num(r, ci.oldPrice) || ''),
-              photoUrl: '',
-            }
-          }))
-        }
+      const hasVariantData = dataRows.length > 1 || str(first, ci.color) || str(first, ci.size)
+      if (hasVariantData) {
+        setVariants(dataRows.map(r => ({
+          id: uid(),
+          color: str(r, ci.color),
+          size: str(r, ci.size),
+          sku: str(r, ci.sku),
+          barcode: str(r, ci.barcode),
+          sellingPrice: String(num(r, ci.price) || ''),
+          oldPrice: String(num(r, ci.oldPrice) || ''),
+          photoUrl: '',
+        })))
       }
 
-      const format = isUzum ? 'Uzum' : 'Yandex'
+
       const count = dataRows.length
       setImportResult({
         ok: true,
         message: lang === 'ru'
-          ? `${format}: загружено ${count} строк(и)`
+          ? `Uzum: загружено ${count} строк(и)`
           : lang === 'uz'
-          ? `${format}: ${count} qator yuklandi`
-          : `${format}: imported ${count} row(s)`,
+          ? `Uzum: ${count} qator yuklandi`
+          : `Uzum: imported ${count} row(s)`,
       })
     } catch (err) {
       setImportResult({
@@ -1266,17 +1071,13 @@ export default function ProductCreateForm() {
   // ── Build product data for export ───────────────────────────────────────
 
   const buildProducts = useCallback(() => {
-    const charsRecord: Record<string, string> = {}
-    for (const c of chars) {
-      if (c.name.trim() && c.value.trim()) charsRecord[c.name.trim()] = c.value.trim()
-    }
 
     const base = {
       nameRu: nameRu.trim(),
       nameUz: nameUz.trim(),
       sku: sku.trim(),
       skuGroup: skuGroup.trim() || nameRu.trim(),
-      categoryName: uzumCatName || yandexCatName || '',
+      categoryName: uzumCatName || '',
       categoryId: '',
       brand: brandSkipped ? 'Отсутствует бренд' : brand.trim(),
       model: modelSkipped ? '' : model.trim(),
@@ -1295,7 +1096,6 @@ export default function ProductCreateForm() {
       heightMm: Number(heightMm) || 0,
       widthMm: Number(widthMm) || 0,
       lengthMm: Number(lengthMm) || 0,
-      characteristics: Object.keys(charsRecord).length > 0 ? charsRecord : undefined,
     }
 
     if (variants.length === 0) return [base]
@@ -1310,25 +1110,24 @@ export default function ProductCreateForm() {
       oldPrice: Math.round((Number(v.oldPrice) || base.oldPrice) / 1000) * 1000,
       photoUrls: v.photoUrl.trim() || '',
     }))
-  }, [nameRu, nameUz, sku, skuGroup, uzumCatName, yandexCatName,
+  }, [nameRu, nameUz, sku, skuGroup, uzumCatName,
     brand, brandSkipped, model, modelSkipped, country, countrySkipped,
     descRu, descUz, shortDescRu, shortDescUz, photoUrls, barcode, ikpu, ikpuPackCode,
-    sellingPrice, oldPrice, weightG, heightMm, widthMm, lengthMm, chars, variants])
+    sellingPrice, oldPrice, weightG, heightMm, widthMm, lengthMm, variants])
 
   // ── Export & push handlers ──────────────────────────────────────────────
 
-  const doExport = async (marketplace: 'uzum' | 'yandex') => {
+  const doExport = async () => {
     const products = buildProducts()
 
-    const body: Record<string, unknown> = { marketplace, products }
-    if (marketplace === 'uzum') {
-      body.uzumCategory = {
+    const body: Record<string, unknown> = {
+      marketplace: 'uzum',
+      products,
+      uzumCategory: {
         id: uzumCatPath.length > 0 ? String(uzumCatPath[uzumCatPath.length - 1].id) : '',
         name: uzumCatName || '',
         fullPath: uzumCatPath.map(n => n.name).join(' > ') || '',
-      }
-    } else {
-      body.yandexCategoryName = yandexCatName || 'Не указана'
+      },
     }
 
     const res = await fetch('/api/products/export', {
@@ -1342,50 +1141,11 @@ export default function ProductCreateForm() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${marketplace}-products.${marketplace === 'uzum' ? 'xlsm' : 'xlsx'}`
+    a.download = 'uzum-products.xlsm'
     document.body.appendChild(a)
     a.click()
     a.remove()
     URL.revokeObjectURL(url)
-  }
-
-  // Map form characteristics → Yandex parameterValues using fetched category params.
-  // Per-variant color/size override shared characteristics so each variant gets its
-  // own correct Цвет / Размер value instead of all sharing the base product's.
-  const COLOR_PARAM_NAMES = ['цвет', 'цвет товара', 'основной цвет', 'color']
-  const SIZE_PARAM_NAMES = ['размер', 'size']
-
-  const buildParameterValues = (p: ReturnType<typeof buildProducts>[0]) => {
-    if (!categoryParams.length) return undefined
-    const pColor = 'color' in p ? (p as { color?: string }).color : undefined
-    const pSize = 'size' in p ? (p as { size?: string }).size : undefined
-    const vals: { parameterId: number; valueId?: number; value?: string }[] = []
-    for (const param of categoryParams) {
-      const paramNameLower = param.name.toLowerCase()
-      let charValue: string | undefined
-
-      if (pColor && COLOR_PARAM_NAMES.includes(paramNameLower)) {
-        charValue = pColor.replace(/ё/g, 'е').replace(/Ё/g, 'Е')
-      } else if (pSize && SIZE_PARAM_NAMES.includes(paramNameLower)) {
-        charValue = pSize
-      } else {
-        charValue = p.characteristics?.[param.name]
-      }
-
-      if (!charValue) continue
-      if (param.type === 'ENUM' && param.values?.length) {
-        const norm = (s: string) => s.toLowerCase().replace(/ё/g, 'е')
-        const match = param.values.find(v => norm(v.value) === norm(charValue!))
-        if (match) {
-          vals.push({ parameterId: param.id, valueId: match.id })
-        } else {
-          vals.push({ parameterId: param.id, value: charValue })
-        }
-      } else {
-        vals.push({ parameterId: param.id, value: charValue })
-      }
-    }
-    return vals.length > 0 ? vals : undefined
   }
 
   const compressImage = (file: File, maxSizeMB = 1, maxDim = 2000): Promise<File> =>
@@ -1456,196 +1216,29 @@ export default function ProductCreateForm() {
         if (data.url) {
           updateVariant(variantId, 'photoUrl', data.url)
         } else {
-          setPushResult({ ok: false, message: lang === 'ru' ? 'Ошибка загрузки фото: URL не получен' : 'Photo upload error: no URL returned' })
+          setUploadResult({ ok: false, message: lang === 'ru' ? 'Ошибка загрузки фото: URL не получен' : 'Photo upload error: no URL returned' })
         }
       } else {
         const err = await res.json().catch(() => ({ error: res.statusText }))
         const detail = err.detail ? ` (${String(err.detail).slice(0, 100)})` : ''
-        setPushResult({ ok: false, message: `${lang === 'ru' ? 'Ошибка загрузки фото' : 'Photo upload error'}: ${err.error || res.statusText}${detail}` })
+        setUploadResult({ ok: false, message: `${lang === 'ru' ? 'Ошибка загрузки фото' : 'Photo upload error'}: ${err.error || res.statusText}${detail}` })
       }
     } catch (err) {
-      setPushResult({ ok: false, message: `${lang === 'ru' ? 'Ошибка загрузки фото' : 'Photo upload error'}: ${err instanceof Error ? err.message : 'Unknown'}` })
+      setUploadResult({ ok: false, message: `${lang === 'ru' ? 'Ошибка загрузки фото' : 'Photo upload error'}: ${err instanceof Error ? err.message : 'Unknown'}` })
     }
     setVariantUploading(null)
     const ref = variantFileRefs.current[variantId]
     if (ref) ref.value = ''
   }
 
-  const handleExport = async (target: 'uzum' | 'yandex' | 'both') => {
-    setDownloading(target)
+  const handleExport = async () => {
+    setDownloading('uzum')
     try {
-      if (target === 'both') {
-        await doExport('uzum')
-        await doExport('yandex')
-      } else {
-        await doExport(target)
-      }
+      await doExport()
     } catch {
       // silently handled
     } finally {
       setDownloading(null)
-    }
-  }
-
-  const checkImageDimensions = (url: string): Promise<{ w: number; h: number } | null> =>
-    new Promise(resolve => {
-      const img = new window.Image()
-      img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight })
-      img.onerror = () => resolve(null)
-      img.src = url
-      setTimeout(() => resolve(null), 5000)
-    })
-
-  const handleYandexPush = async () => {
-    setPushing(true)
-    setPushResult(null)
-    try {
-      if (variants.length > 0) {
-        const missing = variants.filter(v => !v.photoUrl.trim())
-        if (missing.length > 0) {
-          const names = missing.map(v => v.color || v.sku || '?').join(', ')
-          const msg = lang === 'ru'
-            ? `Загрузите фото для каждого варианта. Без фото: ${names}`
-            : lang === 'uz'
-            ? `Har bir variant uchun rasm yuklang. Rasmsiz: ${names}`
-            : `Upload a photo for each variant. Missing photo: ${names}`
-          setPushResult({ ok: false, message: msg })
-          setPushing(false)
-          return
-        }
-      } else if (!photoUrls.trim()) {
-        const msg = lang === 'ru'
-          ? 'Загрузите хотя бы одно фото товара.'
-          : lang === 'uz'
-          ? "Kamida bitta mahsulot rasmini yuklang."
-          : 'Upload at least one product photo.'
-        setPushResult({ ok: false, message: msg })
-        setPushing(false)
-        return
-      }
-
-      // Check image dimensions (Yandex requires min 300x300)
-      const allUrls: { label: string; url: string }[] = []
-      if (variants.length > 0) {
-        for (const v of variants) {
-          for (const u of v.photoUrl.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)) {
-            allUrls.push({ label: v.color || v.sku || '?', url: u })
-          }
-        }
-      } else {
-        for (const u of photoUrls.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)) {
-          allUrls.push({ label: '', url: u })
-        }
-      }
-      const tooSmall: string[] = []
-      await Promise.all(allUrls.map(async ({ label, url }) => {
-        const dims = await checkImageDimensions(url)
-        if (dims && (dims.w < 300 || dims.h < 300)) {
-          const tag = label ? `${label}: ` : ''
-          tooSmall.push(`${tag}${dims.w}x${dims.h}px`)
-        }
-      }))
-      if (tooSmall.length > 0) {
-        const msg = lang === 'ru'
-          ? `Фото слишком маленькие (мин. 300x300 для Yandex): ${tooSmall.join(', ')}`
-          : lang === 'uz'
-          ? `Rasmlar juda kichik (min. 300x300 Yandex uchun): ${tooSmall.join(', ')}`
-          : `Photos too small (min 300x300 for Yandex): ${tooSmall.join(', ')}`
-        setPushResult({ ok: false, message: msg })
-        setPushing(false)
-        return
-      }
-      const products = buildProducts()
-      const offers = products.map(p => ({
-        offerId: p.sku || `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        name: p.nameRu,
-        category: yandexCatName || undefined,
-        marketCategoryId: yandexCatId || undefined,
-        vendor: p.brand || undefined,
-        description: p.descriptionRu || undefined,
-        pictures: (() => {
-          if (!p.photoUrls) return undefined
-          const urls = p.photoUrls.split(/[\n,]+/)
-            .map(u => u.trim())
-            .filter(u => u && /^https?:\/\/.+/.test(u))
-            .map(u => u.replace(/^http:\/\//, 'https://'))
-          return urls.length > 0 ? urls : undefined
-        })(),
-        barcodes: p.barcode ? [p.barcode] : undefined,
-        manufacturerCountries: p.country ? [p.country] : undefined,
-        weightDimensions: (p.weightGrams && p.lengthMm && p.widthMm && p.heightMm) ? {
-          weight: p.weightGrams / 1000,
-          length: p.lengthMm / 10,
-          width: p.widthMm / 10,
-          height: p.heightMm / 10,
-        } : undefined,
-        basicPrice: p.sellingPrice ? {
-          value: p.sellingPrice,
-          currencyId: 'UZS',
-          discountBase: p.oldPrice || undefined,
-        } : undefined,
-        commodityCodes: p.ikpu ? [{ code: p.ikpu, type: 'IKPU_CODE' as const }] : undefined,
-        parameterValues: buildParameterValues(p),
-        uz_name: p.nameUz || undefined,
-        uz_description: p.descriptionUz || undefined,
-      }))
-
-      console.log('[Yandex Push] Sending offers:', offers.map(o => ({
-        offerId: o.offerId, pictures: o.pictures, vendor: o.vendor,
-        hasDimensions: !!o.weightDimensions, hasBarcodes: !!o.barcodes?.length,
-      })))
-
-      const res = await fetch('/api/products/yandex-push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ offers }),
-      })
-
-      if (res.ok) {
-        const data = await res.json().catch(() => ({}))
-        console.log('[Yandex Push] Full response:', JSON.stringify(data, null, 2))
-        const totalPhotos = offers.reduce((n, o) => n + (o.pictures?.length ?? 0), 0)
-        const photoNote = totalPhotos > 0
-          ? (lang === 'ru' ? ` Фото: ${totalPhotos} шт.` : lang === 'uz' ? ` Rasmlar: ${totalPhotos} ta.` : ` Photos: ${totalPhotos}.`)
-          : (lang === 'ru' ? ' Фото не указаны.' : lang === 'uz' ? ' Rasmlar ko\'rsatilmagan.' : ' No photos included.')
-        const message = lang === 'ru'
-          ? `${offers.length} товар(ов) отправлено в Yandex Market. Обработка может занять несколько минут.${photoNote}`
-          : lang === 'uz'
-          ? `${offers.length} ta mahsulot Yandex Market ga yuborildi. Ishlov berish bir necha daqiqa davom etishi mumkin.${photoNote}`
-          : `${offers.length} product(s) pushed to Yandex Market. Processing may take a few minutes.${photoNote}`
-        setPushResult({ ok: true, message })
-        // Trigger a background sync so the pushed product appears in Daromadchi
-        // immediately instead of waiting for the next scheduled heavy sync.
-        fetch('/api/yandex/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({}),
-        }).then(r => r.json()).then(syncData => {
-          if (syncData.ok) {
-            const syncMsg = lang === 'ru'
-              ? ' Синхронизация завершена — товар появится на странице «Товары».'
-              : lang === 'uz'
-              ? ' Sinxronizatsiya tugadi — mahsulot «Mahsulotlar» sahifasida paydo bo\'ladi.'
-              : ' Sync complete — product will appear on the Products page.'
-            setPushResult(prev => prev?.ok ? { ok: true, message: prev.message + syncMsg } : prev)
-          }
-        }).catch(() => { /* sync failure is non-critical */ })
-      } else {
-        const data = await res.json().catch(() => ({ error: res.statusText }))
-        console.error('[Yandex Push] Error response:', JSON.stringify(data, null, 2))
-        const detail = data.detail ? ` (${data.detail})` : ''
-        setPushResult({
-          ok: false,
-          message: (data.error || `HTTP ${res.status}`) + detail,
-        })
-      }
-    } catch (err) {
-      setPushResult({
-        ok: false,
-        message: err instanceof Error ? err.message : 'Unknown error',
-      })
-    } finally {
-      setPushing(false)
     }
   }
 
@@ -1805,28 +1398,28 @@ export default function ProductCreateForm() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <InputField
             label={d.nameRu}
-            badges={<MpBadges uz ym reqUz reqYm />}
+            badges={<MpBadges uz reqUz />}
             value={nameRu} onChange={setNameRu}
             onBlur={() => autoTranslate(nameRu, 'ru', 'uz', nameUz, setNameUz)}
             placeholder={d.phNameRu}
           />
           <InputField
             label={d.nameUz}
-            badges={<MpBadges uz ym reqUz reqYm />}
+            badges={<MpBadges uz reqUz />}
             value={nameUz} onChange={setNameUz}
             onBlur={() => autoTranslate(nameUz, 'uz', 'ru', nameRu, setNameRu)}
             placeholder={d.phNameUz}
           />
           <InputField
             label={d.skuId}
-            badges={<MpBadges uz ym reqYm />}
+            badges={<MpBadges uz />}
             value={sku} onChange={setSku}
             placeholder={d.phSku}
           />
           <div>
             <UzumEnumPicker field="brands"
               label={d.brandLabel}
-              badges={<MpBadges uz ym reqUz />}
+              badges={<MpBadges uz reqUz />}
               value={brand} onChange={setBrand}
               disabled={brandSkipped}
               placeholder={d.phBrand}
@@ -1836,7 +1429,7 @@ export default function ProductCreateForm() {
           <div className="relative">
             <UzumEnumPicker field="countries"
               label={d.countryLabel}
-              badges={<MpBadges uz ym reqUz reqYm />}
+              badges={<MpBadges uz reqUz />}
               value={country}
               onChange={setCountry}
               disabled={countrySkipped}
@@ -1860,24 +1453,6 @@ export default function ProductCreateForm() {
             badge={<MpBadges uz reqUz />}
             accentColor="#7B68EE"
           />
-          <div>
-            <CascadingCatPicker
-              tree={yandexTree}
-              loading={yandexTreeLoading}
-              error={yandexTreeError}
-              selectedPath={yandexCatPath}
-              onSelect={setYandexCatPath}
-              label={d.yandexCategory}
-              badge={<MpBadges ym reqYm />}
-              accentColor="#FC3F1D"
-            />
-            {yandexCatId && (
-              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                ID: {yandexCatId}
-                {categoryParamsLoading ? ' — загрузка параметров...' : categoryParams.length > 0 ? ` — ${categoryParams.filter(p => p.required).length} обязательных параметров` : ''}
-              </p>
-            )}
-          </div>
         </div>
       </SectionCard>
 
@@ -1886,15 +1461,15 @@ export default function ProductCreateForm() {
         <div className="space-y-4">
           <TextAreaField
             label={d.descRu}
-            badges={<MpBadges uz ym reqUz reqYm />}
+            badges={<MpBadges uz reqUz />}
             value={descRu} onChange={setDescRu}
             onBlur={() => autoTranslate(descRu, 'ru', 'uz', descUz, setDescUz)}
-            hint={lang === 'ru' ? 'Uzum: до 28 000 симв. · Yandex: до 6 000 симв.' : lang === 'uz' ? 'Uzum: 28 000 belgigacha · Yandex: 6 000 belgigacha' : 'Uzum: up to 28,000 chars · Yandex: up to 6,000 chars'}
+            hint={lang === 'ru' ? 'Uzum: до 28 000 симв.' : lang === 'uz' ? 'Uzum: 28 000 belgigacha' : 'Uzum: up to 28,000 chars'}
             placeholder={d.phDescRu}
           />
           <TextAreaField
             label={d.descUz}
-            badges={<MpBadges uz ym reqUz reqYm />}
+            badges={<MpBadges uz reqUz />}
             value={descUz} onChange={setDescUz}
             onBlur={() => autoTranslate(descUz, 'uz', 'ru', descRu, setDescRu)}
             placeholder={d.phDescUz}
@@ -1925,27 +1500,27 @@ export default function ProductCreateForm() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <InputField
             label={d.sellingPrice}
-            badges={<MpBadges uz ym reqUz reqYm />}
+            badges={<MpBadges uz reqUz />}
             type="number" value={sellingPrice} onChange={setSellingPrice}
             placeholder={d.phSellingPrice}
             error={sellingPriceError}
           />
           <InputField
             label={d.oldPriceLabel}
-            badges={<MpBadges uz ym reqUz />}
+            badges={<MpBadges uz reqUz />}
             type="number" value={oldPrice} onChange={setOldPrice}
             placeholder={d.phOldPrice}
             error={oldPriceError}
           />
           <IkpuSearchField
             value={ikpu} onChange={setIkpu}
-            badges={<MpBadges uz ym reqUz reqYm />}
+            badges={<MpBadges uz reqUz />}
             lang={lang}
           />
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
               {d.barcodeLabel}
-              <MpBadges uz ym reqYm />
+              <MpBadges uz />
             </label>
             <div className="flex gap-2">
               <input
@@ -1969,30 +1544,26 @@ export default function ProductCreateForm() {
           </div>
           <InputField
             label={d.weightG}
-            badges={<MpBadges uz ym reqUz reqYm />}
+            badges={<MpBadges uz reqUz />}
             type="number" value={weightG} onChange={setWeightG}
-            hint={weightG ? `→ Yandex: ${(Number(weightG) / 1000).toFixed(3)} ${lang === 'ru' ? 'кг' : 'kg'}` : (lang === 'ru' ? 'Yandex конвертирует в кг' : lang === 'uz' ? 'Yandex kg ga konvert qiladi' : 'Yandex converts to kg')}
             placeholder={d.phWeightG}
           />
           <InputField
             label={d.heightMm}
-            badges={<MpBadges uz ym reqUz reqYm />}
+            badges={<MpBadges uz reqUz />}
             type="number" value={heightMm} onChange={setHeightMm}
-            hint={heightMm ? `→ Yandex: ${(Number(heightMm) / 10).toFixed(1)} ${lang === 'ru' ? 'см' : 'cm'}` : (lang === 'ru' ? 'Yandex конвертирует в см' : lang === 'uz' ? 'Yandex sm ga konvert qiladi' : 'Yandex converts to cm')}
             placeholder={d.phHeightMm}
           />
           <InputField
             label={d.widthMm}
-            badges={<MpBadges uz ym reqUz reqYm />}
+            badges={<MpBadges uz reqUz />}
             type="number" value={widthMm} onChange={setWidthMm}
-            hint={widthMm ? `→ Yandex: ${(Number(widthMm) / 10).toFixed(1)} ${lang === 'ru' ? 'см' : 'cm'}` : undefined}
             placeholder={d.phWidthMm}
           />
           <InputField
             label={d.lengthMm}
-            badges={<MpBadges uz ym reqUz reqYm />}
+            badges={<MpBadges uz reqUz />}
             type="number" value={lengthMm} onChange={setLengthMm}
-            hint={lengthMm ? `→ Yandex: ${(Number(lengthMm) / 10).toFixed(1)} ${lang === 'ru' ? 'см' : 'cm'}` : undefined}
             placeholder={d.phLengthMm}
           />
         </div>
@@ -2001,7 +1572,7 @@ export default function ProductCreateForm() {
       {/* ── Uzum-only fields ── */}
       <SectionCard
         title={d.uzumOnlySection ?? (lang === 'ru' ? 'Поля только для Uzum' : lang === 'uz' ? 'Faqat Uzum uchun maydonlar' : 'Uzum-only fields')}
-        badge={<MpBadge mp="uz" />}
+        badge={<MpBadge />}
         defaultOpen={false}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2027,7 +1598,7 @@ export default function ProductCreateForm() {
       {/* ── Variants ── */}
       <SectionCard
         title={d.variantsSection}
-        badge={<MpBadges uz ym />}
+        badge={<MpBadges uz />}
         defaultOpen={false}
       >
         {variants.length === 0 ? (
@@ -2059,19 +1630,19 @@ export default function ProductCreateForm() {
                   </button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <UzumEnumPicker field="colors" label={d.colorLabel} badges={<MpBadges uz ym />}
+                  <UzumEnumPicker field="colors" label={d.colorLabel} badges={<MpBadges uz />}
                     value={v.color} onChange={val => updateVariant(v.id, 'color', val)}
                     placeholder={d.phColor} />
-                  <UzumEnumPicker field="sizes" label={d.sizeLabel} badges={<MpBadges uz ym />}
+                  <UzumEnumPicker field="sizes" label={d.sizeLabel} badges={<MpBadges uz />}
                     value={v.size} onChange={val => updateVariant(v.id, 'size', val)}
                     placeholder={d.phSize} />
-                  <InputField label={d.skuId} badges={<MpBadges uz ym />}
+                  <InputField label={d.skuId} badges={<MpBadges uz />}
                     value={v.sku} onChange={val => updateVariant(v.id, 'sku', val)}
                     placeholder={d.phSku} />
                   <div>
                     <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-dim)' }}>
                       {d.barcodeLabel}
-                      <MpBadges uz ym />
+                      <MpBadges uz />
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -2093,12 +1664,12 @@ export default function ProductCreateForm() {
                       </button>
                     </div>
                   </div>
-                  <InputField label={d.sellingPrice} badges={<MpBadges uz ym />}
+                  <InputField label={d.sellingPrice} badges={<MpBadges uz />}
                     type="number" value={v.sellingPrice}
                     onChange={val => updateVariant(v.id, 'sellingPrice', val)}
                     placeholder={d.phSellingPrice}
                     error={priceNotMultipleOf1000(v.sellingPrice) ? priceErrorMsg : undefined} />
-                  <InputField label={d.oldPriceLabel} badges={<MpBadges uz ym />}
+                  <InputField label={d.oldPriceLabel} badges={<MpBadges uz />}
                     type="number" value={v.oldPrice}
                     onChange={val => updateVariant(v.id, 'oldPrice', val)}
                     placeholder={d.phOldPrice}
@@ -2170,7 +1741,7 @@ export default function ProductCreateForm() {
                         onClick={() => {
                           const el = variantFileRefs.current[v.id] ?? document.getElementById(`variant-file-${v.id}`) as HTMLInputElement | null
                           if (!el) {
-                            setPushResult({ ok: false, message: lang === 'ru' ? 'Не удалось открыть выбор файла. Попробуйте вставить ссылку.' : 'Could not open file picker. Try pasting a URL.' })
+                            setUploadResult({ ok: false, message: lang === 'ru' ? 'Не удалось открыть выбор файла. Попробуйте вставить ссылку.' : 'Could not open file picker. Try pasting a URL.' })
                             return
                           }
                           el.click()
@@ -2221,10 +1792,10 @@ export default function ProductCreateForm() {
         </button>
       </SectionCard>
 
-      {/* ── Characteristics (Uzum + Yandex) ── */}
+      {/* ── Characteristics (manual, in the seller cabinet) ── */}
       <SectionCard
         title={d.characteristicsSection}
-        badge={<MpBadges uz ym />}
+        badge={<MpBadges uz />}
         defaultOpen={false}
       >
         <div
@@ -2242,110 +1813,6 @@ export default function ProductCreateForm() {
         </div>
       </SectionCard>
 
-      {/* ── Yandex Market Export / Push ── */}
-      <div
-        className="rounded-2xl border p-4 sm:p-5"
-        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
-      >
-        <div className="flex items-center gap-2 mb-3">
-          <h3 className="font-semibold text-[15px]" style={{ color: 'var(--text-base)' }}>
-            {d.addToYandex ?? 'Yandex Market'}
-          </h3>
-          <MpBadge mp="ym" />
-        </div>
-        <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-          {d.addToYandexHint ?? (lang === 'ru'
-            ? 'Товар будет создан напрямую в Yandex Market через API'
-            : lang === 'uz'
-            ? "Mahsulot Yandex Market ga API orqali to'g'ridan-to'g'ri qo'shiladi"
-            : 'Product will be created directly on Yandex Market via API')}
-        </p>
-
-        {!canExportYandex && (() => {
-          const missing: string[] = []
-          const add = (cond: string, label: string) => { if (!cond.trim()) missing.push(label) }
-          add(nameRu, lang === 'ru' ? 'Название RU' : lang === 'uz' ? 'Nomi RU' : 'Name RU')
-          add(nameUz, lang === 'ru' ? 'Название UZ' : lang === 'uz' ? 'Nomi UZ' : 'Name UZ')
-          add(sku, lang === 'ru' ? 'Артикул' : 'SKU')
-          if (!brand.trim() && !brandSkipped) missing.push(lang === 'ru' ? 'Бренд' : 'Brend')
-          add(yandexCatName, lang === 'ru' ? 'Категория Yandex' : lang === 'uz' ? 'Yandex kategoriyasi' : 'Yandex category')
-          add(descRu, lang === 'ru' ? 'Описание RU' : lang === 'uz' ? 'Tavsif RU' : 'Description RU')
-          add(descUz, lang === 'ru' ? 'Описание UZ' : lang === 'uz' ? 'Tavsif UZ' : 'Description UZ')
-          if (variants.length > 0) {
-            const noPhoto = variants.filter(v => !v.photoUrl.trim())
-            if (noPhoto.length > 0) {
-              const names = noPhoto.map(v => v.color || v.sku || '?').join(', ')
-              missing.push(`${lang === 'ru' ? 'Фото вариантов' : lang === 'uz' ? 'Variant rasmlari' : 'Variant photos'}: ${names}`)
-            }
-          } else {
-            add(photoUrls, lang === 'ru' ? 'Фото' : lang === 'uz' ? 'Rasm' : 'Photos')
-          }
-          add(sellingPrice, lang === 'ru' ? 'Цена' : lang === 'uz' ? 'Narx' : 'Price')
-          add(barcode, lang === 'ru' ? 'Штрихкод' : 'Shtrixkod')
-          add(weightG, lang === 'ru' ? 'Вес' : lang === 'uz' ? "Og'irlik" : 'Weight')
-          add(heightMm, lang === 'ru' ? 'Высота' : lang === 'uz' ? 'Balandlik' : 'Height')
-          add(widthMm, lang === 'ru' ? 'Ширина' : lang === 'uz' ? 'Kenglik' : 'Width')
-          add(lengthMm, lang === 'ru' ? 'Длина' : lang === 'uz' ? 'Uzunlik' : 'Length')
-          add(ikpu, 'IKPU')
-          return (
-            <div className="text-sm mb-4 px-3 py-2.5 rounded-xl border"
-              style={{ color: 'var(--text-muted)', borderColor: 'rgba(252,63,29,0.2)', background: 'rgba(252,63,29,0.04)' }}>
-              <p className="font-medium mb-1" style={{ color: '#FC3F1D' }}>
-                {lang === 'ru' ? 'Заполните поля:' : lang === 'uz' ? "Maydonlarni to'ldiring:" : 'Fill in fields:'}
-              </p>
-              <p className="text-xs">{missing.join(', ')}</p>
-            </div>
-          )
-        })()}
-
-        {pushResult && (
-          <div
-            className="flex items-center gap-2 text-sm mb-4 px-3 py-2 rounded-xl border"
-            style={{
-              borderColor: pushResult.ok ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)',
-              background: pushResult.ok ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
-              color: pushResult.ok ? 'rgb(34,197,94)' : 'rgb(239,68,68)',
-            }}
-          >
-            {pushResult.ok ? <Check className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
-            {pushResult.message}
-          </div>
-        )}
-
-        <div className="flex flex-col sm:flex-row flex-wrap gap-3">
-          <button
-            type="button"
-            disabled={!canExportYandex || pushing}
-            onClick={handleYandexPush}
-            className="inline-flex items-center justify-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-40"
-            style={{
-              background: canExportYandex && !pushing ? '#FC3F1D' : 'var(--bg-card2)',
-              color: canExportYandex && !pushing ? '#fff' : 'var(--text-muted)',
-            }}
-          >
-            <Send className="w-4 h-4" />
-            {pushing
-              ? (d.pushing ?? (lang === 'ru' ? 'Отправка...' : lang === 'uz' ? 'Yuborilmoqda...' : 'Pushing...'))
-              : (d.pushToYandex ?? (lang === 'ru' ? 'Добавить в Yandex' : lang === 'uz' ? "Yandex ga qo'shish" : 'Add to Yandex'))}
-          </button>
-
-          <button
-            type="button"
-            disabled={!canExportYandex || downloading !== null}
-            onClick={() => handleExport('yandex')}
-            className="inline-flex items-center justify-center gap-2 text-sm font-medium px-4 py-2 rounded-xl border transition-colors disabled:opacity-40"
-            style={{
-              borderColor: 'var(--border)',
-              color: canExportYandex ? 'var(--text-base)' : 'var(--text-muted)',
-              background: 'var(--bg-card2)',
-            }}
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            {downloading === 'yandex' ? d.downloading : (d.exportYandexAlt ?? (lang === 'ru' ? 'Скачать Excel' : lang === 'uz' ? 'Excel yuklab olish' : 'Download Excel'))}
-          </button>
-        </div>
-      </div>
-
       {/* ── Uzum Market Export ── */}
       <div
         className="rounded-2xl border p-4 sm:p-5"
@@ -2355,7 +1822,7 @@ export default function ProductCreateForm() {
           <h3 className="font-semibold text-[15px]" style={{ color: 'var(--text-base)' }}>
             {d.uzumExport ?? 'Uzum Market'}
           </h3>
-          <MpBadge mp="uz" />
+          <MpBadge />
         </div>
         <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
           {d.uzumExportHint ?? (lang === 'ru'
@@ -2407,10 +1874,24 @@ export default function ProductCreateForm() {
           )
         })()}
 
+        {uploadResult && (
+          <div
+            className="flex items-center gap-2 text-sm mb-4 px-3 py-2.5 rounded-xl border"
+            style={{
+              borderColor: uploadResult.ok ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)',
+              background: uploadResult.ok ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+              color: uploadResult.ok ? 'rgb(34,197,94)' : 'rgb(239,68,68)',
+            }}
+          >
+            {uploadResult.ok ? <Check className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+            {uploadResult.message}
+          </div>
+        )}
+
         <button
           type="button"
           disabled={!canExportUzum || downloading !== null}
-          onClick={() => handleExport('uzum')}
+          onClick={handleExport}
           className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-40"
           style={{
             background: canExportUzum ? '#7B68EE' : 'var(--bg-card2)',

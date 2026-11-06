@@ -6,13 +6,11 @@ import { notifT, type NotifLang } from '@/lib/notif-i18n'
 
 const MP_FLAG: Record<string, string> = {
   uzum:          'UZ',
-  yandex_market: 'YM',
 }
 
 interface ShopInfo {
   marketplace: string
   shop_id_external: string | null
-  business_id: string | null
 }
 type ShopInfoMap = Map<string, ShopInfo>
 
@@ -21,12 +19,6 @@ function orderLink(info: ShopInfo | undefined, extId: string | null): string {
   let url: string | null = null
   if (info?.marketplace === 'uzum') {
     url = `https://seller.uzum.uz/seller/orders/fbs/${extId}`
-  } else if (info?.marketplace === 'yandex_market') {
-    const biz = info.business_id
-    const campaign = info.shop_id_external
-    if (biz && campaign) {
-      url = `https://partner.market.yandex.ru/business/${biz}/orders?campaignId=${campaign}`
-    }
   }
   const label = `№${extId}`
   return url ? `<a href="${url}">${label}</a>` : label
@@ -56,7 +48,6 @@ export async function buildDigestForUser(
     id: shopsTable.id,
     marketplace: shopsTable.marketplace,
     shop_id_external: shopsTable.shop_id_external,
-    business_id: shopsTable.business_id,
   })
     .from(shopsTable)
     .where(eq(shopsTable.user_id, s.user_id))
@@ -66,7 +57,6 @@ export async function buildDigestForUser(
   const shopInfo: ShopInfoMap = new Map(shopRows.map(r => [r.id, {
     marketplace: r.marketplace,
     shop_id_external: r.shop_id_external,
-    business_id: r.business_id,
   }]))
 
   const parts: string[] = []

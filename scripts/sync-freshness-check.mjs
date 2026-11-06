@@ -183,7 +183,7 @@ async function main() {
     // ── Per-row physical_stock drift ────────────────────────────────────────
     // A cross-marketplace SKU group shares ONE physical pool, so every member's
     // physical_stock should agree. When one row sits BELOW its group's max, that
-    // row's pool has been corrupted (e.g. JMBLK uzum stuck at 1 vs yandex 2 after
+    // row's pool has been corrupted (e.g. JMBLK stuck at 1 on one listing vs 2 after
     // an Aug-26 cancellation the reconcile mis-adopted). The Stocks UI takes the
     // MAX, so it shows the healthy number and this rot is invisible to the seller
     // — hence a watchdog is the only place it surfaces.
