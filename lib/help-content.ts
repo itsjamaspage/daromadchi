@@ -32,7 +32,7 @@ const ARTICLES: Article[] = [
     content: `
 ## Xush kelibsiz!
 
-Daromadchi — Uzum Market va Yandex Market sotuvchilari uchun analitika platformasi. Quyidagi 4 qadam orqali ishni boshlashingiz mumkin.
+Daromadchi — Uzum Market sotuvchilari uchun analitika platformasi. Quyidagi 4 qadam orqali ishni boshlashingiz mumkin.
 
 ## 1-qadam: Hisob yaratish
 
@@ -45,7 +45,6 @@ Ro'yxatdan o'tish sahifasiga o'ting va email manzilingiz hamda parol bilan hisob
 Hisobingizga kirganingizdan so'ng **Sozlamalar** sahifasiga o'ting — u yerda har bir marketplace uchun alohida kartochka bor:
 
 - **Uzum Market** — *API Token*: seller.uzum.uz → Sozlamalar → API integratsiya
-- **Yandex Market** — *OAuth Token* va *Campaign ID* (faqat raqamlardan iborat)
 
 Tokenni kiritib "Saqlash" ni bosing. Bir nechta do'konni ulash mumkin — har biri alohida token bilan.
 
@@ -83,7 +82,7 @@ Sinxronizatsiya tugagach dashboard tayyor bo'ladi:
     content: `
 ## Sinxronizatsiya jarayoni
 
-Daromadchi ma'lumotlarni Uzum Market va Yandex Market API'lari orqali oladi. Platforma ikkita sinxronizatsiya rejimini qo'llab-quvvatlaydi.
+Daromadchi ma'lumotlarni Uzum Market API'si orqali oladi. Platforma ikkita sinxronizatsiya rejimini qo'llab-quvvatlaydi.
 
 ## Avtomatik sinxronizatsiya
 
@@ -105,7 +104,7 @@ Kutmaslik uchun **Sozlamalar** sahifasidagi do'kon kartochkasida **"Sinxronlash"
 | Narxlar va komissiya | Marketplace hisoblagan qiymatlar |
 | To'lovlar (settlements) | F&Z va "To'lovlar" sahifasi uchun |
 
-<info>Reklama statistikasi yuklanmaydi — Uzum va Yandex Market reklama API'lari hozircha ulanmagan.</info>
+<info>Reklama statistikasi yuklanmaydi — Uzum Market reklama API'si hozircha ulanmagan.</info>
 
 ## Sinxronizatsiya xatosi
 
@@ -272,7 +271,7 @@ Qaysi turdagi xabarlar kelishi **botning o'zida** sozlanadi — botga **/start**
     title: "Chrome kengaytmasi haqida",
     category: 'Chrome Kengaytmasi',
     categorySlug: 'chrome-kengaytmasi',
-    summary: "Uzum va Yandex Market sahifalarida birlik iqtisodiyotini hisoblab beruvchi kengaytma.",
+    summary: "Uzum Market sahifalarida birlik iqtisodiyotini hisoblab beruvchi kengaytma.",
     content: `
 ## Chrome kengaytmasi nima?
 
@@ -281,8 +280,6 @@ Daromadchi kengaytmasi — marketplace sahifasidan chiqmasdan **birlik iqtisodiy
 ## Qayerda ishlaydi
 
 - **uzum.uz** — Uzum Market mahsulot sahifalari
-- **market.yandex.ru / market.yandex.uz** — Yandex Market mahsulot sahifalari
-- **partner.market.yandex.ru** — Yandex Market hamkor kabineti
 - **daromadchi.uz** — hisobingiz bilan bog'lash uchun
 
 Boshqa saytlarda kengaytma umuman ishga tushmaydi.
@@ -324,7 +321,7 @@ Mahsulot sahifasida Daromadchi paneli ochilganda quyidagilar ko'rinadi.
 
 ## Model tanlash
 
-**FBO** yoki **FBS** tugmasi — xarajat modelini almashtiradi. Yandex sahifalarida shunga mos model ishlatiladi.
+**FBO** yoki **FBS** tugmasi — xarajat modelini almashtiradi.
 
 ## Siz kiritadigan qiymatlar
 
@@ -365,7 +362,7 @@ Panelda **reklama ko'rsatkichlari (DRR, CPC, CPO), kampaniyalar va raqobatchilar
     content: `
 ## 1. Chrome Web Store'dan o'rnatish
 
-Kengaytma «Daromadchi — Uzum & Yandex» nomi bilan Chrome Web Store'da joylashgan:
+Kengaytma Chrome Web Store'da joylashgan:
 
 https://chromewebstore.google.com/detail/daromadchi-%E2%80%94-uzum-yandex/kdgmhemligckdjibcojbdiofokjjnaed
 
@@ -388,14 +385,13 @@ Kengaytma belgisini bosing. Tizimga kirmagan bo'lsangiz, popup **«Kirish»** tu
 
 Kengaytma **Sozlamalar (Options)** sahifasida marketplace kalitlarini alohida saqlash mumkin:
 
-- **Yandex Market API kaliti** — Seller kabineti → Sozlamalar → API va modullar
 - **Uzum Seller API tokeni** — seller.uzum.uz → Profil → API kalitlari
 
 Har bir maydon yonida **«Tekshirish»** tugmasi bor — kalit ishlayotganini darhol sinab ko'radi.
 
 ## 5. Tekshirib ko'ring
 
-uzum.uz yoki market.yandex.ru saytida biror mahsulot sahifasini oching. Daromadchi paneli ochilishi kerak. Panel yopilgan bo'lsa, chetdagi **«D»** tugmasi orqali qayta ochiladi.
+uzum.uz saytida biror mahsulot sahifasini oching. Daromadchi paneli ochilishi kerak. Panel yopilgan bo'lsa, chetdagi **«D»** tugmasi orqali qayta ochiladi.
 
 ## Muammo bo'lsa
 
@@ -460,7 +456,7 @@ Qurilmani masofadan uzish imkoni yo'q. O'sha qurilmada:
     content: `
 ## Muhim: Daromadchi reklama kabinetiga ulanmaydi
 
-Daromadchi'da reklama kampaniyalari jadvali **yo'q**, va reklama statistikasi API orqali yuklanmaydi. Uzum Market ham, Yandex Market ham reklama ma'lumotlarini beruvchi API'ni hozircha ochmagan — **Sozlamalar** sahifasidagi "Reklamani sinxronlash" tugmasi ham aynan shu haqda xabar beradi.
+Daromadchi'da reklama kampaniyalari jadvali **yo'q**, va reklama statistikasi API orqali yuklanmaydi. Uzum Market reklama ma'lumotlarini beruvchi API'ni hozircha ochmagan — **Sozlamalar** sahifasidagi "Reklamani sinxronlash" tugmasi ham aynan shu haqda xabar beradi.
 
 Kampaniyalar, kliklar va kunlik sarfni **marketplace kabinetida** ko'rasiz. Bu maqola esa o'sha raqamlarni qanday o'qish va Daromadchi'dagi foyda hisobiga qanday qo'shishni tushuntiradi.
 
@@ -644,7 +640,7 @@ Har hafta:
 
 Bayram kunlari va mavsumiy aksiyalarda savdo ko'tariladi — byudjetni oshirishdan oldin qoldiq yetarli ekanini tekshiring.
 
-<info>Reklama byudjetini seller.uzum.uz yoki Yandex Market kabinetining reklama bo'limida o'zgartiring.</info>
+<info>Reklama byudjetini seller.uzum.uz kabinetining reklama bo'limida o'zgartiring.</info>
 `,
   },
 
@@ -684,12 +680,7 @@ Buyurtma va qoldiq qaysi ombordan kelayotgani belgilar bilan ko'rsatiladi:
 - **FBO** — tovar Uzum omborida, yig'ish va yetkazish Uzum zimmasida
 - **FBS** — tovar sizning omboringizda, buyurtma kelganda o'zingiz yig'asiz
 
-**Yandex Market**
-- **FBY** — tovar Yandex omborida, hammasini Yandex qiladi
-- **FBS** — sizning omboringiz, Yandex logistikasi (Ekspress ham shu turga kiradi)
-- **DBS** — saqlash ham, yetkazish ham sizda
-
-<info>«Yig'ing va jo'nating» xabari faqat sotuvchi o'zi yig'adigan modellarda (FBS, DBS) yuboriladi — FBO va FBY buyurtmalarida sizdan hech narsa talab qilinmaydi.</info>
+<info>«Yig'ing va jo'nating» xabari faqat sotuvchi o'zi yig'adigan modelda (FBS) yuboriladi — FBO buyurtmalarida sizdan hech narsa talab qilinmaydi.</info>
 
 ## Bir tovar — bir nechta listing
 
@@ -749,7 +740,7 @@ Ogohlantirishlar ro'yxatini jadval fayli sifatida yuklab olish mumkin.
     title: "FBO, FBS va rFBS farqlari",
     category: 'Qoldiqlar',
     categorySlug: 'qoldiqlar',
-    summary: "Uzum FBO/FBS va Yandex FBY/FBS/DBS: kim yig'adi va bu nimaga ta'sir qiladi.",
+    summary: "Uzum FBO/FBS: kim yig'adi va bu nimaga ta'sir qiladi.",
     content: `
 ## Ombor modellari
 
@@ -770,20 +761,9 @@ Tovar **sizning omboringizda**. Buyurtma kelganda o'zingiz yig'ib topshirasiz.
 - Saqlash to'liq nazoratingizda
 - Har bir buyurtma uchun harakat talab qilinadi
 
-## Yandex Market
-
-### FBY
-Tovar **Yandex omborida** — Yandex yig'adi va yetkazadi. Sizdan hech narsa talab qilinmaydi.
-
-### FBS
-Tovar sizning omboringizda, yetkazib berish Yandex logistikasi orqali. **Ekspress** buyurtmalar ham shu turga kiradi — alohida model emas.
-
-### DBS (Delivery by Seller)
-Saqlash ham, yetkazib berish ham sizda.
-
 ## Nima uchun bu muhim
 
-Telegram'dagi **«yig'ing va jo'nating»** xabari faqat sotuvchi o'zi yig'adigan modellarda yuboriladi: Uzum FBS, Yandex FBS va DBS. FBO va FBY buyurtmalarida sizdan hech narsa talab qilinmaydi — shuning uchun bunday buyurtma harakat so'rovi sifatida yuborilmaydi.
+Telegram'dagi **«yig'ing va jo'nating»** xabari faqat sotuvchi o'zi yig'adigan modelda yuboriladi: Uzum FBS. FBO buyurtmalarida sizdan hech narsa talab qilinmaydi — shuning uchun bunday buyurtma harakat so'rovi sifatida yuborilmaydi.
 
 ## Daromadchi'da ko'rish
 
@@ -1006,7 +986,6 @@ Qaytarish foizini kalkulyatorga kiritasiz. Haqiqiy foizni **Mahsulot tahlili** j
 ## Tariflarni qayerdan olish
 
 - **Uzum Market**: seller.uzum.uz kabinetidagi tariflar bo'limi
-- **Yandex Market**: hamkor kabinetidagi tariflar bo'limi
 
 <warning>Tariflar o'zgarib turadi va hududga bog'liq. Daromadchi ularni avtomatik yangilamaydi — kiritgan qiymatingizni vaqti-vaqti bilan tekshiring.</warning>
 `,
@@ -1192,7 +1171,7 @@ Har bir qator — mahsulot. Variantlari (rang, o'lcham) bor tovar bitta ota-qato
 | **Marja** | Foydaning tushumdagi ulushi (%) |
 | **ABC** | A / B / C sinfi |
 
-<info>Bu ustunlarning barchasi ikkala marketplace uchun ham hisoblanadi. Faqat bitta marketplace bera oladigan ko'rsatkichlar jadvalga qo'shilmagan — aks holda Yandex qatorlari doim bo'sh turgan bo'lardi.</info>
+<info>Marketplace bera olmaydigan ko'rsatkichlar jadvalga qo'shilmagan — aks holda ustunlar doim bo'sh turgan bo'lardi.</info>
 
 ## Jadval sozlamalari
 
@@ -1244,7 +1223,7 @@ Mijozlar qaysi so'zlarni yozib mahsulotingizga kelishini bilish SEO va reklama u
 - Buyurtmalar
 - Sarf
 
-<warning>Hozircha bu sahifa bo'sh turadi. Qidiruv iboralari ma'lumotlari marketplace'ning reklama/qidiruv API'sidan keladi, u esa hali ulanmagan — Uzum Market ham, Yandex Market ham bu ma'lumotni ochmagan. API ochilganda sahifa avtomatik to'ladi.</warning>
+<warning>Hozircha bu sahifa bo'sh turadi. Qidiruv iboralari ma'lumotlari marketplace'ning reklama/qidiruv API'sidan keladi, u esa hali ulanmagan — Uzum Market bu ma'lumotni ochmagan. API ochilganda sahifa avtomatik to'ladi.</warning>
 
 ## Shu vaqtgacha nima qilish mumkin
 
@@ -1305,7 +1284,7 @@ Doimiy bepul:
 - Dashboard (tushum va foyda bilan)
 - Mahsulotlar
 - Buyurtmalar va ular bo'yicha bildirishnomalar (yangi buyurtma, bekor qilish, kam qoldiq)
-- **Uzum va Yandex Market** — ikkalasi ham, har qanday tarifda
+- **Uzum Market** — har qanday tarifda
 - Chrome kengaytmasi
 
 Sinov davri tugagach yopiladigan bo'limlar:
@@ -1425,7 +1404,7 @@ Sinov davrida pullik bo'limlar ham ochiq bo'ladi:
 - Dashboard (tushum va foyda bilan)
 - Mahsulotlar
 - Buyurtmalar va bildirishnomalar (yangi buyurtma, bekor qilish, kam qoldiq)
-- **Uzum va Yandex Market** — ikkalasi ham
+- **Uzum Market**
 - Chrome kengaytmasi
 
 ## Karta talab qilinmaydi
@@ -1496,7 +1475,7 @@ Do'kon tokenlari va yozish rejimi — **Sozlamalar** sahifasida. Batafsil: «API
     title: "API token qo'shish va boshqarish",
     category: 'Hisob Sozlamalari',
     categorySlug: 'hisob-sozlamalari',
-    summary: "Uzum va Yandex Market tokenlarini qo'shish, yangilash va yozish rejimini boshqarish.",
+    summary: "Uzum Market tokenini qo'shish, yangilash va yozish rejimini boshqarish.",
     content: `
 ## API token nima?
 
@@ -1515,23 +1494,13 @@ Yangi ulangan do'kon **«Faqat o'qish»** rejimida ishlaydi. Bu rejimda Daromadc
 
 <warning>Token faqat bir marta ko'rsatiladi. Darhol nusxalab saqlang.</warning>
 
-## Yandex Market tokeni
-
-Yandex Market uchun ikkita qiymat kerak:
-
-- **OAuth Token** — Yandex Market Partner API tokeni
-- **Campaign ID** — kampaniya raqami, faqat raqamlardan iborat
-
-Campaign ID noto'g'ri bo'lsa (email yoki havola kiritilsa), saqlashda darhol xato ko'rsatiladi.
-
 ## Daromadchi'ga kiritish
 
-**Sozlamalar** sahifasida kerakli marketplace kartochkasini toping:
+**Sozlamalar** sahifasidagi Uzum Market kartochkasini toping:
 
 1. Token maydoniga tokenni joylashtiring
-2. Yandex uchun Campaign ID ni ham kiriting
-3. **Saqlash** tugmasini bosing
-4. **Sinxronlash** tugmasi bilan birinchi yuklashni boshlang
+2. **Saqlash** tugmasini bosing
+3. **Sinxronlash** tugmasi bilan birinchi yuklashni boshlang
 
 Kartochkada do'kon holati («Ulangan» / «Ulanmagan») va oxirgi sinxronizatsiya vaqti ko'rinadi.
 
@@ -1557,7 +1526,7 @@ Uzum uchun bu rejim tokendan **SKU_UPDATE** huquqini talab qiladi.
 
 ## Bir nechta do'kon
 
-Uzum va Yandex Market kartochkalari alohida — ikkalasini bir vaqtda ulash mumkin. Dashboard'dagi marketplace tugmalari orqali ma'lumotni alohida ko'rasiz.
+Har bir do'kon kartochkasi alohida. Dashboard'dagi marketplace tugmalari orqali ma'lumotni alohida ko'rasiz.
 `,
   },
   {
@@ -1573,7 +1542,7 @@ Uzum va Yandex Market kartochkalari alohida — ikkalasini bir vaqtda ulash mumk
 
 ## Hozircha qanday ishlaydi
 
-Bitta Daromadchi hisobi — bitta foydalanuvchi. Bir hisobga bir nechta **do'kon** ulash mumkin (Uzum va Yandex Market, har biri alohida token bilan), lekin hisobning o'zi bitta kirish ma'lumotiga ega.
+Bitta Daromadchi hisobi — bitta foydalanuvchi. Bir hisobga bir nechta **do'kon** ulash mumkin (har biri alohida token bilan), lekin hisobning o'zi bitta kirish ma'lumotiga ega.
 
 ## Hamkasbga ma'lumot ko'rsatish kerak bo'lsa
 
@@ -1695,7 +1664,7 @@ const ARTICLE_TITLES: Record<string, Record<string, { title: string; summary: st
   'fikr-va-xato':           { ru: { title: 'Отправить отзыв или сообщить об ошибке', summary: 'Нашли ошибку или есть предложение? Как сообщить нам.' },                   en: { title: 'Submit feedback or report a bug',        summary: 'Found a bug or have a suggestion? How to reach us.' } },
   'bildirishnomalar':       { ru: { title: 'Типы уведомлений и настройки',            summary: 'Заказы, отмены, остатки и отчёты — и где всё это настраивается.' },        en: { title: 'Notification types and settings',        summary: 'Orders, cancellations, stock and reports — and where to configure them.' } },
   'telegram-ulash':         { ru: { title: 'Подключение Telegram-бота',               summary: 'Получайте уведомления Daromadchi через Telegram.' },                      en: { title: 'Connect Telegram bot',                   summary: 'Receive Daromadchi notifications via Telegram.' } },
-  'chrome-kengaytma':       { ru: { title: 'О расширении Chrome',                     summary: 'Расширение, считающее юнит-экономику на страницах Uzum и Yandex Market.' }, en: { title: 'About the Chrome extension',             summary: 'Extension that computes unit economics on Uzum and Yandex Market pages.' } },
+  'chrome-kengaytma':       { ru: { title: 'О расширении Chrome',                     summary: 'Расширение, считающее юнит-экономику на страницах Uzum Market.' }, en: { title: 'About the Chrome extension',             summary: 'Extension that computes unit economics on Uzum Market pages.' } },
   'vidzhet-nima-korsatadi': { ru: { title: 'Что показывает виджет',                   summary: 'Что означает каждая строка панели на странице товара.' },                  en: { title: 'What the widget shows',                  summary: 'What every line of the product-page panel means.' } },
   'vidzhet-ornatish':       { ru: { title: 'Установка расширения',                    summary: 'Руководство по установке и настройке расширения Chrome.' },               en: { title: 'Install the extension',                  summary: 'Guide to installing and configuring the Chrome extension.' } },
   'qurilmalar-boshqaruvi':  { ru: { title: 'Управление устройствами',                 summary: 'Расширение на нескольких компьютерах: что в аккаунте, а что в браузере.' }, en: { title: 'Device management',                      summary: 'The extension across computers: what lives in the account, what in the browser.' } },
@@ -1705,7 +1674,7 @@ const ARTICLE_TITLES: Record<string, Record<string, { title: string; summary: st
   'kampaniya-byudjeti':     { ru: { title: 'Управление рекламным бюджетом',           summary: 'Расчёт бюджета через прибыль и CPO. Сам бюджет задаётся в кабинете.' },  en: { title: 'Managing your ad budget',                summary: 'Deriving the budget from profit and CPO. The budget itself lives in the cabinet.' } },
   'qoldiq-boshqaruvi':      { ru: { title: 'Управление остатками',                    summary: 'Остатки товаров на складе, уровни запасов и система оповещений.' },      en: { title: 'Stock management',                       summary: 'Warehouse stock levels and alert system.' } },
   'qoldiq-ogohlantirish':   { ru: { title: 'Оповещения об остатках',                  summary: 'Настройка оповещений о низких остатках и получение их в Telegram.' },    en: { title: 'Stock alerts',                           summary: 'Setting up low-stock alerts and receiving them in Telegram.' } },
-  'fbo-fbs-rfbs':           { ru: { title: 'Разница между FBO, FBS и rFBS',           summary: 'Uzum FBO/FBS и Yandex FBY/FBS/DBS: кто собирает и на что это влияет.' }, en: { title: 'FBO, FBS and rFBS differences',          summary: 'Uzum FBO/FBS and Yandex FBY/FBS/DBS: who packs, and why it matters.' } },
+  'fbo-fbs-rfbs':           { ru: { title: 'Разница между FBO, FBS и rFBS',           summary: 'Uzum FBO/FBS: кто собирает и на что это влияет.' }, en: { title: 'FBO, FBS and rFBS differences',          summary: 'Uzum FBO/FBS: who packs, and why it matters.' } },
   'tovar-aylanmasi':        { ru: { title: 'Оборачиваемость товаров и прогноз заказа',summary: 'Скорость оборота остатков и расчёт времени следующего заказа.' },        en: { title: 'Stock turnover and order forecast',      summary: 'Stock rotation speed and calculating when to reorder.' } },
   'birlik-iqtisodiyoti':    { ru: { title: 'Юнит-экономика',                           summary: 'Расчёт чистой прибыли, маржи и точки безубыточности для каждого товара.' }, en: { title: 'Unit economics',                      summary: 'Calculate net profit, margin and break-even for each product.' } },
   'zararsizlik-narxi':     { ru: { title: 'Расчёт точки безубыточности',             summary: 'Как определить минимальную прибыльную цену продажи.' },                   en: { title: 'Break-even price calculation',           summary: 'How to find the minimum profitable selling price.' } },
@@ -1721,7 +1690,7 @@ const ARTICLE_TITLES: Record<string, Record<string, { title: string; summary: st
   'tarifni-ozgartirish':   { ru: { title: 'Смена или отмена тарифа',               summary: 'Обновление, понижение или отмена подписки.' },                             en: { title: 'Change or cancel plan',                  summary: 'Upgrading, downgrading or cancelling your subscription.' } },
   'bepul-sinov':           { ru: { title: 'Бесплатный пробный период',             summary: `Как воспользоваться бесплатным пробным периодом на ${TRIAL_RU}.` },             en: { title: 'Free trial period',                      summary: `How to use the ${TRIAL_EN} free trial.` } },
   'hisob-sozlamalari':     { ru: { title: 'Настройки аккаунта и профиля',          summary: 'Обновление данных профиля, пароля и настроек безопасности.' },             en: { title: 'Account and profile settings',           summary: 'Updating profile details, password, and security settings.' } },
-  'api-token-sozlash':     { ru: { title: 'Добавление и управление API-токеном',   summary: 'Токены Uzum и Yandex Market, их обновление и режим записи.' },             en: { title: 'Add and manage API token',               summary: 'Uzum and Yandex Market tokens, refreshing them, and write mode.' } },
+  'api-token-sozlash':     { ru: { title: 'Добавление и управление API-токеном',   summary: 'Токен Uzum Market, его обновление и режим записи.' },             en: { title: 'Add and manage API token',               summary: 'The Uzum Market token, refreshing it, and write mode.' } },
   'jamoa-boshqaruvi':      { ru: { title: 'Управление командой',                   summary: 'Раздел в разработке. Как пока делиться данными с коллегой.' },             en: { title: 'Team management',                        summary: 'Section still in development. How to share data meanwhile.' } },
   'hisobni-ochirish':      { ru: { title: 'Удаление аккаунта',                     summary: 'Полное удаление аккаунта Daromadchi и очистка данных.' },                  en: { title: 'Delete account',                         summary: 'Permanently deleting your Daromadchi account and data.' } },
   'xavfsizlik':            { ru: { title: 'Безопасность аккаунта',                 summary: 'Настройки безопасности для защиты вашего аккаунта.' },                     en: { title: 'Account security',                       summary: 'Security settings to protect your account.' } },
@@ -1767,7 +1736,7 @@ const ARTICLE_CONTENT_RU: Record<string, string> = {
   'tez-boshlash': `
 ## Добро пожаловать!
 
-Daromadchi — аналитическая платформа для продавцов Uzum Market и Yandex Market. Начните работу за 4 шага.
+Daromadchi — аналитическая платформа для продавцов Uzum Market. Начните работу за 4 шага.
 
 ## Шаг 1: Создать аккаунт
 
@@ -1780,7 +1749,6 @@ Daromadchi — аналитическая платформа для продав
 После входа откройте страницу **Настройки** — там есть отдельная карточка для каждого маркетплейса:
 
 - **Uzum Market** — *API Token*: seller.uzum.uz → Настройки → API-интеграция
-- **Yandex Market** — *OAuth Token* и *Campaign ID* (только цифры)
 
 Введите токен и нажмите «Сохранить». Можно подключить несколько магазинов — у каждого свой токен.
 
@@ -1811,7 +1779,7 @@ Daromadchi — аналитическая платформа для продав
   'malumotlar-sinxronizatsiyasi': `
 ## Процесс синхронизации
 
-Daromadchi получает данные через API Uzum Market и Yandex Market. Платформа поддерживает два режима синхронизации.
+Daromadchi получает данные через API Uzum Market. Платформа поддерживает два режима синхронизации.
 
 ## Автоматическая синхронизация
 
@@ -1833,7 +1801,7 @@ Daromadchi получает данные через API Uzum Market и Yandex Ma
 | Цены и комиссии | Значения, рассчитанные маркетплейсом |
 | Выплаты (settlements) | Для P&L и страницы «Выплаты» |
 
-<info>Рекламная статистика не загружается — рекламные API Uzum и Yandex Market пока не подключены.</info>
+<info>Рекламная статистика не загружается — рекламный API Uzum Market пока не подключён.</info>
 
 ## Ошибка синхронизации
 
@@ -1973,8 +1941,6 @@ Daromadchi подготовит вашу персональную ссылку.
 ## Где работает
 
 - **uzum.uz** — страницы товаров Uzum Market
-- **market.yandex.ru / market.yandex.uz** — страницы товаров Yandex Market
-- **partner.market.yandex.ru** — кабинет партнёра Yandex Market
 - **daromadchi.uz** — для связи с вашим аккаунтом
 
 На других сайтах расширение вообще не запускается.
@@ -2009,7 +1975,7 @@ Chrome и браузеры на Chromium: Edge, Brave, Opera.
 
 ## Выбор модели
 
-Кнопки **FBO** или **FBS** переключают модель расходов. На страницах Yandex используется соответствующая модель.
+Кнопки **FBO** или **FBS** переключают модель расходов.
 
 ## Что вводите вы
 
@@ -2043,7 +2009,7 @@ Chrome и браузеры на Chromium: Edge, Brave, Opera.
   'vidzhet-ornatish': `
 ## 1. Установка из Chrome Web Store
 
-Расширение опубликовано в Chrome Web Store под названием «Daromadchi — Uzum & Yandex»:
+Расширение опубликовано в Chrome Web Store:
 
 https://chromewebstore.google.com/detail/daromadchi-%E2%80%94-uzum-yandex/kdgmhemligckdjibcojbdiofokjjnaed
 
@@ -2066,14 +2032,13 @@ https://chromewebstore.google.com/detail/daromadchi-%E2%80%94-uzum-yandex/kdgmhe
 
 На странице **Настроек (Options)** расширения можно отдельно сохранить ключи маркетплейсов:
 
-- **API-ключ Yandex Market** — кабинет продавца → Настройки → API и модули
 - **Токен Uzum Seller API** — seller.uzum.uz → Профиль → API-ключи
 
 Рядом с каждым полем есть кнопка **«Проверить»** — она сразу проверяет ключ.
 
 ## 5. Проверьте
 
-Откройте страницу любого товара на uzum.uz или market.yandex.ru. Панель Daromadchi должна появиться. Если она закрыта, её возвращает кнопка **«D»** сбоку.
+Откройте страницу любого товара на uzum.uz. Панель Daromadchi должна появиться. Если она закрыта, её возвращает кнопка **«D»** сбоку.
 
 ## Если что-то не так
 
@@ -2120,7 +2085,7 @@ https://chromewebstore.google.com/detail/daromadchi-%E2%80%94-uzum-yandex/kdgmhe
   'reklama-tahlili': `
 ## Важно: Daromadchi не подключается к рекламному кабинету
 
-В Daromadchi **нет** таблицы рекламных кампаний, и рекламная статистика не загружается по API. Ни Uzum Market, ни Yandex Market пока не открыли API с рекламными данными — кнопка «Синхронизировать рекламу» на странице **Настройки** сообщает ровно об этом.
+В Daromadchi **нет** таблицы рекламных кампаний, и рекламная статистика не загружается по API. Uzum Market пока не открыл API с рекламными данными — кнопка «Синхронизировать рекламу» на странице **Настройки** сообщает ровно об этом.
 
 Кампании, клики и дневной расход вы смотрите **в кабинете маркетплейса**. Эта статья объясняет, как читать те цифры и как учесть их в расчёте прибыли в Daromadchi.
 
@@ -2283,7 +2248,7 @@ https://chromewebstore.google.com/detail/daromadchi-%E2%80%94-uzum-yandex/kdgmhe
 
 В праздники и во время акций продажи растут — прежде чем поднимать бюджет, убедитесь, что остатков хватит.
 
-<info>Меняйте рекламный бюджет в разделе рекламы кабинета seller.uzum.uz или Yandex Market.</info>
+<info>Меняйте рекламный бюджет в разделе рекламы кабинета seller.uzum.uz.</info>
 `,
   'qoldiq-boshqaruvi': `
 ## Управление остатками
@@ -2312,12 +2277,7 @@ Daromadchi следит за остатками с учётом скорости
 - **FBO** — товар на складе Uzum, сборка и доставка на стороне Uzum
 - **FBS** — товар на вашем складе, вы собираете заказ сами
 
-**Yandex Market**
-- **FBY** — товар на складе Yandex, всё делает Yandex
-- **FBS** — ваш склад, логистика Yandex (Экспресс тоже относится сюда)
-- **DBS** — и хранение, и доставка на вас
-
-<info>Сообщение «соберите и отправьте» приходит только по моделям, где собирает продавец (FBS, DBS) — по заказам FBO и FBY от вас ничего не требуется.</info>
+<info>Сообщение «соберите и отправьте» приходит только по модели, где собирает продавец (FBS) — по заказам FBO от вас ничего не требуется.</info>
 
 ## Один товар — несколько листингов
 
@@ -2384,20 +2344,9 @@ Daromadchi следит за остатками с учётом скорости
 - Хранение полностью под вашим контролем
 - Каждый заказ требует действия
 
-## Yandex Market
-
-### FBY
-Товар **на складе Yandex** — Yandex собирает и доставляет. От вас ничего не требуется.
-
-### FBS
-Товар на вашем складе, доставка логистикой Yandex. **Экспресс**-заказы относятся сюда же — это не отдельная модель.
-
-### DBS (Delivery by Seller)
-И хранение, и доставка на вас.
-
 ## Почему это важно
 
-Сообщение **«соберите и отправьте»** в Telegram приходит только по моделям, где собирает продавец: Uzum FBS, Yandex FBS и DBS. По заказам FBO и FBY от вас ничего не требуется — поэтому такой заказ не присылается как требование действия.
+Сообщение **«соберите и отправьте»** в Telegram приходит только по модели, где собирает продавец: Uzum FBS. По заказам FBO от вас ничего не требуется — поэтому такой заказ не присылается как требование действия.
 
 ## Где смотреть в Daromadchi
 
@@ -2583,7 +2532,6 @@ Daromadchi следит за остатками с учётом скорости
 ## Где взять тарифы
 
 - **Uzum Market**: раздел тарифов в кабинете seller.uzum.uz
-- **Yandex Market**: раздел тарифов в кабинете партнёра
 
 <warning>Тарифы меняются и зависят от региона. Daromadchi не обновляет их автоматически — периодически сверяйте введённое значение.</warning>
 `,
@@ -2737,7 +2685,7 @@ Daromadchi разбивает продажи по категориям.
 | **Маржа** | Доля прибыли в выручке (%) |
 | **ABC** | Класс A / B / C |
 
-<info>Все эти столбцы считаются для обоих маркетплейсов. Показатели, которые может дать только один из них, в таблицу не включены — иначе строки Yandex всегда были бы пустыми.</info>
+<info>Показатели, которых маркетплейс не отдаёт, в таблицу не включены — иначе столбцы всегда были бы пустыми.</info>
 
 ## Настройки таблицы
 
@@ -2782,7 +2730,7 @@ Daromadchi разбивает продажи по категориям.
 - Заказы
 - Расход
 
-<warning>Пока эта страница пустая. Данные по поисковым фразам приходят из рекламного/поискового API маркетплейса, а он ещё не подключён — ни Uzum Market, ни Yandex Market эти данные не отдают. Как только API откроется, страница заполнится автоматически.</warning>
+<warning>Пока эта страница пустая. Данные по поисковым фразам приходят из рекламного/поискового API маркетплейса, а он ещё не подключён — Uzum Market эти данные не отдаёт. Как только API откроется, страница заполнится автоматически.</warning>
 
 ## Что можно делать до этого
 
@@ -2832,7 +2780,7 @@ Daromadchi разбивает продажи по категориям.
 - Дашборд (с выручкой и прибылью)
 - Товары
 - Заказы и уведомления по ним (новый заказ, отмена, низкий остаток)
-- **Uzum и Yandex Market** — оба, на любом тарифе
+- **Uzum Market** — на любом тарифе
 - Расширение Chrome
 
 Разделы, которые закрываются после пробного периода:
@@ -2931,7 +2879,7 @@ Daromadchi принимает оплату **банковской картой**
 - Дашборд (с выручкой и прибылью)
 - Товары
 - Заказы и уведомления (новый заказ, отмена, низкий остаток)
-- **Uzum и Yandex Market** — оба
+- **Uzum Market**
 - Расширение Chrome
 
 ## Карта не нужна
@@ -3003,23 +2951,13 @@ API-токен — ключ, который разрешает Daromadchi **чи
 
 <warning>Токен показывается один раз. Скопируйте и сохраните его сразу.</warning>
 
-## Токен Yandex Market
-
-Для Yandex Market нужны два значения:
-
-- **OAuth Token** — токен Yandex Market Partner API
-- **Campaign ID** — номер кампании, только цифры
-
-Если Campaign ID указан неверно (введён email или ссылка), при сохранении сразу появится ошибка.
-
 ## Ввод в Daromadchi
 
-На странице **Настройки** найдите карточку нужного маркетплейса:
+На странице **Настройки** найдите карточку Uzum Market:
 
 1. Вставьте токен в поле
-2. Для Yandex введите ещё и Campaign ID
-3. Нажмите **Сохранить**
-4. Запустите первую загрузку кнопкой **Синхронизировать**
+2. Нажмите **Сохранить**
+3. Запустите первую загрузку кнопкой **Синхронизировать**
 
 На карточке видны состояние магазина («Подключён» / «Не подключён») и время последней синхронизации.
 
@@ -3045,7 +2983,7 @@ API-токен — ключ, который разрешает Daromadchi **чи
 
 ## Несколько магазинов
 
-Карточки Uzum и Yandex Market независимы — можно подключить обе сразу. Кнопки маркетплейсов на дашборде позволяют смотреть данные по отдельности.
+Карточка каждого магазина независима. Кнопки маркетплейсов на дашборде позволяют смотреть данные по отдельности.
 `,
   'jamoa-boshqaruvi': `
 ## Управление командой — скоро
@@ -3054,7 +2992,7 @@ API-токен — ключ, который разрешает Daromadchi **чи
 
 ## Как это работает сейчас
 
-Один аккаунт Daromadchi — один пользователь. К одному аккаунту можно подключить несколько **магазинов** (Uzum и Yandex Market, у каждого свой токен), но сам аккаунт имеет один вход.
+Один аккаунт Daromadchi — один пользователь. К одному аккаунту можно подключить несколько **магазинов** (у каждого свой токен), но сам аккаунт имеет один вход.
 
 ## Если нужно показать данные коллеге
 
@@ -3147,7 +3085,7 @@ const ARTICLE_CONTENT_EN: Record<string, string> = {
   'tez-boshlash': `
 ## Welcome!
 
-Daromadchi is an analytics platform for Uzum Market and Yandex Market sellers. Get started in 4 steps.
+Daromadchi is an analytics platform for Uzum Market sellers. Get started in 4 steps.
 
 ## Step 1: Create an account
 
@@ -3160,7 +3098,6 @@ Go to the sign-up page and create an account with your email and a password. A c
 After signing in, open the **Settings** page — it has a separate card for each marketplace:
 
 - **Uzum Market** — *API Token*: seller.uzum.uz → Settings → API integration
-- **Yandex Market** — *OAuth Token* and *Campaign ID* (digits only)
 
 Paste the token and press "Save". You can connect several stores — each with its own token.
 
@@ -3191,7 +3128,7 @@ After the sync your dashboard is ready:
   'malumotlar-sinxronizatsiyasi': `
 ## How syncing works
 
-Daromadchi pulls data through the Uzum Market and Yandex Market APIs. The platform supports two sync modes.
+Daromadchi pulls data through the Uzum Market API. The platform supports two sync modes.
 
 ## Automatic sync
 
@@ -3213,7 +3150,7 @@ To avoid waiting, press **"Sync"** on the store card on the **Settings** page.
 | Prices and commission | As calculated by the marketplace |
 | Settlements | Powers the P&L and Payouts pages |
 
-<info>Ad statistics are not imported — the Uzum and Yandex Market advertising APIs are not connected yet.</info>
+<info>Ad statistics are not imported — the Uzum Market advertising API is not connected yet.</info>
 
 ## Sync errors
 
@@ -3353,8 +3290,6 @@ The Daromadchi extension works out **unit economics** without taking you off the
 ## Where it runs
 
 - **uzum.uz** — Uzum Market product pages
-- **market.yandex.ru / market.yandex.uz** — Yandex Market product pages
-- **partner.market.yandex.ru** — the Yandex Market partner cabinet
 - **daromadchi.uz** — to link it to your account
 
 On any other site the extension does not run at all.
@@ -3389,7 +3324,7 @@ Here is what you see when the Daromadchi panel is open on a product page.
 
 ## Model selector
 
-The **FBO** or **FBS** buttons switch the cost model. On Yandex pages the matching model is used.
+The **FBO** or **FBS** buttons switch the cost model.
 
 ## What you enter
 
@@ -3423,7 +3358,7 @@ There are **no ad metrics (DRR, CPC, CPO), no campaigns and no competitor prices
   'vidzhet-ornatish': `
 ## 1. Install from the Chrome Web Store
 
-The extension is published as "Daromadchi — Uzum & Yandex":
+The extension is published on the Chrome Web Store:
 
 https://chromewebstore.google.com/detail/daromadchi-%E2%80%94-uzum-yandex/kdgmhemligckdjibcojbdiofokjjnaed
 
@@ -3446,14 +3381,13 @@ Click the extension icon. If you are not signed in, the popup shows a **"Sign in
 
 The extension's **Options** page can store marketplace keys separately:
 
-- **Yandex Market API key** — Seller cabinet → Settings → API and modules
 - **Uzum Seller API token** — seller.uzum.uz → Profile → API keys
 
 Each field has a **"Check"** button that tests the key right away.
 
 ## 5. Verify
 
-Open any product page on uzum.uz or market.yandex.ru. The Daromadchi panel should appear. If it is closed, the **"D"** button on the edge brings it back.
+Open any product page on uzum.uz. The Daromadchi panel should appear. If it is closed, the **"D"** button on the edge brings it back.
 
 ## Troubleshooting
 
@@ -3500,7 +3434,7 @@ There is no way to disconnect a device remotely. On the device itself:
   'reklama-tahlili': `
 ## Important: Daromadchi does not connect to your ad account
 
-Daromadchi has **no** ad-campaign table, and ad statistics are not imported over the API. Neither Uzum Market nor Yandex Market has opened an advertising API yet — the "Sync ads" button on the **Settings** page says exactly that.
+Daromadchi has **no** ad-campaign table, and ad statistics are not imported over the API. Uzum Market has not opened an advertising API yet — the "Sync ads" button on the **Settings** page says exactly that.
 
 Campaigns, clicks and daily spend live **in your marketplace cabinet**. This article explains how to read those numbers and how to fold them into your profit maths in Daromadchi.
 
@@ -3663,7 +3597,7 @@ Once a week:
 
 Holidays and promotions lift sales — before raising the budget, make sure stock can cover it.
 
-<info>Change your ad budget in the advertising section of the seller.uzum.uz or Yandex Market cabinet.</info>
+<info>Change your ad budget in the advertising section of the seller.uzum.uz cabinet.</info>
 `,
   'qoldiq-boshqaruvi': `
 ## Stock management
@@ -3692,12 +3626,7 @@ Badges show which warehouse an order and its stock come from:
 - **FBO** — stock sits in Uzum's warehouse; Uzum picks and ships
 - **FBS** — stock is in your warehouse; you pack each order
 
-**Yandex Market**
-- **FBY** — stock sits in Yandex's warehouse; Yandex does everything
-- **FBS** — your warehouse, Yandex logistics (Express arrives as FBS too)
-- **DBS** — you both store and deliver
-
-<info>The "pack and ship" message only fires for seller-fulfilled models (FBS, DBS) — FBO and FBY orders need nothing from you.</info>
+<info>The "pack and ship" message only fires for the seller-fulfilled model (FBS) — FBO orders need nothing from you.</info>
 
 ## One product, several listings
 
@@ -3764,20 +3693,9 @@ Stock sits **in your warehouse**. You pack and hand over each order yourself.
 - Storage fully under your control
 - Every order needs an action
 
-## Yandex Market
-
-### FBY
-Stock sits **in Yandex's warehouse** — Yandex picks and ships. Nothing is required from you.
-
-### FBS
-Stock is in your warehouse, delivery runs on Yandex logistics. **Express** orders arrive as FBS too — it is not a separate model.
-
-### DBS (Delivery by Seller)
-You both store and deliver.
-
 ## Why it matters
 
-The **"pack and ship"** Telegram message only fires for seller-fulfilled models: Uzum FBS, Yandex FBS and DBS. FBO and FBY orders need nothing from you — so they are never sent as a call to action.
+The **"pack and ship"** Telegram message only fires for the seller-fulfilled model: Uzum FBS. FBO orders need nothing from you — so they are never sent as a call to action.
 
 ## Where to see it
 
@@ -3961,7 +3879,6 @@ You enter the return rate on the **Unit Economics** page. For your actual rate, 
 ## Where to find the rates
 
 - **Uzum Market**: the rates section of the seller.uzum.uz cabinet
-- **Yandex Market**: the rates section of the partner cabinet
 
 <warning>Rates change and vary by region. Daromadchi does not refresh them automatically — re-check the value you entered from time to time.</warning>
 `,
@@ -4115,7 +4032,7 @@ Each row is a product. A product with variants (colour, size) collapses into one
 | **Margin** | Profit as a share of revenue (%) |
 | **ABC** | A / B / C class |
 
-<info>Every one of these columns is computed for both marketplaces. Metrics only one marketplace can supply were left out — otherwise the Yandex rows would always be blank.</info>
+<info>Metrics the marketplace does not supply were left out — otherwise those columns would always be blank.</info>
 
 ## Table settings
 
@@ -4160,7 +4077,7 @@ Knowing which words bring customers to your products matters for SEO and adverti
 - Orders
 - Spend
 
-<warning>For now this page stays empty. Search-phrase data comes from the marketplace's advertising/search API, and that is not connected yet — neither Uzum Market nor Yandex Market exposes it. Once the API opens up, the page fills in automatically.</warning>
+<warning>For now this page stays empty. Search-phrase data comes from the marketplace's advertising/search API, and that is not connected yet — Uzum Market does not expose it. Once the API opens up, the page fills in automatically.</warning>
 
 ## What you can do meanwhile
 
@@ -4210,7 +4127,7 @@ Free forever:
 - The dashboard (including revenue and profit)
 - Products
 - Orders and their notifications (new order, cancellation, low stock)
-- **Uzum and Yandex Market** — both, on every tier
+- **Uzum Market** — on every tier
 - The Chrome extension
 
 Sections that lock once the trial ends:
@@ -4309,7 +4226,7 @@ During the trial the paid sections are open too:
 - The dashboard (including revenue and profit)
 - Products
 - Orders and notifications (new order, cancellation, low stock)
-- **Uzum and Yandex Market** — both
+- **Uzum Market**
 - The Chrome extension
 
 ## No card required
@@ -4381,23 +4298,13 @@ A newly connected store runs in **"Read-only"** mode. In that mode Daromadchi wr
 
 <warning>The token is displayed only once. Copy and store it immediately.</warning>
 
-## Yandex Market token
+## Entering it in Daromadchi
 
-Yandex Market needs two values:
-
-- **OAuth Token** — your Yandex Market Partner API token
-- **Campaign ID** — the campaign number, digits only
-
-If the Campaign ID is wrong (an email or a URL), saving fails straight away with an error.
-
-## Entering them in Daromadchi
-
-On the **Settings** page, find the card for the marketplace:
+On the **Settings** page, find the Uzum Market card:
 
 1. Paste the token into the field
-2. For Yandex, also enter the Campaign ID
-3. Press **Save**
-4. Start the first import with **Sync**
+2. Press **Save**
+3. Start the first import with **Sync**
 
 The card shows the store's state ("Connected" / "Not connected") and the last sync time.
 
@@ -4423,7 +4330,7 @@ For Uzum this mode requires the **SKU_UPDATE** permission on the token.
 
 ## Several stores
 
-The Uzum and Yandex Market cards are independent — you can connect both at once. The marketplace buttons on the dashboard let you view each separately.
+Each store card is independent. The marketplace buttons on the dashboard let you view each separately.
 `,
   'jamoa-boshqaruvi': `
 ## Team management — coming soon
@@ -4432,7 +4339,7 @@ The **Dashboard → Team** page is still marked "Coming soon". The section is be
 
 ## How it works today
 
-One Daromadchi account is one user. You can connect several **stores** to a single account (Uzum and Yandex Market, each with its own token), but the account itself has one set of credentials.
+One Daromadchi account is one user. You can connect several **stores** to a single account (each with its own token), but the account itself has one set of credentials.
 
 ## If you need to show data to a colleague
 

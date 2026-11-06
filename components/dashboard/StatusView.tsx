@@ -66,7 +66,7 @@ const STR: Record<Lang, {
   },
 }
 
-const MP_SHORT: Record<string, string> = { uzum: 'UZ', yandex_market: 'YM' }
+const MP_SHORT: Record<string, string> = { uzum: 'UZ' }
 
 function toneFor(isDark: boolean) {
   return {

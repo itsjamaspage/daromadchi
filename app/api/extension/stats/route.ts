@@ -80,7 +80,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   // Money through the shared rules — see lib/money/order-economics.ts. This was
   // `revenue − fee − delivery` over every non-cancelled order: it counted sales
   // not yet delivered, subtracted no cost of goods, and read a NULL fee (every
-  // Yandex order until its netting report lands) as a zero fee.
+  // marketplace has not reported yet) as a zero fee.
   const money            = sumEconomics(await loadOrderInputs(shopIds, since, null))
   const todayRevenue     = money.revenue
   const todayCommission  = money.fees

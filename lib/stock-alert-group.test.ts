@@ -10,12 +10,12 @@ const A = (o: Partial<StockAlert>): StockAlert => ({
 } as StockAlert)
 
 // The reported bug: the same product appeared twice — once in Russian from
-// Yandex, once in Uzbek from Uzum — at two different urgencies.
+// one store, once in Uzbek from another — at two different urgencies.
 
 test('one product listed on two marketplaces collapses to one row', () => {
   const out = groupStockAlerts([
     A({ productId: 'p1', marketplace: 'uzum', productTitle: 'J16 TWS quloqchin' }),
-    A({ productId: 'p2', marketplace: 'yandex_market', productTitle: 'Наушники J16 TWS' }),
+    A({ productId: 'p2', marketplace: 'other_market', productTitle: 'Наушники J16 TWS' }),
   ])
   assert.equal(out.length, 1)
 })
@@ -23,7 +23,7 @@ test('one product listed on two marketplaces collapses to one row', () => {
 test('the merged row is flagged as shared across marketplaces', () => {
   const out = groupStockAlerts([
     A({ productId: 'p1', marketplace: 'uzum', isShared: false }),
-    A({ productId: 'p2', marketplace: 'yandex_market', isShared: false }),
+    A({ productId: 'p2', marketplace: 'other_market', isShared: false }),
   ])
   assert.equal(out[0].isShared, true)
 })

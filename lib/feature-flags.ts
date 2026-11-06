@@ -3,14 +3,15 @@
 //
 // (Wildberries was removed entirely — its per-seller rate limiter kept locking
 //  the app into multi-hour throttled states and the finance endpoints we needed
-//  were gated behind restricted tokens. Uzum and Yandex Market remain.)
+//  were gated behind restricted tokens. Yandex Market was removed when it exited
+//  Uzbekistan on 10 Nov 2026. Uzum remains.)
 import type { MarketplaceType } from '@/lib/types'
 
 export function enabledMarketplaces(): MarketplaceType[] {
-  return ['uzum', 'yandex_market']
+  return ['uzum']
 }
 
 export function isMarketplaceEnabled(mp: string | undefined | null): boolean {
   if (!mp) return true // "all" tab still ok
-  return mp === 'uzum' || mp === 'yandex_market'
+  return mp === 'uzum'
 }

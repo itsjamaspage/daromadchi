@@ -24,7 +24,6 @@ export default function SyncAlert({ alerts }: Props) {
     setSyncing(true)
     try {
       await fetch('/api/uzum/sync', { method: 'POST' }).catch(() => {})
-      await fetch('/api/yandex/sync', { method: 'POST' }).catch(() => {})
       router.refresh()
     } finally {
       setSyncing(false)

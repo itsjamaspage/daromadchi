@@ -177,6 +177,14 @@ const MIGRATIONS = [
   // Persist marketplace substatus for return-reason display. Additive +
   // idempotent (ADD COLUMN IF NOT EXISTS).
   'migrations/migrations/101_marketplace_substatus.sql',
+  // NOT REGISTERED, DELIBERATELY: 103_drop_yandex_market.sql.
+  // It DELETES real seller data (Yandex shops, orders, order_items, products
+  // and settlement rows) before it can drop 'yandex_market' from the
+  // marketplace_type enum, so it must never run unattended on a deploy. Apply
+  // it by hand, after a fresh backup:
+  //   psql "$DATABASE_URL" -f migrations/migrations/103_drop_yandex_market.sql
+  // The app does not depend on it having run — every Yandex code path is gone,
+  // so the leftover rows are simply unreachable until it is applied.
 ]
 
 function loadDatabaseUrl() {

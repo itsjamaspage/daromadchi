@@ -48,16 +48,6 @@ function uzumSyncText(data: {
   return { ok: !!data.ok, text }
 }
 
-function yandexSyncText(data: {
-  ok?: boolean; error?: string; productsUpserted?: number; ordersUpserted?: number
-  campaignsUpserted?: number
-}, t: SettingsT): { ok: boolean; text: string } {
-  const text = data.ok
-    ? `${data.productsUpserted ?? 0} ${t.products}, ${data.ordersUpserted ?? 0} ${t.orders}${data.campaignsUpserted ? `, ${data.campaignsUpserted} ${t.campaigns}` : ''} ${t.updated}.`
-    : (data.error ?? t.error)
-  return { ok: !!data.ok, text }
-}
-
 function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
   const router = useRouter()
   const { lang } = useLang()
@@ -236,251 +226,13 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
   )
 }
 
-// ─── Yandex section ───────────────────────────────────────────────────────────
-
-function YandexCard({ shop, fulfillmentType }: { shop: Shop | null; userId: string; fulfillmentType?: string | null }) {
-  const router = useRouter()
-  const { lang } = useLang()
-  const t = translations[lang].dashboard.settingsPage
-
-  const [apiKey,      setApiKey]      = useState('')
-  const [campaignId,  setCampaignId]  = useState('')
-  const [businessId,  setBusinessId]  = useState('')
-  const [saving,      setSaving]      = useState(false)
-  const [syncing,     setSyncing]     = useState(false)
-  const [testing,     setTesting]     = useState(false)
-  const [syncStep,    setSyncStep]    = useState<string | null>(null)
-  const [saveMsg,     setSaveMsg]     = useState<{ ok: boolean; text: string } | null>(null)
-  const [syncMsg,     setSyncMsg]     = useState<{ ok: boolean; text: string } | null>(null)
-
-  const hasKey      = !!shop?.api_key_encrypted
-  const hasCampaign = !!shop?.shop_id_external
-  const storedCampaignId = shop?.shop_id_external ?? null
-  const storedBusinessId = shop?.business_id ?? null
-  const lastSync    = shop?.last_synced_at
-    ? new Date(shop.last_synced_at).toLocaleString(lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ') : null
-
-  async function handleTest() {
-    setTesting(true); setSyncMsg(null)
-    try {
-      const res  = await fetch('/api/yandex/sync', { method: 'GET' })
-      const data = await res.json()
-      setSyncMsg({ ok: data.ok, text: data.message ?? data.error ?? t.error })
-    } catch {
-      setSyncMsg({ ok: false, text: t.networkErr })
-    }
-    setTesting(false)
-  }
-
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault()
-    const trimmedCampaign = campaignId.trim()
-    const trimmedBusiness = businessId.trim()
-    if (!apiKey.trim() && !trimmedCampaign && !trimmedBusiness) return
-    // Yandex Campaign ID must be numeric — reject emails / URLs / anything else
-    // early so the sync doesn't fail with a "400 Incorrect campaignId" later.
-    if (trimmedCampaign && !/^\d+$/.test(trimmedCampaign)) {
-      setSaveMsg({ ok: false, text: t.campaignIdInvalid })
-      return
-    }
-    if (trimmedBusiness && !/^\d+$/.test(trimmedBusiness)) {
-      setSaveMsg({ ok: false, text: t.businessIdInvalid })
-      return
-    }
-    setSaving(true); setSaveMsg(null)
-    try {
-      const res  = await fetch('/api/shops/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          marketplace: 'yandex_market',
-          token: apiKey.trim() || undefined,
-          campaignId: trimmedCampaign || undefined,
-          businessId: trimmedBusiness || undefined,
-          shopName: t.yandexShopName,
-        }),
-      })
-      const data = await res.json()
-      setSaveMsg(data.ok
-        ? { ok: true, text: data.message ?? t.saved }
-        : { ok: false, text: data.error ?? t.error })
-      if (data.ok) {
-        setApiKey('')
-        setBusinessId('')
-        router.refresh()
-        triggerYandexSync()
-      }
-    } catch {
-      setSaveMsg({ ok: false, text: t.networkErr })
-    }
-    setSaving(false)
-  }
-
-  function triggerYandexSync() {
-    setSyncing(true); setSyncMsg(null)
-    const steps = [t.syncStepProducts, t.syncStepOrders, t.syncStepAds, t.syncStepSaving]
-    let stepIdx = 0
-    setSyncStep(steps[0])
-    const interval = setInterval(() => {
-      stepIdx = Math.min(stepIdx + 1, steps.length - 1)
-      setSyncStep(steps[stepIdx])
-    }, 4000)
-    fetch('/api/yandex/sync', { method: 'POST' })
-      .then(r => r.json())
-      .then(data => {
-        setSyncMsg(yandexSyncText(data, t))
-        if (data.ok) router.refresh()
-      })
-      .catch(() => setSyncMsg({ ok: false, text: t.networkErr }))
-      .finally(() => { clearInterval(interval); setSyncStep(null); setSyncing(false) })
-  }
-
-  async function handleSync() {
-    setSyncing(true); setSyncMsg(null)
-    const steps = [t.syncStepProducts, t.syncStepOrders, t.syncStepAds, t.syncStepSaving]
-    let stepIdx = 0
-    setSyncStep(steps[0])
-    const interval = setInterval(() => {
-      stepIdx = Math.min(stepIdx + 1, steps.length - 1)
-      setSyncStep(steps[stepIdx])
-    }, 4000)
-    try {
-      const res  = await fetch('/api/yandex/sync', { method: 'POST' })
-      const data = await res.json()
-      setSyncMsg(yandexSyncText(data, t))
-      if (data.ok) router.refresh()
-    } catch {
-      setSyncMsg({ ok: false, text: t.networkErr })
-    }
-    clearInterval(interval)
-    setSyncStep(null)
-    setSyncing(false)
-  }
-
-  const connected = hasKey && hasCampaign
-
-  return (
-    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center">
-          <span className="text-sm font-bold text-amber-400">Y</span>
-        </div>
-        <div>
-          <p className="text-[var(--text-base)] font-semibold text-sm">Yandex Market</p>
-          <p className="text-[var(--text-muted)] text-xs">partner.market.yandex.ru</p>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          {connected && fulfillmentType && (
-            <span className="text-[10px] font-semibold px-2 py-1 rounded-full border bg-[var(--bg-input)] border-[var(--border)] text-[var(--text-dim)]">
-              {fulfillmentType.toUpperCase()}
-            </span>
-          )}
-          <span className={`text-[10px] font-semibold px-2 py-1 rounded-full border ${connected ? 'bg-[var(--badge-ok-bg)] border-[var(--badge-ok-bdr)] text-[var(--badge-ok-text)]' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
-            {connected ? t.connected : t.notConnected}
-          </span>
-        </div>
-      </div>
-
-      {/* Form */}
-      <form onSubmit={handleSave} className="p-6 space-y-4">
-        <div>
-          <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] mb-2">
-            <Key className="w-3.5 h-3.5" /> API Token
-          </label>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={e => setApiKey(e.target.value)}
-            placeholder={t.tokenPlaceholder}
-            autoComplete="off"
-            className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
-          />
-        </div>
-
-        <div>
-          <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] mb-2">
-            <Hash className="w-3.5 h-3.5" /> Campaign ID
-          </label>
-          <input
-            type="text"
-            value={campaignId}
-            onChange={e => setCampaignId(e.target.value)}
-            placeholder={storedCampaignId ?? t.campaignPlaceholder}
-            inputMode="numeric"
-            pattern="[0-9]*"
-            autoComplete="off"
-            className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
-          />
-          <p className="text-[var(--text-muted)] text-xs mt-1.5">{t.campaignIdHint}</p>
-        </div>
-
-        <div>
-          <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] mb-2">
-            <Building2 className="w-3.5 h-3.5" /> Business ID
-          </label>
-          <input
-            type="text"
-            value={businessId}
-            onChange={e => setBusinessId(e.target.value)}
-            placeholder={storedBusinessId ?? t.businessIdPlaceholder}
-            inputMode="numeric"
-            pattern="[0-9]*"
-            autoComplete="off"
-            className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
-          />
-          <p className="text-[var(--text-muted)] text-xs mt-1.5">{t.businessIdHint}</p>
-        </div>
-
-        <StatusMsg msg={saveMsg} />
-        <button type="submit" disabled={saving}
-          className="flex items-center gap-2 btn-primary disabled:opacity-50 px-4 py-2 rounded-xl transition-colors">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {t.save}
-        </button>
-      </form>
-
-      {/* Sync */}
-      {shop && (
-        <div className="px-6 pb-6 space-y-3 border-t border-[var(--border)] pt-4">
-          <p className="text-[var(--text-muted)] text-xs">
-            {lastSync ? <>{t.lastSync}: <span className="text-[var(--text-dim)]">{lastSync}</span></> : t.neverSynced}
-          </p>
-          {syncing && syncStep && (
-            <div className="flex items-center gap-2 text-xs rounded-xl px-3 py-2" style={{ color: 'var(--c1)', background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
-              <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
-              {syncStep}
-            </div>
-          )}
-          <StatusMsg msg={syncMsg} />
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={handleTest} disabled={testing || syncing || !connected}
-              title={!connected ? 'Avval token va Campaign ID saqlang' : ''}
-              className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
-              {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" style={{ color: 'var(--status-ok-text)' }} />}
-              {t.check}
-            </button>
-            <button onClick={handleSync} disabled={syncing || !connected}
-              title={!connected ? 'Avval token va Campaign ID saqlang' : ''}
-              className="flex items-center gap-2 btn-primary border border-transparent disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-xl transition-colors">
-              {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.syncing}</> : <><RefreshCw className="w-4 h-4" /> {t.sync}</>}
-            </button>
-          </div>
-        </div>
-      )}
-
-    </div>
-  )
-}
-
 // ─── Warehouses section ───────────────────────────────────────────────────────
 
 interface WarehouseRow { id: string; name: string; created_at: string }
 interface ShopLite { id: string; name: string; marketplace: string; warehouse_id: string | null }
 
 const MP_BADGE: Record<string, { label: string; color: string; bg: string }> = {
-  uzum:          { label: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.15)'   },
-  yandex_market: { label: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.15)'  },
+  uzum: { label: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.15)' },
 }
 
 function WarehousesCard() {
@@ -654,24 +406,21 @@ function WarehousesCard() {
 
 interface Props {
   uzumShop:          Shop | null
-  yandexShop:        Shop | null
   shopCounts:        Record<string, { products: number; orders: number }>
   userId:            string
   telegramChatId?:   string | null
   telegramUsername?: string | null
   shareToken?:       string | null
-  yandexFulfillmentType?: string | null
 }
 
-export default function SettingsForm({ uzumShop, yandexShop, shopCounts, userId, telegramChatId, telegramUsername, shareToken, yandexFulfillmentType }: Props) {
+export default function SettingsForm({ uzumShop, shopCounts, userId, telegramChatId, telegramUsername, shareToken }: Props) {
   const { lang } = useLang()
   const t = translations[lang].dashboard.settingsPage
   const mpCards = [
     { shop: uzumShop, mp: 'uzum', Component: UzumCard, extra: {} },
-    { shop: yandexShop, mp: 'yandex_market', Component: YandexCard, extra: { fulfillmentType: yandexFulfillmentType } },
   ]
   const connected = mpCards.filter(c => c.shop?.api_key_encrypted)
-  const cardCols    = mpCards.length >= 3   ? 'md:grid-cols-3' : 'md:grid-cols-2'
+  const cardCols    = mpCards.length >= 3 ? 'md:grid-cols-3' : mpCards.length >= 2 ? 'md:grid-cols-2' : ''
   const summaryCols = connected.length >= 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'
 
   return (
@@ -680,7 +429,7 @@ export default function SettingsForm({ uzumShop, yandexShop, shopCounts, userId,
         <div className={`grid grid-cols-1 ${summaryCols} gap-3`}>
           {connected.map(({ mp }) => {
             const c = shopCounts[mp]
-            const labels: Record<string, string> = { uzum: 'Uzum', yandex_market: 'Yandex' }
+            const labels: Record<string, string> = { uzum: 'Uzum' }
             return (
               <div key={mp} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3">
                 <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c1)' }}>{labels[mp]}</p>

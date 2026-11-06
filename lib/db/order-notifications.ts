@@ -20,7 +20,7 @@
  *
  * ── Window ──────────────────────────────────────────────────────────────────
  * Bounded to the sync's own lookback. An order older than that is never
- * re-read (lib/yandex/sync.ts), so its status can never be corrected — an
+ * re-read, so its status can never be corrected — an
  * unshippable ghost would otherwise sit at the top of this list forever,
  * exactly the ratchet that made displayed stock wrong (#316). Uzum re-reads
  * every order on every tick and so is not bounded; the shared helper knows
@@ -43,7 +43,7 @@ export interface OrderNotification {
   itemsCount: number
   revenue: number
   orderedAt: string
-  /** Item titles for the line under the heading; may be empty when a Yandex
+  /** Item titles for the line under the heading; may be empty when an
    *  order's items never linked (see #309 — the snapshot columns were NULL). */
   itemTitles: string[]
   /** Whether the seller has already been told on Telegram. Lets the page mark

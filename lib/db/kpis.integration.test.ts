@@ -33,7 +33,7 @@ import { randomUUID } from 'node:crypto'
 import { eq, inArray, sql } from 'drizzle-orm'
 import {
   db, pool, users, shops, orders, orderItems, products,
-  uzumSettlementOrders, yandexSettlementTransactions,
+  uzumSettlementOrders,
 } from '@/lib/db'
 import { kpiWindows } from '@/lib/kpi-windows'
 import { fetchPeriodKpis } from '@/lib/db/kpis-period'
@@ -46,15 +46,20 @@ const W3 = { since: new Date('2026-08-19T00:00:00Z'), until: new Date('2026-08-2
 
 let userId: string
 let uzShop: string
-let ymShop: string
+// A SECOND Uzum shop. It used to be the Yandex shop; Yandex Market left
+// Uzbekistan (10 Nov 2026) and the integration was removed, so the same
+// scenarios run across two Uzum shops. What the file tests is unchanged: the
+// settlement/sale calendar split, which is a property of settlement data, not
+// of any one marketplace.
+let uzShop2: string
 let productId: string
 
 before(async () => {
-  userId = randomUUID(); uzShop = randomUUID(); ymShop = randomUUID(); productId = randomUUID()
+  userId = randomUUID(); uzShop = randomUUID(); uzShop2 = randomUUID(); productId = randomUUID()
   await db.insert(users).values({ id: userId, email: `kpi-${userId.slice(0, 8)}@test.local` })
   await db.insert(shops).values([
     { id: uzShop, user_id: userId, name: 'uz', marketplace: 'uzum' },
-    { id: ymShop, user_id: userId, name: 'ym', marketplace: 'yandex_market' },
+    { id: uzShop2, user_id: userId, name: 'uz-2', marketplace: 'uzum' },
   ])
   // 65 000 a unit — the seller's real M9 cost price.
   await db.insert(products).values({
@@ -83,62 +88,58 @@ before(async () => {
       seller_price: '100000', commission: '12000', logistic_delivery_fee: '3000', seller_profit: '85000' },
   ])
 
-  // ── W2: nothing sold. A Yandex payout for an OLDER order lands mid-week —
+  // ── W2: nothing sold. A payout for an OLDER (July) order lands mid-week —
   //    the money that used to show up as +73 000 of profit out of nowhere.
   const oldOrder = randomUUID()
   await db.insert(orders).values({
-    id: oldOrder, shop_id: ymShop, order_id_external: '800001', marketplace: 'yandex_market',
+    id: oldOrder, shop_id: uzShop2, order_id_external: '800001', marketplace: 'uzum',
     status: 'delivered', revenue: '90000', ordered_at: new Date('2026-07-20T10:00:00Z'), items_count: 1,
   })
-  await db.insert(yandexSettlementTransactions).values([
-    { shop_id: ymShop, transaction_id: 't-old-credit', order_id_external: '800001',
-      entry_type: 'Начисление', amount: '90000', transaction_at: new Date('2026-08-14T12:00:00Z') },
-    { shop_id: ymShop, transaction_id: 't-old-debit', order_id_external: '800001',
-      entry_type: 'Удержание', product_name: 'Поручение на продажу', amount: '17000',
-      transaction_at: new Date('2026-08-14T12:00:00Z') },
-  ])
-  // Overhead with no order behind it, also landing in the empty week: storage.
-  // It must not turn W2 into a loss either.
-  await db.insert(yandexSettlementTransactions).values({
-    shop_id: ymShop, transaction_id: 't-storage', order_id_external: null,
-    entry_type: 'Удержание', product_name: 'Хранение', amount: '25000',
+  await db.insert(uzumSettlementOrders).values({
+    shop_id: uzShop2, uzum_order_item_id: 801, uzum_order_id: 800001, status: 'TO_WITHDRAW',
+    transaction_at: new Date('2026-08-14T12:00:00Z'),   // ← paid in W2, sold in July
+    seller_price: '90000', commission: '17000', logistic_delivery_fee: '0',
+  })
+  // A settlement row with NO order behind it (its order id matches nothing),
+  // also landing in the empty week. It must not turn W2 into a loss either —
+  // the per-order join is what excludes it.
+  await db.insert(uzumSettlementOrders).values({
+    shop_id: uzShop2, uzum_order_item_id: 899, uzum_order_id: 899999, status: 'TO_WITHDRAW',
     transaction_at: new Date('2026-08-15T12:00:00Z'),
+    seller_price: '0', commission: '25000', logistic_delivery_fee: '0',
   })
 
   // ── W3: one sale, 115 000, settled inside its own week.
   const w3 = randomUUID()
   await db.insert(orders).values({
-    id: w3, shop_id: ymShop, order_id_external: '800002', marketplace: 'yandex_market',
+    id: w3, shop_id: uzShop2, order_id_external: '800002', marketplace: 'uzum',
     status: 'delivered', revenue: '115000', ordered_at: new Date('2026-08-20T10:00:00Z'), items_count: 1,
   })
-  await db.insert(yandexSettlementTransactions).values([
-    { shop_id: ymShop, transaction_id: 't-w3-credit', order_id_external: '800002',
-      entry_type: 'Начисление', amount: '115000', transaction_at: new Date('2026-08-21T12:00:00Z') },
-    { shop_id: ymShop, transaction_id: 't-w3-debit', order_id_external: '800002',
-      entry_type: 'Удержание', product_name: 'Доставка покупателю', amount: '20000',
-      transaction_at: new Date('2026-08-21T12:00:00Z') },
-  ])
+  await db.insert(uzumSettlementOrders).values({
+    shop_id: uzShop2, uzum_order_item_id: 802, uzum_order_id: 800002, status: 'TO_WITHDRAW',
+    transaction_at: new Date('2026-08-21T12:00:00Z'),
+    seller_price: '115000', commission: '0', logistic_delivery_fee: '20000',
+  })
 })
 
 after(async () => {
-  const shopIds = [uzShop, ymShop]
+  const shopIds = [uzShop, uzShop2]
   const ords = await db.select({ id: orders.id }).from(orders).where(inArray(orders.shop_id, shopIds))
   if (ords.length > 0) await db.delete(orderItems).where(inArray(orderItems.order_id, ords.map(o => o.id as string)))
   await db.delete(orders).where(inArray(orders.shop_id, shopIds))
-  await db.delete(uzumSettlementOrders).where(eq(uzumSettlementOrders.shop_id, uzShop))
-  await db.delete(yandexSettlementTransactions).where(eq(yandexSettlementTransactions.shop_id, ymShop))
+  await db.delete(uzumSettlementOrders).where(inArray(uzumSettlementOrders.shop_id, shopIds))
   await db.delete(products).where(eq(products.shop_id, uzShop))
   await db.delete(shops).where(inArray(shops.id, shopIds))
   await db.delete(users).where(eq(users.id, userId))
   await pool.end()
 })
 
-const shopIds = () => [uzShop, ymShop]
+const shopIds = () => [uzShop, uzShop2]
 
 describe('the three weeks the seller reported', () => {
   it('W2 — no sales, so no profit, however much payout money landed', async () => {
-    // Was +73 000: a Yandex payout for a JULY order, plus storage, both dated
-    // inside this week. Neither belongs to a week that sold nothing.
+    // Was +73 000: a payout for a JULY order, plus an order-less settlement row,
+    // both dated inside this week. Neither belongs to a week that sold nothing.
     const k = await fetchPeriodKpis(shopIds(), W2.since, W2.until)
     assert.equal(k.revenue, 0)
     assert.equal(k.orders, 0)
@@ -320,7 +321,7 @@ describe('the % badge compares this week against LAST week', () => {
     ])
 
     // W3 and W2 as the fixture defines them, with nothing bleeding across.
-    // W3 is a single 115 000 Yandex sale on 20 Aug; W2 has no sale at all —
+    // W3 is a single 115 000 sale on 20 Aug; W2 has no sale at all —
     // only a settlement for an OLDER order, which must not read as revenue here.
     assert.equal(curr.revenue, 115000, 'the selected week')
     assert.equal(prev.revenue, 0, 'the week before — W2 had no delivered sales')
@@ -443,7 +444,7 @@ describe('a product sold with no cost price entered', () => {
   // so the item looks like pure profit. The number cannot be fixed without the
   // seller's data, so the card has to say it is incomplete.
   it('is counted, so the card can say the profit is overstated', async () => {
-    // W3 sells the Yandex powerbank, which has no products row and so no cost.
+    // W3 sells a powerbank with no products row, and so no cost.
     const k = await fetchPeriodKpis(shopIds(), W3.since, W3.until)
     assert.equal(k.cogs, 0, 'a missing cost contributes nothing to COGS')
     assert.ok(k.missingCostProducts >= 0)
@@ -489,10 +490,11 @@ describe('a product sold with no cost price entered', () => {
 })
 
 describe('money the marketplace has not reported yet', () => {
-  // The reported screen: 115 000 of Yandex sales, delivered, no netting report
-  // yet — so marketplace_fee is NULL by design (lib/yandex/sync.ts) and the old
-  // fallback read that as "no fees", returning the whole 115 000 as profit.
-  // Уzum is the opposite: its settlement feed carries commission from the start.
+  // The reported screen: 115 000 of sales, delivered, nothing settled yet — so
+  // marketplace_fee is NULL and the old fallback read that as "no fees",
+  // returning the whole 115 000 as profit. The same marketplace can be both
+  // counted and pending in one period, which is the case this covers: one order
+  // carries a stored commission, the other does not.
   const SEP = { since: new Date('2026-09-10T00:00:00Z'), until: new Date('2026-09-16T23:59:59Z') }
   let ymPending: string
   let uzKnown: string
@@ -500,8 +502,8 @@ describe('money the marketplace has not reported yet', () => {
   before(async () => {
     ymPending = randomUUID(); uzKnown = randomUUID()
     await db.insert(orders).values([
-      // Yandex: delivered, nothing settled, no stored fee → unknown.
-      { id: ymPending, shop_id: ymShop, order_id_external: '800115', marketplace: 'yandex_market',
+      // Delivered, nothing settled, no stored fee → unknown.
+      { id: ymPending, shop_id: uzShop2, order_id_external: '800115', marketplace: 'uzum',
         status: 'delivered', revenue: '115000', ordered_at: new Date('2026-09-11T10:00:00Z'), items_count: 1 },
       // Uzum: delivered, commission stored at sync time → known without a payout.
       { id: uzKnown, shop_id: uzShop, order_id_external: '900115', marketplace: 'uzum',
@@ -537,7 +539,7 @@ describe('money the marketplace has not reported yet', () => {
     assert.deepEqual(k.pendingMarketplaces, [
       // `reason` distinguishes "the marketplace has not reported" from "you have
       // not entered a cost" — one says wait, the other says do something.
-      { marketplace: 'yandex_market', revenue: 115000, orders: 1, reason: 'fee_not_reported' },
+      { marketplace: 'uzum', revenue: 115000, orders: 1, reason: 'fee_not_reported' },
     ])
   })
 

@@ -34,18 +34,11 @@ function relativeDate(dateStr: string, lang: string): string {
 
 const MP_META: Record<string, { short: string; color: string; bg: string }> = {
   uzum:          { short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'   },
-  yandex_market: { short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)'  },
 }
 
-export function sellerOrderUrl(marketplace: string, extId: string | null, opts?: { shopIdExternal?: string | null; businessId?: string | null }): string | null {
+export function sellerOrderUrl(marketplace: string, extId: string | null): string | null {
   if (!extId) return null
   if (marketplace === 'uzum') return `https://seller.uzum.uz/seller/orders/fbs/${extId}`
-  if (marketplace === 'yandex_market') {
-    const biz = opts?.businessId
-    const campaign = opts?.shopIdExternal
-    if (biz && campaign) return `https://partner.market.yandex.ru/business/${biz}/orders?campaignId=${campaign}`
-    return null
-  }
   return null
 }
 
@@ -122,7 +115,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
     [d.marketplace]: MP_META[o.marketplace]?.short ?? o.marketplace,
     [d.date]: o.ordered_at,
     [`${d.revenue} (so'm)`]: o.revenue ?? 0,
-    // An empty cell, not a zero: Yandex does not report a per-order fee until
+    // An empty cell, not a zero: the marketplace may not report a per-order fee until
     // its netting report lands, and a spreadsheet column of zeros sums to a
     // commission total that looks complete and is not.
     [`${d.commission2} (so'm)`]: o.marketplace_fee ?? '',
@@ -202,7 +195,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                           <ShoppingCart className="w-3.5 h-3.5" style={{ color: 'var(--c1)' }} />
                         </div>
                         {(() => {
-                          const url = sellerOrderUrl(order.marketplace, order.order_id_external, { shopIdExternal: order.shop_id_external, businessId: order.business_id })
+                          const url = sellerOrderUrl(order.marketplace, order.order_id_external)
                           const label = order.order_id_external ?? order.id.slice(0, 8)
                           return url ? (
                             <a href={url} target="_blank" rel="noopener noreferrer"

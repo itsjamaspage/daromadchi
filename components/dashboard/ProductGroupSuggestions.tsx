@@ -11,7 +11,6 @@ import type { MarketplaceType } from '@/lib/types'
 // here match the rows below.
 const MP_META: Record<string, { label: string; short: string; color: string; bg: string }> = {
   uzum:          { label: 'Uzum',        short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'  },
-  yandex_market: { label: 'Yandex',      short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)'  },
 }
 
 type Signals = {

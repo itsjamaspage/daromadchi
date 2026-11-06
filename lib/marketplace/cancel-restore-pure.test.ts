@@ -55,7 +55,7 @@ describe('planRestoreAlerts — batch per (marketplace, variant)', () => {
   it('different marketplaces split too', () => {
     const { groups } = planRestoreAlerts([
       cand({ orderId: 'A', marketplace: 'uzum' }),
-      cand({ orderId: 'B', marketplace: 'yandex_market' }),
+      cand({ orderId: 'B', marketplace: 'other_market' }),
     ])
     assert.equal(groups.length, 2)
   })

@@ -3,8 +3,6 @@ import { revalidateTag } from 'next/cache'
 import { eq, and, isNotNull } from 'drizzle-orm'
 import { db, shops, users, userSettings } from '@/lib/db'
 import { syncFromUzum } from '@/lib/uzum/sync'
-import { syncFromYandex } from '@/lib/yandex/sync'
-import { syncYandexSettlements } from '@/lib/yandex/settlements-sync'
 import { syncUzumSettlements } from '@/lib/uzum/settlements-sync'
 import { decrypt } from '@/lib/crypto'
 import { withErrorHandler } from '@/lib/api-handler'
@@ -13,7 +11,7 @@ import type { NotifStrings } from '@/lib/notif-i18n'
 import { syncStockSyncGroups } from '@/lib/marketplace/stock-sync'
 import { userHasFeature } from '@/lib/billing/entitlement'
 import { reconcilePhysicalStock } from '@/lib/marketplace/physical-stock'
-import { refreshUzumStock, refreshYandexStock } from '@/lib/marketplace/stock-refresh'
+import { refreshUzumStock } from '@/lib/marketplace/stock-refresh'
 import { notifyManualStockUpdates } from '@/lib/marketplace/manual-stock-notify'
 import { notifyCancelRestore } from '@/lib/marketplace/cancel-restore-alert'
 import { runLedgerShadow, ledgerShadowEnabled } from '@/lib/marketplace/ledger-shadow'
@@ -28,7 +26,6 @@ const CONCURRENCY = 5
 
 const MP_LABEL: Record<string, string> = {
   uzum: 'Uzum Market',
-  yandex_market: 'Yandex Market',
 }
 
 // Stock re-reads on its own fixed clock, the same shape PR #155 gave orders.
@@ -75,9 +72,7 @@ async function syncShop(
     if (stockDue && !heavy) {
       const sr = shop.marketplace === 'uzum'
         ? await refreshUzumStock(shop.id, token, shop.shop_id_external)
-        : shop.marketplace === 'yandex_market' && shop.shop_id_external
-          ? await refreshYandexStock(shop.id, token, shop.shop_id_external)
-          : null
+        : null
       stockRefresh = sr ? { ...sr } : undefined
       if (sr?.ok) {
         // Only advance the stock clock on a real read. A failed refresh must
@@ -108,19 +103,6 @@ async function syncShop(
       if (heavy) {
         try {
           const s = await syncUzumSettlements(shop.id, token)
-          ;(r as Record<string, unknown>).settlements = s
-        } catch (e) {
-          ;(r as Record<string, unknown>).settlements = { ok: false, error: String(e).slice(0, 300) }
-        }
-      }
-    } else if (shop.marketplace === 'yandex_market' && shop.shop_id_external) {
-      r = { ...await syncFromYandex(shop.id, token, shop.shop_id_external, undefined, fetchProducts, heavy) }
-      // Settlements are heavy (async report API can take minutes) — only on a
-      // heavy tick. Kept behind try/catch so a settlement failure never blocks
-      // the primary orders sync from being marked ok.
-      if (heavy) {
-        try {
-          const s = await syncYandexSettlements(shop.id, token, shop.shop_id_external)
           ;(r as Record<string, unknown>).settlements = s
         } catch (e) {
           ;(r as Record<string, unknown>).settlements = { ok: false, error: String(e).slice(0, 300) }
@@ -432,9 +414,8 @@ export const GET = withErrorHandler(async (req: Request) => {
   if (results.some(r => r.ok)) {
     revalidateTag('product-data', { expire: 0 })
     revalidateTag('order-data', { expire: 0 })
-    // Settlements ride the same sync — Yandex netting-report + Uzum
-    // finance/orders both refresh here, so blow away the shared tag
-    // Dashboard / P&L / Payouts all subscribe to.
+    // Settlements ride the same sync — Uzum finance/orders refreshes here, so
+    // blow away the shared tag Dashboard / P&L / Payouts all subscribe to.
     revalidateTag('settlements', { expire: 0 })
   }
 

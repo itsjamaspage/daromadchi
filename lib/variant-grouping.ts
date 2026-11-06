@@ -10,13 +10,13 @@
 // Rules — identical to what Products page does:
 //   1. Union rows by shared variant_group_key.
 //   2. Bridge across marketplaces by shared normalised SKU (so
-//      uzum:<X> + yandex:<Y> collapse when both listings carry the
+//      keys from different shops collapse when both listings carry the
 //      same SKU).
 //   3. NULL variant_group_key ⇒ the row gets a synthetic key
 //      `sku:<normalised>` and participates in the SKU bridge like
 //      any keyed row. This merges single-variant cross-listings
-//      (NAM90 on Uzum + Yandex) and also absorbs a keyless row
-//      into a keyed group when they share a SKU (e.g. Yandex listing
+//      (NAM90 on two shops) and also absorbs a keyless row
+//      into a keyed group when they share a SKU (e.g. a listing
 //      without marketModelName + Uzum listing with a group key).
 //   4. A parent forms only when ≥2 rows land in one component;
 //      singletons stay flat so the table doesn't sprout meaningless
@@ -25,7 +25,7 @@
 // `bridge` rows exist for rule 2 alone. The SKU bridge can only weld two
 // marketplaces together when it can SEE a SKU on both of them, and a table
 // built from sales contains only the listings that sold — so a product whose
-// black variant sold on Uzum and white variant sold on Yandex arrives with the
+// black and white variants sold on different shops arrive with the
 // two welding listings absent and falls apart into two unrelated rows. Passing
 // the full product list as `bridge` restores the missing links without putting
 // unsold listings on screen: bridge entries join the union-find, are never
@@ -72,7 +72,7 @@ export function groupByVariant<T extends Groupable>(
 
   // SKU bridge: keys co-occurring on one normalised SKU are the same product.
   // A keyless row gets a synthetic `sku:<norm>` key so it participates in
-  // the bridge — this handles Yandex listings without marketModelName being
+  // the bridge — this handles listings without a model name being
   // absorbed into the same group as their Uzum counterpart.
   const keysBySku = new Map<string, string[]>()
   for (const p of linkable) {

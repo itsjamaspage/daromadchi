@@ -147,7 +147,7 @@ export const featureT: Record<Feature, Tr> = {
   dashboard:      tr('Умный дашборд', 'Aqlli boshqaruv paneli', 'Smart dashboard'),
   products:       tr('Товары', 'Mahsulotlar', 'Products'),
   orders:         tr('Заказы и уведомления', 'Buyurtmalar va ogohlantirishlar', 'Orders & alerts'),
-  marketplaces:   tr('Uzum + Yandex Market', 'Uzum + Yandex Market', 'Uzum + Yandex Market'),
+  marketplaces:   tr('Uzum Market', 'Uzum Market', 'Uzum Market'),
   analytics:      tr('Аналитика', 'Tahlil', 'Analytics'),
   stock_sync:     tr('Синхронизация склада', 'Ombor sinxronizatsiyasi', 'Stock sync'),
   finances:       tr("Финансы и выплаты", "Moliya va to'lovlar", 'Finances & payouts'),

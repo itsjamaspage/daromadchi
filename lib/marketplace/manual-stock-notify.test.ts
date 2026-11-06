@@ -27,7 +27,9 @@ function member(over: Partial<SyncMember>): SyncMember {
   }
 }
 const uzum = (o: Partial<SyncMember> = {}) => member({ shopId: 'u', marketplace: 'uzum', priority: 0, ...o })
-const ym   = (o: Partial<SyncMember> = {}) => member({ shopId: 'y', marketplace: 'yandex_market', priority: 100, ...o })
+// A SECOND Uzum shop: the cross-listing case the reminder exists for, now
+// that Uzum is the only integrated marketplace.
+const ym   = (o: Partial<SyncMember> = {}) => member({ shopId: 'y', marketplace: 'uzum', priority: 100, ...o })
 
 describe('computeManualReminders — all shops are edit-mode (stock_sync)', () => {
   it('returns no reminders when all members are stock_sync — auto-sync handles everything', () => {
@@ -80,11 +82,11 @@ describe('shouldRemind — fire once per divergence value, silent while unchange
 
 describe('buildManualMessage', () => {
   it('renders a title + one line per listing, in the seller language', () => {
-    const msg = buildManualMessage([{ sku: 'JMWHT', target: 0, marketplace: 'yandex_market' }], 'ru')
+    const msg = buildManualMessage([{ sku: 'JMWHT', target: 0, marketplace: 'uzum' }], 'ru')
     assert.match(msg, /Обновите остатки вручную \(1\)/)
     assert.match(msg, /JMWHT/)
     assert.match(msg, /поставьте/)
-    assert.match(msg, /Yandex Market/)
+    assert.match(msg, /Uzum/)
     assert.match(msg, /0/)
   })
 })
@@ -93,7 +95,7 @@ describe('buildManualMessage', () => {
 // computeManualReminders now returns [] for all-stock_sync groups.
 describe('message detail — product name, colour and order number', () => {
   const reminder: ManualReminder = {
-    sku: 'JMWHT', target: 0, marketplace: 'yandex_market',
+    sku: 'JMWHT', target: 0, marketplace: 'uzum',
     title: 'M9', colorKey: 'black', orderId: '124459482',
   }
 
@@ -119,7 +121,7 @@ describe('message detail — product name, colour and order number', () => {
   })
 
   it('degrades to the bare SKU when identity is missing', () => {
-    const bare: ManualReminder = { sku: 'JMWHT', target: 0, marketplace: 'yandex_market' }
+    const bare: ManualReminder = { sku: 'JMWHT', target: 0, marketplace: 'uzum' }
     assert.equal(productLabel(bare, 'ru'), 'JMWHT')
     const msg = buildManualMessage([bare], 'ru')
     assert.match(msg, /JMWHT/)
@@ -128,7 +130,7 @@ describe('message detail — product name, colour and order number', () => {
   })
 
   it('omits an unknown colour key rather than printing it raw', () => {
-    const r: ManualReminder = { sku: 'JMWHT', target: 0, marketplace: 'yandex_market', title: 'M9', colorKey: 'not-a-real-colour' }
+    const r: ManualReminder = { sku: 'JMWHT', target: 0, marketplace: 'uzum', title: 'M9', colorKey: 'not-a-real-colour' }
     assert.equal(productLabel(r, 'ru'), 'M9 (JMWHT)')
   })
 })
@@ -163,7 +165,7 @@ describe('footer — why the seller is being asked to do this by hand', () => {
   it('comes last, after every listing line', () => {
     const msg = buildManualMessage([
       { sku: 'A', target: 0, marketplace: 'uzum' },
-      { sku: 'B', target: 1, marketplace: 'yandex_market' },
+      { sku: 'B', target: 1, marketplace: 'uzum' },
     ], 'ru')
     const lines = msg.split('\n').filter(Boolean)
     assert.match(lines[lines.length - 1], /^ℹ️/)

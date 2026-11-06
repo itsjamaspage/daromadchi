@@ -6,8 +6,8 @@
  * ── Defect 1: two definitions of "reserved" ─────────────────────────────────
  * The display subtracted every order in normalized `pending`/`confirmed`. The
  * stock engine subtracts RESERVING_RAW_STATUSES — the raw statuses that mean a
- * PAID, committed order holds a unit (Uzum PACKING and later / Yandex PROCESSING
- * and later). So a brand-new unpaid draft (Uzum CREATED, Yandex UNPAID) reduced
+ * PAID, committed order holds a unit (Uzum PACKING and later). So a brand-new
+ * unpaid draft (Uzum CREATED) reduced
  * the number the seller reads, while the engine that actually manages their
  * stock did not consider it to hold a unit. The display over-subtracted against
  * the system's own definition. This module removes that divergence by deferring
@@ -16,13 +16,12 @@
  * ── Defect 2: unbounded subtraction against a bounded sync ──────────────────
  * Fixing defect 1 does NOT fix this, and it is worth being explicit about why:
  * RESERVING_RAW_STATUSES is the paid/committed set (PACKING, PENDING_DELIVERY,
- * DELIVERING, ACCEPTED_AT_DP, HANDED_OVER, TRANSFERRED, PROCESSING, DELIVERY,
- * PICKUP) — precisely the in-flight states an order gets STUCK in. Yandex
- * asks for orders by CREATION date over a 30-day window (lib/yandex/sync.ts),
- * so an order that ages past it is never re-fetched and its status is frozen
- * forever. A Yandex order stuck at PICKUP would therefore subtract from the
- * seller's displayed stock for the life of the account, and narrowing the
- * status set does nothing about it — PICKUP is *in* the narrowed set.
+ * DELIVERING, ACCEPTED_AT_DP, HANDED_OVER, TRANSFERRED) — precisely the
+ * in-flight states an order gets STUCK in. A marketplace whose sync asks for
+ * orders by CREATION date over a bounded window never re-fetches an order that
+ * ages past it, so its status freezes forever and it would subtract from the
+ * seller's displayed stock for the life of the account. Narrowing the status
+ * set does nothing about that, which is why the bound below exists.
  *
  * ── Why the bound is per-marketplace, and not just "30 days" ────────────────
  * Uzum's order sync sends NO date filter at all — it re-reads every order on
@@ -36,9 +35,8 @@
 import type { MarketplaceType } from '@/lib/types'
 
 /**
- * Mirrors ORDER_STATUS_LOOKBACK_DAYS in lib/yandex/sync.ts, which imports it
- * from here so the two cannot drift. An order older than this is one the sync
- * will never look at again.
+ * The bounded-window length a marketplace sync would use. An order older than
+ * this, on a marketplace listed below, is one the sync will never look at again.
  */
 export const ORDER_STATUS_LOOKBACK_DAYS = 30
 
@@ -47,8 +45,11 @@ export const ORDER_STATUS_LOOKBACK_DAYS = 30
  * Membership here is a statement about that marketplace's sync, not about the
  * marketplace itself — add one only when its sync genuinely stops refreshing
  * old orders, because the effect is to stop subtracting them.
+ *
+ * Empty today: Uzum's sync sends no date filter and re-reads every order on
+ * every tick, so every order stays correctable.
  */
-export const BOUNDED_LOOKBACK_MARKETPLACES: readonly MarketplaceType[] = ['yandex_market']
+export const BOUNDED_LOOKBACK_MARKETPLACES: readonly MarketplaceType[] = []
 
 export function cutoffFor(now: Date): Date {
   const d = new Date(now)

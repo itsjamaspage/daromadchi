@@ -14,7 +14,7 @@ import { pool } from './drizzle'
  * What overlapping runs actually do, worst first:
  *
  *   • order_items are written delete-then-insert (lib/uzum/sync.ts,
- *     lib/yandex/sync.ts). Interleaving two of those pairs can drop items.
+ *     lib/uzum/sync.ts). Interleaving two of those pairs can drop items.
  *   • the fee backfill recomputes a rate from a shop balance the other run is
  *     concurrently changing, and both write the result.
  *   • new-order detection is stateless across ticks, so two runs can each

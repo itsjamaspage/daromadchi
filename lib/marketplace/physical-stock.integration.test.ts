@@ -10,7 +10,7 @@ import { reconcilePhysicalStock } from './physical-stock'
  * Both marketplaces reported 0 and Daromadchi kept showing 1 on hand, on a SKU
  * with no open orders at all — so the order-decrement band was not involved.
  * The cause was the value-match guard taking the most recent 'sent' write with
- * NO TIME BOUND: the seller zeroed Uzum, we mirrored 0 to Yandex, and from then
+ * NO TIME BOUND: the seller zeroed one listing, we mirrored 0 to its sibling, and from then
  * on a genuine listing of 0 matched our own write of 0 and was refused forever.
  *
  * Run: DATABASE_URL=… node --import tsx --test lib/marketplace/physical-stock.integration.test.ts
@@ -29,7 +29,7 @@ async function makeProduct(sku: string, listed: number, physical: number): Promi
 
 async function logWrite(productId: string, quantity: number, ageHours: number) {
   await db.insert(stockWriteLog).values({
-    shop_id: shopId, product_id: productId, marketplace: 'yandex_market',
+    shop_id: shopId, product_id: productId, marketplace: 'uzum',
     requested_quantity: quantity, quantity, status: 'sent', dry_run: false,
     endpoint: '/test', method: 'PUT',
     created_at: sql`now() - interval '${sql.raw(String(ageHours))} hours'`,
@@ -43,7 +43,7 @@ before(async () => {
   userId = crypto.randomUUID(); shopId = crypto.randomUUID()
   await db.insert(users).values({ id: userId, email: `pst+${Date.now()}@t.local`, name: 'pst' } as never)
   await db.insert(shops).values({
-    id: shopId, user_id: userId, name: 'pst', marketplace: 'yandex_market', is_active: true,
+    id: shopId, user_id: userId, name: 'pst', marketplace: 'uzum', is_active: true,
   } as never)
 })
 after(async () => { await db.delete(users).where(eq(users.id, userId)) })

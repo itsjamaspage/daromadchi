@@ -16,10 +16,9 @@ export default function SyncButton() {
     setState('syncing')
     try {
       const r1 = await fetch('/api/uzum/sync', { method: 'POST' }).catch(() => null)
-      const r2 = await fetch('/api/yandex/sync', { method: 'POST' }).catch(() => null)
-      const allOk = r1?.ok && r2?.ok
-      setState(allOk ? 'ok' : 'err')
-      if (allOk) {
+      const ok = !!r1?.ok
+      setState(ok ? 'ok' : 'err')
+      if (ok) {
         router.refresh()
         setTimeout(() => setState('idle'), 3000)
       }

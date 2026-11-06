@@ -2,7 +2,6 @@
 // Smart alert engine + Telegram notification bridge + Marketplace API sync
 
 const API             = 'https://daromadchi.uz/api';
-const YANDEX_API      = 'https://api.partner.market.yandex.ru';
 const UZUM_SELLER_API = 'https://api-seller.uzum.uz/api/seller-openapi';
 const WB_COMMON_API   = 'https://common-api.wildberries.ru';
 const WB_STATS_API    = 'https://statistics-api.wildberries.ru';
@@ -98,130 +97,6 @@ async function apiFetch(path, token) {
   } catch {
     return null;
   }
-}
-
-// ─── YANDEX MARKET PARTNER API ───────────────────────────────────────────────
-// Auth: Api-Key header (recommended over OAuth — see yandex.ru/dev/market/partner-api)
-// Base URL: https://api.partner.market.yandex.ru
-
-async function yandexApiFetch(path, apiKey, method = 'GET', body = null) {
-  try {
-    const res = await fetch(`${YANDEX_API}${path}`, {
-      method,
-      headers: {
-        'Api-Key': apiKey,
-        'Content-Type': 'application/json',
-      },
-      ...(body !== null ? { body: JSON.stringify(body) } : {})
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
-
-async function getOrCacheYandexCampaignId(apiKey) {
-  const { yandexCampaignId } = await chrome.storage.local.get('yandexCampaignId');
-  if (yandexCampaignId) return yandexCampaignId;
-
-  // Auto-discover: GET /campaigns returns all shops for this API key
-  const data = await yandexApiFetch('/campaigns', apiKey);
-  if (data?.campaigns?.length) {
-    const id = data.campaigns[0].id;
-    chrome.storage.local.set({
-      yandexCampaignId: id,
-      yandexCampaigns: data.campaigns
-    });
-    return id;
-  }
-  return null;
-}
-
-async function syncYandexMarket() {
-  const { yandexApiKey } = await chrome.storage.local.get('yandexApiKey');
-  if (!yandexApiKey) return;
-
-  const campaignId = await getOrCacheYandexCampaignId(yandexApiKey);
-  if (!campaignId) {
-    chrome.storage.local.set({ yandexConnected: false });
-    return;
-  }
-
-  const today     = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-
-  // Fetch order stats and current offers in parallel
-  // Order stats endpoint: POST /campaigns/{campaignId}/stats/orders
-  // Offers endpoint:      POST /campaigns/{campaignId}/offers
-  const [orderData, offerData] = await Promise.all([
-    yandexApiFetch(
-      `/campaigns/${campaignId}/stats/orders`,
-      yandexApiKey, 'POST',
-      { dateFrom: yesterday, dateTo: today, limit: 200 }
-    ),
-    yandexApiFetch(
-      `/campaigns/${campaignId}/offers`,
-      yandexApiKey, 'POST',
-      { limit: 200 }
-    )
-  ]);
-
-  // Aggregate today's orders only (API may return yesterday + today)
-  const orders = (orderData?.result?.orders || []).filter(o =>
-    (o.creationDate || '').startsWith(today)
-  );
-
-  let todayRevenue = 0, todayCommissions = 0, todayReturns = 0;
-  for (const order of orders) {
-    for (const item of (order.items || [])) {
-      todayRevenue     += item.prices?.buyerTotal || 0;
-      todayCommissions += (item.commissions || []).reduce((s, c) => s + (c.actual || 0), 0);
-    }
-    if (['CANCELLED_IN_DELIVERY', 'RETURNED', 'PARTIALLY_RETURNED'].includes(order.status)) {
-      todayReturns++;
-    }
-  }
-
-  // Map offers to alert-rule product shape for stock alerts
-  const offers = offerData?.offers || offerData?.offerMappings || [];
-  const yandexProducts = offers.map(o => ({
-    id:          `yandex-${o.offer?.offerId || o.mapping?.marketSku || o.id}`,
-    name:        o.offer?.name || 'Yandex mahsuloti',
-    // CHECK: stock field path — verify against current API response if alerts stop firing
-    stock:       o.stocks?.[0]?.count ?? o.stockInfo?.count ?? 0,
-    hasActiveAd: false,  // requires separate boost API call
-    adSpendToday: 0,
-    salesToday:  0,
-    salesDropPct: 0,
-    returnRate:  0,
-    source:      'yandex'
-  }));
-  const lowStock = yandexProducts.filter(p => p.stock > 0 && p.stock <= 5).length;
-
-  const stats = {
-    todayRevenue,
-    todayProfit:  todayRevenue - todayCommissions,
-    todayOrders:  orders.length,
-    todayReturns,
-    marginPct:    todayRevenue > 0
-      ? Math.round(((todayRevenue - todayCommissions) / todayRevenue) * 100)
-      : 0,
-    lowStock,
-    adSpendToday: 0,
-    lastSynced:   new Date().toLocaleTimeString('uz-UZ'),
-    source:       'yandex'
-  };
-
-  chrome.storage.local.set({
-    yandexStats:     stats,
-    yandexStatsTime: Date.now(),
-    yandexConnected: true,
-    yandexProducts
-  });
-
-  // Run stock-based alert rules against Yandex products
-  runMarketplaceAlerts(yandexProducts, 'yandex');
 }
 
 // ─── UZUM SELLER API ─────────────────────────────────────────────────────────
@@ -503,7 +378,6 @@ async function runMarketplaceAlerts(products, source) {
 async function runSync() {
   // Fire marketplace syncs independently — they store results in storage
   // and don't need a Daromadchi account to function
-  syncYandexMarket();
   syncUzumSeller();
   syncWildberries();
 

@@ -9,7 +9,7 @@ import { withErrorHandler } from '@/lib/api-handler'
 import { resolveShopIdentity } from '@/lib/db/shop-identity'
 
 const SaveSchema = z.object({
-  marketplace:    z.enum(['uzum', 'yandex_market']),
+  marketplace:    z.enum(['uzum']),
   apiKey:         z.string().max(2000).optional(),
   shopIdExternal: z.string().max(200).optional(),
   shopName:       z.string().max(200).optional(),
@@ -64,7 +64,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
   await db.insert(shops).values({
     user_id:     user.id,
-    name:        shopName ?? (marketplace === 'uzum' ? 'Uzum do\'konim' : 'Yandex Market do\'konim'),
+    name:        shopName ?? 'Uzum do\'konim',
     marketplace,
     is_active:   true,
     ...update,

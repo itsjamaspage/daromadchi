@@ -8,7 +8,7 @@ import { displayReservedCondition } from '@/lib/marketplace/reserving-orders'
  * Cross-marketplace leftover tracking.
  *
  * Products are grouped across the user's shops by normalized seller article
- * (SKU) — the same article on Uzum, Wildberries and Yandex Market means the
+ * (SKU) — the same article across listings means the
  * same physical product. All numbers here are computed from data already synced
  * from the marketplaces; this display math never writes to a store. (Writing the
  * corrected leftover back to a listing is a separate, opt-in path —
@@ -20,7 +20,7 @@ import { displayReservedCondition } from '@/lib/marketplace/reserving-orders'
  *                 FBO/FBY members → SUM (independent per-marketplace warehouses)
  *                 FBS / unknown  → MAX (same physical pool on every marketplace)
  *               Total leftover = FBO sum + FBS max. Handles mixed groups too
- *               (e.g. SKU listed as FBS on Uzum and FBY on Yandex → both add).
+ *               (e.g. the same SKU listed FBS on one shop and FBO on another → both add).
  *  • baseline — the user entered how many units they physically own
  *               (total_physical_stock); leftover = that number minus exact
  *               units sold across ALL marketplaces since it was entered.
@@ -407,11 +407,11 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
 
   // ── Phase 3: cross-marketplace variant parents ─────────────────────────────
   // Phase 2 grouped by a single per-SKU key, so a product listed on BOTH
-  // marketplaces (its StockGroup carries e.g. uzum:… AND yandex:… keys) fell to
+  // marketplaces (its StockGroup carries keys from several) fell to
   // a flat row. Union StockGroups into product parents by the transitive closure
   // of "shares any member variant_group_key on any marketplace": the two merged
   // JMWHT / JMBLK groups both hold uzum:3135544 → one M9 parent, even though each
-  // also spans Yandex. J16 (different SKU codes per marketplace) shares no key
+  // also spans another marketplace. J16 (different SKU codes per marketplace) shares no key
   // across marketplaces, so it stays split — the SKU codes decide, no special case.
   const uf = new Map<number, number>()
   result.forEach((_, i) => uf.set(i, i))

@@ -7,11 +7,14 @@ const row = (sku: string, key: string | null, mp: string | null): Row =>
   ({ sku, variant_group_key: key, marketplace: mp })
 
 // The GTX350 case: two colours listed on both stores, four rows in the table.
+// 'other_market' is a deliberate placeholder for a SECOND store — Uzum is the
+// only integrated marketplace today, but keeping stores apart is the rule this
+// function exists for, so it still has to be proven.
 const GTX = [
-  row('KBWHT', 'uzum:350',   'uzum'),
-  row('KBBLK', 'uzum:350',   'uzum'),
-  row('KBWHT', 'yandex:G350', 'yandex_market'),
-  row('KBBLK', 'yandex:G350', 'yandex_market'),
+  row('KBWHT', 'uzum:350',    'uzum'),
+  row('KBBLK', 'uzum:350',    'uzum'),
+  row('KBWHT', 'other:G350',  'other_market'),
+  row('KBBLK', 'other:G350',  'other_market'),
 ]
 
 test('colours of one product in one store collapse into one group', () => {
@@ -24,7 +27,7 @@ test('the two stores never merge into a single group', () => {
   const out = groupByStoreVariant(GTX)
   const stores = out.map(i => i.type === 'group' ? [...new Set(i.children.map(c => c.marketplace))] : [])
   for (const s of stores) assert.equal(s.length, 1, 'each group is one store only')
-  assert.deepEqual(stores.flat().sort(), ['uzum', 'yandex_market'])
+  assert.deepEqual(stores.flat().sort(), ['other_market', 'uzum'])
 })
 
 // The bucket id carries the marketplace even though the key already implies it.
@@ -32,7 +35,7 @@ test('the two stores never merge into a single group', () => {
 test('an unnamespaced key shared by two stores still does not merge them', () => {
   const out = groupByStoreVariant([
     row('A', 'M9', 'uzum'), row('B', 'M9', 'uzum'),
-    row('A', 'M9', 'yandex_market'), row('B', 'M9', 'yandex_market'),
+    row('A', 'M9', 'other_market'), row('B', 'M9', 'other_market'),
   ])
   assert.equal(out.length, 2)
   for (const i of out) {

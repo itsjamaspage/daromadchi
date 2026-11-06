@@ -2,26 +2,22 @@
  * MARKETPLACE EGRESS GUARD — SET BY OWNER (jkhakimjonov8@gmail.com)
  * DO NOT MODIFY WITHOUT EXPLICIT WRITTEN APPROVAL FROM THE OWNER.
  *
- * Read-only by DEFAULT. Every outbound marketplace request (Yandex Market,
- * Uzum, Wildberries) passes through this one guard — there is no second egress
+ * Read-only by DEFAULT. Every outbound marketplace request (Uzum,
+ * Wildberries) passes through this one guard — there is no second egress
  * path. The default intent is 'read':
  *   • PUT / PATCH / DELETE  → always rejected.
  *   • POST                  → rejected unless the exact URL is a marketplace
  *                             READ that requires POST (APPROVED_POST_ENDPOINTS).
  *
- * There are exactly THREE sanctioned write exceptions, each narrow and audited:
+ * There are exactly TWO sanctioned write exceptions, each narrow and audited:
  *   • intent 'stock-write' — the opt-in, stock-quantity-ONLY writer
  *     (lib/marketplace/stock-writer.ts). Must match the method-exact, URL-exact
  *     APPROVED_STOCK_WRITE_ENDPOINTS (stock endpoints only). Changes nothing but
  *     the ostatok, and only for shops whose owner opted in.
  *   • intent 'order-cancel' — the oversell cancel path
  *     (lib/marketplace/order-cancel.ts). Must match APPROVED_ORDER_CANCEL_ENDPOINTS
- *     and may ONLY cancel (the shared YM status endpoint additionally requires a
- *     CANCELLED body and forbids any forward status).
- *   • intent 'product-write' — the Yandex product creation / update path
- *     (lib/marketplace/product-writer.ts). Must match the method-exact, URL-exact
- *     APPROVED_PRODUCT_WRITE_ENDPOINTS (Yandex offer-mappings/update only).
- *     Approved by owner (jkhakimjonov8@gmail.com) for Yandex product creation.
+ *     and may ONLY cancel (the cancel-specific Uzum URL; confirm, refund,
+ *     delivering and invoice are different URLs and never match).
  * Each writer — and only it — calls this guard with its intent. Anything else
  * with write intent is logged as `blocked` and never sent. Every other
  * marketplace write remains forbidden without fresh written approval from the
@@ -33,39 +29,12 @@ import { logger } from './logger'
 // Endpoints where POST is the marketplace's own requirement for a READ operation.
 // Any POST NOT in this list is rejected.
 const APPROVED_POST_ENDPOINTS: RegExp[] = [
-  // Yandex Market — offer-mappings (GET returns 405, POST is the read method)
-  /api\.partner\.market\.yandex\.ru\/v2\/businesses\/\d+\/offer-mappings/,
-  /api\.partner\.market\.yandex\.ru\/v2\/campaigns\/\d+\/offer-mappings/,
-  // Yandex Market — offer-cards (POST is the read method). Returns read-only
-  // characteristic values (parameterValues) incl. «Цвет»; used to recover a
-  // variant colour when the offer/SKU name has no colour word. No write path.
-  /api\.partner\.market\.yandex\.ru\/v2\/businesses\/\d+\/offer-cards/,
-  // Yandex Market — stocks (SKU list too large for query string, POST is required read)
-  /api\.partner\.market\.yandex\.ru\/v2\/campaigns\/\d+\/offers\/stocks/,
-  // Yandex Market — SKU stats (date range in body, POST is required read)
-  /api\.partner\.market\.yandex\.ru\/v2\/campaigns\/\d+\/stats\/skus/,
-  // Yandex Market — every report-generate endpoint (POST to REQUEST a
-  // report, response contains READ-ONLY financial / settlement /
-  // realization / stocks data). Approved by owner for real-payout data
-  // on the Payouts page. Broad pattern covers united-netting-report,
-  // goods-realization, goods-turnover, and any future report type
-  // Yandex ships under the same namespace; also covers both the legacy
-  // /reports/... path and the newer /businesses/{id}/reports/... one.
-  /api\.partner\.market\.yandex\.ru\/reports\/[a-z-]+\/generate/,
-  /api\.partner\.market\.yandex\.ru\/businesses\/\d+\/reports\/[a-z-]+\/generate/,
-  /api\.partner\.market\.yandex\.ru\/campaigns\/\d+\/reports\/[a-z-]+\/generate/,
   // Wildberries Content API — paginated card list (POST is the read method)
   /content-api\.wildberries\.ru\/content\/v2\/get\/cards\/list/,
   // Wildberries Marketplace API — FBS stock lookup by barcodes (POST is the read
   // method; the write variant is PUT on the same path and remains blocked).
   // Approved by owner in chat for the cross-marketplace leftover feature (2026-07-12).
   /marketplace-api\.wildberries\.ru\/api\/v3\/stocks\/\d+$/,
-  // Yandex Market — category parameters (POST is the read method). Returns
-  // required/optional fields for a category — used when building the product
-  // creation form. Read-only: no write capability.
-  /api\.partner\.market\.yandex\.ru\/v2\/category\/\d+\/parameters/,
-  // Yandex Market — category tree (GET returns 405, POST is the read method)
-  /api\.partner\.market\.yandex\.ru\/categories\/tree/,
   // Uzum GraphQL public search API (read-only market research, no auth)
   /^https:\/\/graphql\.uzum\.uz/,
 ]
@@ -77,21 +46,13 @@ const WRITE_METHODS = new Set(['PUT', 'PATCH', 'DELETE'])
  * no query string) — kept deliberately separate from the read-POST allowlist
  * above so the same-path/different-method cases can never blur together:
  *   • Uzum  stock write:  POST https://api-seller.uzum.uz/.../v2/fbs/sku/stocks
- *   • YM    stock write:  PUT  https://api.partner.market.yandex.ru/v2/campaigns/{id}/offers/stocks
- * Note YM uses POST on that identical /offers/stocks path for a READ (see
- * APPROVED_POST_ENDPOINTS) — only the PUT is a write, and only with write intent.
- * Stock quantity is the ONLY thing any of these change.
+ * Stock quantity is the ONLY thing this changes.
  */
 const APPROVED_STOCK_WRITE_ENDPOINTS: { marketplace: string; method: string; pattern: RegExp }[] = [
   {
     marketplace: 'uzum',
     method: 'POST',
     pattern: /^https:\/\/api-seller\.uzum\.uz\/api\/seller-openapi\/v2\/fbs\/sku\/stocks$/,
-  },
-  {
-    marketplace: 'yandex_market',
-    method: 'PUT',
-    pattern: /^https:\/\/api\.partner\.market\.yandex\.ru\/v2\/campaigns\/\d+\/offers\/stocks$/,
   },
 ]
 
@@ -101,9 +62,8 @@ const APPROVED_STOCK_WRITE_ENDPOINTS: { marketplace: string; method: string; pat
  * allowlisted from stock writes and, crucially, cancel-ONLY:
  *   • Uzum — POST …/v1/fbs/order/{id}/cancel is a cancel-specific URL; confirm,
  *     refund, delivering, invoice etc. are different URLs and never match.
- *   • YM — the status endpoint is SHARED with confirm/process, so a URL match is
- *     not enough: the body MUST set status CANCELLED and MUST NOT set any
- *     forward status. This is what proves the cancel path can only cancel.
+ * The requireBody / forbidBody fields remain supported for any future
+ * marketplace whose cancel shares a URL with a forward status transition.
  */
 const APPROVED_ORDER_CANCEL_ENDPOINTS: {
   marketplace: string; method: string; pattern: RegExp; requireBody?: RegExp; forbidBody?: RegExp
@@ -113,34 +73,12 @@ const APPROVED_ORDER_CANCEL_ENDPOINTS: {
     method: 'POST',
     pattern: /^https:\/\/api-seller\.uzum\.uz\/api\/seller-openapi\/v1\/fbs\/order\/\d+\/cancel$/,
   },
-  {
-    marketplace: 'yandex_market',
-    method: 'PUT',
-    pattern: /^https:\/\/api\.partner\.market\.yandex\.ru\/v2\/campaigns\/\d+\/orders\/\d+\/status$/,
-    requireBody: /"status"\s*:\s*"CANCELLED"/,
-    forbidBody: /"status"\s*:\s*"(PROCESSING|DELIVERY|PICKUP|DELIVERED)"/,
-  },
-]
-
-/**
- * The THIRD sanctioned write: Yandex product creation / update via the
- * offer-mappings/update endpoint. Approved by owner (jkhakimjonov8@gmail.com)
- * for pushing new offers to Yandex Market. Yandex only — Uzum has no product
- * creation API. Audited in product_write_log.
- */
-const APPROVED_PRODUCT_WRITE_ENDPOINTS: { marketplace: string; method: string; pattern: RegExp }[] = [
-  {
-    marketplace: 'yandex_market',
-    method: 'POST',
-    pattern: /^https:\/\/api\.partner\.market\.yandex\.ru\/v2\/businesses\/\d+\/offer-mappings\/update(\?language=(RU|UZ))?$/,
-  },
 ]
 
 // Intent an *individual* request declares. Default (and everything that omits
 // it) is 'read'. Only the stock-writer passes 'stock-write'; only the
-// order-cancel path passes 'order-cancel'; only the product-writer passes
-// 'product-write'.
-export type MarketplaceIntent = 'read' | 'stock-write' | 'order-cancel' | 'product-write'
+// order-cancel path passes 'order-cancel'.
+export type MarketplaceIntent = 'read' | 'stock-write' | 'order-cancel'
 
 export interface MarketplaceInit extends RequestInit {
   intent?: MarketplaceIntent
@@ -189,18 +127,6 @@ export function checkMarketplaceRequest(
     return
   }
 
-  if (intent === 'product-write') {
-    const match = APPROVED_PRODUCT_WRITE_ENDPOINTS.find(e => e.method === m && e.pattern.test(url))
-    if (!match) {
-      logger.warn('marketplace_product_write_blocked', { method: m, url, reason: 'not_in_product_write_allowlist' })
-      throw new Error(
-        `[PRODUCT-WRITE GUARD] Blocked ${m} to marketplace API: ${url}\n` +
-        `Product writes are only allowed to the exact Yandex offer-mappings/update endpoint.`,
-      )
-    }
-    return
-  }
-
   // ── Default: read intent. Writes are forbidden here regardless of URL. ──
   if (WRITE_METHODS.has(m)) {
     throw new Error(
@@ -243,7 +169,7 @@ export function marketplaceFetch(url: string, init?: MarketplaceInit): Promise<R
 const FALLBACK_TIMEOUT_MS = 30_000
 
 async function guardedFetch(url: string, init?: RequestInit): Promise<Response> {
-  // Retry is the caller's job (uzum/client, yandex/client). The guard only
+  // Retry is the caller's job (uzum/client). The guard only
   // validates the request and forwards it — no retry layer here.
   // Add a timeout only when the caller didn't provide its own AbortSignal.
   if (init?.signal) {

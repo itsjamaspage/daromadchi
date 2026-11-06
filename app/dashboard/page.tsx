@@ -25,7 +25,7 @@ function parseDays(v: string | undefined): number {
   return 365
 }
 
-const VALID_MARKETPLACES = ['uzum', 'yandex_market'] as const
+const VALID_MARKETPLACES = ['uzum'] as const
 
 function parseMarketplace(params: Record<string, string> | undefined): MarketplaceType | undefined {
   const v = params?.mp
@@ -129,14 +129,12 @@ export default async function DashboardPage({ searchParams }: Props) {
   const allShops   = await getUserShops().catch(e => { console.error('[dashboard] getUserShops', e); return [] })
   const hasShops   = allShops.length > 0
   const hasUzum    = allShops.some(s => s.marketplace === 'uzum')
-  const hasYM      = allShops.some(s => s.marketplace === 'yandex_market')
 
-  const [allSlice, uzumSlice, ymSlice, stockGroups, syncInfo] = await Promise.all([
-    fetchSlice(days, undefined,       hasShops,  from, to),
-    fetchSlice(days, 'uzum',          hasUzum,   from, to),
-    fetchSlice(days, 'yandex_market', hasYM,     from, to),
-    // Cross-marketplace grouped stock — same SKU on Uzum + YM collapses
-    // to one alert with marketplace badges instead of N duplicates.
+  const [allSlice, uzumSlice, stockGroups, syncInfo] = await Promise.all([
+    fetchSlice(days, undefined, hasShops, from, to),
+    fetchSlice(days, 'uzum',    hasUzum,  from, to),
+    // Grouped stock — the same SKU across shops collapses to one alert with
+    // marketplace badges instead of N duplicates.
     getStockGroups().catch(e => { console.error('[dashboard] getStockGroups', e); return [] }),
     getSyncInfo().catch(e => { console.error('[dashboard] getSyncInfo', e); return { lastSyncedAt: null, lastSyncFailed: false, alerts: [] } }),
   ])
@@ -145,7 +143,7 @@ export default async function DashboardPage({ searchParams }: Props) {
     <Suspense>
       <WelcomePopup hasShops={hasShops} />
       <DashboardClient
-        slices={{ all: allSlice, uzum: uzumSlice, yandex_market: ymSlice }}
+        slices={{ all: allSlice, uzum: uzumSlice }}
         stockGroups={stockGroups}
         days={days}
         period={period}

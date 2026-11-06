@@ -89,43 +89,18 @@ export async function getUnitEconomicsItems(): Promise<UnitEconomicsItem[]> {
     }
     return null
   }
-  // Extension v2.5.2 corrections applied on the read path so users see
-  // fixed numbers immediately without clicking Recalculate. Rules match
-  // the /api/unit-economics/recalc endpoint exactly:
-  //   1) Yandex Market has no separate delivery line — the seller's
-  //      balance page shows one aggregate deduction ("Услуги Маркета")
-  //      that includes commission + order processing + placement +
-  //      last-mile + acquiring. Set delivery to 0 and roll the whole
-  //      bundle into the commission %. Bundle target for FBS is
-  //      currently 20% (electronics tier, matching real settlement:
-  //      76 000 UZS order → 16 060 UZS services = 21% total). Rewrite
-  //      commission_pct + commission when the stored commission is
-  //      clearly a "raw only" number (≤10% of price for a YM row), so
-  //      we don't clobber a value the seller manually edited high.
-  //   2) Ad spend that equals sellingPrice × 5% within 1 so'm is the old
-  //      auto-default from the widget — treat it as unset (0). Explicit
-  //      user ad-% entries won't match the rounded 5% exactly.
+  // Extension v2.5.2 correction applied on the read path so users see
+  // fixed numbers immediately without clicking Recalculate. Matches
+  // the /api/unit-economics/recalc endpoint exactly: ad spend that equals
+  // sellingPrice × 5% within 1 so'm is the old auto-default from the widget —
+  // treat it as unset (0). Explicit user ad-% entries won't match the rounded
+  // 5% exactly.
   function applyV252Fix(item: UnitEconomicsItem): UnitEconomicsItem {
-    let delivery      = item.delivery
-    let commission    = item.commission
-    let commissionPct = item.commissionPct
-    let adSpend       = item.adSpend
-    let touched       = false
-    if (item.marketplace === 'yandex_market') {
-      if (delivery > 0) {
-        delivery = 0
-        touched  = true
-      }
-      // Raw commission ≤10% on YM means the row was stored before we
-      // rolled the services bundle into the number. Promote it to a
-      // 20%-of-price bundle so the row totals match the seller's
-      // balance page.
-      if (item.sellingPrice > 0 && commissionPct > 0 && commissionPct <= 10) {
-        commissionPct = 20
-        commission    = Math.round(item.sellingPrice * 0.20)
-        touched       = true
-      }
-    }
+    const delivery      = item.delivery
+    const commission    = item.commission
+    const commissionPct = item.commissionPct
+    let adSpend         = item.adSpend
+    let touched         = false
     const autoAd = Math.round(item.sellingPrice * 5 / 100)
     if (adSpend > 0 && Math.abs(adSpend - autoAd) <= 1) {
       adSpend = 0

@@ -19,7 +19,6 @@ import {
 
 export const marketplaceTypeEnum = pgEnum('marketplace_type', [
   'uzum',
-  'yandex_market',
 ])
 
 export const orderStatusEnum = pgEnum('order_status', [
@@ -144,7 +143,6 @@ export const shops = pgTable('shops', {
   marketplace:       marketplaceTypeEnum('marketplace').notNull(),
   api_key_encrypted: text('api_key_encrypted'),
   shop_id_external:  text('shop_id_external'),
-  business_id:       text('business_id'),
   is_active:         boolean('is_active').default(true).notNull(),
   token_valid:       boolean('token_valid'),
   last_synced_at:    timestamp('last_synced_at', { withTimezone: true }),
@@ -158,13 +156,6 @@ export const shops = pgTable('shops', {
   // getting hammered by our 15-min cron. Persisted (not in-memory) so
   // deploys don't wipe it.
   throttled_until:   timestamp('throttled_until', { withTimezone: true }),
-  // Yandex Market boost-consolidated (Буст продаж) report cooldown. The report
-  // is a separate permission on the seller's API key; a key without advertising
-  // access gets a hard 403 on every generate, which otherwise re-fires each cron
-  // cycle and floods the seller's "Ошибки · API Маркета" log at 100%. On a 403
-  // we stamp this and skip boost sync, re-probing only ~weekly so the feature
-  // still self-heals if the seller later grants access. Cleared on a success.
-  yandex_boost_disabled_at: timestamp('yandex_boost_disabled_at', { withTimezone: true }),
   warehouse_id:      uuid('warehouse_id').references(() => warehouses.id, { onDelete: 'set null' }),
   // All shops default to stock_sync (edit mode). The audited writer
   // (lib/marketplace/stock-writer.ts) may push ostatok — stock QUANTITY
@@ -194,11 +185,6 @@ export const shops = pgTable('shops', {
   // last_synced_at (which gates the heavy pass with settlements) so
   // products can refresh every 30 min regardless of plan.
   products_synced_at:       timestamp('products_synced_at', { withTimezone: true }),
-  // Cached Yandex Market campaign placementType (FBS/DBS/FBY/LAAS). Stored on
-  // a successful fetchCampaignInfo so the new-order alert gate can fall back to
-  // it when the API call fails on a later tick — without this, a transient API
-  // error silently suppresses ALL order alerts for the shop. Migration 098.
-  campaign_placement:       text('campaign_placement'),
   created_at:        timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   index('shops_user_id_idx').on(t.user_id),
@@ -220,8 +206,9 @@ export const products = pgTable('products', {
   quantity_sold:          integer('quantity_sold'),
   category:               text('category'),
   marketplace_product_id: text('marketplace_product_id'),
-  // 'fbs' (seller ships) | 'fbo' (marketplace warehouse) | 'fby' (Yandex
-  // fulfillment) | null (unknown → treated as FBS by stock aggregation).
+  // 'fbs' (seller ships) | 'fbo' (marketplace warehouse) | null (unknown →
+  // treated as FBS by stock aggregation). Legacy rows may still read 'fby'
+  // until migration 103 is applied.
   fulfillment_type:       text('fulfillment_type'),
   // ── Cross-marketplace stock-WRITE identifiers (populated in Phase 3) ─────
   // Uzum: the STRING barcode from GET /v3/fbs/sku/stocks. The write DTO
@@ -230,12 +217,9 @@ export const products = pgTable('products', {
   // MUST be sourced here, never from the product card. Null until the barcode
   // sync step runs — a live Uzum write is refused without it.
   market_barcode:         text('market_barcode'),
-  // Yandex Market: the exact shopSku the stock-update PUT expects (sourced
-  // from the offers/stocks read).
+  // Uzum: the FBS skuId (numeric, from GET /v3/fbs/sku/stocks) that the
+  // stock-update POST keys on. A live Uzum write is refused without it.
   market_sku:             text('market_sku'),
-  // Yandex Market: the warehouseId the stock-update PUT targets (sourced from
-  // the offers/stocks read). Stored as text — it's a marketplace-side id.
-  market_warehouse_id:    text('market_warehouse_id'),
   // Uzum returns archived products in the product-list API; without this they
   // insert as active and clutter every default view. Set on each sync from the
   // card/SKU archived flags (see lib/uzum/sync.ts). Existing rows default false
@@ -244,14 +228,14 @@ export const products = pgTable('products', {
   is_archived:            boolean('is_archived').default(false).notNull(),
   // Groups colour/size variants of one parent product (later: a collapsible
   // parent row that expands to per-variant children). Namespaced by marketplace
-  // — 'uzum:<card.productId>' | 'yandex:<marketModelName>' — so keys never
-  // collide across marketplaces. Nullable: single-variant products may have none.
-  // Set by the two syncs; unused by any view until the Phase 2 UI.
+  // — 'uzum:<card.productId>' — so keys never collide across marketplaces.
+  // Nullable: single-variant products may have none.
+  // Set by the sync; unused by any view until the Phase 2 UI.
   variant_group_key:      text('variant_group_key'),
   // Resolved colour KEY of this variant (resolveColor: 'white' | 'beige' | …),
-  // from Uzum sku.skuTitle / Yandex mapping.marketSkuName. Powers the per-colour
-  // child label ("Цвет: Белый") in the collapsible variant view. Nullable when
-  // no known colour. Set by both syncs; localised at display time via COLOR_LABELS.
+  // from Uzum sku.skuTitle. Powers the per-colour child label ("Цвет: Белый") in
+  // the collapsible variant view. Nullable when no known colour. Set by the sync;
+  // localised at display time via COLOR_LABELS.
   variant_color:          text('variant_color'),
   updated_at:             timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   // When stock_quantity last actually CHANGED — stamped by the
@@ -295,8 +279,8 @@ export const orders = pgTable('orders', {
   // 'dbs' (delivery by seller), etc. Nullable for legacy/unknown rows.
   fulfillment_type:  text('fulfillment_type'),
   status:            orderStatusEnum('status').default('pending').notNull(),
-  // Raw marketplace order status (e.g. Uzum DELIVERING vs ACCEPTED_AT_DP, Yandex
-  // DELIVERY) preserved verbatim. The normalized `status` above collapses states
+  // Raw marketplace order status (e.g. Uzum DELIVERING vs ACCEPTED_AT_DP)
+  // preserved verbatim. The normalized `status` above collapses states
   // the stock draw-down must separate — see migration 054 + RESERVING_RAW_STATUSES.
   marketplace_status: text('marketplace_status'),
   marketplace_substatus: text('marketplace_substatus'),
@@ -856,43 +840,6 @@ export const suggestedAliases = pgTable('suggested_aliases', {
   index('suggested_aliases_canonical_idx').on(t.canonical_id),
 ])
 
-/* ── 27. yandex_settlement_transactions ────────────────────────────────────── */
-// Raw per-transaction rows from Yandex Market's united-netting-report.
-// One row per financial event; aggregated per-order in lib/db/payouts.ts
-// so the Payouts UI shows real settlement numbers instead of
-// "Ожидает данных Yandex".
-export const yandexSettlementTransactions = pgTable('yandex_settlement_transactions', {
-  id:                  uuid('id').primaryKey().defaultRandom(),
-  shop_id:             uuid('shop_id').notNull().references(() => shops.id, { onDelete: 'cascade' }),
-  transaction_id:      text('transaction_id').notNull(),
-  order_id_external:   text('order_id_external'),
-  entry_type:          text('entry_type').notNull(),   // "Начисление" | "Удержание"
-  entry_source:        text('entry_source'),           // e.g. "Платёж покупателя", "Оплата услуг Market Yandex Go"
-  order_type:          text('order_type'),             // e.g. "Продажа физлицу", "Доставка покупателю", "Поручение на продажу"
-  sku:                 text('sku'),
-  // «Название товара» from the netting report — the product name on sale rows.
-  // Payouts shows this as the Yandex product name so a row reads exactly as the
-  // seller's finance report prints it. Additive/nullable; backfilled on next sync.
-  product_name:        text('product_name'),
-  amount:              numeric('amount', { precision: 14, scale: 2 }).notNull(),
-  quantity:            integer('quantity'),
-  transaction_at:      timestamp('transaction_at', { withTimezone: true }),
-  order_created_at:    timestamp('order_created_at', { withTimezone: true }),
-  order_delivered_at:  timestamp('order_delivered_at', { withTimezone: true }),
-  status_note:         text('status_note'),          // "Статус": «Переведён…» | «Будет переведён…»
-  // Payment-order («платежное поручение») — present once the money is TRANSFERRED
-  // on the payout schedule. status_note «Переведён…» + a payment_order_number is
-  // the authoritative "paid" signal used by lib/db/payouts.ts. Nullable/additive.
-  payment_order_number: text('payment_order_number'),
-  payment_order_date:  timestamp('payment_order_date', { withTimezone: true }),
-  report_id:           text('report_id'),
-  synced_at:           timestamp('synced_at', { withTimezone: true }).defaultNow().notNull(),
-}, (t) => [
-  uniqueIndex('yandex_settlement_shop_txn_unique').on(t.shop_id, t.transaction_id),
-  index('yandex_settlement_shop_order_idx').on(t.shop_id, t.order_id_external),
-  index('yandex_settlement_transaction_at_idx').on(t.transaction_at),
-])
-
 /* ── 28. uzum_settlement_orders ──────────────────────────────────────────────── */
 // Per-order-item settlement rows from Uzum's /v1/finance/orders — the
 // same view Uzum shows the seller in "Финансы → Продажи". Real commission,
@@ -944,7 +891,6 @@ export const stockWriteLog = pgTable('stock_write_log', {
   // The exact identifier the write used: Uzum string barcode, or YM shopSku.
   identifier:         text('identifier'),
   // YM only — the warehouseId targeted.
-  warehouse_id:       text('warehouse_id'),
   endpoint:           text('endpoint'),
   method:             text('method'),
   // Quantity as requested by the caller, before Math.max(0, …) clamping.
@@ -1098,34 +1044,6 @@ export const orderCancelLog = pgTable('order_cancel_log', {
   index('order_cancel_log_shop_id_idx').on(t.shop_id),
   index('order_cancel_log_created_at_idx').on(t.created_at),
   index('order_cancel_log_auto_idx').on(t.auto),
-])
-
-/* ── 31b. product_write_log ──────────────────────────────────────────────────── */
-// Audit trail for Yandex product creation/update attempts via
-// lib/marketplace/product-writer.ts. One row per attempt. Follows the same
-// pattern as stock_write_log. Approved by owner for Yandex product creation.
-export const productWriteLog = pgTable('product_write_log', {
-  id:            uuid('id').primaryKey().defaultRandom(),
-  shop_id:       uuid('shop_id').notNull().references(() => shops.id, { onDelete: 'cascade' }),
-  user_id:       uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  marketplace:   marketplaceTypeEnum('marketplace').notNull(),
-  offer_id:      text('offer_id'),
-  offer_name:    text('offer_name'),
-  offer_count:   integer('offer_count'),
-  endpoint:      text('endpoint'),
-  method:        text('method'),
-  status:        text('status').notNull(),
-  reason:        text('reason'),
-  http_status:   integer('http_status'),
-  request_body:  text('request_body'),
-  response_body: text('response_body'),
-  error:         text('error'),
-  created_at:    timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-}, (t) => [
-  index('product_write_log_shop_id_idx').on(t.shop_id),
-  index('product_write_log_user_id_idx').on(t.user_id),
-  index('product_write_log_created_at_idx').on(t.created_at),
-  index('product_write_log_status_idx').on(t.status),
 ])
 
 /* ── 32. suggested_product_groups ────────────────────────────────────────────── */

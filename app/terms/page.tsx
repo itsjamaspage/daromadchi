@@ -20,7 +20,7 @@ const T = {
       {
         heading: '1. Platformadan foydalanish',
         short: 'Foydalanish',
-        body: `Daromadchi — Uzbekiston bozorlarida (Uzum Market, Yandex Market) savdo qiluvchi sotuvchilar uchun mo'ljallangan analitika platformasidir.\n\nPlatformadan foydalanish uchun:\n• Faqat o'zingizga tegishli yoki vakolatli bo'lgan marketplace hisobi API kalitlarini kiritishingiz mumkin.\n• Platformani buzish, qayta sotish yoki ruxsatsiz maqsadlarda foydalanish taqiqlanadi.\n• Hisob ma'lumotlarini maxfiy saqlash va ularga ruxsatsiz kirishni darhol bizga xabar qilish majburiydir.\n\nXizmat operatori (huquqiy shaxs): YATT Xakimjonov Jamshid (yakka tartibdagi tadbirkor), INN 51608028660035, O'zbekiston Respublikasi. «Daromadchi» — xizmat nomi.`,
+        body: `Daromadchi — Uzbekiston bozorlarida (Uzum Market) savdo qiluvchi sotuvchilar uchun mo'ljallangan analitika platformasidir.\n\nPlatformadan foydalanish uchun:\n• Faqat o'zingizga tegishli yoki vakolatli bo'lgan marketplace hisobi API kalitlarini kiritishingiz mumkin.\n• Platformani buzish, qayta sotish yoki ruxsatsiz maqsadlarda foydalanish taqiqlanadi.\n• Hisob ma'lumotlarini maxfiy saqlash va ularga ruxsatsiz kirishni darhol bizga xabar qilish majburiydir.\n\nXizmat operatori (huquqiy shaxs): YATT Xakimjonov Jamshid (yakka tartibdagi tadbirkor), INN 51608028660035, O'zbekiston Respublikasi. «Daromadchi» — xizmat nomi.`,
       },
       {
         heading: '2. Hisob va xavfsizlik',
@@ -77,7 +77,7 @@ const T = {
       {
         heading: '1. Использование платформы',
         short: 'Использование',
-        body: `Daromadchi — аналитическая платформа для продавцов на маркетплейсах Узбекистана (Uzum Market, Yandex Market).\n\nДля использования платформы:\n• Вы можете вводить только API-ключи аккаунтов маркетплейса, которые принадлежат вам или на использование которых вы уполномочены.\n• Запрещается взлом, перепродажа или использование платформы в несанкционированных целях.\n• Вы обязаны хранить учётные данные в тайне и незамедлительно сообщать нам о несанкционированном доступе.\n\nОператор сервиса (юридическое лицо): ЯТТ Хакимжонов Жамшид (индивидуальный предприниматель), ИНН 51608028660035, Республика Узбекистан. «Daromadchi» — наименование сервиса.`,
+        body: `Daromadchi — аналитическая платформа для продавцов на маркетплейсах Узбекистана (Uzum Market).\n\nДля использования платформы:\n• Вы можете вводить только API-ключи аккаунтов маркетплейса, которые принадлежат вам или на использование которых вы уполномочены.\n• Запрещается взлом, перепродажа или использование платформы в несанкционированных целях.\n• Вы обязаны хранить учётные данные в тайне и незамедлительно сообщать нам о несанкционированном доступе.\n\nОператор сервиса (юридическое лицо): ЯТТ Хакимжонов Жамшид (индивидуальный предприниматель), ИНН 51608028660035, Республика Узбекистан. «Daromadchi» — наименование сервиса.`,
       },
       {
         heading: '2. Аккаунт и безопасность',
@@ -134,7 +134,7 @@ const T = {
       {
         heading: '1. Use of the platform',
         short: 'Usage',
-        body: `Daromadchi is an analytics platform for sellers on Uzbekistan marketplaces (Uzum Market, Yandex Market).\n\nTo use the platform:\n• You may only enter API keys for marketplace accounts you own or are authorised to use.\n• Hacking, reselling or using the platform for unauthorised purposes is prohibited.\n• You must keep your credentials confidential and immediately notify us of any unauthorised access.\n\nService operator (legal person): YATT Xakimjonov Jamshid (individual entrepreneur), INN 51608028660035, Republic of Uzbekistan. "Daromadchi" is the name of the service.`,
+        body: `Daromadchi is an analytics platform for sellers on Uzbekistan marketplaces (Uzum Market).\n\nTo use the platform:\n• You may only enter API keys for marketplace accounts you own or are authorised to use.\n• Hacking, reselling or using the platform for unauthorised purposes is prohibited.\n• You must keep your credentials confidential and immediately notify us of any unauthorised access.\n\nService operator (legal person): YATT Xakimjonov Jamshid (individual entrepreneur), INN 51608028660035, Republic of Uzbekistan. "Daromadchi" is the name of the service.`,
       },
       {
         heading: '2. Account and security',

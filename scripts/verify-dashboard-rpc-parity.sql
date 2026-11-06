@@ -32,8 +32,8 @@ ORDER BY marketplace;
 --   Previous period: same but ordered_at >= prev_since AND ordered_at < prev_until (strict <)
 --   Stock: SUM(stock_quantity) from products for all shop_ids
 --
--- Tests: days=30 × {all, uzum, yandex_market, wildberries}
---        from/to range × {all, uzum, yandex_market, wildberries}
+-- Tests: days=30 × {all, uzum}
+--        from/to range × {all, uzum}
 --
 -- Output: Only rows where OLD != NEW (empty = all pass)
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -223,8 +223,8 @@ ORDER BY mkt_filter, time_mode, source;
 --   revenue = SUM(COALESCE(revenue, 0))
 --   order_count = COUNT(*)
 --
--- Tests: days=30 × {all, uzum, yandex_market, wildberries}
---        from/to range × {all, uzum, yandex_market, wildberries}
+-- Tests: days=30 × {all, uzum}
+--        from/to range × {all, uzum}
 --
 -- Output: Only rows where OLD != NEW (empty = all pass)
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -350,8 +350,8 @@ ORDER BY mkt_filter, time_mode, day, source;
 --   This can cause ±1 unit differences. The comparison below flags exact mismatches;
 --   if you see differences of exactly 1 in revenue/profit, banker's rounding is the cause.
 --
--- Tests: days=30 × {all, uzum, yandex_market, wildberries}
---        from/to range × {all, uzum, yandex_market, wildberries}
+-- Tests: days=30 × {all, uzum}
+--        from/to range × {all, uzum}
 --
 -- Output: Only rows where OLD != NEW (empty = all pass)
 -- ═══════════════════════════════════════════════════════════════════════════════

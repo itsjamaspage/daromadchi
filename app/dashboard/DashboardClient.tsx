@@ -20,6 +20,7 @@ import { useLang, useTheme } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 import { formatSum } from '@/lib/format-sum'
 import type { Kpis, Order, Product, DailyRevenue, MarketplaceType } from '@/lib/types'
+import { enabledMarketplaces } from '@/lib/feature-flags'
 import { orderDisplayStatus } from '@/lib/marketplace/order-display-status'
 import type { ProductSalesRow } from '@/lib/db/products'
 import type { StockGroup } from '@/lib/db/stock-groups'
@@ -28,13 +29,16 @@ import { colorMetaFor, COLOR_LABELS, type ColorKey } from '@/lib/products/resolv
 // formatSum lives in lib/format-sum.ts so the KPI cards and the category
 // breakdown share one currency formatter and can't drift apart.
 
-// Short marketplace badge for the Top-products list: UZ (Uzum) / YM (Yandex
-// Market). Colour-coded so a store is recognisable at a glance without
-// reading the letters.
+// Short marketplace badge for the Top-products list. Colour-coded so a store
+// is recognisable at a glance without reading the letters.
 const MP_BADGE: Record<MarketplaceType, { label: string; cls: string }> = {
-  uzum:          { label: 'UZ', cls: 'bg-violet-500/15 text-violet-500 border border-violet-500/30' },
-  yandex_market: { label: 'YM', cls: 'bg-amber-500/15 text-amber-600 border border-amber-500/30' },
+  uzum: { label: 'UZ', cls: 'bg-violet-500/15 text-violet-500 border border-violet-500/30' },
 }
+
+// Tab set derived from the enabled-marketplace list, so the bar matches what
+// the app actually integrates with instead of a hardcoded pair.
+const MP_TAB_LABEL: Record<MarketplaceType, string> = { uzum: 'Uzum' }
+const MP_TABS = enabledMarketplaces()
 function MarketplaceBadge({ marketplace }: { marketplace?: MarketplaceType | null }) {
   if (!marketplace) return null
   const b = MP_BADGE[marketplace]
@@ -125,7 +129,6 @@ interface Props {
   slices: {
     all: MarketplaceSlice
     uzum: MarketplaceSlice
-    yandex_market: MarketplaceSlice
   }
   stockGroups: StockGroup[]
   days: number
@@ -196,10 +199,10 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
   // tells the seller something the data does not support.
   const isEmpty = !kpisFailed && kpis.total_orders === 0 && allProducts.length === 0
 
-  // "Учтено: Uzum · Ожидает расчёта: Yandex Market (115 ming so'm)". Names the
-  // marketplaces behind the profit and the ones whose money has not landed, so
-  // a figure smaller than the revenue beside it explains itself.
-  const mpName = (mp: string) => ({ uzum: 'Uzum', yandex_market: 'Yandex Market' } as Record<string, string>)[mp] ?? mp
+  // "Учтено: Uzum". Names the marketplaces behind the profit and the ones whose
+  // money has not landed, so a figure smaller than the revenue beside it
+  // explains itself.
+  const mpName = (mp: string) => ({ uzum: 'Uzum' } as Record<string, string>)[mp] ?? mp
   const coverageParts: string[] = []
   if ((kpis.counted_marketplaces ?? []).length > 0) {
     coverageParts.push(`${t.kpi.counted}: ${(kpis.counted_marketplaces ?? []).map(mpName).join(', ')}`)
@@ -280,7 +283,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
   // Top products: collapse listings that are really ONE product into a single
   // line with combined delivered units + revenue. Two rows merge when they
   // share a normalised SKU (the same article cross-listed on two marketplaces,
-  // e.g. "JMJ16BG" on Uzum + Yandex) OR a variant_group_key (different-colour
+  // e.g. the same "JMJ16BG" on two shops) OR a variant_group_key (different-colour
   // variants of one model, e.g. M9 black "JMBLK" + M9 white "JMWHT" under one
   // parent). This mirrors the Analytics "Top sold" collapse; the SKU bridge
   // additionally covers rows that carry no variant_group_key. Rows with neither
@@ -392,32 +395,32 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
       {/* Above the fold, and above the KPI cards it explains. */}
       {failedPanels.length > 0 && <DataErrorBanner panels={failedPanels} />}
 
-      {/* Marketplace tabs — client-side switching, no page reload */}
-      <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
-        {([
-          { label: d.all,           mp: undefined,       color: 'blue'  },
-          { label: 'Uzum',          mp: 'uzum',          color: 'blue'  },
-          { label: 'Yandex Market', mp: 'yandex_market', color: 'amber' },
-        ] as { label: string; mp: MarketplaceType | undefined; color: string }[]).map(({ label, mp, color }) => {
-          const active = marketplace === mp
-          return (
-            <button
-              key={label}
-              onClick={() => switchTab(mp)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                active
-                  ? color === 'amber'
-                    ? isDark ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-amber-500/15 text-amber-700 border border-amber-500/30'
-                    : 'border border-[var(--border)] text-[var(--c1)]'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
-              }`}
-              style={active && color !== 'amber' ? { background: 'var(--bg-card2)' } : {}}
-            >
-              {label}
-            </button>
-          )
-        })}
-      </div>
+      {/* Marketplace tabs — client-side switching, no page reload. Hidden while a
+          single marketplace is integrated: "All / <one store>" offers no choice. */}
+      {MP_TABS.length > 1 && (
+        <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
+          {([
+            { label: d.all, mp: undefined },
+            ...MP_TABS.map(mp => ({ label: MP_TAB_LABEL[mp] ?? mp, mp })),
+          ] as { label: string; mp: MarketplaceType | undefined }[]).map(({ label, mp }) => {
+            const active = marketplace === mp
+            return (
+              <button
+                key={label}
+                onClick={() => switchTab(mp)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  active
+                    ? 'border border-[var(--border)] text-[var(--c1)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
+                }`}
+                style={active ? { background: 'var(--bg-card2)' } : {}}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       {/* Customize panel */}
       {showCustomize && (
@@ -454,10 +457,9 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
       {/* Empty state */}
       {isEmpty && (() => {
         const mpLinks: Record<string, { url: string; label: string }> = {
-          uzum:          { url: 'https://seller.uzum.uz',           label: 'seller.uzum.uz'           },
-          yandex_market: { url: 'https://partner.market.yandex.ru', label: 'partner.market.yandex.ru' },
+          uzum: { url: 'https://seller.uzum.uz', label: 'seller.uzum.uz' },
         }
-        const mpKeys = ['uzum', 'yandex_market'] as const
+        const mpKeys = ['uzum'] as const
         // On a specific tab show only that marketplace; on "Все" show all connected ones
         const linksToShow: { url: string; label: string }[] = marketplace
           ? [mpLinks[marketplace]].filter(Boolean)
@@ -489,7 +491,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
         }
         // Marketplace-specific not-connected card
         if (marketplace) {
-          const mpName = ({ uzum: 'Uzum Market', yandex_market: 'Yandex Market' } as Record<string, string>)[marketplace]
+          const mpName = ({ uzum: 'Uzum Market' } as Record<string, string>)[marketplace]
           const mpLink = displayLinks[0]
           return (
             <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-10" style={{  borderColor: 'var(--border)' }}>
@@ -607,7 +609,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                   </div>
                   <div className="flex-1 min-w-0">
                     {(() => {
-                      const url = sellerOrderUrl(order.marketplace, order.order_id_external, { shopIdExternal: order.shop_id_external, businessId: order.business_id })
+                      const url = sellerOrderUrl(order.marketplace, order.order_id_external)
                       return url ? (
                         <a href={url} target="_blank" rel="noopener noreferrer"
                           className="text-sm text-[var(--text-base)] font-medium truncate font-mono hover:underline block">
@@ -617,7 +619,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                         <p className="text-sm text-[var(--text-base)] font-medium truncate font-mono">{order.order_id_external ?? order.id.slice(0, 8)}</p>
                       )
                     })()}
-                    <p className="text-xs text-[var(--text-muted)] truncate">{{ uzum: 'Uzum Market', yandex_market: 'Yandex Market' }[order.marketplace] ?? order.marketplace}</p>
+                    <p className="text-xs text-[var(--text-muted)] truncate">{{ uzum: 'Uzum Market' }[order.marketplace] ?? order.marketplace}</p>
                   </div>
                   {(() => {
                     const ds = orderDisplayStatus(order.status, order.marketplace_status)

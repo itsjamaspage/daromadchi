@@ -23,7 +23,10 @@ function member(over: Partial<SyncMember>): SyncMember {
 
 // The worked example: JMJ16BEG on Uzum (listed 1) + YM (listed 1), one Uzum sale.
 const uzum = (o: Partial<SyncMember> = {}) => member({ shopId: 'uzum-shop', marketplace: 'uzum', priority: 0, listedStock: 1, ...o })
-const ym = (o: Partial<SyncMember> = {}) => member({ shopId: 'ym-shop', marketplace: 'yandex_market', priority: 100, listedStock: 1, ...o })
+// A SECOND store. Uzum is the only integrated marketplace today, but the whole
+// point of the allocator is keeping sibling listings consistent, so the
+// two-store shape still has to be proven.
+const ym = (o: Partial<SyncMember> = {}) => member({ shopId: 'ym-shop', marketplace: 'other_market', priority: 100, listedStock: 1, ...o })
 
 describe('rawGroupAvailable — oversell detection reads the PHYSICAL pool, not the listing', () => {
   it('the false-alarm case (KBWHT): last unit sold, both listings mirrored to 0, order still pending → 0, NOT −1', () => {
@@ -87,7 +90,7 @@ describe('computeAvailable — ledger mode (Option A on_hand override)', () => {
   })
 })
 
-describe('RESERVING_RAW_STATUSES — Yandex PICKUP reserves a unit', () => {
+describe('RESERVING_RAW_STATUSES — PICKUP reserves a unit', () => {
   // Mirror the SQL's status→pending mapping: reservingOrderCondition() counts an
   // order only when its raw marketplace_status is in this set.
   const reserving = (status: string) => (RESERVING_RAW_STATUSES as readonly string[]).includes(status)
@@ -130,7 +133,7 @@ describe('RESERVING_RAW_STATUSES — reserve at PAYMENT, not at unpaid draft', (
     }
   })
 
-  it('Yandex: PROCESSING (paid) reserves; UNPAID/PLACING/RESERVED do NOT', () => {
+  it('PROCESSING (paid) reserves; UNPAID/PLACING/RESERVED do NOT', () => {
     for (const s of ['PROCESSING', 'DELIVERY', 'PICKUP']) {
       assert.ok(reserving(s), `${s} should reserve (paid/committed)`)
     }
@@ -171,8 +174,8 @@ describe('RESERVING_RAW_STATUSES — reserve at PAYMENT, not at unpaid draft', (
     assert.equal(available, 0)
     // Both members are planned — all shops are edit-mode now.
     assert.equal(plans.length, 2)
-    // The Yandex sibling is targeted to 0 and will actually be written.
-    const ymPlan = plans.find(p => p.member.marketplace === 'yandex_market')
+    // The sibling listing is targeted to 0 and will actually be written.
+    const ymPlan = plans.find(p => p.member.marketplace === 'other_market')
     assert.ok(ymPlan && ymPlan.target === 0 && ymPlan.willWrite)
   })
 
@@ -316,7 +319,7 @@ describe('off (mirror-always) — no backstop, mirror available to every channel
     // Uzum listed 3 with 1 reserving order; YM listed 5, no order.
     // MAX 5 − pending 1 = available 4. In 'off' the reserve backstop is SKIPPED,
     // so Uzum re-raises 3→4 to mirror the pool even though it holds a reserve.
-    // (This is exactly what lets Yandex re-raise 0→1 to match Uzum.)
+    // (This is exactly what lets a sibling re-raise 0→1 to match the other.)
     const { available, plans } = planStockWrites(
       [uzum({ listedStock: 3, pending: 1 }), ym({ listedStock: 5, pending: 0 })],
       'off',
@@ -359,9 +362,10 @@ describe('backstop guard (lock_last_unit / partition only) — never raise a lis
 
 describe('planGroupWrites — group-level reassert (stale-copy fix)', () => {
   it('reasserts a member whose listedStock===target when ANOTHER member is changing', () => {
-    // The prod JMBLK case: Uzum listed 2 (a real diff → 1), Yandex listed 1 with
-    // target 1 (equal — would normally skip). Yandex's DB copy is STALE (real 0),
-    // so the group must reassert Yandex too. planGroupWrites returns BOTH.
+    // The prod JMBLK case: one listing shows 2 (a real diff → 1), the sibling
+    // shows 1 with target 1 (equal — would normally skip). The sibling's DB copy
+    // is STALE (real 0), so the group must reassert it too. planGroupWrites
+    // returns BOTH.
     const plan = planStockWrites(
       [uzum({ listedStock: 2, pending: 1 }), ym({ listedStock: 1, pending: 0 })],
       'off',
@@ -372,10 +376,10 @@ describe('planGroupWrites — group-level reassert (stale-copy fix)', () => {
     assert.equal(uzumPlan.willWrite, true)   // 2 → 1, real diff
     assert.equal(ymPlan.willWrite, false)    // 1 → 1, equal (stale copy)
     const toWrite = planGroupWrites(plan)
-    assert.equal(toWrite.length, 2)          // BOTH written — Yandex reasserted
+    assert.equal(toWrite.length, 2)          // BOTH written — the sibling reasserted
     assert.ok(toWrite.some(p => p.member.shopId === 'ym-shop'))
     const ymWrite = toWrite.find(p => p.member.shopId === 'ym-shop')!
-    assert.equal(ymWrite.target, 1)          // Yandex re-pushed to 1 (0→1 in reality)
+    assert.equal(ymWrite.target, 1)          // re-pushed to 1 (0→1 in reality)
   })
 
   it('writes NOTHING for a fully-unchanged group (strict no-op)', () => {
@@ -388,7 +392,7 @@ describe('planGroupWrites — group-level reassert (stale-copy fix)', () => {
 
 describe('stockWriteBack — keep the DB copy in lockstep with the live listing', () => {
   it('returns the target on a successful push that changed the value', () => {
-    assert.equal(stockWriteBack('sent', 1, 0), 1)   // Yandex 0 → 1: write back 1
+    assert.equal(stockWriteBack('sent', 1, 0), 1)   // 0 → 1: write back 1
     assert.equal(stockWriteBack('sent', 1, 2), 1)   // Uzum 2 → 1: write back 1
   })
   it('returns null when the push did not succeed', () => {

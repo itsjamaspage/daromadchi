@@ -5,7 +5,7 @@ import { getShopIds } from '@/lib/db/shop-context'
 import type { Order, MarketplaceType } from '@/lib/types'
 import { parseLocalDate, endOfLocalDay } from '@/lib/period-week'
 
-function mapRow(row: typeof orders.$inferSelect, shopRow?: { shop_id_external: string | null; business_id: string | null }): Order {
+function mapRow(row: typeof orders.$inferSelect, shopRow?: { shop_id_external: string | null }): Order {
   return {
     id:                row.id,
     shop_id:           row.shop_id,
@@ -21,7 +21,6 @@ function mapRow(row: typeof orders.$inferSelect, shopRow?: { shop_id_external: s
     items_count:       row.items_count,
     ordered_at:        row.ordered_at.toISOString(),
     shop_id_external:  shopRow?.shop_id_external ?? null,
-    business_id:       shopRow?.business_id ?? null,
   }
 }
 
@@ -40,7 +39,6 @@ const _fetchOrders = unstable_cache(
     let query = db.select({
       order: orders,
       shop_id_external: shops.shop_id_external,
-      business_id: shops.business_id,
     }).from(orders)
       .leftJoin(shops, eq(orders.shop_id, shops.id))
       .where(and(...conditions))
@@ -49,7 +47,7 @@ const _fetchOrders = unstable_cache(
     if (limit > 0) query = query.limit(limit)
 
     const rows = await query
-    return rows.map(r => mapRow(r.order, { shop_id_external: r.shop_id_external, business_id: r.business_id }))
+    return rows.map(r => mapRow(r.order, { shop_id_external: r.shop_id_external }))
   },
   ['orders'],
   { revalidate: 30, tags: ['order-data'] },
@@ -88,8 +86,7 @@ const _fetchOrdersPaginated = unstable_cache(
       db.select({
         order: orders,
         shop_id_external: shops.shop_id_external,
-        business_id: shops.business_id,
-      }).from(orders)
+        }).from(orders)
         .leftJoin(shops, eq(orders.shop_id, shops.id))
         .where(condition)
         .orderBy(desc(orders.ordered_at))
@@ -98,7 +95,7 @@ const _fetchOrdersPaginated = unstable_cache(
       db.select({ total: count() }).from(orders).where(condition),
     ])
 
-    return { rows: rows.map(r => mapRow(r.order, { shop_id_external: r.shop_id_external, business_id: r.business_id })), total }
+    return { rows: rows.map(r => mapRow(r.order, { shop_id_external: r.shop_id_external })), total }
   },
   ['orders-paginated'],
   { revalidate: 30, tags: ['order-data'] },

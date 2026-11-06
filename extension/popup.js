@@ -266,21 +266,8 @@ function renderAlerts(alerts, plan) {
 }
 
 // ─── MARKETPLACE API STATUS PANEL ────────────────────────────────────────────
-function renderMarketplaceStatus(panel, yandexStats, uzumDirectStats, yandexConnected, uzumConnected, yandexCampaignId, uzumShopName, wbStats, wbConnected, wbSellerInfo) {
+function renderMarketplaceStatus(panel, uzumDirectStats, uzumConnected, uzumShopName, wbStats, wbConnected, wbSellerInfo) {
   const rows = [];
-
-  if (yandexConnected || yandexStats) {
-    const s = yandexStats;
-    rows.push(`
-      <div class="mkt-row">
-        <span class="mkt-badge mkt-ym">YM</span>
-        <span class="mkt-name">Yandex Market</span>
-        <span class="mkt-dot ${yandexConnected ? 'mkt-on' : 'mkt-off'}">
-          ${yandexConnected ? `● Ulangan${yandexCampaignId ? ` · ${yandexCampaignId}` : ''}` : '○ Ulanmagan'}
-        </span>
-        ${s ? `<span class="mkt-rev">${fp(s.todayRevenue, true)} / ${s.todayOrders || 0} buyurtma</span>` : ''}
-      </div>`);
-  }
 
   if (uzumConnected || uzumDirectStats) {
     const s = uzumDirectStats;
@@ -530,7 +517,6 @@ async function loadAll() {
   const data = await chrome.storage.local.get([
     'daromadchi_token', 'daromadchi_connected', 'daromadchi_email', 'daromadchi_plan', 'cachedStats', 'cacheTime',
     'activeAlerts', 'alertSettings', 'tgStatus', 'ext_lang', 'ext_theme',
-    'yandexStats', 'yandexStatsTime', 'yandexConnected', 'yandexCampaignId',
     'uzumDirectStats', 'uzumDirectStatsTime', 'uzumConnected', 'uzumShopName',
     'wbStats', 'wbStatsTime', 'wbConnected', 'wbSellerInfo'
   ]);
@@ -538,7 +524,6 @@ async function loadAll() {
   const {
     daromadchi_token, daromadchi_connected, daromadchi_plan = 'free', cachedStats, cacheTime,
     activeAlerts = [], alertSettings = {}, tgStatus = {}, ext_lang = 'uz', ext_theme = 'dark',
-    yandexStats, yandexConnected, yandexCampaignId,
     uzumDirectStats, uzumConnected, uzumShopName,
     wbStats, wbConnected, wbSellerInfo
   } = data;
@@ -560,7 +545,7 @@ async function loadAll() {
   renderAlerts(activeAlerts, plan);
   renderSettings(token, alertSettings, tgStatus, lang);
   const statsPanel = document.getElementById('panel-stats');
-  if (statsPanel) renderMarketplaceStatus(statsPanel, yandexStats, uzumDirectStats, yandexConnected, uzumConnected, yandexCampaignId, uzumShopName, wbStats, wbConnected, wbSellerInfo);
+  if (statsPanel) renderMarketplaceStatus(statsPanel, uzumDirectStats, uzumConnected, uzumShopName, wbStats, wbConnected, wbSellerInfo);
 
   // Background refresh stats when cache is stale — does not block UI
   // TG status is kept fresh via content-daromadchi.js focus re-sync on the daromadchi.uz tab
@@ -574,7 +559,7 @@ async function loadAll() {
           chrome.storage.local.set({ cachedStats: fresh, cacheTime: Date.now() });
           renderStats(token, fresh, lang);
           const sp = document.getElementById('panel-stats');
-          if (sp) renderMarketplaceStatus(sp, yandexStats, uzumDirectStats, yandexConnected, uzumConnected, yandexCampaignId, uzumShopName, wbStats, wbConnected, wbSellerInfo);
+          if (sp) renderMarketplaceStatus(sp, uzumDirectStats, uzumConnected, uzumShopName, wbStats, wbConnected, wbSellerInfo);
         }
       } catch {}
     })();

@@ -4,13 +4,13 @@ import assert from 'node:assert/strict'
 import { orderDisplayStatus } from './order-display-status'
 
 describe('the reported order: packed, not shipped', () => {
-  it('Yandex PROCESSING is "preparing", not "on the way"', () => {
-    // Order 60870363586. Yandex's own UI: «Обрабатывается · Готов к отгрузке».
+  it('PROCESSING is "preparing", not "on the way"', () => {
+    // Order 60870363586. The marketplace's own UI: «Обрабатывается · Готов к отгрузке».
     // The seller had not handed it to the pickup point yet.
     assert.equal(orderDisplayStatus('confirmed', 'PROCESSING'), 'preparing')
   })
 
-  it('Yandex DELIVERY and PICKUP really are on the way', () => {
+  it('DELIVERY and PICKUP really are on the way', () => {
     assert.equal(orderDisplayStatus('confirmed', 'DELIVERY'), 'shipping')
     // PICKUP is at the pickup point awaiting collection — gone from the seller.
     assert.equal(orderDisplayStatus('confirmed', 'PICKUP'), 'shipping')

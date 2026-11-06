@@ -8,7 +8,7 @@ export const runtime = 'nodejs'
 // and delivery percentages for a given SKU + marketplace, derived from
 // their own settlement history. Extension calls this before rendering
 // the "Add to Unit Economics" widget so the numbers shown on the WB /
-// Uzum / Yandex product page match what the marketplace actually
+// Uzum product page match what the marketplace actually
 // charged this seller for that exact SKU.
 //
 // Auth: the browser sends daromadchi.uz's own session cookie because
@@ -58,8 +58,7 @@ export async function GET(req: NextRequest) {
 
   const map = await getRealRatesBySku(user.id)
   const rate = map.get(sku)
-  // Normalize marketplace: the extension may send 'yandex' (short).
-  const normalized = mp === 'yandex' ? 'yandex_market' : mp
+  const normalized = mp
   if (!rate || rate.marketplace !== normalized) {
     return NextResponse.json({ ok: true, hasReal: false, sku, marketplace: normalized }, { headers })
   }

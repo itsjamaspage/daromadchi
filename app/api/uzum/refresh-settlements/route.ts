@@ -47,7 +47,7 @@ export const POST = withErrorHandler(async () => {
     }
   }
 
-  // Same cross-page invalidation as the Yandex refresh endpoint —
+  // Cross-page invalidation —
   // Dashboard KPIs and P&L both consume this tag.
   revalidateTag('settlements', { expire: 0 })
 

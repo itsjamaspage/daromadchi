@@ -8,8 +8,12 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { buildDigestMessage, isRecentDuplicate, fingerprintOf, type StockUpdateEvent, type NotifyFingerprint } from './stock-notify'
 
+// 'other_market' is a deliberate placeholder for a SECOND store. Uzum is the
+// only integrated marketplace today, and the digest's whole job is to report
+// one result per store — so the two-store shape still has to be proven, and an
+// unmapped label must render as the raw key rather than breaking.
 const ev = (o: Partial<StockUpdateEvent> & { sku: string }): StockUpdateEvent => ({
-  targetMarketplace: 'yandex_market',
+  targetMarketplace: 'other_market',
   originMarketplace: 'uzum',
   listed: 1, target: 0, ok: true, available: 10,   // default >= 5 → no restock line
   ...o,
@@ -20,15 +24,15 @@ describe('buildDigestMessage', () => {
     const msg = buildDigestMessage([{
       sku: 'JMWHT',
       events: [
-        ev({ sku: 'JMWHT', targetMarketplace: 'yandex_market', ok: true, listed: 1, target: 0 }),
+        ev({ sku: 'JMWHT', targetMarketplace: 'other_market', ok: true, listed: 1, target: 0 }),
         ev({ sku: 'JMWHT', targetMarketplace: 'uzum', ok: false, reason: 'http_400' }),
       ],
     }], 'ru')
     // One header naming the sold SKU + origin, once.
     assert.equal(msg.split('JMWHT').length - 1, 1)
     assert.match(msg, /продажа на Uzum/)
-    // Yandex succeeded 1→0; Uzum failed with a humanized HTTP reason.
-    assert.match(msg, /✅ Yandex Market: 1→0/)
+    // The sibling store succeeded 1→0; Uzum failed with a humanized HTTP reason.
+    assert.match(msg, /✅ other_market: 1→0/)
     assert.match(msg, /⚠️ Uzum: не обновлён \(ошибка API \(HTTP 400\)\) — обновите вручную/)
   })
 
@@ -85,7 +89,7 @@ describe('isRecentDuplicate — collapse the webhook+cron twin, keep genuine cha
   it('suppresses an IDENTICAL (status, target, available) digest within the window', () => {
     const evs = [
       ev({ sku: 'JMBLK', targetMarketplace: 'uzum', ok: true, target: 1, available: 1 }),
-      ev({ sku: 'JMBLK', targetMarketplace: 'yandex_market', ok: true, target: 1, available: 1 }),
+      ev({ sku: 'JMBLK', targetMarketplace: 'other_market', ok: true, target: 1, available: 1 }),
     ]
     // The cron fires 30s after the webhook already notified the same state.
     assert.equal(isRecentDuplicate(evs, prior(evs, 30_000)), true)
@@ -94,11 +98,11 @@ describe('isRecentDuplicate — collapse the webhook+cron twin, keep genuine cha
   it('sends again when available CHANGED (a genuine new sale)', () => {
     const first = [
       ev({ sku: 'JMBLK', targetMarketplace: 'uzum', ok: true, target: 1, available: 1 }),
-      ev({ sku: 'JMBLK', targetMarketplace: 'yandex_market', ok: true, target: 1, available: 1 }),
+      ev({ sku: 'JMBLK', targetMarketplace: 'other_market', ok: true, target: 1, available: 1 }),
     ]
     const second = [
       ev({ sku: 'JMBLK', targetMarketplace: 'uzum', ok: true, target: 0, available: 0 }),
-      ev({ sku: 'JMBLK', targetMarketplace: 'yandex_market', ok: true, target: 0, available: 0 }),
+      ev({ sku: 'JMBLK', targetMarketplace: 'other_market', ok: true, target: 0, available: 0 }),
     ]
     // available 1 → 0: new key, not a duplicate.
     assert.equal(isRecentDuplicate(second, prior(first, 30_000)), false)

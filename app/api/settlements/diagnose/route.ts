@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
-import { inArray, and, gte, eq } from 'drizzle-orm'
+import { inArray, eq } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
-import { db, shops, uzumSettlementOrders, yandexSettlementTransactions, unitEconomicsItems } from '@/lib/db'
+import { db, shops, uzumSettlementOrders, unitEconomicsItems } from '@/lib/db'
 import { getRealFinancialsByBucket, getRealRatesBySku } from '@/lib/db/real-financials'
 import { withErrorHandler } from '@/lib/api-handler'
-import { isYandexTransferred } from '@/lib/db/payout-status'
 
 export const runtime = 'nodejs'
 
@@ -27,15 +26,12 @@ export const GET = withErrorHandler(async () => {
   since.setDate(since.getDate() - 30)
 
   const uzShopIds = userShops.filter(s => s.marketplace === 'uzum').map(s => s.id)
-  const ymShopIds = userShops.filter(s => s.marketplace === 'yandex_market').map(s => s.id)
 
-  const [uzRows, ymRows] = await Promise.all([
-    uzShopIds.length > 0 ? db.select().from(uzumSettlementOrders).where(inArray(uzumSettlementOrders.shop_id, uzShopIds)) : Promise.resolve([]),
-    ymShopIds.length > 0 ? db.select().from(yandexSettlementTransactions).where(inArray(yandexSettlementTransactions.shop_id, ymShopIds)) : Promise.resolve([]),
-  ])
+  const uzRows = uzShopIds.length > 0
+    ? await db.select().from(uzumSettlementOrders).where(inArray(uzumSettlementOrders.shop_id, uzShopIds))
+    : []
 
   const uzFilteredCount = uzRows.filter(r => r.transaction_at != null && r.transaction_at >= since).length
-  const ymFilteredCount = ymRows.filter(r => r.transaction_at != null && r.transaction_at >= since).length
 
   const bucketMap = await getRealFinancialsByBucket(shopIds, since, 'month')
   const buckets = Array.from(bucketMap.entries()).map(([k, v]) => ({ bucket: k, ...v }))
@@ -85,59 +81,6 @@ export const GET = withErrorHandler(async () => {
         withdrawn_profit: r.withdrawn_profit,
         seller_profit: r.seller_profit,
       })),
-    },
-    yandex: {
-      totalRows: ymRows.length,
-      rowsInWindow: ymFilteredCount,
-      // First 25 (was 5) — five was fewer rows than a single month holds, so the
-      // transferred ones were routinely among the omitted.
-      rows: ymRows.slice(0, 25).map(r => ({
-        transaction_id: r.transaction_id,
-        // The three fields that decide whether an order reads as paid. They were
-        // missing here, which made this endpoint unable to answer the one
-        // question it gets opened for: "why is this order not marked Выплачено?"
-        order_id_external: r.order_id_external,
-        status_note: r.status_note,
-        payment_order_number: r.payment_order_number,
-        entry_type: r.entry_type,
-        entry_source: r.entry_source,
-        order_type: r.order_type,
-        sku: r.sku,
-        amount: r.amount,
-        transaction_at: r.transaction_at,
-      })),
-      // The verdict, so nobody has to re-derive it by eye from the rows above.
-      // Per order: is any of its own transactions proven transferred, and if the
-      // month has a payment-order number that none of its orders carries, say so
-      // — that is the exact shape that would leave a month showing «п/п 92735»
-      // while every order in it reads «Ожидает».
-      transferSignal: (() => {
-        const byOrder = new Map<string, { net: number; transferred: boolean; paymentOrders: Set<string> }>()
-        const monthPaymentOrders = new Set<string>()
-        let rowsWithoutOrderNumber = 0
-        for (const r of ymRows) {
-          const transferred = isYandexTransferred(r.status_note, r.payment_order_number)
-          if (transferred && r.payment_order_number) monthPaymentOrders.add(String(r.payment_order_number).trim())
-          const num = r.order_id_external ? String(r.order_id_external).trim() : ''
-          if (!num) { if (transferred) rowsWithoutOrderNumber++; continue }
-          const b = byOrder.get(num) ?? { net: 0, transferred: false, paymentOrders: new Set<string>() }
-          const amt = Number(r.amount ?? 0)
-          b.net += r.entry_type === 'Начисление' ? amt : -Math.abs(amt)
-          if (transferred) {
-            b.transferred = true
-            if (r.payment_order_number) b.paymentOrders.add(String(r.payment_order_number).trim())
-          }
-          byOrder.set(num, b)
-        }
-        return {
-          orders: [...byOrder.entries()].map(([number, b]) => ({
-            number, net: b.net, transferred: b.transferred, paymentOrders: [...b.paymentOrders],
-          })),
-          monthPaymentOrders: [...monthPaymentOrders],
-          transferredRowsWithoutOrderNumber: rowsWithoutOrderNumber,
-          paidTotal: [...byOrder.values()].reduce((t, b) => t + (b.transferred ? b.net : 0), 0),
-        }
-      })(),
     },
     aggregator: { buckets },
     perSkuRates: ratesBySku,

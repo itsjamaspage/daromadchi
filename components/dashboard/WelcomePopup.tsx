@@ -11,33 +11,29 @@ const STORAGE_KEY = 'daromadchi-welcome-dismissed'
 const LABELS = {
   uz: {
     title:    "Daromadchi'ga xush kelibsiz! 👋",
-    subtitle: "Do'kon tahlilini boshlash uchun kamida bitta marketpleysingizni ulang.",
+    subtitle: "Do'kon tahlilini boshlash uchun marketpleysingizni ulang.",
     uzum:     "Uzum Market ulash",
-    yandex:   "Yandex Market ulash",
     later:    "Keyinroq",
     settings: "Sozlamalarga o'tish",
   },
   ru: {
     title:    "Добро пожаловать в Daromadchi! 👋",
-    subtitle: "Подключите хотя бы один маркетплейс, чтобы начать аналитику магазина.",
+    subtitle: "Подключите маркетплейс, чтобы начать аналитику магазина.",
     uzum:     "Подключить Uzum Market",
-    yandex:   "Подключить Yandex Market",
     later:    "Позже",
     settings: "Перейти в настройки",
   },
   en: {
     title:    "Welcome to Daromadchi! 👋",
-    subtitle: "Connect at least one marketplace to start your store analytics.",
+    subtitle: "Connect your marketplace to start your store analytics.",
     uzum:     "Connect Uzum Market",
-    yandex:   "Connect Yandex Market",
     later:    "Later",
     settings: "Go to Settings",
   },
 }
 
 const MARKETPLACES = ([
-  { key: 'uzum',   label: (l: typeof LABELS.uz) => l.uzum,   accent: 'var(--c1)',  letter: 'U' },
-  { key: 'yandex', label: (l: typeof LABELS.uz) => l.yandex, accent: '#f59e0b',    letter: 'Y' },
+  { key: 'uzum', label: (l: typeof LABELS.uz) => l.uzum, accent: 'var(--c1)', letter: 'U' },
 ] as const)
 
 interface Props {

@@ -363,7 +363,7 @@
     <div class="info-bar">
       <div class="info-title">Daromadchi — Multi-Marketplace Seller Dashboard</div>
       <div class="info-text">
-        Syncs orders, inventory, and stock across <strong>Uzum Market and Yandex Market</strong>.
+        Syncs orders, inventory, and stock from <strong>Uzum Market</strong>.
         Web dashboard + Chrome Extension for seller analytics.
         Marketplace integrations are <strong>read-only by default</strong>; the one exception is the opt-in, per-shop Stock-sync mode, which writes only the stock quantity (ostatok) through a single audited writer after the seller consents.
         Auth via NextAuth (Auth.js) v5 — Credentials + bcrypt, optional Google OAuth, JWT sessions, email verification. Google Analytics 4 is consent-gated. Self-hosted on a Hetzner VPS (Finland / Helsinki).
@@ -381,7 +381,7 @@
 
     <div class="header">
       <div class="title">SYSTEM ARCHITECTURE</div>
-      <div class="subtitle">Click any component for details — 70+ API routes · 39 database tables · Uzum + Yandex Market</div>
+      <div class="subtitle">Click any component for details — 60+ API routes · 37 database tables · Uzum Market</div>
     </div>
 
     <div class="arch-container" id="archContainer">
@@ -396,7 +396,7 @@
           </div>
           <div class="card client-card" data-id="chrome-ext">
             <div class="card-name"><span class="status-dot green"></span>Chrome Extension</div>
-            <div class="card-desc">Manifest v3. Injects cost/margin overlays on Uzum and Yandex Market product pages; syncs its auth token from the web app.</div>
+            <div class="card-desc">Manifest v3. Injects cost/margin overlays on Uzum Market product pages; syncs its auth token from the web app.</div>
             <div class="card-tags"><span class="tag">Manifest v3</span><span class="tag">Service Workers</span><span class="tag">Content Scripts</span></div>
           </div>
           <div class="card client-card" data-id="telegram-bot">
@@ -534,7 +534,7 @@
           </div>
           <div class="card api-card" data-id="api-sync">
             <div class="card-name">Marketplace Sync</div>
-            <div class="card-desc">uzum/sync, yandex/sync, uzum|yandex/diagnose, refresh-settlements. Read-only — data only flows in.</div>
+            <div class="card-desc">uzum/sync, uzum/diagnose, refresh-settlements. Read-only — data only flows in.</div>
             <div class="card-tags"><span class="tag">read-only</span></div>
           </div>
           <div class="card api-card" data-id="api-stock-sync">
@@ -574,7 +574,7 @@
           </div>
           <div class="card api-card" data-id="api-market">
             <div class="card-name">Market Proxy</div>
-            <div class="card-desc">market/products, market/yandex — normalize marketplace data for the dashboard</div>
+            <div class="card-desc">market/products — normalizes marketplace data for the dashboard</div>
             <div class="card-tags"><span class="tag">2 routes</span></div>
           </div>
           <div class="card api-card" data-id="api-other">
@@ -623,11 +623,6 @@
           <div class="card external-card" data-id="uzum">
             <div class="card-name">Uzum Market</div>
             <div class="card-desc">Uzbekistan marketplace — orders, products, stock, settlements sync</div>
-            <div class="card-tags"><span class="tag">REST API</span><span class="tag">read-only</span></div>
-          </div>
-          <div class="card external-card" data-id="yandex">
-            <div class="card-name">Yandex Market</div>
-            <div class="card-desc">Marketplace — orders, offers, stocks, settlements sync</div>
             <div class="card-tags"><span class="tag">REST API</span><span class="tag">read-only</span></div>
           </div>
           <div class="card external-card" data-id="google">
@@ -764,7 +759,7 @@
       },
       'chrome-ext': {
         name: 'Chrome Extension',
-        desc: 'Manifest v3 browser extension. Content scripts inject cost/margin overlays on Uzum (content.js) and Yandex Market (content-yandex.js) product pages; content-daromadchi.js syncs the auth token from the web app. Talks to the app via Bearer-token Extension APIs.',
+        desc: 'Manifest v3 browser extension. Content scripts inject cost/margin overlays on Uzum (content.js) product pages; content-daromadchi.js syncs the auth token from the web app. Talks to the app via Bearer-token Extension APIs.',
         tech: ['Manifest v3', 'Service Workers', 'Content Scripts', 'Bearer token'],
         connections: [
           { name: 'Extension APIs', desc: 'Dedicated Bearer-token endpoints for products, stats, alerts' },
@@ -810,7 +805,7 @@
       },
       'readonly-guard': {
         name: 'Marketplace Egress Guard',
-        desc: 'Enforces read-only-by-default. Whitelisted POST-for-read endpoints are allowed (Yandex offer-mappings, stocks, stats return 405 on GET). The only sanctioned writes are the method-exact, URL-exact stock-write (ostatok only, opt-in) and order-cancel allowlists; every other PUT/PATCH/DELETE to a marketplace is blocked.',
+        desc: 'Enforces read-only-by-default. Whitelisted POST-for-read endpoints are allowed (e.g. the Wildberries cards-list and FBS stock-lookup reads). The only sanctioned writes are the method-exact, URL-exact stock-write (ostatok only, opt-in) and order-cancel allowlists; every other PUT/PATCH/DELETE to a marketplace is blocked.',
         tech: ['Guard', 'Allowlist', 'Immutable rule'],
         connections: [
           { name: 'Marketplace Sync', desc: 'Guards all outbound marketplace requests' },
@@ -829,11 +824,10 @@
       },
       'api-sync': {
         name: 'Marketplace Sync APIs',
-        desc: 'uzum/sync, yandex/sync, uzum/diagnose, yandex/diagnose, uzum/refresh-settlements, yandex/refresh-settlements. All read-only — they only pull data in. Writing the ostatok back is a separate opt-in path (Stock-sync APIs), not these routes.',
+        desc: 'uzum/sync, uzum/diagnose, uzum/refresh-settlements. All read-only — they only pull data in. Writing the ostatok back is a separate opt-in path (Stock-sync APIs), not these routes.',
         tech: ['REST', 'Read-only', 'Encrypted tokens'],
         connections: [
           { name: 'Uzum Market', desc: 'Sync orders, products, stock, settlements' },
-          { name: 'Yandex Market', desc: 'Sync orders, offers, stocks, settlements' },
           { name: 'PostgreSQL 17', desc: 'Store all synced data' }
         ]
       },
@@ -844,7 +838,6 @@
         connections: [
           { name: 'Marketplace Egress Guard', desc: 'Method/URL-exact write allowlist' },
           { name: 'Uzum Market', desc: 'Stock-quantity write-back (opted-in shops)' },
-          { name: 'Yandex Market', desc: 'Stock-quantity write-back (opted-in shops)' },
           { name: 'PostgreSQL 17', desc: 'stock_write_log, order_cancel_log audit trail' }
         ]
       },
@@ -907,7 +900,7 @@
       },
       'api-market': {
         name: 'Market Proxy APIs',
-        desc: 'market/products (aggregated product data) and market/yandex. Proxy endpoints that normalize marketplace data for the dashboard.',
+        desc: 'market/products (aggregated product data). Proxy endpoint that normalizes marketplace data for the dashboard.',
         tech: ['REST', 'Data normalization'],
         connections: [
           { name: 'PostgreSQL 17', desc: 'Read synced marketplace data' },
@@ -916,7 +909,7 @@
       },
       'api-other': {
         name: 'Other APIs',
-        desc: 'health (CI uptime check), feedback, referral/track, diagnostics/state, settlements/diagnose, marketplace/yandex/notifications, shops/token (encrypted shop API-key save).',
+        desc: 'health (CI uptime check), feedback, referral/track, diagnostics/state, settlements/diagnose, shops/token (encrypted shop API-key save).',
         tech: ['REST', 'Health check', 'Feedback'],
         connections: [
           { name: 'GitHub Actions', desc: '/api/health pinged after deploy' },
@@ -933,7 +926,7 @@
       },
       'postgresql': {
         name: 'PostgreSQL 17',
-        desc: '39 tables, self-hosted on the VPS. Auth & users: users, user_settings, accounts, sessions, verification_tokens, password_reset_tokens, ext_activation_codes. Marketplace: shops, products, orders, order_items, warehouses. Stock-sync: stock_sync_state, stock_write_log, stock_notify_state, order_cancel_log. Categories & grouping: categories_canonical, category_aliases, suggested_aliases, product_links, product_group_merges, suggested_product_groups. Finance: payments, uzum_settlement_orders, yandex_settlement_transactions. Unit economics: unit_economics_items, search_phrases. Ops: sync_days, sync_logs, alerts, competitor_watchlist, ad_campaigns, bot_sessions, channel_nonces.',
+        desc: '37 tables, self-hosted on the VPS. Auth & users: users, user_settings, accounts, sessions, verification_tokens, password_reset_tokens, ext_activation_codes. Marketplace: shops, products, orders, order_items, warehouses. Stock-sync: stock_sync_state, stock_write_log, stock_notify_state, order_cancel_log. Categories & grouping: categories_canonical, category_aliases, suggested_aliases, product_links, product_group_merges, suggested_product_groups. Finance: payments, uzum_settlement_orders. Unit economics: unit_economics_items, search_phrases. Ops: sync_days, sync_logs, alerts, competitor_watchlist, ad_campaigns, bot_sessions, channel_nonces.',
         tech: ['PostgreSQL 17', 'Drizzle ORM', '39 tables', 'Migrations → 090'],
         connections: [
           { name: 'Drizzle ORM', desc: 'Type-safe query builder' },
@@ -964,12 +957,6 @@
         desc: 'Uzbekistan marketplace. REST API for syncing orders, products, stock and settlements. Read-only by default; opt-in Stock-sync may update stock quantity (ostatok) only — never price or listings.',
         tech: ['REST API', 'Read-only default'],
         connections: [{ name: 'Marketplace Sync APIs', desc: 'uzum/sync + settlements' }]
-      },
-      'yandex': {
-        name: 'Yandex Market API',
-        desc: 'Marketplace. Syncs orders, offer-mappings, stocks and settlements. Some endpoints require POST for read operations (offer-mappings, stocks, stats — whitelisted in the egress guard).',
-        tech: ['REST API', 'Read-only', 'POST-for-read'],
-        connections: [{ name: 'Marketplace Sync APIs', desc: 'yandex/sync + settlements + notifications' }]
       },
       'google': {
         name: 'Google',

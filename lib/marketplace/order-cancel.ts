@@ -5,7 +5,7 @@
  * kill-switch aware, dry-run capable, and audited in order_cancel_log.
  *
  * It can ONLY cancel. The guard blocks any other order mutation (confirm, refund,
- * status-advance) even on the shared YM status endpoint (body must be CANCELLED).
+ * status-advance) — the Uzum cancel URL is cancel-specific and nothing else matches.
  */
 
 import { db, orderCancelLog } from '@/lib/db'
@@ -13,7 +13,6 @@ import { decrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
 import { marketplaceFetch, type MarketplaceInit } from '@/lib/marketplace-readonly-guard'
 import { UZUM_API_BASE } from '@/lib/uzum/client'
-import { YANDEX_API_BASE } from '@/lib/yandex/client'
 import type { MarketplaceType } from '@/lib/types'
 
 export type CancelStatus = 'sent' | 'dry_run' | 'skipped' | 'blocked' | 'killed' | 'error'
@@ -22,7 +21,7 @@ export interface CancelShop {
   id: string
   marketplace: MarketplaceType
   api_key_encrypted: string | null
-  shop_id_external?: string | null // YM campaignId
+  shop_id_external?: string | null
 }
 
 export interface CancelOrderParams {
@@ -77,7 +76,7 @@ export async function cancelOrder(params: CancelOrderParams): Promise<CancelResu
     const logId = await audit({ ...base, dry_run: dryRun, status: 'killed', detail: 'kill_switch' })
     return { status: 'killed', reason: 'kill_switch', logId }
   }
-  if (marketplace !== 'uzum' && marketplace !== 'yandex_market') {
+  if (marketplace !== 'uzum') {
     const logId = await audit({ ...base, dry_run: dryRun, status: 'skipped', detail: 'marketplace_out_of_scope' })
     return { status: 'skipped', reason: 'marketplace_out_of_scope', logId }
   }
@@ -86,25 +85,11 @@ export async function cancelOrder(params: CancelOrderParams): Promise<CancelResu
     return { status: 'skipped', reason: 'missing_order_id', logId }
   }
 
-  let url: string
-  let method: 'POST' | 'PUT'
-  let body: string
-  if (marketplace === 'uzum') {
-    url = `${UZUM_API_BASE}/v1/fbs/order/${encodeURIComponent(orderIdExternal)}/cancel`
-    method = 'POST'
-    body = JSON.stringify({ reason })
-  } else {
-    const campaignId = shop.shop_id_external?.trim()
-    if (!campaignId) {
-      const logId = await audit({ ...base, dry_run: dryRun, status: 'skipped', detail: 'missing_campaign' })
-      return { status: 'skipped', reason: 'missing_campaign', logId }
-    }
-    url = `${YANDEX_API_BASE}/v2/campaigns/${campaignId}/orders/${encodeURIComponent(orderIdExternal)}/status`
-    method = 'PUT'
-    // status CANCELLED is what the guard requires; substatus tells YM it was a
-    // seller-side stock failure. Nothing here can advance the order.
-    body = JSON.stringify({ order: { status: 'CANCELLED', substatus: 'SHOP_FAILED' } })
-  }
+  // Uzum's cancel endpoint is cancel-specific: confirm, refund, delivering and
+  // invoice are different URLs, so no other order mutation is reachable here.
+  const url = `${UZUM_API_BASE}/v1/fbs/order/${encodeURIComponent(orderIdExternal)}/cancel`
+  const method = 'POST' as const
+  const body = JSON.stringify({ reason })
 
   const token = shop.api_key_encrypted ? decrypt(shop.api_key_encrypted) : ''
   if (!token) {
@@ -118,9 +103,8 @@ export async function cancelOrder(params: CancelOrderParams): Promise<CancelResu
     return { status: 'dry_run', logId }
   }
 
-  const headers: Record<string, string> = marketplace === 'uzum'
-    ? { Authorization: token, Accept: 'application/json', 'Content-Type': 'application/json' }
-    : { 'Api-Key': token, Accept: 'application/json', 'Content-Type': 'application/json' }
+  const headers: Record<string, string> =
+    { Authorization: token, Accept: 'application/json', 'Content-Type': 'application/json' }
 
   try {
     const init: MarketplaceInit = { method, headers, body, intent: 'order-cancel' }

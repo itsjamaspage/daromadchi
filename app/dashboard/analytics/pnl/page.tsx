@@ -21,7 +21,7 @@ function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + " so'm"
 }
 
-const VALID_MP = ['uzum', 'yandex_market'] as const
+const VALID_MP = ['uzum'] as const
 function parseMp(v: string | undefined): MarketplaceType | undefined {
   return (VALID_MP as readonly string[]).includes(v ?? '') ? v as MarketplaceType : undefined
 }
@@ -193,7 +193,7 @@ export default async function PnlPage({ searchParams }: Props) {
   }[lang === 'ru' ? 'ru' : lang === 'uz' ? 'uz' : 'en']
   // Доставка tooltip: name the store(s) that actually charged the logistics,
   // from the per-marketplace settlement split. Only non-zero stores are shown.
-  const mpName = (mp: string) => mp === 'uzum' ? 'Uzum' : mp === 'yandex_market' ? 'Yandex Market' : mp
+  const mpName = (mp: string) => mp === 'uzum' ? 'Uzum' : mp
   // Products sold in this range with no cost price entered. cogsProducts is
   // already loaded for the editor, so this needs no extra query.
   const noCostCount = cogsProducts.filter(p => p.costPrice == null).length
@@ -206,17 +206,9 @@ export default async function PnlPage({ searchParams }: Props) {
     if (!isEst || v === 0) return fmt(v)
     return <span title={tooltip} className="underline decoration-dotted decoration-[var(--text-muted)] cursor-help">{'≈ '}{fmt(v)}</span>
   }
-  // Yandex fee that hasn't settled yet: show a muted "pending" placeholder
-  // rather than a fabricated percentage estimate or a misleading zero.
-  const pendingCell = (
-    <span title={d.pnlFeePendingHint} className="text-[var(--text-muted)] italic cursor-help">{d.pnlFeePending}</span>
-  )
-  const totalsFeePending = allRowsForTotals.some(m => m.feePending)
-  // A separate marker for a separate problem. `pendingCell` means "the
-  // marketplace has not told us yet — wait". This one means "you have not
-  // entered a cost — you can fix it now", so it stays a number (the partial
-  // COGS is still the best floor we have) with a warning attached, rather than
-  // being replaced by the word "pending".
+  // A marker for the COGS gap: "you have not entered a cost — you can fix it
+  // now", so it stays a number (the partial COGS is still the best floor we
+  // have) with a warning attached.
   const cogsPartialMark = (
     <sup title={d.pnlCogsPartialHint} className="ml-0.5 text-[var(--warn,#f59e0b)] cursor-help not-italic">*</sup>
   )
@@ -294,9 +286,8 @@ export default async function PnlPage({ searchParams }: Props) {
                   { label: d.totalRevenuePnl,   value: fmt(totals.revenue),                     hint: d.pnlHintRevenue,      node: null },
                   { label: d.commission2,       value: est(totals.commission, anyEstimated),     hint: d.pnlHintCommission,   node: null },
                   // Delivery as its own headline card, next to Комиссия — the
-                  // same total shown in the table (mirrors its pending state so
-                  // an unsettled Yandex delivery reads "pending", not a zero).
-                  { label: d.delivery,          value: totalsFeePending && totals.delivery === 0 ? pendingCell : fmt(totals.delivery), hint: deliveryHint, node: null },
+                  // same total shown in the table.
+                  { label: d.delivery,          value: fmt(totals.delivery), hint: deliveryHint, node: null },
                   { label: d.marketplacePayout, value: est(marketplacePayout, anyEstimated),     hint: d.marketplacePayoutHint, node: null },
                   // Себестоимость is the one user-editable input: its card opens
                   // a per-product cost editor (writes real cost_price, P&L
@@ -417,8 +408,8 @@ export default async function PnlPage({ searchParams }: Props) {
                       <td className={num}>{todayRow.order_count}</td>
                       <td className={num}>{todayRow.cancelled_count || '—'}</td>
                       <td className={num}>{fmt(todayRow.revenue)}</td>
-                      <td className={num}>{todayRow.feePending && todayRow.commission === 0 ? pendingCell : est(todayRow.commission, todayRow.estimated, `≈ ${pnl.params.commissionPct}%`)}</td>
-                      <td className={num}>{todayRow.feePending && todayRow.delivery === 0 ? pendingCell : todayRow.delivery > 0 ? est(todayRow.delivery, todayRow.estimated, `≈ ${pnl.params.lastMilePct}%`) : '—'}</td>
+                      <td className={num}>{est(todayRow.commission, todayRow.estimated, `≈ ${pnl.params.commissionPct}%`)}</td>
+                      <td className={num}>{todayRow.delivery > 0 ? est(todayRow.delivery, todayRow.estimated, `≈ ${pnl.params.lastMilePct}%`) : '—'}</td>
                       <td className={num}>{todayRow.otherFees > 0 ? fmt(todayRow.otherFees) : '—'}</td>
                       <td className={num}>{est(todayRow.acquiring, todayRow.estimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                       <td className={num}>{est(todayRow.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
@@ -437,8 +428,8 @@ export default async function PnlPage({ searchParams }: Props) {
                         <td className={num}>{m.order_count}</td>
                         <td className={num}>{m.cancelled_count || '—'}</td>
                         <td className={num}>{fmt(m.revenue)}</td>
-                        <td className={num}>{m.feePending && m.commission === 0 ? pendingCell : est(m.commission, m.estimated, `≈ ${pnl.params.commissionPct}%`)}</td>
-                        <td className={num}>{m.feePending && m.delivery === 0 ? pendingCell : m.delivery > 0 ? est(m.delivery, m.estimated, `≈ ${pnl.params.lastMilePct}%`) : '—'}</td>
+                        <td className={num}>{est(m.commission, m.estimated, `≈ ${pnl.params.commissionPct}%`)}</td>
+                        <td className={num}>{m.delivery > 0 ? est(m.delivery, m.estimated, `≈ ${pnl.params.lastMilePct}%`) : '—'}</td>
                         <td className={num}>{m.otherFees > 0 ? fmt(m.otherFees) : '—'}</td>
                         <td className={num}>{est(m.acquiring, m.estimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                         <td className={num}>{est(m.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
@@ -453,8 +444,8 @@ export default async function PnlPage({ searchParams }: Props) {
                     <td className={`${num} font-bold`}>{totals.orders}</td>
                     <td className={`${num} font-bold`}>{totals.cancelled || '—'}</td>
                     <td className={`${num} font-bold`}>{fmt(totals.revenue)}</td>
-                    <td className={`${num} font-bold`}>{totalsFeePending && totals.commission === 0 ? pendingCell : est(totals.commission, anyEstimated, `≈ ${pnl.params.commissionPct}%`)}</td>
-                    <td className={`${num} font-bold`}>{totalsFeePending && totals.delivery === 0 ? pendingCell : totals.delivery > 0 ? fmt(totals.delivery) : '—'}</td>
+                    <td className={`${num} font-bold`}>{est(totals.commission, anyEstimated, `≈ ${pnl.params.commissionPct}%`)}</td>
+                    <td className={`${num} font-bold`}>{totals.delivery > 0 ? fmt(totals.delivery) : '—'}</td>
                     <td className={`${num} font-bold`}>{totals.otherFees > 0 ? fmt(totals.otherFees) : '—'}</td>
                     <td className={`${num} font-bold`}>{est(totals.acquiring, anyEstimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                     <td className={`${num} font-bold`}>{est(totals.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>

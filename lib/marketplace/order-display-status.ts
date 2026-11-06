@@ -2,8 +2,8 @@
  * What to CALL an order on screen. Pure: no DB, no network.
  *
  * ── The bug this exists for ─────────────────────────────────────────────────
- * The `confirmed` enum value covers two different things on Yandex. PROCESSING
- * means the seller is still packing — Yandex's own UI says «Обрабатывается ·
+ * The `confirmed` enum value can cover two different things. PROCESSING
+ * means the seller is still packing — the marketplace UI says «Обрабатывается ·
  * Готов к отгрузке» — while DELIVERY and PICKUP mean the parcel has actually
  * left. All three rendered as «Yo'lda» / "In transit", so an order still sitting
  * on the seller's desk told them it was on its way to the customer (order
@@ -34,7 +34,7 @@ export type OrderDisplayStatus =
 
 /**
  * Raw marketplace statuses that mean the parcel has genuinely left the seller.
- * Yandex: DELIVERY «передан в службу доставки», PICKUP «доставлен в пункт
+ * DELIVERY «передан в службу доставки», PICKUP «доставлен в пункт
  * выдачи». Uzum: DELIVERING, ACCEPTED_AT_DP, plus the defensive aliases its own
  * map already treats as shipped.
  */

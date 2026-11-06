@@ -21,7 +21,7 @@ function fmt(n: number) {
 // Cyrillic plural for "N variants" — same one Products page uses. Passed
 // down to both grouped Analytics tables so the parent chip reads
 // "2 варианта" not "2 вариантов".
-const VALID_MP = ['uzum', 'yandex_market'] as const
+const VALID_MP = ['uzum'] as const
 function parseMp(v: string | undefined): MarketplaceType | undefined {
   return (VALID_MP as readonly string[]).includes(v ?? '') ? v as MarketplaceType : undefined
 }

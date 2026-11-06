@@ -1,11 +1,14 @@
 # Daromadchi — Application Architecture
 
-Multi-marketplace seller dashboard for **Uzum Market and Yandex Market**. The app
-is approaching its first full release — billing, payouts, and finances are wired
-end-to-end and the remaining work is accuracy polish (see the "Known gaps" notes).
+Seller dashboard for **Uzum Market**. The app is approaching its first full
+release — billing, payouts, and finances are wired end-to-end and the remaining
+work is accuracy polish (see the "Known gaps" notes).
 
-> Wildberries support was removed entirely (code + the `marketplace_type` enum);
-> the platform now covers Uzum Market and Yandex Market only.
+> Wildberries support was removed entirely (code + the `marketplace_type` enum).
+> Yandex Market was removed when it exited Uzbekistan on 10 November 2026, so the
+> platform now covers Uzum Market only. The cross-marketplace machinery (stock
+> groups, per-marketplace tabs, the `marketplace` enum) is intact for a future
+> integration; with one marketplace the tabs render nothing.
 
 ## Tech Stack
 
@@ -44,7 +47,6 @@ app/
     cron/billing-renew/    # Auto-renew charges (flag-gated, DRY-RUN by default)
     cron/telegram-digest/  # Telegram summary
     uzum/sync/             # Manual Uzum sync
-    yandex/sync/           # Manual Yandex sync
     billing/atmos/         # ATMOS direct checkout: bind-init, bind-confirm, callback (+ deprecated create)
     billing/cancel/        # Cancel / resume subscription
     billing/autorenew/     # Toggle auto-renew
@@ -70,7 +72,6 @@ lib/
     turnover.ts        # Trailing-30-day net turnover (feeds the derived tier)
     billing.ts         # Plan + payment-history reads
   uzum/                # Uzum Market API: sync.ts, client.ts, settlements-sync.ts, stock-reading.ts
-  yandex/              # Yandex Market API: sync.ts, client.ts, settlements-sync.ts, netting-report.ts
   marketplace/
     stock-writer.ts    # The single audited stock-quantity writer (opt-in edit mode)
     order-cancel.ts    # The single audited oversell order-cancel path
@@ -109,8 +110,8 @@ VPS crontab (*/5 * * * *) ──► /api/cron/sync  (CRON_SECRET)
      │
      ├─ Heavy pass  — full products + orders + settlements + ads sync.
      │                PLAN-GATED / throttled: ~2h on paid, ~6h on free.
-     │                Advances shops.last_synced_at. Settlements (extra API +
-     │                async Yandex netting reports) run ONLY on a heavy tick.
+     │                Advances shops.last_synced_at. Settlements (extra API
+     │                calls) run ONLY on a heavy tick.
      │
      └─ Stock-only refresh — cheap live-quantity re-read, every 15 min per shop
                         (STOCK_REFRESH_MS, keyed off its own shops.stock_synced_at
@@ -141,8 +142,7 @@ re-write `ordered_at` on every poll — so an active order's date walked forward
 "today" each tick, collapsing a whole period's sales onto one chart bar. Now
 `parseOrderedAt` returns `null` on a missing/unparseable date; insert uses the
 sync time only for a first sighting, and update never overwrites a stored date
-with a fallback (a later good sync still heals one). Yandex already dropped
-undated orders rather than defaulting to now. See
+with a fallback (a later good sync still heals one). See
 `docs/investigations/pnl-single-day-revenue-findings.md`.
 
 **Cache invalidation.** Mutation endpoints call `revalidateTag(tag, { expire: 0 })`.
@@ -150,15 +150,15 @@ undated orders rather than defaulting to now. See
 
 ### Manual Sync
 
-Users can trigger sync from `/dashboard/sync` → `/api/{uzum,yandex}/sync`,
+Users can trigger sync from `/dashboard/sync` → `/api/uzum/sync`,
 authenticated via NextAuth session.
 
 ### Marketplace API Rules (IMMUTABLE)
 
 **The app is READ-ONLY by default and MUST NEVER send PUT, PATCH, or DELETE requests
 to any external marketplace API.** POST is only allowed when the marketplace API
-requires POST for a READ operation (e.g. Yandex offer-mappings/stocks/stats return
-405 on GET). The single sanctioned write exception is the opt-in, per-shop
+requires POST for a READ operation (e.g. the Wildberries cards-list and FBS
+stock-lookup endpoints). The single sanctioned write exception is the opt-in, per-shop
 **Stock-sync (edit)** mode, which — after the seller consents — updates ONLY the
 stock quantity (ostatok) through one audited writer (`lib/marketplace/stock-writer.ts`),
 plus a separately-allowlisted oversell order-cancel path
@@ -280,12 +280,6 @@ delivery · net), with a weekly/period view.
 **Status is driven by REAL marketplace signals, never the calendar** (see
 `lib/db/payout-status.ts`):
 
-- **Yandex — payment-order (п/п) based.** The united-netting report's «Статус»
-  column carries the authoritative signal: a past-tense send wording
-  («Переведён…» / «Отправлен») **plus a payment-order number** means the money
-  reached the seller's bank → `paid`. Otherwise the bucket is pending/available.
-  (Matching on the word stem covers Yandex's gender/number inflections; missing the
-  «Отправлен» wording once put a genuinely-paid order under "Ожидает".)
 - **Uzum — no completed-withdrawal signal, so never `paid`.** Settlement data comes
   from `GET /v1/finance/orders` (the same "Финансы → Продажи" view the seller sees),
   with authoritative commission / delivery / profit. But Uzum exposes **no
@@ -310,14 +304,14 @@ type Known<T> = { known: true; value: T } | { known: false; reason: UnknownReaso
 An absent fee or cost cannot be silently read as `0`; the compiler forces the
 caller to say what happens instead. This exists because every profit bug this
 project shipped had the same shape — `coalesce(marketplace_fee, 0)` claiming
-*Yandex charged nothing*, `coalesce(cost_price, 0)` claiming *these goods were
-free* — producing a number plausible enough to trust.
+*the marketplace charged nothing*, `coalesce(cost_price, 0)` claiming *these
+goods were free* — producing a number plausible enough to trust.
 
 **The two unknowns get different policies, deliberately:**
 
 | unknown | behaviour | why |
 |---|---|---|
-| `fee_not_reported` | order **excluded**, marketplace named under the total | the seller can only wait for the netting report |
+| `fee_not_reported` | order **excluded**, marketplace named under the total | the seller can only wait for the settlement report |
 | `cost_not_set` | order **counted**, total **flagged** | the seller can fix it in a minute; excluding it would show someone who has never entered a cost a permanent zero |
 
 **Order scope is delivered-only** (`lib/money/load-order-economics.ts`), and COGS
@@ -353,18 +347,8 @@ cancelled. (Shipped in #277. Both marketplaces normalize `DELIVERED` / `COMPLETE
 here — cash-received is the Payouts page's concern; the P&L recognises delivered
 revenue on the accrual basis.
 
-**Yandex fees are settlement-only** — never estimated from a percentage. A Yandex
-sale whose netting hasn't landed shows its fee as "pending", not a fabricated zero
-or estimate.
-
-**Yandex deduction breakdown** is classified by the **service name**
-(`product_name`, the «…услуги (к удержанию)» column) via one shared helper,
-`classifyYandexDebit` (`lib/db/real-financials.ts`): `"Доставка покупателю"` →
-delivery, `"Поручение на продажу"` → commission, everything else (penalties,
-transfer/acquiring, storage, ads) → a distinct **«Прочие»** line. The same
-classifier backs the P&L, Payouts «Заработок», and Unit-Economics per-SKU rates,
-so all three reconcile with the seller's netting report to the som. (Keying off
-`order_type` was wrong — it's always "Продажа физлицу".)
+A fee the marketplace has not reported yet is shown as "pending", never a
+fabricated zero or a percentage estimate.
 
 ## Account Deletion & Data Retention
 
@@ -432,10 +416,10 @@ Chrome Manifest V3 extension with a service worker (`background.js`).
 |---|---|---|
 | `content-daromadchi.js` | `daromadchi.uz`, `www.daromadchi.uz` | Auth sync — fetch token from app, send to background |
 | `content.js` | `uzum.uz`, `*.uzum.uz` | Injects analytics overlay on Uzum product pages |
-| `content-yandex.js` | `partner.market.yandex.ru`, `market.yandex.*` | Injects analytics on Yandex Market |
 
 > `extension/content-wb.js` still ships in the bundle but is **dead** — Wildberries
 > was removed. It should be dropped in a dedicated extension cleanup/republish.
+> `content-yandex.js` was deleted with the Yandex removal (extension v2.7.0).
 
 **Extension API endpoints** (all `getExtensionUser()` Bearer auth): `/api/extension/`
 `me` (handshake), `stats`, `products`, `product`, `send-alerts`,
@@ -516,7 +500,6 @@ on our own infrastructure and GitHub is not a data processor.
   are intentionally absent). Notable recent ones:
   - `064` — ATMOS billing: `subscriptions` table + ATMOS columns on `payments` + `atmos_status` enum
   - `065` — `stock_ledger` (event-sourced authoritative on-hand per SKU group)
-  - `066`/`067` — Yandex netting payment-order + product-name columns (payout "paid" signal / Payouts naming)
   - `069` — display-only card metadata (last4/expiry/holder) for direct binding
   - `070` — per-subscription `autorenew` flag
   - `071` — UNIQUE `(shop_id, order_id_external)` (dup orders inflate turnover→tier)
@@ -537,6 +520,14 @@ on our own infrastructure and GitHub is not a data processor.
   - `089` — `stock_sync_state.repeat_count`
   - `090` — `users.ledger_kill_switch` (per-user stock-ledger off-switch; see the
     registration lesson above)
+  - `103` — **drops Yandex Market. NOT registered in the runner, on purpose.**
+    It deletes real seller rows (Yandex shops/orders/order_items/products and the
+    settlement tables) before it can drop `yandex_market` from the
+    `marketplace_type` enum, so it must never run unattended on a deploy. Apply
+    by hand after a backup:
+    `psql "$DATABASE_URL" -f migrations/migrations/103_drop_yandex_market.sql`.
+    The app does not depend on it: every Yandex code path is gone, so until it is
+    applied the leftover rows are simply unreachable.
 
 ## Deployment
 

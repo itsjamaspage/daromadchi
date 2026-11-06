@@ -21,11 +21,11 @@ const member = (o: Partial<SyncMember>): SyncMember => ({
 })
 
 describe('the 0→1 incident: sold-out SKU, sibling listing stale-high at our own write', () => {
-  // Real stock 0. Uzum listing 0. Yandex listing still shows 1 — the «через API»
+  // Real stock 0. Uzum listing 0. The sibling listing still shows 1 — the «через API»
   // value the seller saw — and that 1 is OUR OWN last write. No open orders.
   const uzum   = member({ shopId: 'u', marketplace: 'uzum',          listedStock: 0, physicalStock: 0 })
-  const yandex = member({ shopId: 'y', marketplace: 'yandex_market', listedStock: 1, physicalStock: 1 })
-  const members = [uzum, yandex]
+  const sibling = member({ shopId: 'y', marketplace: 'other_market', listedStock: 1, physicalStock: 1 })
+  const members = [uzum, sibling]
 
   it('LEGACY MAX path writes the phantom 1 — this is the bug', () => {
     const { available, plans } = planStockWrites(members, 'off')      // no onHand → MAX path
@@ -38,7 +38,7 @@ describe('the 0→1 incident: sold-out SKU, sibling listing stale-high at our ow
     // Drift must NOT re-inflate: the stale 1 is our own last write → excluded.
     const listingAvail = sellerListingAvailable([
       { listedStock: 0, pending: 0, lastWrite: 0 },                   // Uzum: our write 0
-      { listedStock: 1, pending: 0, lastWrite: 1 },                   // Yandex: our stale write 1 → excluded
+      { listedStock: 1, pending: 0, lastWrite: 1 },                   // sibling: our stale write 1 → excluded
     ])
     const drift = driftCredit(listingAvail, availableFromOnHand(onHand))
     assert.equal(drift, 0, 'a stale own-write listing must never credit the pool')
@@ -99,7 +99,7 @@ describe('restock adoption (§5, §12.1)', () => {
   })
 
   it('compares AVAILABLE not FIT — reserved is netted out', () => {
-    // Yandex FIT read 1 = 0 available + 1 reserved. Not a restock.
+    // A FIT read of 1 = 0 available + 1 reserved. Not a restock.
     assert.equal(sellerListingAvailable([{ listedStock: 1, pending: 1, lastWrite: null }]), 0)
   })
 

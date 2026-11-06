@@ -15,7 +15,7 @@ export interface DriftRow {
 export interface ShopStatus {
   id: string
   name: string
-  marketplace: 'uzum' | 'yandex_market'
+  marketplace: 'uzum'
   hasApiKey: boolean
   tokenValid: boolean | null
   isActive: boolean
@@ -103,7 +103,7 @@ export async function getSystemHealth(): Promise<SystemHealth> {
 
   const shops: ShopStatus[] = shopRes.rows.map(r => {
     const row = r as {
-      id: string; name: string; marketplace: 'uzum' | 'yandex_market'
+      id: string; name: string; marketplace: 'uzum'
       is_active: boolean; has_api_key: boolean; token_valid: boolean | null
       throttled_until: string | null
       sync_age: number | null; stock_sync_age: number | null
@@ -140,12 +140,10 @@ export async function getSystemHealth(): Promise<SystemHealth> {
   })
 
   const uzumShops = shops.filter(s => s.marketplace === 'uzum')
-  const ymShops = shops.filter(s => s.marketplace === 'yandex_market')
 
   function mpSyncStatus(mpShops: ShopStatus[]): ServiceRow {
-    const mp = mpShops[0]?.marketplace
-    const label = mp === 'uzum' ? 'Uzum Market' : 'Yandex Market'
-    const key = mp === 'uzum' ? 'sync_uzum' : 'sync_yandex'
+    const label = 'Uzum Market'
+    const key = 'sync_uzum'
     if (mpShops.length === 0) return { name: label, key, status: 'down', detail: null }
     const anyStale = mpShops.some(s => s.syncStale)
     const allNoKey = mpShops.every(s => !s.hasApiKey)
@@ -165,9 +163,8 @@ export async function getSystemHealth(): Promise<SystemHealth> {
   }
 
   function mpApiStatus(mpShops: ShopStatus[]): ServiceRow {
-    const mp = mpShops[0]?.marketplace
-    const label = mp === 'uzum' ? 'Uzum API' : 'Yandex API'
-    const key = mp === 'uzum' ? 'api_uzum' : 'api_yandex'
+    const label = 'Uzum API'
+    const key = 'api_uzum'
     if (mpShops.length === 0) return { name: label, key, status: 'down', detail: null }
     const allNoKey = mpShops.every(s => !s.hasApiKey)
     if (allNoKey) return { name: label, key, status: 'down', detail: null }
@@ -182,10 +179,6 @@ export async function getSystemHealth(): Promise<SystemHealth> {
   if (uzumShops.length > 0) {
     services.push(mpSyncStatus(uzumShops))
     services.push(mpApiStatus(uzumShops))
-  }
-  if (ymShops.length > 0) {
-    services.push(mpSyncStatus(ymShops))
-    services.push(mpApiStatus(ymShops))
   }
   services.push({
     name: 'Telegram',

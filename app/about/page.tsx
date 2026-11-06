@@ -7,10 +7,10 @@ import {
 
 export const metadata: Metadata = {
   title: 'Biz haqimizda',
-  description: 'Daromadchi — O\'zbekistondagi marketplace sotuvchilari uchun analitika platformasi. Uzum va Yandex Market sotuvchilari uchun sotuv tahlili va daromad hisoblash.',
+  description: 'Daromadchi — O\'zbekistondagi marketplace sotuvchilari uchun analitika platformasi. Uzum Market sotuvchilari uchun sotuv tahlili va daromad hisoblash.',
   openGraph: {
     title: 'Daromadchi haqida — Marketplace analitika platformasi',
-    description: 'O\'zbekistondagi Uzum va Yandex Market sotuvchilari uchun analitika platformasi.',
+    description: 'O\'zbekistondagi Uzum Market sotuvchilari uchun analitika platformasi.',
     url: 'https://daromadchi.uz/about',
   },
   alternates: { canonical: '/about' },
@@ -55,7 +55,7 @@ export default function AboutPage() {
             <span className="grad-text">analitika platformasi</span>
           </h1>
           <p className="text-lg md:text-xl text-[var(--text-muted)] leading-relaxed max-w-2xl mx-auto">
-            Daromadchi — O&apos;zbekistondagi Uzum va Yandex Market sotuvchilariga
+            Daromadchi — O&apos;zbekistondagi Uzum Market sotuvchilariga
             sotuv tahlili, daromad va foyda hisoblash, tovar analitikasi va boshqa ko&apos;plab
             imkoniyatlarni taqdim etuvchi platforma.
           </p>
@@ -68,9 +68,9 @@ export default function AboutPage() {
           <div className="neon-card rounded-2xl p-8 md:p-12">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">Bizning maqsadimiz</h2>
             <p className="text-[var(--text-muted)] text-lg leading-relaxed">
-              O&apos;zbekistondagi marketplace sotuvchilari ko&apos;pincha har bir platforma uchun
-              alohida tahlil qilishga majbur. Biz buni o&apos;zgartirmoqdamiz — Uzum
-              va Yandex Market ma&apos;lumotlarini bitta platformaga jamlash orqali sotuvchilarga
+              O&apos;zbekistondagi marketplace sotuvchilari ko&apos;pincha har bir do&apos;kon uchun
+              alohida tahlil qilishga majbur. Biz buni o&apos;zgartirmoqdamiz — Uzum Market
+              ma&apos;lumotlarini bitta platformaga jamlash orqali sotuvchilarga
               to&apos;g&apos;ri qarorlar qabul qilishda yordam beramiz.
             </p>
             <p className="text-[var(--text-muted)] text-lg leading-relaxed mt-4">
@@ -128,7 +128,6 @@ export default function AboutPage() {
           <div className="flex flex-wrap justify-center gap-4">
             {[
               { name: 'Uzum Market', color: '#494fdf' },
-              { name: 'Yandex Market', color: '#E8A000' },
             ].map(mp => (
               <div key={mp.name} className="px-6 py-3 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full" style={{ background: mp.color }} />

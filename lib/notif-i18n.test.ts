@@ -20,7 +20,7 @@ const LANGS: NotifLang[] = ['uz', 'ru', 'en']
 // A new seller-facing string must be added here — that is the point.
 const CALLS: Record<string, unknown[]> = {
   weeklyTitle: [7], lowStockTitle: [3], lowStockDays: [5],
-  stockUpdateTitle: [2], stockUpdateLine: ['Item', 'Uzum', 4, 'Yandex'],
+  stockUpdateTitle: [2], stockUpdateLine: ['Item', 'Uzum', 4, 'Uzum-2'],
   deliveryTitle: [1],
   newOrdersTitle: [2], newOrdersLine: ['Uzum', 3], newOrdersMore: [4],
   cancelledTitle: [2], cancelledLine: ['Uzum', 3], cancelledMore: [4],
@@ -30,11 +30,11 @@ const CALLS: Record<string, unknown[]> = {
   extDailyTitle: ['21.08.2026'],
   oversellRateLimited: [1, 3, 'Uzum'], oversellCancelling: ['Uzum'],
   oversellHead: ['JMWHT', 'Uzum #124452180'],
-  manualStockTitle: [2], manualStockLine: ['M9 (чёрный, JMWHT)', 0, 'Yandex Market', '124459482'],
-  restoreOrderCancelled: ['124708369', 'M9', 'JMWHT', 'Yandex Market'],
-  restoreActionDetail: ['Yandex Market', 2, 1], restoreActionCta: ['Yandex Market', 2],
-  restoreActionCtaMulti: ['Yandex Market'], restoreInfoDetail: ['Yandex Market', 2],
-  restoreInfoNoteMulti: ['Yandex Market'], restoreLine: ['JMWHT', 2, 1], restoreMpGroup: ['Yandex Market'],
+  manualStockTitle: [2], manualStockLine: ['M9 (чёрный, JMWHT)', 0, 'Uzum Market', '124459482'],
+  restoreOrderCancelled: ['124708369', 'M9', 'JMWHT', 'Uzum Market'],
+  restoreActionDetail: ['Uzum Market', 2, 1], restoreActionCta: ['Uzum Market', 2],
+  restoreActionCtaMulti: ['Uzum Market'], restoreInfoDetail: ['Uzum Market', 2],
+  restoreInfoNoteMulti: ['Uzum Market'], restoreLine: ['JMWHT', 2, 1], restoreMpGroup: ['Uzum Market'],
   orderReceivedStockBody: ['M9 (JMWHT)', 3], orderAcceptedStockBody: ['M9 (JMWHT)', 2],
 }
 
@@ -63,7 +63,7 @@ const LANGUAGE_NEUTRAL = new Set([
   'som',            // "so'm"/"сум" differ, but the uz/en forms coincide
   'stockSyncOk',    // "   ✅ Uzum: 5→3" — a marketplace name and two numbers
   'restoreLine',    // "• JMWHT — 2 → 1" — a SKU and two numbers, no words
-  'restoreMpGroup', // "<b>Yandex Market:</b>" — a marketplace name only
+  'restoreMpGroup', // "<b>Uzum Market:</b>" — a marketplace name only
 ])
 
 test('no seller-facing string is hardcoded — ru and uz must differ', () => {

@@ -68,7 +68,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   // Money goes through the shared rules — see lib/money/order-economics.ts.
   // This used to be `revenue − fee − delivery` over every non-cancelled order,
   // which was wrong twice: it counted sales that had not been delivered yet, it
-  // subtracted no cost of goods at all, and a NULL fee (every Yandex order until
+  // subtracted no cost of goods at all, and a NULL fee (any order until
   // its netting report lands) read as a zero fee, so the "profit" it texted the
   // seller each morning was often just the revenue.
   const money = sumEconomics(await loadOrderInputs(shopIds, since24h, null))

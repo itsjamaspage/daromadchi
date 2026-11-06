@@ -112,7 +112,7 @@ export async function proxy(request: NextRequest) {
     //   /api/sync/* and marketplace syncs — 10/min (keyed per IP, no per-user session available here)
     //   /api/auth/*                        — 20/min per IP
     //   all other /api/*                   — 100/min per IP
-    const isSyncRoute = /^\/api\/(uzum|wildberries|yandex|cron)\/(sync|ads-sync)/.test(pathname)
+    const isSyncRoute = /^\/api\/(uzum|wildberries|cron)\/(sync|ads-sync)/.test(pathname)
     const isAuthRoute = pathname.startsWith('/api/auth/')
     const limit = isSyncRoute ? 10 : isAuthRoute ? 20 : 100
 

@@ -5,10 +5,10 @@ import { db, shops } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
 import { backfillShopIdentifiers } from '@/lib/marketplace/identifier-backfill'
 
-// GATE 1 — populate the stock-WRITE identifiers (Uzum barcode / YM shopSku +
-// warehouseId) from READ-only endpoints. This never calls the stock-writer and
+// GATE 1 — populate the stock-WRITE identifiers (Uzum barcode + FBS skuId)
+// from READ-only endpoints. This never calls the stock-writer and
 // can never fire a live write. Run this, then inspect `missingAfter` before any
-// shop flips out of dry-run. Uzum + Yandex Market only.
+// shop flips out of dry-run. Uzum only.
 export const POST = withErrorHandler(async () => {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
@@ -21,7 +21,7 @@ export const POST = withErrorHandler(async () => {
   }).from(shops).where(and(
     eq(shops.user_id, user.id),
     eq(shops.is_active, true),
-    inArray(shops.marketplace, ['uzum', 'yandex_market']),
+    eq(shops.marketplace, 'uzum'),
   ))
 
   const results = []

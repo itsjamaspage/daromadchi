@@ -7,17 +7,17 @@ const row = (id: string, sku: string | null, key: string | null): Row =>
   ({ id, sku, variant_group_key: key })
 
 // The M9 case that started this. Four listings exist — black and white on each
-// marketplace — but only two of them sold: black on Uzum, white on Yandex. The
+// marketplace — but only two of them sold: black on one store, white on the other. The
 // two listings that share a SKU across marketplaces (and so weld the namespaced
 // group keys together) are exactly the two that did NOT sell.
 const SOLD = [
   row('p1', 'JMBLK', 'uzum:M9'),
-  row('p2', 'JMWHT', 'yandex:M9'),
+  row('p2', 'JMWHT', 'other:M9'),
 ]
 const ALL_LISTINGS = [
   row('p1', 'JMBLK', 'uzum:M9'),
-  row('p2', 'JMWHT', 'yandex:M9'),
-  row('p3', 'JMBLK', 'yandex:M9'),   // welds uzum:M9 ↔ yandex:M9 via JMBLK
+  row('p2', 'JMWHT', 'other:M9'),
+  row('p3', 'JMBLK', 'other:M9'),   // welds uzum:M9 ↔ other:M9 via JMBLK
   row('p4', 'JMWHT', 'uzum:M9'),
 ]
 
@@ -53,7 +53,7 @@ test('bridge rows do not push a lone sold listing over the ≥2 parent threshold
 
 test('unrelated products stay apart when bridged', () => {
   const sold = [row('a1', 'JMBLK', 'uzum:M9'), row('b1', 'JMJ16BG', 'uzum:J16')]
-  const out = groupByVariant(sold, [...ALL_LISTINGS, row('b2', 'JMJ16BG', 'yandex:J16')])
+  const out = groupByVariant(sold, [...ALL_LISTINGS, row('b2', 'JMJ16BG', 'other:J16')])
   assert.equal(out.length, 2)
   assert.ok(out.every(i => i.type === 'flat'))
 })
@@ -69,7 +69,7 @@ test('omitting the bridge leaves existing callers byte-identical', () => {
 
 // A keyless row sharing a SKU with a keyed row is absorbed into the keyed
 // group — same physical product, the keyless listing just lacks a group key
-// (e.g. Yandex without marketModelName).
+// (e.g. a listing with no model name).
 test('a null-key row sharing a SKU with a keyed row merges into a parent', () => {
   const out = groupByVariant(
     [row('o1', 'JMBLK', null), row('p1', 'JMBLK', 'uzum:M9')],
@@ -81,9 +81,9 @@ test('a null-key row sharing a SKU with a keyed row merges into a parent', () =>
   assert.deepEqual(out[0].children.map(c => c.id).sort(), ['o1', 'p1'])
 })
 
-// Sneakers scenario: Uzum always sets a variant_group_key, Yandex may not
+// Sneakers scenario: one store always sets a variant_group_key, the other may not
 // (missing marketModelName). They share the seller article SKU and must merge.
-test('keyed Uzum + keyless Yandex sharing a SKU merge into one parent', () => {
+test('a keyed listing + a keyless sibling sharing a SKU merge into one parent', () => {
   const out = groupByVariant([
     row('uzSneaker', 'NAM90', 'uzum:55555'),
     row('ymSneaker', 'NAM90', null),

@@ -7,7 +7,7 @@ import type { MarketplaceType } from '@/lib/types'
 
 const SyncDaysSchema = z.object({
   dates:       z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD formatda bo\'lishi kerak')).max(31),
-  marketplace: z.enum(['uzum', 'yandex_market']).optional(),
+  marketplace: z.enum(['uzum']).optional(),
 })
 
 export const POST = withErrorHandler(async (req: NextRequest) => {

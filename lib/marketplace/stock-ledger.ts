@@ -15,7 +15,7 @@ import { RESERVING_RAW_STATUSES } from '@/lib/marketplace/stock-allocation'
  * MODEL — decisions locked with the owner:
  *   • Option A — debit at PLACEMENT, anchored to new-order detection (the event
  *     that already works), NOT a handover/delivered status transition (the kind
- *     this bug and the Yandex PICKUP dead-branch proved get missed). The
+ *     this bug and the PICKUP dead-branch proved get missed). The
  *     reservation and the debit are the SAME event, so there is no separate
  *     "pending" term: available = max(0, on_hand).
  *   • A missed CREDIT (a cancel/return we don't catch) leaves on_hand too low →
@@ -75,7 +75,7 @@ export type OrderLedgerStatus = 'live' | 'delivered' | 'cancelled' | 'returned'
  *
  * `live` is anchored to the SAME paid-and-committed gate as reserve-at-payment
  * (RESERVING_RAW_STATUSES), NOT the coarse normalized `pending`. This is the
- * consistency requirement: an UNPAID draft (Uzum CREATED, Yandex
+ * consistency requirement: an UNPAID draft (Uzum CREATED
  * UNPAID/PLACING/RESERVED — none in the reserving set, normalized `pending`)
  * returns `null` and never debits the pool, so the phantom-stockout that
  * reserve-at-payment (#347) fixed cannot come back through the ledger.
@@ -158,7 +158,7 @@ export interface DriftMember {
  *     showing the value WE pushed is not a seller restock — this is the exact
  *     0→1 incident: our own write of 1 sitting on a sold-out listing must never
  *     be read back as evidence to re-credit the pool.
- *   • Reserved units are netted out (listing − pending), so a Yandex FIT read
+ *   • Reserved units are netted out (listing − pending), so a FIT read
  *     (available + reserved) is compared as AVAILABLE, never FIT (§12.1) — a
  *     permanent phantom rise of exactly the reserve would otherwise be adopted.
  */

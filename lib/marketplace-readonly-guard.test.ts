@@ -7,7 +7,10 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { checkMarketplaceRequest } from './marketplace-readonly-guard'
 
-// Same physical path; POST = YM read, PUT = YM write.
+// Yandex Market was removed when it left Uzbekistan (10 Nov 2026). These URLs
+// are kept deliberately: the guard must now REJECT every one of them, under
+// every intent. That is a stronger statement than deleting the cases — it
+// proves the surface closed rather than simply going untested.
 const YM_STOCKS = 'https://api.partner.market.yandex.ru/v2/campaigns/149137909/offers/stocks'
 const YM_STOCKS_Q = `${YM_STOCKS}?limit=200`
 const YM_OFFER_MAPPINGS = 'https://api.partner.market.yandex.ru/v2/businesses/555/offer-mappings'
@@ -21,21 +24,25 @@ const UZUM_ORDER_REFUND = 'https://api-seller.uzum.uz/api/seller-openapi/v1/fbs/
 const UZUM_SHOPS_GET = 'https://api-seller.uzum.uz/api/seller-openapi/v1/shops'
 const YM_ORDER_STATUS = 'https://api.partner.market.yandex.ru/v2/campaigns/149137909/orders/555/status'
 
+const WB_CARDS_LIST = 'https://content-api.wildberries.ru/content/v2/get/cards/list'
+const WB_STOCKS_READ = 'https://marketplace-api.wildberries.ru/api/v3/stocks/12345'
+
 describe('marketplace egress guard — read intent (default)', () => {
   it('allows plain GET reads', () => {
     assert.doesNotThrow(() => checkMarketplaceRequest(UZUM_SHOPS_GET, 'GET', 'read'))
     assert.doesNotThrow(() => checkMarketplaceRequest(UZUM_SHOPS_GET, 'GET'))
   })
 
-  it('allows an allowlisted read-POST (YM offer-mappings, YM offers/stocks read)', () => {
-    assert.doesNotThrow(() => checkMarketplaceRequest(YM_OFFER_MAPPINGS, 'POST', 'read'))
-    assert.doesNotThrow(() => checkMarketplaceRequest(YM_STOCKS, 'POST', 'read'))
-    assert.doesNotThrow(() => checkMarketplaceRequest(YM_STOCKS_Q, 'POST', 'read'))
+  it('allows an allowlisted read-POST (Wildberries cards list, FBS stock lookup)', () => {
+    assert.doesNotThrow(() => checkMarketplaceRequest(WB_CARDS_LIST, 'POST', 'read'))
+    assert.doesNotThrow(() => checkMarketplaceRequest(WB_STOCKS_READ, 'POST', 'read'))
   })
 
-  it('allows the YM offer-cards read-POST (colour attribute source, incl. query string)', () => {
-    assert.doesNotThrow(() => checkMarketplaceRequest(YM_OFFER_CARDS, 'POST', 'read'))
-    // …but only as a READ. offer-cards must never be reachable with write intent.
+  it('REJECTS every former Yandex read-POST (integration removed)', () => {
+    assert.throws(() => checkMarketplaceRequest(YM_OFFER_MAPPINGS, 'POST', 'read'), /READONLY GUARD/)
+    assert.throws(() => checkMarketplaceRequest(YM_STOCKS, 'POST', 'read'), /READONLY GUARD/)
+    assert.throws(() => checkMarketplaceRequest(YM_STOCKS_Q, 'POST', 'read'), /READONLY GUARD/)
+    assert.throws(() => checkMarketplaceRequest(YM_OFFER_CARDS, 'POST', 'read'), /READONLY GUARD/)
     assert.throws(() => checkMarketplaceRequest(YM_OFFER_CARDS, 'PUT', 'stock-write'), /STOCK-WRITE GUARD/)
   })
 
@@ -55,12 +62,8 @@ describe('marketplace egress guard — stock-write intent', () => {
     assert.doesNotThrow(() => checkMarketplaceRequest(UZUM_STOCK_WRITE, 'POST', 'stock-write'))
   })
 
-  it('allows the exact YM stock write (PUT …/offers/stocks)', () => {
-    assert.doesNotThrow(() => checkMarketplaceRequest(YM_STOCKS, 'PUT', 'stock-write'))
-  })
-
-  // The same-path/different-method case — the subtle hole the owner flagged.
-  it('BLOCKS POST on the YM offers/stocks path even with write intent (write is PUT only)', () => {
+  it('BLOCKS the former YM stock write under every method (integration removed)', () => {
+    assert.throws(() => checkMarketplaceRequest(YM_STOCKS, 'PUT', 'stock-write'), /STOCK-WRITE GUARD/)
     assert.throws(() => checkMarketplaceRequest(YM_STOCKS, 'POST', 'stock-write'), /STOCK-WRITE GUARD/)
   })
 
@@ -94,27 +97,19 @@ describe('marketplace egress guard — order-cancel intent (cancel-ONLY)', () =>
     assert.doesNotThrow(() => checkMarketplaceRequest(UZUM_ORDER_CANCEL, 'POST', 'order-cancel'))
   })
 
-  it('allows the YM status endpoint ONLY when the body is a cancellation', () => {
-    assert.doesNotThrow(() => checkMarketplaceRequest(
+  // The load-bearing "exactly one hole" proof: the cancel path cannot confirm,
+  // process, refund, or otherwise mutate an order. The YM status endpoint was
+  // the shared-URL case; it is now rejected outright, body or no body.
+  it('REJECTS the former YM status endpoint, cancellation body included', () => {
+    assert.throws(() => checkMarketplaceRequest(
       YM_ORDER_STATUS, 'PUT', 'order-cancel',
       JSON.stringify({ order: { status: 'CANCELLED', substatus: 'SHOP_FAILED' } }),
-    ))
-  })
-
-  // The load-bearing "exactly one hole" proof: the cancel path cannot confirm,
-  // process, refund, or otherwise mutate an order.
-  it('BLOCKS the YM status endpoint when the body confirms/advances the order', () => {
+    ), /ORDER-CANCEL GUARD/)
     assert.throws(() => checkMarketplaceRequest(
       YM_ORDER_STATUS, 'PUT', 'order-cancel',
       JSON.stringify({ order: { status: 'PROCESSING' } }),
     ), /ORDER-CANCEL GUARD/)
-  })
-
-  it('BLOCKS the YM status endpoint with no body / a body missing CANCELLED', () => {
     assert.throws(() => checkMarketplaceRequest(YM_ORDER_STATUS, 'PUT', 'order-cancel'), /ORDER-CANCEL GUARD/)
-    assert.throws(() => checkMarketplaceRequest(
-      YM_ORDER_STATUS, 'PUT', 'order-cancel', JSON.stringify({ order: { substatus: 'X' } }),
-    ), /ORDER-CANCEL GUARD/)
   })
 
   it('BLOCKS a Uzum order CONFIRM with cancel intent (confirm is a different URL)', () => {
@@ -136,7 +131,7 @@ describe('marketplace egress guard — order-cancel intent (cancel-ONLY)', () =>
  *
  * AGENTS.md makes read-only the top constraint of this repository, and
  * marketplaceFetch is what enforces it — but a plain `fetch()` is invisible to
- * it. Three calls sat outside the guard: the Uzum and Yandex token checks in the
+ * it. Three calls sat outside the guard: the marketplace token checks in the
  * sync routes, and Uzum's public catalogue lookup in the extension endpoint.
  *
  * All three were GETs, so nothing was ever violated. The gap was structural:

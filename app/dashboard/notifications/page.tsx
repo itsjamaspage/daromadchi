@@ -5,7 +5,7 @@ import { getOrderNotifications } from '@/lib/db/order-notifications'
 import { groupStockAlerts } from '@/lib/stock-alert-group'
 import MarkNotificationsSeen from '@/components/dashboard/MarkNotificationsSeen'
 
-const MP_LABEL: Record<string, string> = { uzum: 'Uzum', yandex_market: 'Yandex Market' }
+const MP_LABEL: Record<string, string> = { uzum: 'Uzum' }
 
 export default async function NotificationsPage() {
   const [t, rawAlerts, orderNotifs] = await Promise.all([

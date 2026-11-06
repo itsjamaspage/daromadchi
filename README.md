@@ -1,8 +1,7 @@
 # Daromadchi
 
-Seller analytics dashboard for Uzbek marketplaces (Uzum Market, Yandex
-Market). Multi-marketplace stock, orders, unit economics, P&L, Telegram
-digest.
+Seller analytics dashboard for Uzum Market sellers in Uzbekistan. Stock,
+orders, unit economics, P&L, Telegram digest.
 
 ## Stack
 

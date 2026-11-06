@@ -48,7 +48,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     sku: products.sku,
     market_barcode: products.market_barcode,
     market_sku: products.market_sku,
-    market_warehouse_id: products.market_warehouse_id,
   }).from(products).where(and(
     eq(products.id, productId),
     inArray(products.shop_id, shopIds),
@@ -70,8 +69,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const marketplace = shop.marketplace as MarketplaceType
 
   const needsBackfill =
-    (marketplace === 'yandex_market' && (!product.market_sku || !product.market_warehouse_id)) ||
-    (marketplace === 'uzum' && (!product.market_barcode || !product.market_sku))
+    marketplace === 'uzum' && (!product.market_barcode || !product.market_sku)
   if (needsBackfill) {
     await backfillShopIdentifiers({
       id: shop.id,
@@ -85,7 +83,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       sku: products.sku,
       market_barcode: products.market_barcode,
       market_sku: products.market_sku,
-      market_warehouse_id: products.market_warehouse_id,
     }).from(products).where(eq(products.id, product.id))
     if (refreshed) product = refreshed
   }
@@ -118,14 +115,13 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       api_key_encrypted: shop.api_key_encrypted,
       shop_id_external: shop.shop_id_external,
     },
-    sku: marketplace === 'yandex_market' ? product.market_sku : product.sku,
+    sku: product.sku,
     barcode: product.market_barcode,
     uzumSkuId: marketplace === 'uzum' ? product.market_sku : null,
     uzumFbsLinked,
     uzumDbsLinked,
     quantity: Math.trunc(quantity),
     version: Date.now(),
-    warehouseId: product.market_warehouse_id,
     productId: product.id,
   })
 

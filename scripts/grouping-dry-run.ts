@@ -4,7 +4,7 @@
  *   (a) NAM90 sneaker and "3434345" split OUT of the M9 smartwatch group
  *   (b) Legitimate cross-marketplace pairs (PWBK, J16, GTX350) STAY merged
  *
- * Product titles mirror the actual Uzum (Uzbek) / Yandex (Russian) naming.
+ * Product titles mirror the actual Uzum naming (Uzbek and Russian).
  *
  * Usage: npx tsx scripts/grouping-dry-run.ts
  */
@@ -15,7 +15,7 @@ interface TestProduct {
   sku: string
   title: string
   category: string | null
-  marketplace: 'uzum' | 'yandex_market'
+  marketplace: 'uzum'
   match_key: string
   variant_group_key: string | null
 }
@@ -25,8 +25,8 @@ const PRODUCTS: TestProduct[] = [
   // ── M9 Smartwatch (JMBLK / JMWHT variants, both marketplaces) ──
   { id: '1', sku: 'JMBLK', title: "M9 Smart soat, aqlli soat, Smart Watch M9, qo'l soati", category: 'Электроника', marketplace: 'uzum', match_key: 'jmblk', variant_group_key: 'uzum_m9_watch' },
   { id: '2', sku: 'JMWHT', title: "M9 Smart soat, aqlli soat, Smart Watch M9, qo'l soati (oq)", category: 'Электроника', marketplace: 'uzum', match_key: 'jmwht', variant_group_key: 'uzum_m9_watch' },
-  { id: '3', sku: 'JMBLK', title: 'Смарт-часы M9 Smart Watch, умные часы', category: 'Электроника', marketplace: 'yandex_market', match_key: 'jmblk', variant_group_key: 'ym_m9_watch' },
-  { id: '4', sku: 'JMWHT', title: 'Смарт-часы M9 Smart Watch, умные часы (белый)', category: 'Электроника', marketplace: 'yandex_market', match_key: 'jmwht', variant_group_key: 'ym_m9_watch' },
+  { id: '3', sku: 'JMBLK', title: 'Смарт-часы M9 Smart Watch, умные часы', category: 'Электроника', marketplace: 'uzum', match_key: 'jmblk', variant_group_key: 'ym_m9_watch' },
+  { id: '4', sku: 'JMWHT', title: 'Смарт-часы M9 Smart Watch, умные часы (белый)', category: 'Электроника', marketplace: 'uzum', match_key: 'jmwht', variant_group_key: 'ym_m9_watch' },
 
   // ── NAM90 Nike Sneaker (MUST NOT merge with M9 watch) ──
   { id: '5', sku: 'NAM90', title: "Nike Air Max 90, erkak krossovka, NAM90 sport poyabzal", category: 'Обувь', marketplace: 'uzum', match_key: 'nam90', variant_group_key: null },
@@ -36,21 +36,21 @@ const PRODUCTS: TestProduct[] = [
 
   // ── PWBK — cross-marketplace pair (MUST stay merged) ──
   { id: '7', sku: 'PWBK', title: "Portable quvvatlantiruvchi Power Bank 20000mAh PWBK, tashqi batareya", category: 'Электроника', marketplace: 'uzum', match_key: 'pwbk', variant_group_key: null },
-  { id: '8', sku: 'PWBK', title: 'Портативное зарядное устройство Power Bank 20000mAh PWBK, внешний аккумулятор', category: 'Электроника', marketplace: 'yandex_market', match_key: 'pwbk', variant_group_key: null },
+  { id: '8', sku: 'PWBK', title: 'Портативное зарядное устройство Power Bank 20000mAh PWBK, внешний аккумулятор', category: 'Электроника', marketplace: 'uzum', match_key: 'pwbk', variant_group_key: null },
 
   // ── J16 Pro — cross-marketplace pair (MUST stay merged) ──
   { id: '9', sku: 'J16PRO-BK', title: "J16 Pro simsiz Bluetooth naushnik, quloqchin J16Pro", category: 'Электроника', marketplace: 'uzum', match_key: 'j16probk', variant_group_key: null },
-  { id: '10', sku: 'J16PRO-BK', title: 'Беспроводные наушники J16 Pro Bluetooth, J16Pro TWS', category: 'Электроника', marketplace: 'yandex_market', match_key: 'j16probk', variant_group_key: null },
+  { id: '10', sku: 'J16PRO-BK', title: 'Беспроводные наушники J16 Pro Bluetooth, J16Pro TWS', category: 'Электроника', marketplace: 'uzum', match_key: 'j16probk', variant_group_key: null },
 
   // ── GTX350 — cross-marketplace pair (MUST stay merged) ──
   { id: '11', sku: 'GTX350-S', title: "GTX350 sport soat, aqlli soat, fitnes treker GPS", category: 'Электроника', marketplace: 'uzum', match_key: 'gtx350s', variant_group_key: null },
-  { id: '12', sku: 'GTX350-S', title: 'Смарт-часы GTX350, умные часы, фитнес трекер GPS', category: 'Электроника', marketplace: 'yandex_market', match_key: 'gtx350s', variant_group_key: null },
+  { id: '12', sku: 'GTX350-S', title: 'Смарт-часы GTX350, умные часы, фитнес трекер GPS', category: 'Электроника', marketplace: 'uzum', match_key: 'gtx350s', variant_group_key: null },
 
   // ── Phase 2b bridge test: DIFFERENT match_keys, same real product ──
   // Simulates a case where UZ and YM have different seller SKUs but the
   // title contains enough distinctive alphanumeric tokens to bridge.
   { id: '13', sku: 'TWS-X200PRO', title: "X200Pro TWS Bluetooth naushnik, simsiz quloqchin X200Pro", category: 'Электроника', marketplace: 'uzum', match_key: 'twsx200pro', variant_group_key: null },
-  { id: '14', sku: 'X200P', title: 'Беспроводные наушники X200Pro TWS Bluetooth', category: 'Электроника', marketplace: 'yandex_market', match_key: 'x200p', variant_group_key: null },
+  { id: '14', sku: 'X200P', title: 'Беспроводные наушники X200Pro TWS Bluetooth', category: 'Электроника', marketplace: 'uzum', match_key: 'x200p', variant_group_key: null },
 ]
 
 // ── Simplified catKey — the real one resolves via taxonomy, but for same-vs-different

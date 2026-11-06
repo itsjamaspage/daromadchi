@@ -6,7 +6,7 @@
  * shop's live listing. Never price, title, order status, invoices, or anything
  * else. Every attempt is:
  *   • kill-switch checked  (STOCK_SYNC_KILL_SWITCH disables all writes instantly)
- *   • restricted to Uzum / Yandex Market only
+ *   • restricted to Uzum only
  *   • hard-skipped when the write identifier is missing/blank (never guess)
  *   • clamped to Math.max(0, quantity)
  *   • routed through the shared marketplaceFetch guard with intent 'stock-write',
@@ -24,7 +24,6 @@ import { decrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
 import { marketplaceFetch, type MarketplaceInit } from '@/lib/marketplace-readonly-guard'
 import { UZUM_API_BASE } from '@/lib/uzum/client'
-import { YANDEX_API_BASE } from '@/lib/yandex/client'
 import type { MarketplaceType } from '@/lib/types'
 
 export type StockWriteStatus = 'sent' | 'skipped' | 'blocked' | 'killed' | 'error'
@@ -33,13 +32,12 @@ export interface StockWriteShop {
   id: string
   marketplace: MarketplaceType
   api_key_encrypted: string | null
-  // Yandex Market: the campaignId the stock-update PUT is scoped to.
   shop_id_external?: string | null
 }
 
 export interface PushStockParams {
   shop: StockWriteShop
-  /** Seller article / shopSku — used in the audit log and (for YM) the payload. */
+  /** Seller article — used in the audit log. */
   sku: string | null
   /** Uzum market barcode (STRING, from /v3/fbs/sku/stocks). Read-side only now —
    *  used by the fbsLinked guard, NOT the write body. */
@@ -62,8 +60,6 @@ export interface PushStockParams {
   quantity: number
   /** Monotonic freshness version (per shop+sku). Recorded now; enforced in Phase 4. */
   version: number
-  /** Yandex Market warehouseId the write targets. Required for YM. */
-  warehouseId?: string | null
   /** products.id for the audit-row FK (optional). */
   productId?: string | null
   /**
@@ -72,13 +68,6 @@ export interface PushStockParams {
    * write can never leapfrog a correct one. Omit to skip the check.
    */
   freshnessKey?: string
-  /**
-   * ISO timestamp stamped into the YM payload's `updatedAt`. MUST be the moment
-   * the quantity was computed, and stable across retries of the same logical
-   * write — the caller computes it once alongside `version`. Defaults to now
-   * only when a caller omits it (single, non-retried writes).
-   */
-  updatedAt?: string
 }
 
 export interface PushStockResult {
@@ -116,7 +105,6 @@ interface AuditFields {
   marketplace: MarketplaceType
   sku?: string | null
   identifier?: string | null
-  warehouse_id?: string | null
   endpoint?: string | null
   method?: string | null
   requested_quantity: number
@@ -140,7 +128,6 @@ async function audit(fields: AuditFields): Promise<string | undefined> {
       marketplace: fields.marketplace,
       sku: fields.sku ?? null,
       identifier: fields.identifier ?? null,
-      warehouse_id: fields.warehouse_id ?? null,
       endpoint: fields.endpoint ?? null,
       method: fields.method ?? null,
       requested_quantity: fields.requested_quantity,
@@ -203,7 +190,7 @@ async function sendWithRetry(url: string, init: MarketplaceInit, retries = 3): P
  * Returns the outcome; every path is audited in stock_write_log.
  */
 export async function pushStock(params: PushStockParams): Promise<PushStockResult> {
-  const { shop, sku, barcode, uzumSkuId, uzumFbsLinked, uzumDbsLinked, version, warehouseId, productId } = params
+  const { shop, sku, barcode, uzumSkuId, uzumFbsLinked, uzumDbsLinked, version, productId } = params
   const marketplace = shop.marketplace
   const requested = params.quantity
   const clamped = Math.max(0, Math.trunc(Number.isFinite(requested) ? requested : 0)) // HARD RULE #6
@@ -225,8 +212,8 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
     return { status: 'killed', reason: 'kill_switch', quantity: clamped, logId }
   }
 
-  // 2. Scope: Uzum + Yandex Market only (no Wildberries).
-  if (marketplace !== 'uzum' && marketplace !== 'yandex_market') {
+  // 2. Scope: Uzum only.
+  if (marketplace !== 'uzum') {
     const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'marketplace_out_of_scope' })
     return { status: 'skipped', reason: 'marketplace_out_of_scope', quantity: clamped, logId }
   }
@@ -234,75 +221,35 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
   // 4. Build the request. Any missing/blank identifier is a HARD SKIP — we never
   //    attempt a write with a null/blank key (would fail silently or hit the
   //    wrong SKU).
-  let url: string
-  let method: 'POST' | 'PUT'
-  let identifier: string
-  let whId: string | null = null
-  let body: string
-
-  if (marketplace === 'uzum') {
-    // Uzum FBS stock-update: POST /v2/fbs/sku/stocks. The body requires ALL FIVE
-    // fields — skuId, barcode, amount, fbsLinked, dbsLinked (captured verbatim from
-    // the seller cabinet's own write request). Any missing field returns
-    // validation-failed-001 (HTTP 400): the earlier barcode-only /v2 body and the
-    // skuId+amount /v3 body both failed for this reason.
-    //   • skuId   — the FBS skuId (products.market_sku), the update key.
-    //   • barcode — the string barcode (products.market_barcode).
-    //   • fbsLinked / dbsLinked — WHERE the SKU is linked, echoed from the FBS list
-    //     (default true/false for an FBS-only SKU). Not a command.
-    const skuId = uzumSkuId?.trim()
-    if (!skuId) {
-      const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'missing_uzum_skuid' })
-      return { status: 'skipped', reason: 'missing_uzum_skuid', quantity: clamped, logId }
-    }
-    const bc = barcode?.trim()
-    if (!bc) {
-      const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'missing_barcode' })
-      return { status: 'skipped', reason: 'missing_barcode', quantity: clamped, logId }
-    }
-    url = `${UZUM_API_BASE}/v2/fbs/sku/stocks`
-    method = 'POST'
-    identifier = skuId
-    body = JSON.stringify({ skuAmountList: [{
-      skuId: Number(skuId),
-      barcode: bc,
-      amount: clamped,
-      fbsLinked: uzumFbsLinked ?? true,
-      dbsLinked: uzumDbsLinked ?? false,
-    }] })
-  } else {
-    // yandex_market
-    const campaignId = shop.shop_id_external?.trim()
-    const shopSku = sku?.trim()
-    const wh = warehouseId?.trim()
-    const whNum = Number(wh)
-    if (!campaignId) {
-      const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'missing_campaign' })
-      return { status: 'skipped', reason: 'missing_campaign', quantity: clamped, logId }
-    }
-    if (!shopSku) {
-      const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'missing_sku' })
-      return { status: 'skipped', reason: 'missing_sku', quantity: clamped, logId }
-    }
-    if (!wh || !Number.isFinite(whNum)) {
-      const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'missing_warehouse' })
-      return { status: 'skipped', reason: 'missing_warehouse', quantity: clamped, logId }
-    }
-    url = `${YANDEX_API_BASE}/v2/campaigns/${campaignId}/offers/stocks`
-    method = 'PUT'
-    identifier = shopSku
-    whId = wh
-    // updatedAt = moment of computation (stable across retries): use the value
-    // the caller stamped alongside `version`; fall back to now only if omitted.
-    const updatedAt = params.updatedAt ?? new Date().toISOString()
-    body = JSON.stringify({
-      skus: [{
-        sku: shopSku,
-        warehouseId: whNum,
-        items: [{ count: clamped, type: 'FIT', updatedAt }],
-      }],
-    })
+  // Uzum FBS stock-update: POST /v2/fbs/sku/stocks. The body requires ALL FIVE
+  // fields — skuId, barcode, amount, fbsLinked, dbsLinked (captured verbatim from
+  // the seller cabinet's own write request). Any missing field returns
+  // validation-failed-001 (HTTP 400): the earlier barcode-only /v2 body and the
+  // skuId+amount /v3 body both failed for this reason.
+  //   • skuId   — the FBS skuId (products.market_sku), the update key.
+  //   • barcode — the string barcode (products.market_barcode).
+  //   • fbsLinked / dbsLinked — WHERE the SKU is linked, echoed from the FBS list
+  //     (default true/false for an FBS-only SKU). Not a command.
+  const skuId = uzumSkuId?.trim()
+  if (!skuId) {
+    const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'missing_uzum_skuid' })
+    return { status: 'skipped', reason: 'missing_uzum_skuid', quantity: clamped, logId }
   }
+  const bc = barcode?.trim()
+  if (!bc) {
+    const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'missing_barcode' })
+    return { status: 'skipped', reason: 'missing_barcode', quantity: clamped, logId }
+  }
+  const url = `${UZUM_API_BASE}/v2/fbs/sku/stocks`
+  const method = 'POST'
+  const identifier = skuId
+  const body = JSON.stringify({ skuAmountList: [{
+    skuId: Number(skuId),
+    barcode: bc,
+    amount: clamped,
+    fbsLinked: uzumFbsLinked ?? true,
+    dbsLinked: uzumDbsLinked ?? false,
+  }] })
 
   // 4b. Gate A dry run (spec §9). The request is fully built (identifier,
   //     warehouse, target quantity all resolved), so the recorded row is exactly
@@ -311,7 +258,7 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
   //     after the guards above so a write that would skip anyway still skips for
   //     its real reason.
   if (ledgerDryRunOn()) {
-    const logId = await audit({ ...base, dry_run: true, endpoint: url, method, identifier, warehouse_id: whId, status: 'skipped', reason: 'dry_run', request_body: body })
+    const logId = await audit({ ...base, dry_run: true, endpoint: url, method, identifier, status: 'skipped', reason: 'dry_run', request_body: body })
     return { status: 'skipped', reason: 'dry_run', quantity: clamped, logId }
   }
 
@@ -324,7 +271,7 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
       .where(and(eq(stockSyncState.shop_id, shop.id), eq(stockSyncState.sku, params.freshnessKey)))
     if (st && version < st.version) {
       logger.warn('stock_write_stale', { shopId: shop.id, key: params.freshnessKey, writeVersion: version, currentVersion: st.version })
-      const logId = await audit({ ...base, dry_run: false, endpoint: url, method, identifier, warehouse_id: whId, status: 'skipped', reason: 'stale_version' })
+      const logId = await audit({ ...base, dry_run: false, endpoint: url, method, identifier, status: 'skipped', reason: 'stale_version' })
       return { status: 'skipped', reason: 'stale_version', quantity: clamped, logId }
     }
   }
@@ -332,7 +279,7 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
   // 6. Decrypt the token.
   const token = shop.api_key_encrypted ? decrypt(shop.api_key_encrypted) : ''
   if (!token) {
-    const logId = await audit({ ...base, dry_run: false, endpoint: url, method, identifier, warehouse_id: whId, status: 'skipped', reason: 'no_token' })
+    const logId = await audit({ ...base, dry_run: false, endpoint: url, method, identifier, status: 'skipped', reason: 'no_token' })
     return { status: 'skipped', reason: 'no_token', quantity: clamped, logId }
   }
 
@@ -371,7 +318,7 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
       logger.error('stock_write_http_error', { shopId: shop.id, marketplace, url, http: res.status, uzumBodyError, body: respText.slice(0, 500) })
     }
     const logId = await audit({
-      ...base, dry_run: false, endpoint: url, method, identifier, warehouse_id: whId,
+      ...base, dry_run: false, endpoint: url, method, identifier,
       status, reason: auditReason, http_status: res.status,
       request_body: body, response_body: respText.slice(0, 2000),
     })
@@ -381,7 +328,7 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
     const status: StockWriteStatus = blocked ? 'blocked' : 'error'
     logger.error('stock_write_error', { shopId: shop.id, marketplace, url, blocked, error: String(err).slice(0, 300) })
     const logId = await audit({
-      ...base, dry_run: false, endpoint: url, method, identifier, warehouse_id: whId,
+      ...base, dry_run: false, endpoint: url, method, identifier,
       status, reason: blocked ? 'guard_blocked' : 'exception', request_body: body, error: String(err).slice(0, 500),
     })
     return { status, reason: blocked ? 'guard_blocked' : 'exception', quantity: clamped, logId }
