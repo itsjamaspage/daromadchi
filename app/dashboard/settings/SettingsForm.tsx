@@ -249,14 +249,9 @@ function WarehousesCard() {
   useEffect(() => {
     fetch('/api/warehouses')
       .then(r => r.json())
-      .then(d => {
-        setWarehouses(d.warehouses ?? [])
-        // Only shops on a marketplace this build still integrates. A seller who
-        // connected Yandex Market before it left Uzbekistan still has that row
-        // until migration 103 is applied, and it was listed here with no badge
-        // and a warehouse dropdown that cannot mean anything any more.
-        setShops((d.shops ?? []).filter((sh: ShopLite) => sh.marketplace in MP_BADGE))
-      })
+      // /api/warehouses already drops shops on a marketplace this build no
+      // longer integrates — see the note there.
+      .then(d => { setWarehouses(d.warehouses ?? []); setShops(d.shops ?? []) })
       .finally(() => setLoading(false))
   }, [])
 

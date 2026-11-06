@@ -2,6 +2,7 @@ import { cache } from 'react'
 import { getCurrentUser } from '@/lib/auth/session'
 import { eq, ne, and, or, isNull, asc, inArray, desc } from 'drizzle-orm'
 import { db, shops, orders, syncDays } from '@/lib/db'
+import { enabledMarketplaces } from '@/lib/feature-flags'
 import type { MarketplaceType } from '@/lib/types'
 
 export interface ShopRef {
@@ -18,12 +19,32 @@ export const getCurrentUserId = cache(async (): Promise<string | null> => {
   }
 })
 
+// ONE PLACE WHERE A SHOP STOPS EXISTING FOR THE APP.
+//
+// Every dashboard query funnels through here (getShopIds calls it), so the
+// marketplace filter belongs here rather than in each caller.
+//
+// A seller who connected Yandex Market before it left Uzbekistan still has that
+// shop row until migration 103 is applied, and the app has no code left that
+// can do anything with it: MarketplaceType is 'uzum', the readonly guard has no
+// Yandex endpoints, and nothing syncs it. It was still being counted and shown
+// — most visibly as a permanent "Yandex Market do'konim: partial sync" banner
+// across the top of the dashboard, raised by a sync_days row for a shop that
+// will never sync again.
+//
+// Filtering on enabledMarketplaces() rather than hardcoding 'uzum' means a
+// future integration turns up here by being added to that list.
 export const getUserShops = cache(async (): Promise<ShopRef[]> => {
   const userId = await getCurrentUserId()
   if (!userId) return []
   const rows = await db.select({ id: shops.id, marketplace: shops.marketplace })
     .from(shops)
-    .where(and(eq(shops.user_id, userId), eq(shops.is_active, true), or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO'))))
+    .where(and(
+      eq(shops.user_id, userId),
+      eq(shops.is_active, true),
+      inArray(shops.marketplace, enabledMarketplaces()),
+      or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO')),
+    ))
   return rows as ShopRef[]
 })
 

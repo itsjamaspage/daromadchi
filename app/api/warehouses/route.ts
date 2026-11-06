@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
-import { eq, ne, and, or, isNull } from 'drizzle-orm'
+import { eq, ne, and, or, isNull, inArray } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, warehouses, shops } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
+import { enabledMarketplaces } from '@/lib/feature-flags'
 
 export const GET = withErrorHandler(async () => {
   const user = await getCurrentUser()
@@ -22,7 +23,16 @@ export const GET = withErrorHandler(async () => {
       marketplace: shops.marketplace,
       warehouse_id: shops.warehouse_id,
     }).from(shops)
-      .where(and(eq(shops.user_id, user.id), eq(shops.is_active, true), or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO')))),
+      // Same rule as getUserShops: a shop on a marketplace this build no longer
+      // integrates is not offered for warehouse binding. Until migration 103 is
+      // applied a Yandex Market row still exists, and it was listed here with no
+      // badge and a dropdown that cannot mean anything.
+      .where(and(
+        eq(shops.user_id, user.id),
+        eq(shops.is_active, true),
+        inArray(shops.marketplace, enabledMarketplaces()),
+        or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO')),
+      )),
   ])
 
   return NextResponse.json({ warehouses: warehouseRows, shops: shopRows })

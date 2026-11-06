@@ -64,6 +64,15 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
 
+    // The deploy builds into .next-build and keeps the previous build in
+    // .next-old while it swaps them (see .github/workflows/deploy.yml and the
+    // distDir note in next.config.ts). They hold the same generated bundles
+    // .next does, so they need the same ignore — otherwise running the deploy's
+    // build command locally and then `npm run lint` reports ~1600 errors in
+    // compiled chunks.
+    ".next-build/**",
+    ".next-old/**",
+
     // Vendored agent skills (.claude/skills/**) are third-party tooling, not
     // app source: they ship their own CommonJS helper scripts and Python, and
     // are never bundled or executed by the app. Linting them fails CI's `lint`
