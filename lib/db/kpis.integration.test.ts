@@ -400,10 +400,17 @@ describe('the same clock, for the P&L table', () => {
   })
 
   it('keeps no-order overhead on its payment date instead of dropping it', async () => {
-    // The 25 000 storage charge has no order behind it. It is a real cost, so it
-    // must not vanish — it just cannot belong to a sale that never happened.
+    // The 25 000 charge has no order behind it. It is a real cost, so it must
+    // not vanish — it just cannot belong to a sale that never happened, so it
+    // stays on the date it was paid.
+    //
+    // Asserted through `commission` rather than `other`: Uzum's feed has no
+    // "other" category and never writes that field (see RealBucket.other). The
+    // property under test is the FILING DATE, which is unchanged.
     const byOrder = await getRealFinancialsByBucket(shopIds(), ALL.from, 'day', ALL.to, 'order')
-    assert.equal(byOrder.get('2026-08-15')?.other ?? 0, 25000)
+    const overhead = byOrder.get('2026-08-15')
+    assert.equal(overhead?.commission ?? 0, 25000, 'the overhead must not be dropped')
+    assert.equal(overhead?.itemCount ?? 0, 1, 'and it is filed on its payment date')
   })
 
   it('the July sale paid in August is filed in July', async () => {

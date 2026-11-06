@@ -23,11 +23,16 @@ export interface RealBucket {
   commission: number
   delivery: number
   // Non-commission, non-delivery marketplace deductions — storage, acquiring,
-  // ads/boost, loyalty, penalties, etc. Previously these were silently folded
-  // into `commission` (a catch-all), which made the commission line wrong while
-  // leaving net correct. Now split out so the breakdown reconciles with the
-  // seller's finance report. Uzum has explicit commission/delivery columns and
-  // no separate "other", so it stays 0 there.
+  // ads/boost, loyalty, penalties, etc. Split out from `commission` so the
+  // breakdown reconciles with the seller's finance report instead of hiding
+  // these inside a catch-all.
+  //
+  // ALWAYS 0 TODAY, and deliberately kept: Uzum's finance feed has explicit
+  // commission / delivery columns and no "other" category, so the only writer
+  // this field ever had was the Yandex netting classifier, removed with that
+  // integration. The P&L still renders the «Прочие» line from it, which reads
+  // as "—" until a marketplace that reports such fees is added. Do not read a
+  // 0 here as "no such fees were charged" — it means "not reported separately".
   other: number
   net: number
   itemCount: number   // >0 means real data is present; 0 → caller uses its own estimate
