@@ -1,12 +1,11 @@
 import { Suspense } from 'react'
 import DashboardClient from './DashboardClient'
-import type { MarketplaceSlice, PanelKey } from './DashboardClient'
+import type { MarketplaceSlice, PanelKey, FallbackProduct } from './DashboardClient'
 import { getKpis } from '@/lib/db/kpis'
 import { getOrders } from '@/lib/db/orders'
 import { getProducts, getProductSales, getCategoryRevenue } from '@/lib/db/products'
 import { getDailyRevenue } from '@/lib/db/revenue'
 import { getUserShops, getSyncInfo } from '@/lib/db/shop-context'
-import { getStockGroups } from '@/lib/db/stock-groups'
 import WelcomePopup from '@/components/dashboard/WelcomePopup'
 import type { MarketplaceType } from '@/lib/types'
 import { startOfIsoWeek, endOfIsoWeek, localDateStr, shopWeekBounds } from '@/lib/period-week'
@@ -58,10 +57,9 @@ async function withFallback<T>(
 async function fetchSlice(
   days: number,
   marketplace: MarketplaceType | undefined,
-  hasConnectedShop: boolean,
   from?: string,
   to?: string,
-): Promise<MarketplaceSlice> {
+): Promise<Omit<MarketplaceSlice, 'hasConnectedShop'>> {
   const emptyKpis = { total_revenue: 0, total_profit: 0, total_orders: 0, total_stock: 0 }
   const failed: PanelKey[] = []
   const [kpis, recentOrders, allProducts, productSales, chartData, categoryData] = await Promise.all([
@@ -72,14 +70,38 @@ async function fetchSlice(
     withFallback('chart',        getDailyRevenue(days, marketplace, from, to), [], failed),
     withFallback('categories',   getCategoryRevenue(days, marketplace, from, to), [], failed),
   ])
+
+  // SEND THE FIVE ROWS THE PAGE RENDERS, NOT THE WHOLE CATALOGUE.
+  //
+  // getProducts returns every non-archived listing with ~20 columns each. The
+  // dashboard uses that for exactly two things: "is the catalogue empty?" and,
+  // when nothing has sold in the period, a top-5-by-units fallback table
+  // showing six fields. Everything else was serialised into the RSC payload,
+  // shipped, parsed and discarded — on a seller with thousands of SKUs that is
+  // megabytes per page load, and it is on the critical path to first paint.
+  //
+  // The query itself is unchanged (it is cached and shared with other pages);
+  // only what crosses the wire shrinks.
+  const fallbackProducts: FallbackProduct[] = [...allProducts]
+    .sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0))
+    .slice(0, 5)
+    .map(p => ({
+      id: p.id,
+      title: p.title,
+      sku: p.sku,
+      marketplace: p.marketplace,
+      selling_price: p.selling_price,
+      sold: p.sold,
+    }))
+
   return {
     kpis,
     recentOrders,
-    allProducts,
+    productCount: allProducts.length,
+    fallbackProducts,
     productSales,
     chartData,
     categoryData,
-    hasConnectedShop,
     failed,
   }
 }
@@ -126,25 +148,37 @@ export default async function DashboardPage({ searchParams }: Props) {
     days   = 7
   }
 
-  const allShops   = await getUserShops().catch(e => { console.error('[dashboard] getUserShops', e); return [] })
-  const hasShops   = allShops.length > 0
-  const hasUzum    = allShops.some(s => s.marketplace === 'uzum')
-
-  const [allSlice, uzumSlice, stockGroups, syncInfo] = await Promise.all([
-    fetchSlice(days, undefined, hasShops, from, to),
-    fetchSlice(days, 'uzum',    hasUzum,  from, to),
-    // Grouped stock — the same SKU across shops collapses to one alert with
-    // marketplace badges instead of N duplicates.
-    getStockGroups().catch(e => { console.error('[dashboard] getStockGroups', e); return [] }),
+  // ONE SLICE, AND THE SHOP LOOKUP ALONGSIDE IT.
+  //
+  // This used to fetch two slices — "all marketplaces" and "uzum" — to feed an
+  // All / Uzum tab bar. With Yandex gone that bar no longer renders
+  // (DashboardClient: `MP_TABS.length > 1`) and nothing links to ?mp=, so the
+  // second slice was six more queries producing a copy of the first. Two of
+  // them were genuinely duplicated work rather than cache hits, because
+  // getKpis keys its cache on whether a marketplace filter is set.
+  //
+  // getUserShops was also awaited on its own first, purely because fetchSlice
+  // took hasConnectedShop as an argument. It never influenced a query, so it
+  // moves into the same Promise.all and is attached to the slice afterwards —
+  // one less serial round trip before anything else starts.
+  //
+  // getStockGroups went entirely: it ran eight queries, three of them
+  // aggregating the seller's whole order history, was not cached, and the
+  // result reached a prop DashboardClient destructures and never reads (eslint
+  // has been reporting it as unused). The stock figures the KPI card shows come
+  // from getKpis, which computes its own groups behind a cache.
+  const [slice, allShops, syncInfo] = await Promise.all([
+    fetchSlice(days, undefined, from, to),
+    getUserShops().catch(e => { console.error('[dashboard] getUserShops', e); return [] }),
     getSyncInfo().catch(e => { console.error('[dashboard] getSyncInfo', e); return { lastSyncedAt: null, lastSyncFailed: false, alerts: [] } }),
   ])
+  const hasShops = allShops.length > 0
 
   return (
     <Suspense>
       <WelcomePopup hasShops={hasShops} />
       <DashboardClient
-        slices={{ all: allSlice, uzum: uzumSlice }}
-        stockGroups={stockGroups}
+        slice={{ ...slice, hasConnectedShop: hasShops }}
         days={days}
         period={period}
         from={from}

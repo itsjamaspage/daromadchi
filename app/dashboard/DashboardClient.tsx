@@ -8,7 +8,6 @@ import { DollarSign, TrendingUp, ShoppingBag, Package, Undo2, Settings, ArrowRig
 import KpiCard, { type KpiBreakdownRow } from '@/components/dashboard/KpiCard'
 import RevenueChart from '@/components/dashboard/RevenueChart'
 import CalendarPicker from '@/components/dashboard/CalendarPicker'
-import StockAlerts from '@/components/dashboard/StockAlerts'
 import CategoryChart from '@/components/dashboard/CategoryChart'
 import LastSynced from '@/components/dashboard/LastSynced'
 import SyncAlert from '@/components/dashboard/SyncAlert'
@@ -23,7 +22,6 @@ import type { Kpis, Order, Product, DailyRevenue, MarketplaceType } from '@/lib/
 import { enabledMarketplaces } from '@/lib/feature-flags'
 import { orderDisplayStatus } from '@/lib/marketplace/order-display-status'
 import type { ProductSalesRow } from '@/lib/db/products'
-import type { StockGroup } from '@/lib/db/stock-groups'
 import { colorMetaFor, COLOR_LABELS, type ColorKey } from '@/lib/products/resolveColor'
 
 // formatSum lives in lib/format-sum.ts so the KPI cards and the category
@@ -113,10 +111,23 @@ const UNKNOWN = '—'
 
 export type PanelKey = 'kpis' | 'orders' | 'products' | 'productSales' | 'chart' | 'categories'
 
+/** The six fields the no-sales fallback table renders — see page.tsx. */
+export interface FallbackProduct {
+  id: string
+  title: string
+  sku: string | null
+  marketplace?: MarketplaceType | null
+  selling_price: Product['selling_price']
+  sold?: number | null
+}
+
 export interface MarketplaceSlice {
   kpis: Kpis
   recentOrders: Order[]
-  allProducts: Product[]
+  /** Non-archived listings the seller has. The rows themselves are not sent. */
+  productCount: number
+  /** Top 5 by units sold, used only when nothing sold in the period. */
+  fallbackProducts: FallbackProduct[]
   productSales: ProductSalesRow[]
   chartData: DailyRevenue[]
   categoryData: CategoryData[]
@@ -126,11 +137,9 @@ export interface MarketplaceSlice {
 }
 
 interface Props {
-  slices: {
-    all: MarketplaceSlice
-    uzum: MarketplaceSlice
-  }
-  stockGroups: StockGroup[]
+  // One slice. The All / Uzum tab bar it used to switch between stopped
+  // rendering when Yandex left, so page.tsx no longer fetches a second copy.
+  slice: MarketplaceSlice
   days: number
   period: string
   from?: string
@@ -158,7 +167,7 @@ const STATUS_CLASS_LIGHT: Record<string, string> = {
   returned:  'bg-amber-500/10 text-amber-700',
 }
 
-export default function DashboardClient({ slices, stockGroups, days, period, from, to, initialMarketplace, syncInfo, }: Props) {
+export default function DashboardClient({ slice, days, period, from, to, initialMarketplace, syncInfo, }: Props) {
   const { lang } = useLang()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
@@ -188,16 +197,14 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
     router.replace(qs ? `/dashboard?${qs}` : '/dashboard', { scroll: false })
   }
 
-  const sliceKey = marketplace ?? 'all'
-  const { kpis, recentOrders, allProducts, productSales, chartData, categoryData, hasConnectedShop, failed } =
-    slices[sliceKey as keyof typeof slices]
+  const { kpis, recentOrders, productCount, fallbackProducts, productSales, chartData, categoryData, hasConnectedShop, failed } = slice
   const failedPanels = failed ?? []
   const kpisFailed = failedPanels.includes('kpis')
 
   // A failed query is not an empty week. Without this, a thrown getKpis falls
   // back to zeroes and the page renders the "nothing here yet" state, which
   // tells the seller something the data does not support.
-  const isEmpty = !kpisFailed && kpis.total_orders === 0 && allProducts.length === 0
+  const isEmpty = !kpisFailed && kpis.total_orders === 0 && productCount === 0
 
   // "Учтено: Uzum". Names the marketplaces behind the profit and the ones whose
   // money has not landed, so a figure smaller than the revenue beside it
@@ -456,19 +463,11 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
 
       {/* Empty state */}
       {isEmpty && (() => {
-        const mpLinks: Record<string, { url: string; label: string }> = {
-          uzum: { url: 'https://seller.uzum.uz', label: 'seller.uzum.uz' },
-        }
-        const mpKeys = ['uzum'] as const
-        // On a specific tab show only that marketplace; on "Все" show all connected ones
-        const linksToShow: { url: string; label: string }[] = marketplace
-          ? [mpLinks[marketplace]].filter(Boolean)
-          : mpKeys
-              .filter(mp => slices[mp].hasConnectedShop)
-              .map(mp => mpLinks[mp])
-        // Fallback: if no connected shops yet, show all enabled marketplaces
-        const fallbackLinks = Object.values(mpLinks)
-        const displayLinks = linksToShow.length > 0 ? linksToShow : fallbackLinks
+        // This used to pick which cabinet links to show from the per-marketplace
+        // slices — "the connected ones on the All tab, just this one on a
+        // marketplace tab". Uzum is the only integration, so every branch
+        // resolved to the same single link.
+        const displayLinks = [{ url: 'https://seller.uzum.uz', label: 'seller.uzum.uz' }]
 
         if (hasConnectedShop) {
           return (
@@ -657,7 +656,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
-                {productSales.length === 0 && allProducts.length === 0 ? (
+                {productSales.length === 0 && productCount === 0 ? (
                   <tr>
                     <td colSpan={3} className="py-8 text-center">
                       <p className="text-[var(--text-muted)] text-xs">{d.noProducts}</p>
@@ -690,7 +689,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                       </td>
                     </tr>
                   ))
-                  : [...allProducts].sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0)).slice(0, 5).map(p => (
+                  : fallbackProducts.map(p => (
                     <tr key={p.id} className="hover:bg-[var(--bg-card2)] transition-colors">
                       <td className="py-3 pr-4">
                         <p className="text-[var(--text-base)] font-medium text-xs">{p.title}</p>
