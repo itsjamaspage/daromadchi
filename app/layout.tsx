@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { Space_Grotesk, JetBrains_Mono } from 'next/font/google'
 import { cookies } from 'next/headers'
 import { Suspense } from 'react'
 import './globals.css'
@@ -9,20 +8,6 @@ import LoadingOverlay from './components/LoadingOverlay'
 import NavigationEvents from './components/NavigationEvents'
 import CookieConsent from '@/components/CookieConsent'
 import Analytics from './components/Analytics'
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-space',
-  weight: ['300', '400', '500', '600', '700'],
-})
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-mono-landing',
-  weight: ['400', '500', '600', '700'],
-})
 
 export const metadata: Metadata = {
   title: {
@@ -68,7 +53,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang = (cookieStore.get('lang')?.value ?? 'uz') as Lang
 
   return (
-    <html lang={lang} className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang={lang} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />

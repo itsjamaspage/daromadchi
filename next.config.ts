@@ -27,6 +27,25 @@ function buildSha(): string {
 }
 
 const nextConfig: NextConfig = {
+  /**
+   * Where the build output goes. Normally `.next`; the deploy overrides it so a
+   * production build can be assembled OUT OF THE WAY and then swapped in.
+   *
+   * WHY: the deploy used to `rm -rf .next && npm run build` in the same tree the
+   * live process is serving from. Chunk filenames are content-hashed, so for the
+   * ~60s that build ran, every page already open (and every new request) asked
+   * for `/_next/static/css/<old-hash>.css` and got a 404 — the HTML rendered,
+   * the stylesheet did not. That is why the landing page intermittently appeared
+   * with no Tailwind at all: the mobile-only bottom nav showed on desktop
+   * (`md:hidden` never applied), every responsive grid collapsed to one column
+   * so sections looked endless, and the pricing tabs lost their styling.
+   *
+   * With this, the deploy builds into `.next-build` while `.next` stays intact
+   * and serving, then renames the directories and restarts — turning a minutes-
+   * long window of unstyled pages into a sub-second one. `next start` reads this
+   * same value, so the running process still serves from `.next`.
+   */
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   // Inlined at build time — see buildSha() above. Surfaced by /api/health.
   env: {
     BUILD_SHA: buildSha(),

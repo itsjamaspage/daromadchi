@@ -42,3 +42,5 @@ next-env.d.ts
 *.zip
 .claude/
 .uploads/
+/.next-build/
+/.next-old/

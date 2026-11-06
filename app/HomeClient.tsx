@@ -244,8 +244,8 @@ function DashMockup({ lang }: { lang: Lang }) {
 
   const rows = [
     { name: T.mockup.winterJacket[lang],  sku: 'UZ-00312', rev: '18 240 000', margin: 32.4, ok: true,  mp: teal },
-    { name: T.mockup.nikeAir[lang],      sku: 'YM-01847', rev: '12 590 000', margin: 12.8, ok: false, mp: teal },
-    { name: T.mockup.hikingBackpack[lang],    sku: 'YM-00951', rev: '9 870 000',  margin: 24.1, ok: true,  mp: teal },
+    { name: T.mockup.nikeAir[lang],      sku: 'UZ-01847', rev: '12 590 000', margin: 12.8, ok: false, mp: teal },
+    { name: T.mockup.hikingBackpack[lang],    sku: 'UZ-00951', rev: '9 870 000',  margin: 24.1, ok: true,  mp: teal },
     { name: T.mockup.sonyHeadphones[lang],   sku: 'UZ-00488', rev: '8 340 000',  margin: 38.5, ok: true,  mp: teal },
   ]
 
@@ -311,10 +311,12 @@ function DashMockup({ lang }: { lang: Lang }) {
           </div>
           <div style={{ padding: '10px 12px' }}>
             <p style={{ fontSize: 8, color: muted, marginBottom: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              {T.mockup.platforms[lang]}
+              {T.mockup.fulfilment[lang]}
             </p>
-            {/* Mock breakdown: WB removed while the integration is sunset. */}
-            {[{mp:'Uzum',c:teal,pct:'70%'},{mp:'YM',c:teal,pct:'30%'}].map(m => (
+            {/* Fulfilment split, not a marketplace split: Uzum is the only
+                integration, so "Platforms: Uzum 100%" would be dead space.
+                FBS/FBO is a real number the dashboard computes. */}
+            {[{mp:'FBS',c:teal,pct:'64%'},{mp:'FBO',c:teal,pct:'36%'}].map(m => (
               <div key={m.mp} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
                 <div style={{ width: 5, height: 5, borderRadius: '50%', background: m.c }} />
                 <span style={{ fontSize: 9, color: ink, flex: 1 }}>{m.mp}</span>
@@ -1715,11 +1717,11 @@ function FooterSection({ lang }: { lang: Lang }) {
               {T.footer.description[lang]}
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-              {['Uzum','YM'].map(mp => (
-                <div key={mp} style={{ fontSize: 10, fontWeight: 700, color: isDark ? '#ffffff' : P.ink, background: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(14,34,51,0.12)', borderRadius: 4, padding: '3px 7px' }}>
-                  {mp}
-                </div>
-              ))}
+              {/* Uzum is the only integration now that Yandex Market has left
+                  Uzbekistan, so this is one badge rather than a row. */}
+              <div style={{ fontSize: 10, fontWeight: 700, color: isDark ? '#ffffff' : P.ink, background: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(14,34,51,0.12)', borderRadius: 4, padding: '3px 7px' }}>
+                Uzum
+              </div>
             </div>
           </div>
           {cols.map(col => (
